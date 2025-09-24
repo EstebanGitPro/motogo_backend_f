@@ -5,7 +5,8 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/core/ports"
 	"github.com/EstebanGitPro/motogo-backend/core/services"
 
-	mysql "github.com/EstebanGitPro/motogo-backend/platform/mysql"
+	mysql "github.com/EstebanGitPro/motogo-backend/platform/mysql"	
+	
 	repo "github.com/EstebanGitPro/motogo-backend/repositories/person"
 )
 
@@ -13,6 +14,7 @@ type Dependencies struct {
 	PersonService ports.Service
 	PersonRepo    ports.Repository
 	Config        *config.Config
+	
 }
 
 func Init() (*Dependencies, error) {
@@ -23,8 +25,10 @@ func Init() (*Dependencies, error) {
 		return nil, err
 	}
 
+
+
 	personRepo := repo.NewRepository(db)
-	personService := services.NewService(personRepo)
+	personService := services.NewService(personRepo, cfg)
 
 	return &Dependencies{
 		PersonService: personService,
