@@ -13,7 +13,7 @@ func main() {
     app.Use(gin.Logger())
     app.Use(gin.Recovery())
 
-    dependencies := server.Bootstrap(app)
+    dependencies := server.Boostrap(app)
 
     serverAddr := dependencies.Config.GetServerAddress()
     slog.Info("Starting server", slog.String("address", serverAddr))
