@@ -32,17 +32,17 @@ type PersonResponse struct {
 	Role                string `json:"role"`
 }
 
-// Handler embeds the general handlers functionality
 type Handler struct {
 	*handlers.Handler
 }
 
-// New creates a new person handler with embedded general handler functionality
+
 func New(service ports.Service) *Handler {
 	return &Handler{
 		Handler: handlers.New(service),
 	}
 }
+
 
 func (p PersonRequest) ToDomain() domain.Person {
 	return domain.Person{
