@@ -1,4 +1,4 @@
-package person
+package handlers
 
 import (
 	"net/http"
@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (h Handler) GetPersonByEmail() func(c *gin.Context) {
+func (h handler) GetPersonByEmail() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		email := c.Param("email")
 
@@ -21,7 +21,7 @@ func (h Handler) GetPersonByEmail() func(c *gin.Context) {
 	}
 }
 
-func (h Handler) RegisterPerson() func(c *gin.Context) {
+func (h handler) RegisterPerson() func(c *gin.Context) {
 	return func(c *gin.Context) {
 
 		var personRequest PersonRequest

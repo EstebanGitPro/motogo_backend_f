@@ -5,7 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/EstebanGitPro/motogo-backend/cmd/dependency"
-	"github.com/EstebanGitPro/motogo-backend/handlers/person"
+	"github.com/EstebanGitPro/motogo-backend/handlers"
 	"github.com/EstebanGitPro/motogo-backend/middleware"
 	"github.com/EstebanGitPro/motogo-backend/platform/schema"
 	
@@ -15,7 +15,7 @@ import (
 func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 	slog.Info("Setting up routes")
 
-	handler := person.New(dependencies.PersonService)
+	handler := handlers.New(dependencies.PersonService)
 
 
 	validators, err := schema.NewValidator(&schema.DefaultFileReader{})
