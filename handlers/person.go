@@ -1,9 +1,7 @@
-package person
+package handlers
 
 import (
 	domain "github.com/EstebanGitPro/motogo-backend/core/domain"
-	"github.com/EstebanGitPro/motogo-backend/core/ports"
-	"github.com/EstebanGitPro/motogo-backend/handlers"
 )
 
 type PersonRequest struct {
@@ -32,16 +30,6 @@ type PersonResponse struct {
 	Role                string `json:"role"`
 }
 
-type Handler struct {
-	*handlers.Handler
-}
-
-
-func New(service ports.Service) *Handler {
-	return &Handler{
-		Handler: handlers.New(service),
-	}
-}
 
 
 func (p PersonRequest) ToDomain() domain.Person {

@@ -21,7 +21,7 @@ type WebError struct {
 	Message string `json:"message"`
 }
 
-func (h Handler) HandleError(c *gin.Context, err error) {
+func (h handler) HandleError(c *gin.Context, err error) {
 	switch {
 	case errors.Is(err, ErrUnmarshalBody):
 		c.JSON(http.StatusBadRequest, WebError{
