@@ -4,12 +4,12 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/core/ports"
 )
 
-type Handler struct {
+type handler struct {
 	PersonService ports.Service
 }
 
-func New(service ports.Service) *Handler {
-	return &Handler{
+func New(service ports.Service) *handler {
+	return &handler{
 		PersonService: service,
 	}
 }
