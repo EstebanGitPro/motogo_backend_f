@@ -30,7 +30,6 @@ type Database struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 	Name     string `json:"name"`
-	URL      string `json:"url,omitempty"`
 	SSL      string `json:"ssl,omitempty"`
 }
 
@@ -91,55 +90,12 @@ func LoadConfig() (*Config, error) {
 		slog.String("environment", config.Environment),
 		slog.String("config_path", configPath))
 
-	if err := config.Validate(); err != nil {
-		return nil, fmt.Errorf("invalid configuration: %w", err)
-	}
 
 	return &config, nil
 }
 
-func MustLoadConfig() *Config {
-	config, err := LoadConfig()
-	if err != nil {
-		slog.Error("Fatal error loading configuration", slog.String("error", err.Error()))
-		os.Exit(1)
-	}
-	return config
-}
-
-func (c *Config) Validate() error {
-	if c.Database.Driver == "" {
-		return fmt.Errorf("database driver is required")
-	}
-
-	
-	if c.Database.URL != "" {
-		slog.Debug("Using database URL connection string")
-		return nil
-	}
-
-	
-	requiredFields := map[string]string{
-		"host":     c.Database.Host,
-		"port":     c.Database.Port,
-		"username": c.Database.Username,
-		"password": c.Database.Password,
-		"name":     c.Database.Name,
-	}
-
-	for field, value := range requiredFields {
-		if value == "" {
-			return fmt.Errorf("database %s is required", field)
-		}
-	}
-
-	return nil
-}
 
 func (c *Config) GetMySQLDSN() string {
-	if c.Database.URL != "" {
-		return c.Database.URL
-	}
 
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&loc=Local",
 		c.Database.Username,

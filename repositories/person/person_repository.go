@@ -2,20 +2,36 @@ package person
 
 import (
 	"database/sql"
+	"fmt"
 
 	domain "github.com/EstebanGitPro/motogo-backend/core/domain"
 	"github.com/EstebanGitPro/motogo-backend/core/ports"
-	mysql "github.com/go-sql-driver/mysql"
+	"github.com/go-sql-driver/mysql"
+	//"github.com/go-sql-driver/mysql"
 )
 
 type repository struct {
-	db *sql.DB
+	db             *sql.DB
+	stmtSave       *sql.Stmt
+	stmtGetByEmail *sql.Stmt
 }
 
-func NewRepository(db *sql.DB) ports.Repository {
-	return &repository{
-		db: db,
+func NewRepository(db *sql.DB) (ports.Repository, error) {
+	stmtSave, err := db.Prepare(querySave)
+	if err != nil {
+		return nil, fmt.Errorf("error preparing stmtSave: %w", err)
 	}
+
+	stmtGetByEmail, err := db.Prepare(queryGetByEmail)
+	if err != nil {
+		return nil, fmt.Errorf("error preparing stmtGetByEmail: %w", err)
+	}
+
+	return &repository{
+		db:             db,
+		stmtSave:       stmtSave,
+		stmtGetByEmail: stmtGetByEmail,
+	}, nil
 }
 
 const (
@@ -39,13 +55,7 @@ func (r *repository) Save(person domain.Person) error {
 		Role:                person.Role,
 	}
 
-	stmt, err := r.db.Prepare(querySave)
-	if err != nil {
-		return domain.ErrUserCannotSave
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(
+	_, err := r.stmtSave.Exec(
 		personToSave.ID,
 		personToSave.IdentityNumber,
 		personToSave.FirstName,
@@ -73,7 +83,7 @@ func (r *repository) Save(person domain.Person) error {
 
 func (r *repository) GetPersonByEmail(email string) (*domain.Person, error) {
 	var p Person
-	err := r.db.QueryRow(queryGetByEmail, email).Scan(
+	err := r.stmtGetByEmail.QueryRow(email).Scan(
 		&p.ID,
 		&p.IdentityNumber,
 		&p.FirstName,

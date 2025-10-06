@@ -18,7 +18,10 @@ type Dependencies struct {
 }
 
 func Init() (*Dependencies, error) {
-	cfg := config.MustLoadConfig()
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		return nil, err
+	}
 
 	db, err := mysql.GetDB(cfg.Database)
 	if err != nil {
@@ -27,7 +30,11 @@ func Init() (*Dependencies, error) {
 
 
 
-	personRepo := repo.NewRepository(db)
+	personRepo, err := repo.NewRepository(db)
+	if err != nil {
+		return nil, err
+	}
+	
 	personService := services.NewService(personRepo, cfg)
 
 	return &Dependencies{
