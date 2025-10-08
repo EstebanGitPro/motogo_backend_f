@@ -5,3 +5,9 @@ config/local-config.json
 .vscode/
 resend_key.tex   
 config/railway-config.json
+
+keycloak-start.shtr
+test-keycloak.sh
+test-keycloak.go
+keycloak-start.sh
+
