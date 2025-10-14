@@ -3,13 +3,13 @@ module github.com/EstebanGitPro/motogo-backend
 go 1.25
 
 require (
+	github.com/Nerzal/gocloak/v13 v13.9.0
 	github.com/go-sql-driver/mysql v1.9.3
 	github.com/kaptinlin/jsonschema v0.4.14
 	golang.org/x/crypto v0.41.0
 )
 
 require (
-	github.com/Nerzal/gocloak/v13 v13.9.0 // indirect
 	github.com/bytedance/sonic v1.14.0 // indirect
 	github.com/bytedance/sonic/loader v0.3.0 // indirect
 	github.com/cloudwego/base64x v0.1.6 // indirect

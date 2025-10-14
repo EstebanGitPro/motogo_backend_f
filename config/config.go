@@ -10,14 +10,13 @@ import (
 )
 
 type Config struct {
-	Environment  string       `json:"environment"`
-	Database     Database     `json:"database"`
-	Server       Server       `json:"server"`
-	Resend       Resend       `json:"resend"`
-	JWT          JWTConfig    `json:"jwt"`
-	Verification Verification `json:"verification"`
+	Environment  string         `json:"environment"`
+	Database     Database       `json:"database"`
+	Server       Server         `json:"server"`
+	Resend       Resend         `json:"resend"`
+	Verification Verification   `json:"verification"`
+	Keycloak     KeycloakConfig `json:"keycloak"`
 }
-
 
 type Verification struct {
 	BaseURL string `json:"base_url"`
@@ -43,8 +42,13 @@ type Resend struct {
 	FromEmail string `json:"from_email"`
 }
 
-type JWTConfig struct {
-	SecretKey string `json:"secret_key"`
+type KeycloakConfig struct {
+	ServerURL    string `json:"server_url"`
+	Realm        string `json:"realm"`
+	ClientID     string `json:"client_id"`
+	ClientSecret string `json:"client_secret"`
+	AdminUser    string `json:"admin_user"`
+	AdminPass    string `json:"admin_pass"`
 }
 
 func LoadConfig() (*Config, error) {
@@ -85,18 +89,38 @@ func LoadConfig() (*Config, error) {
 		return nil, fmt.Errorf("error parsing JSON configuration: %w", err)
 	}
 
+	// Sobrescribir configuración de Keycloak con variables de entorno si existen
+	// Esto permite: JSON para defaults locales, ENV para producción/secrets
+	if serverURL := os.Getenv("KEYCLOAK_SERVER_URL"); serverURL != "" {
+		config.Keycloak.ServerURL = serverURL
+	}
+	if realm := os.Getenv("KEYCLOAK_REALM"); realm != "" {
+		config.Keycloak.Realm = realm
+	}
+	if clientID := os.Getenv("KEYCLOAK_CLIENT_ID"); clientID != "" {
+		config.Keycloak.ClientID = clientID
+	}
+	if clientSecret := os.Getenv("KEYCLOAK_CLIENT_SECRET"); clientSecret != "" {
+		config.Keycloak.ClientSecret = clientSecret
+	}
+	if adminUser := os.Getenv("KEYCLOAK_ADMIN"); adminUser != "" {
+		config.Keycloak.AdminUser = adminUser
+	}
+	if adminPass := os.Getenv("KEYCLOAK_ADMIN_PASSWORD"); adminPass != "" {
+		config.Keycloak.AdminPass = adminPass
+	}
+
 	slog.Info("Configuration loaded successfully",
 		slog.String("config_file", configFile),
 		slog.String("environment", config.Environment),
-		slog.String("config_path", configPath))
-
+		slog.String("config_path", configPath),
+		slog.String("keycloak_server", config.Keycloak.ServerURL),
+		slog.String("keycloak_realm", config.Keycloak.Realm))
 
 	return &config, nil
 }
 
-
 func (c *Config) GetMySQLDSN() string {
-
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&loc=Local",
 		c.Database.Username,
 		c.Database.Password,
@@ -120,3 +144,16 @@ func (c *Config) IsProduction() bool {
 	return c.Environment == "production" || c.Environment == "railway"
 }
 
+// Helper para obtener la URL completa del auth endpoint de Keycloak
+func (c *Config) GetKeycloakAuthURL() string {
+	return fmt.Sprintf("%s/realms/%s/protocol/openid-connect/token",
+		c.Keycloak.ServerURL,
+		c.Keycloak.Realm)
+}
+
+// Helper para obtener la URL del admin API
+func (c *Config) GetKeycloakAdminURL() string {
+	return fmt.Sprintf("%s/admin/realms/%s",
+		c.Keycloak.ServerURL,
+		c.Keycloak.Realm)
+}

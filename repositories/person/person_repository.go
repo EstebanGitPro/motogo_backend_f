@@ -14,6 +14,8 @@ type repository struct {
 	db             *sql.DB
 	stmtSave       *sql.Stmt
 	stmtGetByEmail *sql.Stmt
+	stmtGetByID    *sql.Stmt
+	stmtUpdate     *sql.Stmt
 }
 
 func NewRepository(db *sql.DB) (ports.Repository, error) {
@@ -27,16 +29,30 @@ func NewRepository(db *sql.DB) (ports.Repository, error) {
 		return nil, fmt.Errorf("error preparing stmtGetByEmail: %w", err)
 	}
 
+	stmtGetByID, err := db.Prepare(queryGetByID)
+	if err != nil {
+		return nil, fmt.Errorf("error preparing stmtGetByID: %w", err)
+	}
+
+	stmtUpdate, err := db.Prepare(queryUpdate)
+	if err != nil {
+		return nil, fmt.Errorf("error preparing stmtUpdate: %w", err)
+	}
+
 	return &repository{
 		db:             db,
 		stmtSave:       stmtSave,
 		stmtGetByEmail: stmtGetByEmail,
+		stmtGetByID:    stmtGetByID,
+		stmtUpdate:     stmtUpdate,
 	}, nil
 }
 
 const (
 	querySave       = "INSERT INTO persons (id, identity_number, first_name, last_name, second_last_name, email, phone_number, email_verified, phone_number_verified, password, role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 	queryGetByEmail = "SELECT id, identity_number, first_name, last_name, second_last_name, email, phone_number, email_verified, phone_number_verified, password, role FROM persons WHERE email = ? LIMIT 1"
+	queryGetByID    = "SELECT id, identity_number, first_name, last_name, second_last_name, email, phone_number, email_verified, phone_number_verified, password, role FROM persons WHERE id = ? LIMIT 1"
+	queryUpdate     = "UPDATE persons SET identity_number = ?, first_name = ?, last_name = ?, second_last_name = ?, email = ?, phone_number = ?, email_verified = ?, phone_number_verified = ?, password = ?, role = ? WHERE id = ?"
 )
 
 func (r *repository) Save(person domain.Person) error {
@@ -104,4 +120,64 @@ func (r *repository) GetPersonByEmail(email string) (*domain.Person, error) {
 	}
 	d := p.ToDomain()
 	return &d, nil
+}
+
+func (r *repository) GetPersonByID(id string) (*domain.Person, error) {
+	var p Person
+	err := r.stmtGetByID.QueryRow(id).Scan(
+		&p.ID,
+		&p.IdentityNumber,
+		&p.FirstName,
+		&p.LastName,
+		&p.SecondLastName,
+		&p.Email,
+		&p.PhoneNumber,
+		&p.EmailVerified,
+		&p.PhoneNumberVerified,
+		&p.Password,
+		&p.Role,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, domain.ErrPersonNotFound
+		}
+		return nil, err
+	}
+	d := p.ToDomain()
+	return &d, nil
+}
+
+func (r *repository) Update(person domain.Person) error {
+	personToUpdate := Person{
+		ID:                  person.ID,
+		IdentityNumber:      person.IdentityNumber,
+		FirstName:           person.FirstName,
+		LastName:            person.LastName,
+		SecondLastName:      person.SecondLastName,
+		Email:               person.Email,
+		PhoneNumber:         person.PhoneNumber,
+		EmailVerified:       person.EmailVerified,
+		PhoneNumberVerified: person.PhoneNumberVerified,
+		Password:            person.Password,
+		Role:                person.Role,
+	}
+
+	_, err := r.stmtUpdate.Exec(
+		personToUpdate.IdentityNumber,
+		personToUpdate.FirstName,
+		personToUpdate.LastName,
+		personToUpdate.SecondLastName,
+		personToUpdate.Email,
+		personToUpdate.PhoneNumber,
+		personToUpdate.EmailVerified,
+		personToUpdate.PhoneNumberVerified,
+		personToUpdate.Password,
+		personToUpdate.Role,
+		personToUpdate.ID, // WHERE clause
+	)
+	if err != nil {
+		return domain.ErrUserCannotSave
+	}
+
+	return nil
 }

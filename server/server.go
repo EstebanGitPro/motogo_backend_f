@@ -36,7 +36,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 func Boostrap(app *gin.Engine) *dependency.Dependencies {
 	dependencies, err := dependency.Init()
 	if err != nil {
-		log.Fatal("Error initializing dependencies")
+		log.Fatalf("Error initializing dependencies: %v", err)
 		return nil
 	}
 
