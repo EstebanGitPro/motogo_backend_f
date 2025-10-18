@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/EstebanGitPro/motogo-backend/config"
+	"github.com/EstebanGitPro/motogo-backend/core/domain"
 	"github.com/EstebanGitPro/motogo-backend/core/ports"
 	"github.com/Nerzal/gocloak/v13"
 )
@@ -15,65 +16,32 @@ type client struct {
 	gocloak *gocloak.GoCloak
 	config  *config.KeycloakConfig
 	token   *gocloak.JWT
-	mu      sync.RWMutex // Protección para acceso concurrente al token
+	mu      sync.RWMutex
 }
 
 // NewClient crea una nueva instancia del cliente de Keycloak
-func NewClient(cfg *config.KeycloakConfig) (ports.KeycloakClient, error) {
+func NewClient(cfg *config.KeycloakConfig) (ports.AuthClient, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("keycloak config cannot be nil")
 	}
 
 	gc := gocloak.NewClient(cfg.ServerURL)
 
-	c := &client{
+	authClient := &client{
 		gocloak: gc,
 		config:  cfg,
 	}
 
-	// Inicializar token de admin
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	token, err := c.loginAdminInternal(ctx)
+	token, err := authClient.gocloak.LoginAdmin(ctx, authClient.config.AdminUser, authClient.config.AdminPass, authClient.config.Realm)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize admin token: %w", err)
 	}
-	c.token = token
+	authClient.token = token
 
-	return c, nil
-}
-
-// loginAdminInternal es el método interno que realmente hace login
-func (c *client) loginAdminInternal(ctx context.Context) (*gocloak.JWT, error) {
-	// Usar Login para autenticarse con el usuario admin del realm motogo
-	// Este usuario debe tener roles de realm-management asignados
-	token, err := c.gocloak.Login(
-		ctx,
-		c.config.ClientID,
-		c.config.ClientSecret,
-		c.config.Realm, // Autenticarse en el realm motogo
-		c.config.AdminUser,
-		c.config.AdminPass,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("keycloak admin login failed: %w", err)
-	}
-	return token, nil
-}
-
-// LoginAdmin expone el método públicamente
-func (c *client) LoginAdmin(ctx context.Context) (*gocloak.JWT, error) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	token, err := c.loginAdminInternal(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	c.token = token
-	return token, nil
+	return authClient, nil
 }
 
 // LoginUser autentica a un usuario normal y devuelve su token JWT
@@ -97,48 +65,25 @@ func (c *client) LoginUser(ctx context.Context, username, password string) (*goc
 	return token, nil
 }
 
-// getToken obtiene el token actual de forma thread-safe
-// Si el token está por expirar, lo refresca automáticamente
-func (c *client) getToken(ctx context.Context) (string, error) {
-	c.mu.RLock()
-	token := c.token
-	c.mu.RUnlock()
-
-	if token == nil {
-		return "", fmt.Errorf("no admin token available")
+func (c *client) CreateUser(ctx context.Context, person *domain.Person) (string, error) {
+	if person == nil {
+		return "", fmt.Errorf("person cannot be nil")
 	}
 
-	// Si el token expira en menos de 30 segundos, refrescarlo
-	if token.ExpiresIn < 30 {
-		c.mu.Lock()
-		newToken, err := c.loginAdminInternal(ctx)
-		if err != nil {
-			c.mu.Unlock()
-			return "", fmt.Errorf("failed to refresh token: %w", err)
-		}
-		c.token = newToken
-		token = newToken
-		c.mu.Unlock()
-	}
-
-	return token.AccessToken, nil
-}
-
-func (c *client) CreateUser(ctx context.Context, user *gocloak.User) (string, error) {
-	if user == nil {
-		return "", fmt.Errorf("user cannot be nil")
-	}
-
-	accessToken, err := c.getToken(ctx)
-	if err != nil {
-		return "", err
+	keycloakUser := gocloak.User{
+		Email:         &person.Email,
+		FirstName:     &person.FirstName,
+		LastName:      &person.LastName,
+		EmailVerified: &person.EmailVerified,
+		Enabled:       gocloak.BoolP(true),
+		Username:      &person.Email,
 	}
 
 	userID, err := c.gocloak.CreateUser(
 		ctx,
-		accessToken,
+		c.token.AccessToken,
 		c.config.Realm,
-		*user,
+		keycloakUser,
 	)
 	if err != nil {
 		return "", fmt.Errorf("failed to create user in keycloak: %w", err)
@@ -152,14 +97,9 @@ func (c *client) GetUserByEmail(ctx context.Context, email string) (*gocloak.Use
 		return nil, fmt.Errorf("email cannot be empty")
 	}
 
-	accessToken, err := c.getToken(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	users, err := c.gocloak.GetUsers(
 		ctx,
-		accessToken,
+		c.token.AccessToken,
 		c.config.Realm,
 		gocloak.GetUsersParams{
 			Email: &email,
@@ -182,14 +122,9 @@ func (c *client) GetUserByID(ctx context.Context, userID string) (*gocloak.User,
 		return nil, fmt.Errorf("userID cannot be empty")
 	}
 
-	accessToken, err := c.getToken(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	user, err := c.gocloak.GetUserByID(
 		ctx,
-		accessToken,
+		c.token.AccessToken,
 		c.config.Realm,
 		userID,
 	)
@@ -205,14 +140,9 @@ func (c *client) UpdateUser(ctx context.Context, user *gocloak.User) error {
 		return fmt.Errorf("user or user ID cannot be nil")
 	}
 
-	accessToken, err := c.getToken(ctx)
-	if err != nil {
-		return err
-	}
-
-	err = c.gocloak.UpdateUser(
+	err := c.gocloak.UpdateUser(
 		ctx,
-		accessToken,
+		c.token.AccessToken,
 		c.config.Realm,
 		*user,
 	)
@@ -228,14 +158,9 @@ func (c *client) DeleteUser(ctx context.Context, userID string) error {
 		return fmt.Errorf("userID cannot be empty")
 	}
 
-	accessToken, err := c.getToken(ctx)
-	if err != nil {
-		return err
-	}
-
-	err = c.gocloak.DeleteUser(
+	err := c.gocloak.DeleteUser(
 		ctx,
-		accessToken,
+		c.token.AccessToken,
 		c.config.Realm,
 		userID,
 	)
@@ -251,14 +176,11 @@ func (c *client) SetPassword(ctx context.Context, userID string, password string
 		return fmt.Errorf("userID and password cannot be empty")
 	}
 
-	accessToken, err := c.getToken(ctx)
-	if err != nil {
-		return err
-	}
 
-	err = c.gocloak.SetPassword(
+
+	err := c.gocloak.SetPassword(
 		ctx,
-		accessToken,
+		c.token.AccessToken,
 		userID,
 		c.config.Realm,
 		password,
@@ -276,15 +198,10 @@ func (c *client) AssignRole(ctx context.Context, userID string, roleName string)
 		return fmt.Errorf("userID and roleName cannot be empty")
 	}
 
-	accessToken, err := c.getToken(ctx)
-	if err != nil {
-		return err
-	}
-
 	// Obtener el role por nombre
 	role, err := c.gocloak.GetRealmRole(
 		ctx,
-		accessToken,
+		c.token.AccessToken,
 		c.config.Realm,
 		roleName,
 	)
@@ -295,7 +212,7 @@ func (c *client) AssignRole(ctx context.Context, userID string, roleName string)
 	// Asignar el role al usuario
 	err = c.gocloak.AddRealmRoleToUser(
 		ctx,
-		accessToken,
+		c.token.AccessToken,
 		c.config.Realm,
 		userID,
 		[]gocloak.Role{*role},
@@ -312,14 +229,9 @@ func (c *client) RemoveRole(ctx context.Context, userID string, roleName string)
 		return fmt.Errorf("userID and roleName cannot be empty")
 	}
 
-	accessToken, err := c.getToken(ctx)
-	if err != nil {
-		return err
-	}
-
 	role, err := c.gocloak.GetRealmRole(
 		ctx,
-		accessToken,
+		c.token.AccessToken,
 		c.config.Realm,
 		roleName,
 	)
@@ -329,7 +241,7 @@ func (c *client) RemoveRole(ctx context.Context, userID string, roleName string)
 
 	err = c.gocloak.DeleteRealmRoleFromUser(
 		ctx,
-		accessToken,
+		c.token.AccessToken,
 		c.config.Realm,
 		userID,
 		[]gocloak.Role{*role},
@@ -346,14 +258,9 @@ func (c *client) GetUserRoles(ctx context.Context, userID string) ([]*gocloak.Ro
 		return nil, fmt.Errorf("userID cannot be empty")
 	}
 
-	accessToken, err := c.getToken(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	roles, err := c.gocloak.GetRealmRolesByUserID(
 		ctx,
-		accessToken,
+		c.token.AccessToken,
 		c.config.Realm,
 		userID,
 	)
@@ -369,20 +276,15 @@ func (c *client) SendVerificationEmail(ctx context.Context, userID string) error
 		return fmt.Errorf("userID cannot be empty")
 	}
 
-	accessToken, err := c.getToken(ctx)
-	if err != nil {
-		return err
-	}
-
 	params := gocloak.ExecuteActionsEmail{
 		UserID:   &userID,
 		Actions:  &[]string{"VERIFY_EMAIL"},
 		Lifespan: gocloak.IntP(86400), // 24 horas
 	}
 
-	err = c.gocloak.ExecuteActionsEmail(
+	err := c.gocloak.ExecuteActionsEmail(
 		ctx,
-		accessToken,
+		c.token.AccessToken,
 		c.config.Realm,
 		params,
 	)
@@ -398,10 +300,6 @@ func (c *client) VerifyEmail(ctx context.Context, userID string) error {
 		return fmt.Errorf("userID cannot be empty")
 	}
 
-	accessToken, err := c.getToken(ctx)
-	if err != nil {
-		return err
-	}
 
 	user, err := c.GetUserByID(ctx, userID)
 	if err != nil {
@@ -413,7 +311,7 @@ func (c *client) VerifyEmail(ctx context.Context, userID string) error {
 
 	err = c.gocloak.UpdateUser(
 		ctx,
-		accessToken,
+		c.token.AccessToken,
 		c.config.Realm,
 		*user,
 	)

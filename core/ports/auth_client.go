@@ -4,18 +4,18 @@ import (
 	"context"
 
 	"github.com/Nerzal/gocloak/v13"
+	"github.com/EstebanGitPro/motogo-backend/core/domain"
 )
 
 // KeycloakClient define las operaciones con Keycloak como servicio externo.
 // Esta interfaz abstrae la autenticación y gestión de identidades.
-type KeycloakClient interface {
+type AuthClient interface {
 
 	// Autenticación
-	LoginAdmin(ctx context.Context) (*gocloak.JWT, error)
 	LoginUser(ctx context.Context, username, password string) (*gocloak.JWT, error) // Login de usuario normal
 
 	// Gestión de usuarios
-	CreateUser(ctx context.Context, user *gocloak.User) (string, error)
+	CreateUser(ctx context.Context, person *domain.Person) (string, error)
 	GetUserByEmail(ctx context.Context, email string) (*gocloak.User, error)
 	GetUserByID(ctx context.Context, userID string) (*gocloak.User, error)
 	UpdateUser(ctx context.Context, user *gocloak.User) error

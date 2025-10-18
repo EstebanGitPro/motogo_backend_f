@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	"github.com/EstebanGitPro/motogo-backend/core/domain"
 	"github.com/EstebanGitPro/motogo-backend/core/ports"
@@ -11,48 +10,28 @@ import (
 )
 
 type authorizationService struct {
-	keycloakClient ports.KeycloakClient
+	keycloakClient ports.AuthClient
 	repository     ports.Repository
-	
-	// Cache en memoria para mapear PersonID -> KeycloakUserID
-	// En producción, considera usar Redis o base de datos
-	userMapping map[string]string
-	mu          sync.RWMutex
 }
 
 // NewAuthorizationService crea un nuevo servicio de autorización
-func NewAuthorizationService(keycloakClient ports.KeycloakClient, repository ports.Repository) ports.AuthorizationService {
+func NewAuthorizationService(keycloakClient ports.AuthClient, repository ports.Repository) ports.AuthorizationService {
 	return &authorizationService{
 		keycloakClient: keycloakClient,
 		repository:     repository,
-		userMapping:    make(map[string]string),
-	
 	}
 }
 
-// SyncUserToKeycloak sincroniza un usuario de tu aplicación con Keycloak
 func (a *authorizationService) SyncUserToKeycloak(ctx context.Context, person *domain.Person) (string, error) {
-	// Verificar si ya está sincronizado
-	a.mu.RLock()
-	if keycloakUserID, exists := a.userMapping[person.ID]; exists {
-		a.mu.RUnlock()
-		return keycloakUserID, nil
+	// Verificar si ya está sincronizado en la base de datos
+	if person.KeycloakUserID != "" {
+		return person.KeycloakUserID, nil
 	}
-	a.mu.RUnlock()
 
 	// Crear usuario en Keycloak
-	keycloakUser := &gocloak.User{
-		Email:         &person.Email,
-		FirstName:     &person.FirstName,
-		LastName:      &person.LastName,
-		EmailVerified: &person.EmailVerified,
-		Enabled:       gocloak.BoolP(true),
-		Username:      &person.Email, // Usar email como username
-	}
-
-	keycloakUserID, err := a.keycloakClient.CreateUser(ctx, keycloakUser)
+	keycloakUserID, err := a.keycloakClient.CreateUser(ctx, person)
 	if err != nil {
-		// Si el usuario ya existe, intentar obtenerlo
+		// Si falla, intentar obtener usuario existente por email
 		existingUser, getErr := a.keycloakClient.GetUserByEmail(ctx, person.Email)
 		if getErr != nil {
 			return "", fmt.Errorf("failed to create or get user in keycloak: %w", err)
@@ -60,10 +39,14 @@ func (a *authorizationService) SyncUserToKeycloak(ctx context.Context, person *d
 		keycloakUserID = *existingUser.ID
 	}
 
-	// Guardar mapeo en cache
-	a.mu.Lock()
-	a.userMapping[person.ID] = keycloakUserID
-	a.mu.Unlock()
+	// Guardar KeycloakUserID en la base de datos
+	person.KeycloakUserID = keycloakUserID
+	err = a.repository.Update(*person)
+	if err != nil {
+		// Si falla guardar en BD, intentar eliminar de Keycloak para mantener consistencia
+		_ = a.keycloakClient.DeleteUser(ctx, keycloakUserID)
+		return "", fmt.Errorf("failed to update person with keycloak user id: %w", err)
+	}
 
 	return keycloakUserID, nil
 }
@@ -78,16 +61,6 @@ func (a *authorizationService) DeleteUserFromKeycloak(ctx context.Context, keycl
 	if err != nil {
 		return fmt.Errorf("failed to delete user from keycloak: %w", err)
 	}
-
-	// Limpiar del cache
-	a.mu.Lock()
-	for personID, cachedUserID := range a.userMapping {
-		if cachedUserID == keycloakUserID {
-			delete(a.userMapping, personID)
-			break
-		}
-	}
-	a.mu.Unlock()
 
 	return nil
 }
@@ -204,7 +177,7 @@ func (a *authorizationService) HasRole(ctx context.Context, personID string, rol
 func (a *authorizationService) HasPermission(ctx context.Context, personID string, resource, action string) (bool, error) {
 	// Implementación básica basada en roles
 	// Puedes expandir esto según tus necesidades de negocio
-	
+
 	roles, err := a.GetUserRoles(ctx, personID)
 	if err != nil {
 		return false, err
@@ -254,19 +227,17 @@ func (a *authorizationService) GetAllRoles(ctx context.Context) ([]string, error
 
 // getKeycloakUserID obtiene el ID de Keycloak para un PersonID
 func (a *authorizationService) getKeycloakUserID(ctx context.Context, personID string) (string, error) {
-	// Verificar cache primero
-	a.mu.RLock()
-	if keycloakUserID, exists := a.userMapping[personID]; exists {
-		a.mu.RUnlock()
-		return keycloakUserID, nil
-	}
-	a.mu.RUnlock()
-
-	// Obtener persona de la base de datos y sincronizar
+	// Obtener persona de la base de datos
 	person, err := a.repository.GetPersonByID(personID)
 	if err != nil {
 		return "", fmt.Errorf("person not found: %w", err)
 	}
 
+	// Si ya tiene KeycloakUserID, devolverlo
+	if person.KeycloakUserID != "" {
+		return person.KeycloakUserID, nil
+	}
+
+	// Si no, sincronizar con Keycloak
 	return a.SyncUserToKeycloak(ctx, person)
 }
