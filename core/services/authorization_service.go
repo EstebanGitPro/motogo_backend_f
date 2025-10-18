@@ -68,6 +68,59 @@ func (a *authorizationService) SyncUserToKeycloak(ctx context.Context, person *d
 	return keycloakUserID, nil
 }
 
+// DeleteUserFromKeycloak elimina un usuario de Keycloak (para rollback)
+func (a *authorizationService) DeleteUserFromKeycloak(ctx context.Context, keycloakUserID string) error {
+	if keycloakUserID == "" {
+		return fmt.Errorf("keycloakUserID cannot be empty")
+	}
+
+	err := a.keycloakClient.DeleteUser(ctx, keycloakUserID)
+	if err != nil {
+		return fmt.Errorf("failed to delete user from keycloak: %w", err)
+	}
+
+	// Limpiar del cache
+	a.mu.Lock()
+	for personID, cachedUserID := range a.userMapping {
+		if cachedUserID == keycloakUserID {
+			delete(a.userMapping, personID)
+			break
+		}
+	}
+	a.mu.Unlock()
+
+	return nil
+}
+
+// LoginUser autentica un usuario y devuelve su token JWT
+func (a *authorizationService) LoginUser(ctx context.Context, email, password string) (*gocloak.JWT, error) {
+	if email == "" || password == "" {
+		return nil, fmt.Errorf("email and password cannot be empty")
+	}
+
+	token, err := a.keycloakClient.LoginUser(ctx, email, password)
+	if err != nil {
+		return nil, fmt.Errorf("failed to login: %w", err)
+	}
+
+	return token, nil
+}
+
+// SetUserPassword configura la contraseña del usuario en Keycloak
+func (a *authorizationService) SetUserPassword(ctx context.Context, keycloakUserID string, password string) error {
+	if keycloakUserID == "" || password == "" {
+		return fmt.Errorf("keycloakUserID and password cannot be empty")
+	}
+
+	// Configurar contraseña en Keycloak (temporary=false para que no requiera cambio)
+	err := a.keycloakClient.SetPassword(ctx, keycloakUserID, password, false)
+	if err != nil {
+		return fmt.Errorf("failed to set password in keycloak: %w", err)
+	}
+
+	return nil
+}
+
 // AssignRole asigna un rol a un usuario
 func (a *authorizationService) AssignRole(ctx context.Context, personID string, roleName string) error {
 	// Obtener el usuario de la base de datos

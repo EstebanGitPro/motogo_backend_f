@@ -12,6 +12,7 @@ type KeycloakClient interface {
 
 	// Autenticación
 	LoginAdmin(ctx context.Context) (*gocloak.JWT, error)
+	LoginUser(ctx context.Context, username, password string) (*gocloak.JWT, error) // Login de usuario normal
 
 	// Gestión de usuarios
 	CreateUser(ctx context.Context, user *gocloak.User) (string, error)

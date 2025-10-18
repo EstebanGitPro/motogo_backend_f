@@ -28,6 +28,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 	public := app.Group("/v1/motogo")
 	{
 		public.POST("/users", validator.WithValidateRegister(), handler.RegisterPerson())
+		public.POST("/auth/login", handler.Login())
 		public.GET("/users/email/:email", handler.GetPersonByEmail())
 	}
 

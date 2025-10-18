@@ -1,6 +1,6 @@
 module github.com/EstebanGitPro/motogo-backend
 
-go 1.25
+go 1.25.2
 
 require (
 	github.com/Nerzal/gocloak/v13 v13.9.0

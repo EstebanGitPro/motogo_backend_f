@@ -7,4 +7,5 @@ type Repository interface {
 	GetPersonByEmail(email string) (*domain.Person, error)
 	GetPersonByID(id string) (*domain.Person, error)
 	Update(person domain.Person) error
+	Delete(id string) error
 }

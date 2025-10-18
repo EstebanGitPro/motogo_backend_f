@@ -53,6 +53,7 @@ const (
 	queryGetByEmail = "SELECT id, identity_number, first_name, last_name, second_last_name, email, phone_number, email_verified, phone_number_verified, password, role FROM persons WHERE email = ? LIMIT 1"
 	queryGetByID    = "SELECT id, identity_number, first_name, last_name, second_last_name, email, phone_number, email_verified, phone_number_verified, password, role FROM persons WHERE id = ? LIMIT 1"
 	queryUpdate     = "UPDATE persons SET identity_number = ?, first_name = ?, last_name = ?, second_last_name = ?, email = ?, phone_number = ?, email_verified = ?, phone_number_verified = ?, password = ?, role = ? WHERE id = ?"
+	queryDelete     = "DELETE FROM persons WHERE id = ?"
 )
 
 func (r *repository) Save(person domain.Person) error {
@@ -177,6 +178,24 @@ func (r *repository) Update(person domain.Person) error {
 	)
 	if err != nil {
 		return domain.ErrUserCannotSave
+	}
+
+	return nil
+}
+
+func (r *repository) Delete(id string) error {
+	result, err := r.db.Exec(queryDelete, id)
+	if err != nil {
+		return fmt.Errorf("failed to delete person: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return domain.ErrPersonNotFound
 	}
 
 	return nil

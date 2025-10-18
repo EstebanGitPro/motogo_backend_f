@@ -46,11 +46,15 @@ func NewClient(cfg *config.KeycloakConfig) (ports.KeycloakClient, error) {
 
 // loginAdminInternal es el método interno que realmente hace login
 func (c *client) loginAdminInternal(ctx context.Context) (*gocloak.JWT, error) {
-	token, err := c.gocloak.LoginAdmin(
+	// Usar Login para autenticarse con el usuario admin del realm motogo
+	// Este usuario debe tener roles de realm-management asignados
+	token, err := c.gocloak.Login(
 		ctx,
+		c.config.ClientID,
+		c.config.ClientSecret,
+		c.config.Realm, // Autenticarse en el realm motogo
 		c.config.AdminUser,
 		c.config.AdminPass,
-		"master", // Admin users exist in master realm
 	)
 	if err != nil {
 		return nil, fmt.Errorf("keycloak admin login failed: %w", err)
@@ -69,6 +73,27 @@ func (c *client) LoginAdmin(ctx context.Context) (*gocloak.JWT, error) {
 	}
 
 	c.token = token
+	return token, nil
+}
+
+// LoginUser autentica a un usuario normal y devuelve su token JWT
+func (c *client) LoginUser(ctx context.Context, username, password string) (*gocloak.JWT, error) {
+	if username == "" || password == "" {
+		return nil, fmt.Errorf("username and password cannot be empty")
+	}
+
+	token, err := c.gocloak.Login(
+		ctx,
+		c.config.ClientID,
+		c.config.ClientSecret,
+		c.config.Realm,
+		username, // email como username
+		password,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("user login failed: %w", err)
+	}
+
 	return token, nil
 }
 
