@@ -17,10 +17,25 @@ type authorizationService struct {
 // NewAuthorizationService crea un nuevo servicio de autorización
 func NewAuthorizationService(keycloakClient ports.AuthClient, repository ports.Repository) ports.AuthorizationService {
 	return &authorizationService{
-		keycloakClient: keycloakClient,
 		repository:     repository,
+		keycloakClient: keycloakClient,
 	}
 }
+
+// LoginUser autentica un usuario y devuelve su token JWT
+func (a *authorizationService) LoginUser(ctx context.Context, email, password string) (*gocloak.JWT, error) {
+	if email == "" || password == "" {
+		return nil, fmt.Errorf("email and password cannot be empty")
+	}
+
+	token, err := a.keycloakClient.LoginUser(ctx, email, password)
+	if err != nil {
+		return nil, fmt.Errorf("failed to login: %w", err)
+	}
+
+	return token, nil
+}
+
 
 func (a *authorizationService) SyncUserToKeycloak(ctx context.Context, person *domain.Person) (string, error) {
 	// Verificar si ya está sincronizado en la base de datos
@@ -41,7 +56,7 @@ func (a *authorizationService) SyncUserToKeycloak(ctx context.Context, person *d
 
 	// Guardar KeycloakUserID en la base de datos
 	person.KeycloakUserID = keycloakUserID
-	err = a.repository.Update(*person)
+	err = a.repository.UpdatePerson(*person)
 	if err != nil {
 		// Si falla guardar en BD, intentar eliminar de Keycloak para mantener consistencia
 		_ = a.keycloakClient.DeleteUser(ctx, keycloakUserID)
@@ -65,19 +80,6 @@ func (a *authorizationService) DeleteUserFromKeycloak(ctx context.Context, keycl
 	return nil
 }
 
-// LoginUser autentica un usuario y devuelve su token JWT
-func (a *authorizationService) LoginUser(ctx context.Context, email, password string) (*gocloak.JWT, error) {
-	if email == "" || password == "" {
-		return nil, fmt.Errorf("email and password cannot be empty")
-	}
-
-	token, err := a.keycloakClient.LoginUser(ctx, email, password)
-	if err != nil {
-		return nil, fmt.Errorf("failed to login: %w", err)
-	}
-
-	return token, nil
-}
 
 // SetUserPassword configura la contraseña del usuario en Keycloak
 func (a *authorizationService) SetUserPassword(ctx context.Context, keycloakUserID string, password string) error {
@@ -116,7 +118,7 @@ func (a *authorizationService) AssignRole(ctx context.Context, personID string, 
 
 	// Actualizar rol en la base de datos local también
 	person.Role = roleName
-	err = a.repository.Update(*person)
+	err = a.repository.UpdatePerson(*person)
 	if err != nil {
 		// Log warning pero no fallar, el rol ya está en Keycloak
 		fmt.Printf("Warning: failed to update role in local database: %v\n", err)

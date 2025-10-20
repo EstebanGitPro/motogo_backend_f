@@ -14,7 +14,7 @@ import (
 type Dependencies struct {
 	PersonService  ports.Service
 	PersonRepo     ports.Repository
-	KeycloakClient ports.KeycloakClient
+	KeycloakClient ports.AuthClient
 	AuthzService   ports.AuthorizationService
 	Config         *config.Config
 }

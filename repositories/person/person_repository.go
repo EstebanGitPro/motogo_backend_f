@@ -18,6 +18,7 @@ type repository struct {
 	stmtUpdate     *sql.Stmt
 }
 
+
 func NewRepository(db *sql.DB) (ports.Repository, error) {
 	stmtSave, err := db.Prepare(querySave)
 	if err != nil {
@@ -56,7 +57,7 @@ const (
 	queryDelete     = "DELETE FROM persons WHERE id = ?"
 )
 
-func (r *repository) Save(person domain.Person) error {
+func (r *repository) SavePerson(person domain.Person) error {
 
 	personToSave := Person{
 		ID:                  person.ID,
@@ -152,7 +153,7 @@ func (r *repository) GetPersonByID(id string) (*domain.Person, error) {
 	return &d, nil
 }
 
-func (r *repository) Update(person domain.Person) error {
+func (r *repository) UpdatePerson(person domain.Person) error {
 	personToUpdate := Person{
 		ID:                  person.ID,
 		IdentityNumber:      person.IdentityNumber,
@@ -189,7 +190,7 @@ func (r *repository) Update(person domain.Person) error {
 	return nil
 }
 
-func (r *repository) Delete(id string) error {
+func (r *repository) DeletePerson(id string) error {
 	result, err := r.db.Exec(queryDelete, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete person: %w", err)

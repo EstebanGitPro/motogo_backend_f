@@ -3,7 +3,6 @@ package keycloak
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/EstebanGitPro/motogo-backend/config"
@@ -16,7 +15,6 @@ type client struct {
 	gocloak *gocloak.GoCloak
 	config  *config.KeycloakConfig
 	token   *gocloak.JWT
-	mu      sync.RWMutex
 }
 
 // NewClient crea una nueva instancia del cliente de Keycloak

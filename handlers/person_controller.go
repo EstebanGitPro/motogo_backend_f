@@ -56,6 +56,8 @@ func (h handler) RegisterPerson() func(c *gin.Context) {
 				EmailVerified:       result.Person.EmailVerified,
 				PhoneNumberVerified: result.Person.PhoneNumberVerified,
 				Role:                result.Person.Role,
+				KeycloakUserID:      result.Person.KeycloakUserID,
+
 			},
 			AccessToken:  result.Token.AccessToken,
 			RefreshToken: result.Token.RefreshToken,
@@ -76,7 +78,7 @@ func (h handler) Login() func(c *gin.Context) {
 			return
 		}
 
-		token, err := h.PersonService.Login(loginRequest.Email, loginRequest.Password)
+		token, err := h.PersonService.LoginPerson(loginRequest.Email, loginRequest.Password)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"error": "Invalid credentials",

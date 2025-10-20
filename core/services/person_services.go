@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/EstebanGitPro/motogo-backend/core/domain"
-	"github.com/EstebanGitPro/motogo-backend/core/ports"
 	"github.com/EstebanGitPro/motogo-backend/config"
+	"github.com/EstebanGitPro/motogo-backend/core/domain"
+	"github.com/EstebanGitPro/motogo-backend/core/dto"
+	"github.com/EstebanGitPro/motogo-backend/core/ports"
 	"github.com/Nerzal/gocloak/v13"
 )
 
@@ -26,7 +27,7 @@ func NewService(repo ports.Repository, authzService ports.AuthorizationService, 
 }
 
 
-func (s service) RegisterPerson(person domain.Person) (*ports.RegistrationResult, error) {
+func (s service) RegisterPerson(person domain.Person) (*dto.RegistrationResult, error) {
 	// 1. Validar email duplicado
 	existingPerson, err := s.repository.GetPersonByEmail(person.Email)
 	if err == nil && existingPerson != nil {
@@ -50,7 +51,7 @@ func (s service) RegisterPerson(person domain.Person) (*ports.RegistrationResult
 	}
 
 	// 6. Guardar en base de datos local PRIMERO
-	err = s.repository.Save(person)
+	err = s.repository.SavePerson(person)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +67,7 @@ func (s service) RegisterPerson(person domain.Person) (*ports.RegistrationResult
 			"error", err)
 		
 		// Intentar rollback
-		if deleteErr := s.repository.Delete(person.ID); deleteErr != nil {
+		if deleteErr := s.repository.DeletePerson(person.ID); deleteErr != nil {
 			slog.Error("Failed to rollback user creation",
 				"user_id", person.ID,
 				"error", deleteErr)
@@ -80,7 +81,7 @@ func (s service) RegisterPerson(person domain.Person) (*ports.RegistrationResult
 		"email", person.Email,
 		"role", person.Role)
 
-	return &ports.RegistrationResult{
+	return &dto.RegistrationResult{
 		Person: person,
 		Token:  token,
 	}, nil
@@ -134,7 +135,7 @@ func (s service) syncUserWithKeycloak(ctx context.Context, person *domain.Person
 }
 
 // Login autentica un usuario y devuelve su token JWT de Keycloak
-func (s service) Login(email, password string) (*gocloak.JWT, error) {
+func (s service) LoginPerson(email, password string) (*gocloak.JWT, error) {
 	if email == "" || password == "" {
 		return nil, fmt.Errorf("email and password are required")
 	}
