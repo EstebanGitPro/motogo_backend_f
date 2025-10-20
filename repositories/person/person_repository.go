@@ -7,7 +7,6 @@ import (
 	domain "github.com/EstebanGitPro/motogo-backend/core/domain"
 	"github.com/EstebanGitPro/motogo-backend/core/ports"
 	"github.com/go-sql-driver/mysql"
-	//"github.com/go-sql-driver/mysql"
 )
 
 type repository struct {
