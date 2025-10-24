@@ -15,8 +15,10 @@ import (
 func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 	slog.Info("Setting up routes")
 
-	handler := handlers.New(dependencies.PersonService)
+	
+	app.Use(middleware.ErrorHandler())
 
+	handler := handlers.New(dependencies.PersonService)
 
 	validators, err := schema.NewValidator(&schema.DefaultFileReader{})
 	if err != nil {
@@ -28,6 +30,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 	public := app.Group("/v1/motogo")
 	{
 		public.POST("/users", validator.WithValidateRegister(), handler.RegisterPerson())
+		public.POST("/auth/login", handler.Login())
 		public.GET("/users/email/:email", handler.GetPersonByEmail())
 	}
 
@@ -36,7 +39,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 func Boostrap(app *gin.Engine) *dependency.Dependencies {
 	dependencies, err := dependency.Init()
 	if err != nil {
-		log.Fatal("Error initializing dependencies")
+		log.Fatalf("Error initializing dependencies: %v", err)
 		return nil
 	}
 

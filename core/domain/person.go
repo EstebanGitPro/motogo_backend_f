@@ -17,6 +17,7 @@ type Person struct {
 	PhoneNumberVerified bool   `json:"phone_number_verified"`
 	Password            string `json:"-"`
 	Role                string `json:"role"`
+	KeycloakUserID      string `json:"keycloak_user_id,omitempty"` // ID del usuario en Keycloak
 }
 
 func (u *Person) SetID() {
