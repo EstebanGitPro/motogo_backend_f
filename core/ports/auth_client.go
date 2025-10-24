@@ -7,8 +7,7 @@ import (
 	"github.com/Nerzal/gocloak/v13"
 )
 
-// KeycloakClient define las operaciones con Keycloak como servicio externo.
-// Esta interfaz abstrae la autenticación y gestión de identidades.
+
 type AuthClient interface {
 
 	// Autenticación

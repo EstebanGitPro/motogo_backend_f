@@ -17,7 +17,6 @@ type repository struct {
 	stmtUpdate     *sql.Stmt
 }
 
-
 func NewRepository(db *sql.DB) (ports.Repository, error) {
 	stmtSave, err := db.Prepare(querySave)
 	if err != nil {
@@ -58,20 +57,7 @@ const (
 
 func (r *repository) SavePerson(person domain.Person) error {
 
-	personToSave := Person{
-		ID:                  person.ID,
-		IdentityNumber:      person.IdentityNumber,
-		FirstName:           person.FirstName,
-		LastName:            person.LastName,
-		SecondLastName:      person.SecondLastName,
-		Email:               person.Email,
-		PhoneNumber:         person.PhoneNumber,
-		EmailVerified:       person.EmailVerified,
-		PhoneNumberVerified: person.PhoneNumberVerified,
-		Password:            person.Password,
-		Role:                person.Role,
-		KeycloakUserID:      person.KeycloakUserID,
-	}
+	personToSave := FromDomain(person)
 
 	_, err := r.stmtSave.Exec(
 		personToSave.ID,
@@ -153,20 +139,7 @@ func (r *repository) GetPersonByID(id string) (*domain.Person, error) {
 }
 
 func (r *repository) UpdatePerson(person domain.Person) error {
-	personToUpdate := Person{
-		ID:                  person.ID,
-		IdentityNumber:      person.IdentityNumber,
-		FirstName:           person.FirstName,
-		LastName:            person.LastName,
-		SecondLastName:      person.SecondLastName,
-		Email:               person.Email,
-		PhoneNumber:         person.PhoneNumber,
-		EmailVerified:       person.EmailVerified,
-		PhoneNumberVerified: person.PhoneNumberVerified,
-		Password:            person.Password,
-		Role:                person.Role,
-		KeycloakUserID:      person.KeycloakUserID,
-	}
+	personToUpdate := FromDomain(person)
 
 	_, err := r.stmtUpdate.Exec(
 		personToUpdate.IdentityNumber,

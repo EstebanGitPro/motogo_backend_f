@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/EstebanGitPro/motogo-backend/core/domain"
 	"github.com/EstebanGitPro/motogo-backend/core/ports"
 	"github.com/gin-gonic/gin"
 )
@@ -28,9 +29,7 @@ func (a *AuthorizationController) SyncUserToKeycloak() gin.HandlerFunc {
 		}
 
 		if err := c.ShouldBindJSON(&request); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "person_id es requerido",
-			})
+			c.Error(domain.ErrInvalidRequest)
 			return
 		}
 
@@ -66,18 +65,14 @@ func (a *AuthorizationController) AssignRole() gin.HandlerFunc {
 		}
 
 		if err := c.ShouldBindJSON(&request); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "person_id y role son requeridos",
-			})
+			c.Error(domain.ErrInvalidRequest)
 			return
 		}
 
 		ctx := context.Background()
 		err := a.authzService.AssignRole(ctx, request.PersonID, request.Role)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": "Error asignando rol: " + err.Error(),
-			})
+			c.Error(domain.ErrRoleAssignmentFailed)
 			return
 		}
 
@@ -98,18 +93,14 @@ func (a *AuthorizationController) RemoveRole() gin.HandlerFunc {
 		}
 
 		if err := c.ShouldBindJSON(&request); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "person_id y role son requeridos",
-			})
+			c.Error(domain.ErrInvalidRequest)
 			return
 		}
 
 		ctx := context.Background()
 		err := a.authzService.RemoveRole(ctx, request.PersonID, request.Role)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": "Error removiendo rol: " + err.Error(),
-			})
+			c.Error(domain.ErrRoleRemovalFailed)
 			return
 		}
 
@@ -124,18 +115,14 @@ func (a *AuthorizationController) GetUserRoles() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		personID := c.Param("person_id")
 		if personID == "" {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "person_id es requerido",
-			})
+			c.Error(domain.ErrInvalidRequest)
 			return
 		}
 
 		ctx := context.Background()
 		roles, err := a.authzService.GetUserRoles(ctx, personID)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": "Error obteniendo roles: " + err.Error(),
-			})
+			c.Error(domain.ErrGetUserRolesFailed)
 			return
 		}
 
@@ -153,18 +140,14 @@ func (a *AuthorizationController) CheckRole() gin.HandlerFunc {
 		role := c.Param("role")
 		
 		if personID == "" || role == "" {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "person_id y role son requeridos",
-			})
+			c.Error(domain.ErrInvalidRequest)
 			return
 		}
 
 		ctx := context.Background()
 		hasRole, err := a.authzService.HasRole(ctx, personID, role)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": "Error verificando rol: " + err.Error(),
-			})
+			c.Error(domain.ErrRoleCheckFailed)
 			return
 		}
 

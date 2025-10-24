@@ -17,7 +17,6 @@ type client struct {
 	token   *gocloak.JWT
 }
 
-// NewClient crea una nueva instancia del cliente de Keycloak
 func NewClient(cfg *config.KeycloakConfig) (ports.AuthClient, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("keycloak config cannot be nil")
@@ -30,7 +29,7 @@ func NewClient(cfg *config.KeycloakConfig) (ports.AuthClient, error) {
 		config:  cfg,
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	token, err := authClient.gocloak.LoginAdmin(ctx, authClient.config.AdminUser, authClient.config.AdminPass, authClient.config.Realm)
@@ -42,7 +41,7 @@ func NewClient(cfg *config.KeycloakConfig) (ports.AuthClient, error) {
 	return authClient, nil
 }
 
-// LoginUser autentica a un usuario normal y devuelve su token JWT
+
 func (c *client) LoginUser(ctx context.Context, username, password string) (*gocloak.JWT, error) {
 	if username == "" || password == "" {
 		return nil, fmt.Errorf("username and password cannot be empty")
@@ -53,7 +52,7 @@ func (c *client) LoginUser(ctx context.Context, username, password string) (*goc
 		c.config.ClientID,
 		c.config.ClientSecret,
 		c.config.Realm,
-		username, // email como username
+		username, 
 		password,
 	)
 	if err != nil {
@@ -95,13 +94,14 @@ func (c *client) GetUserByEmail(ctx context.Context, email string) (*gocloak.Use
 		return nil, fmt.Errorf("email cannot be empty")
 	}
 
+	
 	users, err := c.gocloak.GetUsers(
 		ctx,
 		c.token.AccessToken,
 		c.config.Realm,
 		gocloak.GetUsersParams{
 			Email: &email,
-			Exact: gocloak.BoolP(true), // Búsqueda exacta
+			Exact: gocloak.BoolP(true),
 		},
 	)
 	if err != nil {

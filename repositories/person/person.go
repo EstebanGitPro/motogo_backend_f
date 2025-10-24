@@ -35,3 +35,21 @@ func (p Person) ToDomain() domain.Person {
 		KeycloakUserID:      p.KeycloakUserID,
 	}
 }
+
+func FromDomain(domainPerson domain.Person) Person {
+	return Person{
+		ID:                  domainPerson.ID,
+		IdentityNumber:      domainPerson.IdentityNumber,
+		FirstName:           domainPerson.FirstName,
+		LastName:            domainPerson.LastName,
+		SecondLastName:      domainPerson.SecondLastName,
+		Email:               domainPerson.Email,
+		PhoneNumber:         domainPerson.PhoneNumber,
+		EmailVerified:       domainPerson.EmailVerified,
+		PhoneNumberVerified: domainPerson.PhoneNumberVerified,
+		Password:            domainPerson.Password,
+		Role:                domainPerson.Role,
+		KeycloakUserID:      domainPerson.KeycloakUserID,
+	}
+}
+

@@ -13,7 +13,7 @@ func (h handler) GetPersonByEmail() func(c *gin.Context) {
 
 		person, err := h.PersonService.GetPersonByEmail(email)
 		if err != nil {
-			h.HandleError(c, err)
+			c.Error(err)
 			return
 		}
 
@@ -26,24 +26,16 @@ func (h handler) RegisterPerson() func(c *gin.Context) {
 
 		var personRequest PersonRequest
 		if err := c.ShouldBindJSON(&personRequest); err != nil {
-			h.HandleError(c, domain.ErrInvalidJSONFormat)
+			c.Error(domain.ErrInvalidJSONFormat)
 			return
 		}
 
 		result, err := h.PersonService.RegisterPerson(personRequest.ToDomain())
 		if err != nil {
-			switch err {
-			case domain.ErrDuplicateUser:
-				h.HandleError(c, domain.ErrDuplicateUser)
-			case domain.ErrUserCannotSave:
-				h.HandleError(c, domain.ErrUserCannotSave)
-			default:
-				h.HandleError(c, domain.ErrUserCannotSave)
-			}
+			c.Error(err)
 			return
 		}
 
-		// Construir respuesta con usuario y token
 		response := RegistrationResponse{
 			User: PersonResponse{
 				ID:                  result.Person.ID,
@@ -69,20 +61,17 @@ func (h handler) RegisterPerson() func(c *gin.Context) {
 	}
 }
 
-// Login autentica un usuario y devuelve su token JWT de Keycloak
 func (h handler) Login() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		var loginRequest LoginRequest
 		if err := c.ShouldBindJSON(&loginRequest); err != nil {
-			h.HandleError(c, domain.ErrInvalidJSONFormat)
+			c.Error(domain.ErrInvalidJSONFormat)
 			return
 		}
 
 		token, err := h.PersonService.LoginPerson(loginRequest.Email, loginRequest.Password)
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Invalid credentials",
-			})
+			c.Error(err)
 			return
 		}
 

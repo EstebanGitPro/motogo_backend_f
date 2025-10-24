@@ -14,7 +14,6 @@ type authorizationService struct {
 	repository     ports.Repository
 }
 
-// NewAuthorizationService crea un nuevo servicio de autorización
 func NewAuthorizationService(keycloakClient ports.AuthClient, repository ports.Repository) ports.AuthorizationService {
 	return &authorizationService{
 		repository:     repository,
@@ -22,7 +21,7 @@ func NewAuthorizationService(keycloakClient ports.AuthClient, repository ports.R
 	}
 }
 
-// LoginUser autentica un usuario y devuelve su token JWT
+
 func (a *authorizationService) LoginUser(ctx context.Context, email, password string) (*gocloak.JWT, error) {
 	if email == "" || password == "" {
 		return nil, fmt.Errorf("email and password cannot be empty")
@@ -38,15 +37,14 @@ func (a *authorizationService) LoginUser(ctx context.Context, email, password st
 
 
 func (a *authorizationService) SyncUserToKeycloak(ctx context.Context, person *domain.Person) (string, error) {
-	// Verificar si ya está sincronizado en la base de datos
+	
 	if person.KeycloakUserID != "" {
 		return person.KeycloakUserID, nil
 	}
 
-	// Crear usuario en Keycloak
+	
 	keycloakUserID, err := a.keycloakClient.CreateUser(ctx, person)
 	if err != nil {
-		// Si falla, intentar obtener usuario existente por email
 		existingUser, getErr := a.keycloakClient.GetUserByEmail(ctx, person.Email)
 		if getErr != nil {
 			return "", fmt.Errorf("failed to create or get user in keycloak: %w", err)
@@ -54,11 +52,11 @@ func (a *authorizationService) SyncUserToKeycloak(ctx context.Context, person *d
 		keycloakUserID = *existingUser.ID
 	}
 
-	// Guardar KeycloakUserID en la base de datos
+
 	person.KeycloakUserID = keycloakUserID
 	err = a.repository.UpdatePerson(*person)
 	if err != nil {
-		// Si falla guardar en BD, intentar eliminar de Keycloak para mantener consistencia
+		
 		_ = a.keycloakClient.DeleteUser(ctx, keycloakUserID)
 		return "", fmt.Errorf("failed to update person with keycloak user id: %w", err)
 	}
@@ -66,7 +64,6 @@ func (a *authorizationService) SyncUserToKeycloak(ctx context.Context, person *d
 	return keycloakUserID, nil
 }
 
-// DeleteUserFromKeycloak elimina un usuario de Keycloak (para rollback)
 func (a *authorizationService) DeleteUserFromKeycloak(ctx context.Context, keycloakUserID string) error {
 	if keycloakUserID == "" {
 		return fmt.Errorf("keycloakUserID cannot be empty")
@@ -81,13 +78,12 @@ func (a *authorizationService) DeleteUserFromKeycloak(ctx context.Context, keycl
 }
 
 
-// SetUserPassword configura la contraseña del usuario en Keycloak
+
 func (a *authorizationService) SetUserPassword(ctx context.Context, keycloakUserID string, password string) error {
 	if keycloakUserID == "" || password == "" {
 		return fmt.Errorf("keycloakUserID and password cannot be empty")
 	}
 
-	// Configurar contraseña en Keycloak (temporary=false para que no requiera cambio)
 	err := a.keycloakClient.SetPassword(ctx, keycloakUserID, password, false)
 	if err != nil {
 		return fmt.Errorf("failed to set password in keycloak: %w", err)
@@ -96,38 +92,31 @@ func (a *authorizationService) SetUserPassword(ctx context.Context, keycloakUser
 	return nil
 }
 
-// AssignRole asigna un rol a un usuario
 func (a *authorizationService) AssignRole(ctx context.Context, personID string, roleName string) error {
-	// Obtener el usuario de la base de datos
+	
 	person, err := a.repository.GetPersonByID(personID)
 	if err != nil {
 		return fmt.Errorf("person not found: %w", err)
 	}
 
-	// Sincronizar con Keycloak si es necesario
 	keycloakUserID, err := a.SyncUserToKeycloak(ctx, person)
 	if err != nil {
 		return fmt.Errorf("failed to sync user to keycloak: %w", err)
 	}
-
-	// Asignar rol en Keycloak
 	err = a.keycloakClient.AssignRole(ctx, keycloakUserID, roleName)
 	if err != nil {
 		return fmt.Errorf("failed to assign role in keycloak: %w", err)
 	}
 
-	// Actualizar rol en la base de datos local también
 	person.Role = roleName
 	err = a.repository.UpdatePerson(*person)
 	if err != nil {
-		// Log warning pero no fallar, el rol ya está en Keycloak
 		fmt.Printf("Warning: failed to update role in local database: %v\n", err)
 	}
 
 	return nil
 }
 
-// RemoveRole remueve un rol de un usuario
 func (a *authorizationService) RemoveRole(ctx context.Context, personID string, roleName string) error {
 	keycloakUserID, err := a.getKeycloakUserID(ctx, personID)
 	if err != nil {
@@ -137,7 +126,7 @@ func (a *authorizationService) RemoveRole(ctx context.Context, personID string, 
 	return a.keycloakClient.RemoveRole(ctx, keycloakUserID, roleName)
 }
 
-// GetUserRoles obtiene todos los roles de un usuario
+
 func (a *authorizationService) GetUserRoles(ctx context.Context, personID string) ([]string, error) {
 	keycloakUserID, err := a.getKeycloakUserID(ctx, personID)
 	if err != nil {
@@ -159,7 +148,7 @@ func (a *authorizationService) GetUserRoles(ctx context.Context, personID string
 	return roleNames, nil
 }
 
-// HasRole verifica si un usuario tiene un rol específico
+
 func (a *authorizationService) HasRole(ctx context.Context, personID string, roleName string) (bool, error) {
 	roles, err := a.GetUserRoles(ctx, personID)
 	if err != nil {
@@ -175,17 +164,14 @@ func (a *authorizationService) HasRole(ctx context.Context, personID string, rol
 	return false, nil
 }
 
-// HasPermission verifica si un usuario tiene permisos para una acción específica
-func (a *authorizationService) HasPermission(ctx context.Context, personID string, resource, action string) (bool, error) {
-	// Implementación básica basada en roles
-	// Puedes expandir esto según tus necesidades de negocio
 
+func (a *authorizationService) HasPermission(ctx context.Context, personID string, resource, action string) (bool, error) {
 	roles, err := a.GetUserRoles(ctx, personID)
 	if err != nil {
 		return false, err
 	}
 
-	// Ejemplo de lógica de permisos básica
+				
 	for _, role := range roles {
 		switch role {
 		case "admin":
@@ -204,10 +190,9 @@ func (a *authorizationService) HasPermission(ctx context.Context, personID strin
 	return false, nil
 }
 
-// CreateRole crea un nuevo rol en Keycloak
+
 func (a *authorizationService) CreateRole(ctx context.Context, roleName, description string) error {
-	// Primero verificar si el rol ya existe
-	roles, err := a.keycloakClient.GetUserRoles(ctx, "dummy") // Esto fallará pero nos permite usar la interfaz existente
+	roles, err := a.keycloakClient.GetUserRoles(ctx, "dummy")
 	if err == nil {
 		for _, role := range roles {
 			if role.Name != nil && *role.Name == roleName {
@@ -215,31 +200,23 @@ func (a *authorizationService) CreateRole(ctx context.Context, roleName, descrip
 			}
 		}
 	}
-
-	// Crear el rol usando la funcionalidad de Keycloak
-	// Nota: Necesitarías agregar este método a la interfaz KeycloakClient si no existe
 	return fmt.Errorf("create role functionality needs to be implemented in KeycloakClient")
 }
 
-// GetAllRoles obtiene todos los roles disponibles
+
 func (a *authorizationService) GetAllRoles(ctx context.Context) ([]string, error) {
-	// Similar al método anterior, necesitarías implementar esto en KeycloakClient
 	return nil, fmt.Errorf("get all roles functionality needs to be implemented in KeycloakClient")
 }
 
-// getKeycloakUserID obtiene el ID de Keycloak para un PersonID
 func (a *authorizationService) getKeycloakUserID(ctx context.Context, personID string) (string, error) {
-	// Obtener persona de la base de datos
 	person, err := a.repository.GetPersonByID(personID)
 	if err != nil {
 		return "", fmt.Errorf("person not found: %w", err)
 	}
 
-	// Si ya tiene KeycloakUserID, devolverlo
 	if person.KeycloakUserID != "" {
 		return person.KeycloakUserID, nil
 	}
 
-	// Si no, sincronizar con Keycloak
 	return a.SyncUserToKeycloak(ctx, person)
 }
