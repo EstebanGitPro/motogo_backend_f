@@ -1,10 +1,8 @@
 package person
 
-
 import (
 	domain "github.com/EstebanGitPro/motogo-backend/core/domain"
 )
-
 
 type Person struct {
 	ID                  string `db:"id"`
@@ -18,8 +16,8 @@ type Person struct {
 	PhoneNumberVerified bool   `db:"phone_number_verified"`
 	Password            string `db:"password"`
 	Role                string `db:"role"`
+	KeycloakUserID      string `db:"keycloak_user_id"`
 }
-
 
 func (p Person) ToDomain() domain.Person {
 	return domain.Person{
@@ -34,21 +32,24 @@ func (p Person) ToDomain() domain.Person {
 		PhoneNumberVerified: p.PhoneNumberVerified,
 		Password:            p.Password,
 		Role:                p.Role,
+		KeycloakUserID:      p.KeycloakUserID,
 	}
 }
 
-func FromDomain(p domain.Person) Person {
+func FromDomain(domainPerson domain.Person) Person {
 	return Person{
-		ID:                  p.ID,
-		IdentityNumber:      p.IdentityNumber,
-		FirstName:           p.FirstName,
-		LastName:            p.LastName,
-		SecondLastName:      p.SecondLastName,
-		Email:               p.Email,
-		PhoneNumber:         p.PhoneNumber,
-		EmailVerified:       p.EmailVerified,
-		PhoneNumberVerified: p.PhoneNumberVerified,
-		Password:            p.Password,
-		Role:                p.Role,
+		ID:                  domainPerson.ID,
+		IdentityNumber:      domainPerson.IdentityNumber,
+		FirstName:           domainPerson.FirstName,
+		LastName:            domainPerson.LastName,
+		SecondLastName:      domainPerson.SecondLastName,
+		Email:               domainPerson.Email,
+		PhoneNumber:         domainPerson.PhoneNumber,
+		EmailVerified:       domainPerson.EmailVerified,
+		PhoneNumberVerified: domainPerson.PhoneNumberVerified,
+		Password:            domainPerson.Password,
+		Role:                domainPerson.Role,
+		KeycloakUserID:      domainPerson.KeycloakUserID,
 	}
 }
+
