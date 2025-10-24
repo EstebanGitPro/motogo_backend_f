@@ -2,7 +2,6 @@ package domain
 
 import "errors"
 
-// DomainError represents a domain-specific error with a unique code
 type DomainError struct {
 	Code    string
 	Message string
@@ -17,7 +16,7 @@ func (e *DomainError) Unwrap() error {
 	return e.err
 }
 
-// NewDomainError creates a new domain error
+
 func NewDomainError(code, message string) *DomainError {
 	return &DomainError{
 		Code:    code,
