@@ -17,17 +17,19 @@ type ErrorResponse struct {
 
 var errorStatusMap = map[string]int{
 	// User Management Errors
-	"MOD_U_USU_ERR_00001": http.StatusConflict,      // ErrDuplicateUser
-	"MOD_U_USU_ERR_00002": http.StatusInternalServerError, // ErrUserCannotSave
-	"MOD_U_USU_ERR_00003": http.StatusNotFound,      // ErrPersonNotFound
-	"MOD_U_USU_ERR_00004": http.StatusInternalServerError, // ErrGettingUserByEmail
-	"MOD_U_USU_ERR_00005": http.StatusNotFound,      // ErrNotFoundUserByEmail
-	"MOD_U_USU_ERR_00006": http.StatusNotFound,      // ErrUserCannotFound
-	"MOD_U_USU_ERR_00007": http.StatusInternalServerError, // ErrUserCannotGet
-	"MOD_U_USU_ERR_00008": http.StatusForbidden,     // ErrorEmailNotVerified
-	"MOD_U_USU_ERR_00009": http.StatusNotFound,      // ErrVerificationTokenNotFound
-	"MOD_U_USU_ERR_00010": http.StatusGone,          // ErrTokenExpired
-	"MOD_U_USU_ERR_00011": http.StatusConflict,      // ErrTokenAlreadyUsed
+	"MOD_U_USU_ERR_00001": http.StatusConflict,             // ErrDuplicateUser
+	"MOD_U_USU_ERR_00002": http.StatusInternalServerError,  // ErrUserCannotSave
+	"MOD_U_USU_ERR_00003": http.StatusNotFound,             // ErrPersonNotFound
+	"MOD_U_USU_ERR_00004": http.StatusInternalServerError,  // ErrGettingUserByEmail
+	"MOD_U_USU_ERR_00005": http.StatusNotFound,             // ErrNotFoundUserByEmail
+	"MOD_U_USU_ERR_00006": http.StatusNotFound,             // ErrUserCannotFound
+	"MOD_U_USU_ERR_00007": http.StatusInternalServerError,  // ErrUserCannotGet
+	"MOD_U_USU_ERR_00008": http.StatusForbidden,            // ErrorEmailNotVerified
+	"MOD_U_USU_ERR_00009": http.StatusNotFound,             // ErrVerificationTokenNotFound
+	"MOD_U_USU_ERR_00010": http.StatusGone,                 // ErrTokenExpired
+	"MOD_U_USU_ERR_00011": http.StatusConflict,             // ErrTokenAlreadyUsed
+	"MOD_U_USU_ERR_00012": http.StatusInternalServerError,  // ErrRegistrationFailed
+	"MOD_U_USU_ERR_00013": http.StatusBadRequest,           // ErrRoleRequired
 
 	// Request Validation Errors
 	"MOD_V_VAL_ERR_00001": http.StatusBadRequest,    // ErrInvalidJSONFormat
@@ -61,7 +63,7 @@ func ErrorHandler() gin.HandlerFunc {
 					Message: domainErr.Message,
 				}
 
-				c.JSON(statusCode, response)
+				c.AbortWithStatusJSON(statusCode, response)
 				return
 			}
 
@@ -71,7 +73,7 @@ func ErrorHandler() gin.HandlerFunc {
 				Code:    "MOD_G_GEN_ERR_00001",
 				Message: "Error interno del servidor",
 			}
-			c.JSON(http.StatusInternalServerError, response)
+			c.AbortWithStatusJSON(http.StatusInternalServerError, response)
 		}
 	}
 }

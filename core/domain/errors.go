@@ -40,6 +40,8 @@ var (
 	ErrVerificationTokenNotFound = NewDomainError("MOD_U_USU_ERR_00009", "Token de verificación no encontrado")
 	ErrTokenExpired              = NewDomainError("MOD_U_USU_ERR_00010", "Token expirado")
 	ErrTokenAlreadyUsed          = NewDomainError("MOD_U_USU_ERR_00011", "Token ya utilizado")
+	ErrRegistrationFailed        = NewDomainError("MOD_U_USU_ERR_00012", "Error en el proceso de registro")
+	ErrRoleRequired              = NewDomainError("MOD_U_USU_ERR_00013", "El rol es requerido")
 )
 
 // Request Validation Errors (MOD_V_*)

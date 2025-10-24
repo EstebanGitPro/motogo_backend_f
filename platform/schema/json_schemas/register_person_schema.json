@@ -54,9 +54,9 @@
     "role": {
       "type": "string",
       "description": "Role of the person in the system",
-      "maxLength": 20,
-      "minLength": 1
-    }
+      "enum": ["user", "representative"],
+      "maxLength": 20
+}
   },
   "required": [
     "identity_number",

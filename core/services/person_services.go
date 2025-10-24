@@ -34,7 +34,7 @@ func (s service) RegisterPerson(person domain.Person) (*dto.RegistrationResult, 
 	}
 
 	if person.Role == "" {
-		return nil, fmt.Errorf("role is required")
+		return nil, domain.ErrRoleRequired
 	}
 
 	person.SetID()
@@ -64,7 +64,7 @@ func (s service) RegisterPerson(person domain.Person) (*dto.RegistrationResult, 
 				"error", deleteErr)
 		}
 		
-		return nil, fmt.Errorf("registration failed: %w", err)
+		return nil, domain.ErrRegistrationFailed
 	}
 
 	slog.Info("User registered successfully",

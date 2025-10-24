@@ -15,8 +15,10 @@ import (
 func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 	slog.Info("Setting up routes")
 
-	handler := handlers.New(dependencies.PersonService)
+	
+	app.Use(middleware.ErrorHandler())
 
+	handler := handlers.New(dependencies.PersonService)
 
 	validators, err := schema.NewValidator(&schema.DefaultFileReader{})
 	if err != nil {
