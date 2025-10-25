@@ -51,7 +51,7 @@ func (s service) RegisterPerson(person domain.Person) (*dto.RegistrationResult, 
 	}
 
 	ctx := context.Background()
-	token, err := s.syncUserWithKeycloak(ctx, &person, plainPassword)
+	err = s.syncUserWithKeycloak(ctx, &person, plainPassword)
 	if err != nil {
 		slog.Error("Failed to sync user with Keycloak, rolling back",
 			"user_id", person.ID,
@@ -73,41 +73,32 @@ func (s service) RegisterPerson(person domain.Person) (*dto.RegistrationResult, 
 		"role", person.Role)
 
 	return &dto.RegistrationResult{
-		Person: person,
-		Token:  token,
+		Person:  person,
+		Message: "User registered successfully. Please login to continue.",
 	}, nil
 }
 
 
-func (s service) syncUserWithKeycloak(ctx context.Context, person *domain.Person, plainPassword string) (*gocloak.JWT, error) {
+func (s service) syncUserWithKeycloak(ctx context.Context, person *domain.Person, plainPassword string) error {
 	if s.authzService == nil {
-		return nil, fmt.Errorf("keycloak service not configured")
+		return fmt.Errorf("keycloak service not configured")
 	}
 
 	keycloakUserID, err := s.authzService.SyncUserToKeycloak(ctx, person)
 	if err != nil {
-		return nil, fmt.Errorf("failed to sync user: %w", err)
+		return fmt.Errorf("failed to sync user: %w", err)
 	}
 
 	err = s.authzService.SetUserPassword(ctx, keycloakUserID, plainPassword)
 	if err != nil {
 		_ = s.authzService.DeleteUserFromKeycloak(ctx, keycloakUserID)
-		return nil, fmt.Errorf("failed to set password: %w", err)
+		return fmt.Errorf("failed to set password: %w", err)
 	}
+	
 	err = s.authzService.AssignRole(ctx, person.ID, person.Role)
 	if err != nil {
 		_ = s.authzService.DeleteUserFromKeycloak(ctx, keycloakUserID)
-		return nil, fmt.Errorf("failed to assign role: %w", err)
-	}
-
-	
-	token, err := s.authzService.LoginUser(ctx, person.Email, plainPassword)
-	if err != nil {
-		slog.Warn("User created but login failed", 
-			"user_id", person.ID,
-			"error", err)
-
-		return nil, fmt.Errorf("user created but failed to generate token: %w", err)
+		return fmt.Errorf("failed to assign role: %w", err)
 	}
 
 	slog.Info("User synced with Keycloak successfully", 
@@ -116,7 +107,7 @@ func (s service) syncUserWithKeycloak(ctx context.Context, person *domain.Person
 		"role", person.Role,
 		"keycloak_user_id", keycloakUserID)
 	
-	return token, nil
+	return nil
 }
 
 

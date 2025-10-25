@@ -31,13 +31,10 @@ type PersonResponse struct {
 	KeycloakUserID      string `json:"keycloak_user_id"`
 }
 
-// RegistrationResponse incluye los datos del usuario y el token JWT de Keycloak
+// RegistrationResponse incluye los datos del usuario y un mensaje de confirmación
 type RegistrationResponse struct {
-	User         PersonResponse `json:"user"`
-	AccessToken  string         `json:"access_token"`
-	RefreshToken string         `json:"refresh_token"`
-	ExpiresIn    int            `json:"expires_in"`
-	TokenType    string         `json:"token_type"`
+	User    PersonResponse `json:"user"`
+	Message string         `json:"message"`
 }
 
 // LoginRequest para autenticación

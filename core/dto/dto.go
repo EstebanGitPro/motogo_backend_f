@@ -2,13 +2,12 @@ package dto
 
 import (
 	"github.com/EstebanGitPro/motogo-backend/core/domain"
-	"github.com/Nerzal/gocloak/v13"
 )
 
-// RegistrationResult contiene el resultado del registro con token de Keycloak
+// RegistrationResult contiene el resultado del registro de usuario
 type RegistrationResult struct {
-	Person domain.Person
-	Token  *gocloak.JWT
+	Person  domain.Person `json:"person"`
+	Message string        `json:"message"`
 }
 
 // UserSyncStatus representa el estado de sincronización con Keycloak

@@ -49,12 +49,8 @@ func (h handler) RegisterPerson() func(c *gin.Context) {
 				PhoneNumberVerified: result.Person.PhoneNumberVerified,
 				Role:                result.Person.Role,
 				KeycloakUserID:      result.Person.KeycloakUserID,
-
 			},
-			AccessToken:  result.Token.AccessToken,
-			RefreshToken: result.Token.RefreshToken,
-			ExpiresIn:    result.Token.ExpiresIn,
-			TokenType:    result.Token.TokenType,
+			Message: result.Message,
 		}
 
 		c.JSON(http.StatusCreated, response)

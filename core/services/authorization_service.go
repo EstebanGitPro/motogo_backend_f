@@ -176,7 +176,7 @@ func (a *authorizationService) HasPermission(ctx context.Context, personID strin
 		switch role {
 		case "admin":
 			return true, nil // Admin tiene todos los permisos
-		case "moderator":
+		case "representative":
 			if resource == "users" && (action == "read" || action == "update") {
 				return true, nil
 			}
