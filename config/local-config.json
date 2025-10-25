@@ -1,0 +1,35 @@
+{
+    "environment": "local",
+    "database": {
+        "driver": "mysql",
+        "host": "localhost",
+        "port": "3309",
+        "username": "root",
+        "password": "0000",
+        "name": "motogoDb",
+        "max_connections" : 20,
+        "max_idle_connections": 10,
+        "max_lifetime": 27000,
+        "max_idle_time": 26000
+
+    },
+    "server": {
+        "port": "8085",
+        "host": "localhost"
+    },
+    "resend": {
+        "api_key": "re_eefMc9Ca_BVDyzRzNKo5YCRHp1nRsAtCd",
+        "from_email": "motogo@rbsuport.com"
+    },
+    "keycloak": {
+        "server_url": "http://localhost:8080",
+        "realm": "motogo",
+        "client_id": "stifler",
+        "client_secret": "0SAFssjBSijdmP5GfYj1TegqT2DrX3Be",
+        "admin_user": "admin",
+        "admin_pass": "0000"
+      },
+    "verification": {
+        "base_url": "http://localhost:8085"
+    }
+}

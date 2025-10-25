@@ -30,6 +30,10 @@ type Database struct {
 	Password string `json:"password"`
 	Name     string `json:"name"`
 	SSL      string `json:"ssl,omitempty"`
+	MaxOpenConns int `json:"max_open_conns"`
+	MaxIdleConns int `json:"max_idle_conns"`
+	ConnMaxLifetime int `json:"conn_max_lifetime"`
+	ConnMaxIdleTime int `json:"conn_max_idle_time"`
 }
 
 type Server struct {
