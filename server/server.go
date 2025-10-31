@@ -23,15 +23,15 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 	validators, err := schema.NewValidator(&schema.DefaultFileReader{})
 	if err != nil {
 		slog.Error("Error creating validator", slog.String("error", err.Error()))
-		return
+		log.Fatalf("Failed to initialize schema validator: %v", err)
 	}
 	validator := middleware.NewMiddlewareValidator(validators)
 
-	public := app.Group("/v1/motogo")
+	public := app.Group("motogo/api/v1")
 	{
-		public.POST("/users", validator.WithValidateRegister(), handler.RegisterPerson())
+		public.POST("/accounts", validator.WithValidateRegister(), handler.RegisterPerson())
 		public.POST("/auth/login", handler.Login())
-		public.GET("/users/email/:email", handler.GetPersonByEmail())
+		public.GET("/accounts/email/:email", handler.GetPersonByEmail())
 	}
 
 }
