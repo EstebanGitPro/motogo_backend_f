@@ -3,6 +3,7 @@ package keycloak
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -45,10 +46,10 @@ func NewClient(cfg *config.KeycloakConfig) (ports.AuthClient, error) {
 	return authClient, nil
 }
 
-// ensureValidToken verifica si el token de admin está próximo a expirar y lo refresca si es necesario
+
 func (c *client) ensureValidToken(ctx context.Context) error {
 	c.tokenMutex.RLock()
-	// Refrescar el token si expira en los próximos 30 segundos
+	
 	needsRefresh := time.Now().Add(30 * time.Second).After(c.tokenExpiresAt)
 	c.tokenMutex.RUnlock()
 
@@ -59,19 +60,34 @@ func (c *client) ensureValidToken(ctx context.Context) error {
 	c.tokenMutex.Lock()
 	defer c.tokenMutex.Unlock()
 
-	// Verificar nuevamente por si otro goroutine ya refrescó el token
+	
 	if time.Now().Add(30 * time.Second).Before(c.tokenExpiresAt) {
 		return nil
 	}
 
-	// Refrescar el token de admin
+	slog.Info("Refreshing Keycloak admin token",
+		"realm", c.config.Realm,
+		"admin_user", c.config.AdminUser,
+		"token_expires_at", c.tokenExpiresAt.Format(time.RFC3339))
+
+	
 	token, err := c.gocloak.LoginAdmin(ctx, c.config.AdminUser, c.config.AdminPass, c.config.Realm)
 	if err != nil {
+		slog.Error("Failed to refresh Keycloak admin token",
+			"realm", c.config.Realm,
+			"admin_user", c.config.AdminUser,
+			"error", err)
 		return fmt.Errorf("failed to refresh admin token: %w", err)
 	}
 
 	c.token = token
 	c.tokenExpiresAt = time.Now().Add(time.Duration(token.ExpiresIn) * time.Second)
+
+	slog.Info("Keycloak admin token refreshed successfully",
+		"realm", c.config.Realm,
+		"admin_user", c.config.AdminUser,
+		"new_expires_at", c.tokenExpiresAt.Format(time.RFC3339),
+		"expires_in_seconds", token.ExpiresIn)
 
 	return nil
 }
@@ -416,6 +432,10 @@ func (c *client) RefreshToken(ctx context.Context, refreshToken string) (*gocloa
 		return nil, fmt.Errorf("refreshToken cannot be empty")
 	}
 
+	slog.Info("Refreshing user token",
+		"realm", c.config.Realm,
+		"client_id", c.config.ClientID)
+
 	token, err := c.gocloak.RefreshToken(
 		ctx,
 		refreshToken,
@@ -424,8 +444,18 @@ func (c *client) RefreshToken(ctx context.Context, refreshToken string) (*gocloa
 		c.config.Realm,
 	)
 	if err != nil {
+		slog.Error("Failed to refresh user token",
+			"realm", c.config.Realm,
+			"client_id", c.config.ClientID,
+			"error", err)
 		return nil, fmt.Errorf("failed to refresh token: %w", err)
 	}
+
+	slog.Info("User token refreshed successfully",
+		"realm", c.config.Realm,
+		"client_id", c.config.ClientID,
+		"expires_in_seconds", token.ExpiresIn,
+		"refresh_expires_in_seconds", token.RefreshExpiresIn)
 
 	return token, nil
 }

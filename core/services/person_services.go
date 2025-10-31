@@ -74,7 +74,7 @@ func (s service) RegisterPerson(person domain.Person) (*dto.RegistrationResult, 
 
 	return &dto.RegistrationResult{
 		Person:  person,
-		Message: "User registered successfully. Please login to continue.",
+		Message: "Usuario registrado exitosamente. Por favor, inicie sesión para continuar.",
 	}, nil
 }
 
