@@ -45,10 +45,7 @@ func (h handler) RegisterPerson() func(c *gin.Context) {
 				SecondLastName:      result.Person.SecondLastName,
 				Email:               result.Person.Email,
 				PhoneNumber:         result.Person.PhoneNumber,
-				EmailVerified:       result.Person.EmailVerified,
-				PhoneNumberVerified: result.Person.PhoneNumberVerified,
 				Role:                result.Person.Role,
-				KeycloakUserID:      result.Person.KeycloakUserID,
 			},
 			Message: result.Message,
 		}

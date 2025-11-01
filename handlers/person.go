@@ -12,8 +12,6 @@ type PersonRequest struct {
 	Email               string `json:"email"`
 	PhoneNumber         string `json:"phone_number"`
 	Password            string `json:"password"`
-	EmailVerified       bool   `json:"email_verified"`
-	PhoneNumberVerified bool   `json:"phone_number_verified"`
 	Role                string `json:"role"`
 }
 
@@ -25,10 +23,7 @@ type PersonResponse struct {
 	SecondLastName      string `json:"second_last_name"`
 	Email               string `json:"email"`
 	PhoneNumber         string `json:"phone_number"`
-	EmailVerified       bool   `json:"email_verified"`
-	PhoneNumberVerified bool   `json:"phone_number_verified"`
 	Role                string `json:"role"`
-	KeycloakUserID      string `json:"keycloak_user_id"`
 }
 
 // RegistrationResponse incluye los datos del usuario y un mensaje de confirmación
@@ -62,8 +57,6 @@ func (p PersonRequest) ToDomain() domain.Person {
 		Email:               p.Email,
 		PhoneNumber:         p.PhoneNumber,
 		Password:            p.Password,
-		EmailVerified:       p.EmailVerified,
-		PhoneNumberVerified: p.PhoneNumberVerified,
 		Role:                p.Role,
 	}
 }
