@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/EstebanGitPro/motogo-backend/core/domain"
 	json_schema "github.com/EstebanGitPro/motogo-backend/platform/schema"
@@ -11,65 +12,76 @@ import (
 )
 
 type ErrorResponse struct {
-	Status  int    `json:"status"`
 	Code    string `json:"code"`
 	Message string `json:"message"`
 }
 
-var errorStatusMap = map[string]int{
-	// User Management Errors
-	"MOD_U_USU_ERR_00001": http.StatusConflict,             // ErrDuplicateUser
-	"MOD_U_USU_ERR_00002": http.StatusInternalServerError,  // ErrUserCannotSave
-	"MOD_U_USU_ERR_00003": http.StatusNotFound,             // ErrPersonNotFound
-	"MOD_U_USU_ERR_00004": http.StatusInternalServerError,  // ErrGettingUserByEmail
-	"MOD_U_USU_ERR_00005": http.StatusNotFound,             // ErrNotFoundUserByEmail
-	"MOD_U_USU_ERR_00006": http.StatusNotFound,             // ErrUserCannotFound
-	"MOD_U_USU_ERR_00007": http.StatusInternalServerError,  // ErrUserCannotGet
-	"MOD_U_USU_ERR_00008": http.StatusForbidden,            // ErrorEmailNotVerified
-	"MOD_U_USU_ERR_00009": http.StatusNotFound,             // ErrVerificationTokenNotFound
-	"MOD_U_USU_ERR_00010": http.StatusGone,                 // ErrTokenExpired
-	"MOD_U_USU_ERR_00011": http.StatusConflict,             // ErrTokenAlreadyUsed
-	"MOD_U_USU_ERR_00012": http.StatusInternalServerError,  // ErrRegistrationFailed
-	"MOD_U_USU_ERR_00013": http.StatusBadRequest,           // ErrRoleRequired
+// determineStatusCode determina el código de estado HTTP basándose en el código de error
+// Esto mantiene una lógica simple y predecible sin necesidad de un mapa gigante
+func determineStatusCode(code string) int {
+	// Extraer el módulo del código (posición 4-5 después de "MOD_")
+	if len(code) < 7 {
+		return http.StatusInternalServerError
+	}
 
-	// Request Validation Errors
-	"MOD_V_VAL_ERR_00001": http.StatusBadRequest,           // ErrInvalidJSONFormat
-	"MOD_V_VAL_ERR_00002": http.StatusBadRequest,           // ErrInvalidRequest
-	"MOD_V_VAL_ERR_00003": http.StatusInternalServerError,  // Error reading JSON schema
-	"MOD_V_VAL_ERR_00004": http.StatusInternalServerError,  // Schema JSON is null or empty
-	"MOD_V_VAL_ERR_00005": http.StatusInternalServerError,  // Error compiling schema
-	"MOD_V_VAL_ERR_00006": http.StatusBadRequest,           // Schema validation failed
-	"MOD_V_VAL_ERR_00007": http.StatusBadRequest,           // Error reading request body
-	"MOD_V_VAL_ERR_00008": http.StatusBadRequest,           // Field property mismatch
-	"MOD_V_VAL_ERR_00009": http.StatusBadRequest,           // Field required
-	"MOD_V_VAL_ERR_00010": http.StatusBadRequest,           // Field type invalid
-	"MOD_V_VAL_ERR_00011": http.StatusBadRequest,           // Multiple field errors
+	// MOD_V_VAL_ERR = Errores de Validación
+	if strings.HasPrefix(code, "MOD_V_VAL_ERR") {
+		return http.StatusBadRequest
+	}
 
-	// Authorization Errors
-	"MOD_A_AUT_ERR_00001": http.StatusInternalServerError, // ErrRoleAssignmentFailed
-	"MOD_A_AUT_ERR_00002": http.StatusInternalServerError, // ErrRoleRemovalFailed
-	"MOD_A_AUT_ERR_00003": http.StatusInternalServerError, // ErrRoleCheckFailed
-	"MOD_A_AUT_ERR_00004": http.StatusInternalServerError, // ErrGetUserRolesFailed
+	// Analizar el tipo de error por el código específico
+	switch {
+	// User Management - Conflictos y duplicados
+	case code == "MOD_U_USU_ERR_00001", // ErrDuplicateUser
+		code == "MOD_U_USU_ERR_00011": // ErrTokenAlreadyUsed
+		return http.StatusConflict
+
+	// User Management - No encontrado
+	case code == "MOD_U_USU_ERR_00003", // ErrPersonNotFound
+		code == "MOD_U_USU_ERR_00005", // ErrNotFoundUserByEmail
+		code == "MOD_U_USU_ERR_00006", // ErrUserCannotFound
+		code == "MOD_U_USU_ERR_00009": // ErrVerificationTokenNotFound
+		return http.StatusNotFound
+
+	// User Management - Prohibido
+	case code == "MOD_U_USU_ERR_00008": // ErrorEmailNotVerified
+		return http.StatusForbidden
+
+	// User Management - Token expirado
+	case code == "MOD_U_USU_ERR_00010": // ErrTokenExpired
+		return http.StatusGone
+
+	// User Management - Bad Request
+	case code == "MOD_U_USU_ERR_00013": // ErrRoleRequired
+		return http.StatusBadRequest
+
+	// Authorization Errors - Todos son errores internos del servidor
+	case strings.HasPrefix(code, "MOD_A_AUT_ERR"):
+		return http.StatusInternalServerError
+
+	// User Management - Errores internos del servidor
+	case strings.HasPrefix(code, "MOD_U_USU_ERR"):
+		return http.StatusInternalServerError
+
+	default:
+		// Por defecto, error interno del servidor
+		return http.StatusInternalServerError
+	}
 }
 
 func ErrorHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Next() 
+		c.Next()
 
 		if len(c.Errors) > 0 {
 			err := c.Errors.Last().Err
-			
-			// Try SchemaError first
+
+			// Manejar errores de validación de esquema
 			var schemaErr *json_schema.SchemaError
 			if errors.As(err, &schemaErr) {
-				statusCode, exists := errorStatusMap[schemaErr.Code]
-				if !exists {
-					statusCode = http.StatusInternalServerError
-					log.Printf("Unknown schema error code: %s", schemaErr.Code)
-				}
+				statusCode := determineStatusCode(schemaErr.Code)
 
 				response := ErrorResponse{
-					Status:  statusCode,
 					Code:    schemaErr.Code,
 					Message: schemaErr.Message,
 				}
@@ -77,18 +89,13 @@ func ErrorHandler() gin.HandlerFunc {
 				c.AbortWithStatusJSON(statusCode, response)
 				return
 			}
-			
-			// Try DomainError second
+
+			// Manejar errores de dominio
 			var domainErr *domain.DomainError
 			if errors.As(err, &domainErr) {
-				statusCode, exists := errorStatusMap[domainErr.Code]
-				if !exists {
-					statusCode = http.StatusInternalServerError
-					log.Printf("Unknown domain error code: %s", domainErr.Code)
-				}
+				statusCode := determineStatusCode(domainErr.Code)
 
 				response := ErrorResponse{
-					Status:  statusCode,
 					Code:    domainErr.Code,
 					Message: domainErr.Message,
 				}
@@ -97,9 +104,9 @@ func ErrorHandler() gin.HandlerFunc {
 				return
 			}
 
+			// Errores no controlados
 			log.Printf("Non-domain error: %v", err)
 			response := ErrorResponse{
-				Status:  http.StatusInternalServerError,
 				Code:    "MOD_G_GEN_ERR_00001",
 				Message: "Error interno del servidor",
 			}
