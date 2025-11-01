@@ -125,7 +125,6 @@ func (c *client) CreateUser(ctx context.Context, person *domain.Person) (string,
 		Email:         &person.Email,
 		FirstName:     &person.FirstName,
 		LastName:      &person.LastName,
-		EmailVerified: &person.EmailVerified,
 		Enabled:       gocloak.BoolP(true),
 		Username:      &person.Email,
 	}
