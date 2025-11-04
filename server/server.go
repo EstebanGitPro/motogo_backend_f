@@ -8,14 +8,13 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/handlers"
 	"github.com/EstebanGitPro/motogo-backend/middleware"
 	"github.com/EstebanGitPro/motogo-backend/platform/schema"
-	
+
 	"github.com/gin-gonic/gin"
 )
 
 func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 	slog.Info("Setting up routes")
 
-	
 	app.Use(middleware.ErrorHandler())
 
 	handler := handlers.New(dependencies.PersonService)
@@ -30,7 +29,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 	public := app.Group("motogo/api/v1")
 	{
 		public.POST("/accounts", validator.WithValidateRegister(), handler.RegisterPerson())
-		public.POST("/auth/login", handler.Login())
+		//public.POST("/auth/login", handler.Login())
 		public.GET("/accounts/email/:email", handler.GetPersonByEmail())
 	}
 

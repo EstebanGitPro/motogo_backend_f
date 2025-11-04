@@ -53,28 +53,3 @@ func (h handler) RegisterPerson() func(c *gin.Context) {
 		c.JSON(http.StatusCreated, response)
 	}
 }
-
-func (h handler) Login() func(c *gin.Context) {
-	return func(c *gin.Context) {
-		var loginRequest LoginRequest
-		if err := c.ShouldBindJSON(&loginRequest); err != nil {
-			c.Error(domain.ErrInvalidJSONFormat)
-			return
-		}
-
-		token, err := h.PersonService.LoginPerson(loginRequest.Email, loginRequest.Password)
-		if err != nil {
-			c.Error(err)
-			return
-		}
-
-		response := LoginResponse{
-			AccessToken:  token.AccessToken,
-			RefreshToken: token.RefreshToken,
-			ExpiresIn:    token.ExpiresIn,
-			TokenType:    token.TokenType,
-		}
-
-		c.JSON(http.StatusOK, response)
-	}
-}
