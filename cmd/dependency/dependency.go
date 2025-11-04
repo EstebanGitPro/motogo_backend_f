@@ -15,7 +15,6 @@ type Dependencies struct {
 	PersonService  ports.Service
 	PersonRepo     ports.Repository
 	KeycloakClient ports.AuthClient
-	AuthzService   ports.AuthorizationService
 	Config         *config.Config
 }
 
@@ -40,15 +39,13 @@ func Init() (*Dependencies, error) {
 		return nil, err
 	}
 
-	authzService := services.NewAuthorizationService(keycloakClient, personRepo)
 
-	personService := services.NewService(personRepo, authzService, cfg)
+	personService := services.NewService(personRepo, cfg)
 
 	return &Dependencies{
 		PersonService:  personService,
 		PersonRepo:     personRepo,
 		KeycloakClient: keycloakClient,
-		AuthzService:   authzService,
 		Config:         cfg,
 	}, nil
 }

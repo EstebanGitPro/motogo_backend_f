@@ -1,7 +1,6 @@
 package personnew
 
 import (
-
 	"database/sql"
 
 	"github.com/EstebanGitPro/motogo-backend/core/ports"

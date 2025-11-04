@@ -2,15 +2,15 @@ package personnew
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/EstebanGitPro/motogo-backend/core/domain"
-	"github.com/Nerzal/gocloak/v13"
 	"github.com/go-sql-driver/mysql"
 )
 
 func (r *repository) SavePerson(ctx context.Context, person *domain.Person) error {
 
-	personToSave := FromDomain(person)
+	personToSave := FromDomain(*person)
 
 	// begin transaction
 	tx, err := r.db.BeginTx(context.Background(), nil)
@@ -22,7 +22,7 @@ func (r *repository) SavePerson(ctx context.Context, person *domain.Person) erro
 		personToSave.ID,
 		personToSave.IdentityNumber,
 		personToSave.FirstName,
-		personToSave.LastName,
+		 personToSave.LastName,
 		personToSave.SecondLastName,
 		personToSave.Email,
 		personToSave.PhoneNumber,
@@ -41,34 +41,36 @@ func (r *repository) SavePerson(ctx context.Context, person *domain.Person) erro
 	}
 
 	// TODO logica de keycloak
-	user := gocloak.User{
-		Email:         &person.Email,
-		FirstName:     &person.FirstName,
-		LastName:      &person.LastName,
-		Enabled:       gocloak.BoolP(true),
-		Username:      &person.Email,
-	}
-	_, err = r.keycloak.CreateUser(
-		ctx,
-		user,
-		r.config.Keycloak.Realm,
-		
-	)
+		keycloakUserID, err := r.keycloak.CreateUser(ctx, person)
 
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
+		if err != nil {
 
-	person.KeycloakUserID = user.ID
+		existingUser, getErr := r.keycloak.GetUserByEmail(ctx, person.Email)
+		if getErr != nil {
+			tx.Rollback()
+			return fmt.Errorf("failed to create or get user in keycloak: %w", err)
+		}
+		keycloakUserID = *existingUser.ID
+		}
 	
+		
 
+		person.KeycloakUserID = keycloakUserID
+		err = r.UpdatePerson(ctx, person)
+		if err != nil {
+			_ = r.keycloak.DeleteUser(ctx, keycloakUserID)
+			tx.Rollback()
+			return fmt.Errorf("failed to update person with keycloak user id: %w", err)
+		}
 
 	// commit transaction
-	if err := tx.Commit(); err != nil {
+	err = tx.Commit()
+	if err != nil {
 		return err
 	}
 
 	return nil
 
 }
+
+

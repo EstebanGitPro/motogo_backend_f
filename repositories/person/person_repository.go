@@ -48,10 +48,10 @@ func NewRepository(db *sql.DB) (ports.Repository, error) {
 }
 
 const (
-	querySave       = "INSERT INTO persons (id, identity_number, first_name, last_name, second_last_name, email, phone_number, email_verified, phone_number_verified, password, role, keycloak_user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-	queryGetByEmail = "SELECT id, identity_number, first_name, last_name, second_last_name, email, phone_number, email_verified, phone_number_verified, password, role, keycloak_user_id FROM persons WHERE email = ? LIMIT 1"
-	queryGetByID    = "SELECT id, identity_number, first_name, last_name, second_last_name, email, phone_number, email_verified, phone_number_verified, password, role, keycloak_user_id FROM persons WHERE id = ? LIMIT 1"
-	queryUpdate     = "UPDATE persons SET identity_number = ?, first_name = ?, last_name = ?, second_last_name = ?, email = ?, phone_number = ?, email_verified = ?, phone_number_verified = ?, password = ?, role = ?, keycloak_user_id = ? WHERE id = ?"
+	querySave       = "INSERT INTO persons (id, identity_number, first_name, last_name, second_last_name, email, phone_number, role, keycloak_user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+	queryGetByEmail = "SELECT id, identity_number, first_name, last_name, second_last_name, email, phone_number, role, keycloak_user_id FROM persons WHERE email = ? LIMIT 1"
+	queryGetByID    = "SELECT id, identity_number, first_name, last_name, second_last_name, email, phone_number, role, keycloak_user_id FROM persons WHERE id = ? LIMIT 1"
+	queryUpdate     = "UPDATE persons SET identity_number = ?, first_name = ?, last_name = ?, second_last_name = ?, email = ?, phone_number = ?, role = ?, keycloak_user_id = ? WHERE id = ?"
 	queryDelete     = "DELETE FROM persons WHERE id = ?"
 )
 
@@ -67,9 +67,6 @@ func (r *repository) SavePerson(person domain.Person) error {
 		personToSave.SecondLastName,
 		personToSave.Email,
 		personToSave.PhoneNumber,
-		personToSave.EmailVerified,
-		personToSave.PhoneNumberVerified,
-		personToSave.Password,
 		personToSave.Role,
 		personToSave.KeycloakUserID,
 	)
@@ -96,9 +93,6 @@ func (r *repository) GetPersonByEmail(email string) (*domain.Person, error) {
 		&p.SecondLastName,
 		&p.Email,
 		&p.PhoneNumber,
-		&p.EmailVerified,
-		&p.PhoneNumberVerified,
-		&p.Password,
 		&p.Role,
 		&p.KeycloakUserID,
 	)
@@ -122,9 +116,6 @@ func (r *repository) GetPersonByID(id string) (*domain.Person, error) {
 		&p.SecondLastName,
 		&p.Email,
 		&p.PhoneNumber,
-		&p.EmailVerified,
-		&p.PhoneNumberVerified,
-		&p.Password,
 		&p.Role,
 		&p.KeycloakUserID,
 	)
@@ -148,9 +139,6 @@ func (r *repository) UpdatePerson(person domain.Person) error {
 		personToUpdate.SecondLastName,
 		personToUpdate.Email,
 		personToUpdate.PhoneNumber,
-		personToUpdate.EmailVerified,
-		personToUpdate.PhoneNumberVerified,
-		personToUpdate.Password,
 		personToUpdate.Role,
 		personToUpdate.KeycloakUserID,
 		personToUpdate.ID, // WHERE clause
