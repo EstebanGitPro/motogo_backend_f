@@ -83,6 +83,7 @@ func (r *repository) SavePerson(person domain.Person) error {
 
 }
 
+
 func (r *repository) GetPersonByEmail(email string) (*domain.Person, error) {
 	var p Person
 	err := r.stmtGetByEmail.QueryRow(email).Scan(

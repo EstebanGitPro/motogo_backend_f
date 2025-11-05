@@ -24,7 +24,7 @@ func (r *repository) UpdatePerson(ctx context.Context, person *domain.Person) er
 		personToUpdate.PhoneNumber,
 		personToUpdate.Role,
 		personToUpdate.KeycloakUserID,
-		personToUpdate.ID, // WHERE clause
+		personToUpdate.ID, 
 	)
 
 	if err != nil {

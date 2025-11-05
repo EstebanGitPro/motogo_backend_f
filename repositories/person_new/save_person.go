@@ -13,21 +13,23 @@ func (r *repository) SavePerson(ctx context.Context, person *domain.Person) erro
 	personToSave := FromDomain(*person)
 
 	// begin transaction
-	tx, err := r.db.BeginTx(context.Background(), nil)
+	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
+
 
 	_, err = tx.ExecContext(ctx, querySave,
 		personToSave.ID,
 		personToSave.IdentityNumber,
 		personToSave.FirstName,
-		 personToSave.LastName,
+		personToSave.LastName,
 		personToSave.SecondLastName,
 		personToSave.Email,
 		personToSave.PhoneNumber,
 		personToSave.Role,
-		personToSave.KeycloakUserID, )
+		personToSave.KeycloakUserID)
+
 
 	if err != nil {
 		tx.Rollback()
@@ -41,9 +43,9 @@ func (r *repository) SavePerson(ctx context.Context, person *domain.Person) erro
 	}
 
 	// TODO logica de keycloak
-		keycloakUserID, err := r.keycloak.CreateUser(ctx, person)
+	keycloakUserID, err := r.keycloak.CreateUser(ctx, person)
 
-		if err != nil {
+	if err != nil {
 
 		existingUser, getErr := r.keycloak.GetUserByEmail(ctx, person.Email)
 		if getErr != nil {
@@ -51,17 +53,15 @@ func (r *repository) SavePerson(ctx context.Context, person *domain.Person) erro
 			return fmt.Errorf("failed to create or get user in keycloak: %w", err)
 		}
 		keycloakUserID = *existingUser.ID
-		}
-	
-		
+	}
 
-		person.KeycloakUserID = keycloakUserID
-		err = r.UpdatePerson(ctx, person)
-		if err != nil {
-			_ = r.keycloak.DeleteUser(ctx, keycloakUserID)
-			tx.Rollback()
-			return fmt.Errorf("failed to update person with keycloak user id: %w", err)
-		}
+	person.KeycloakUserID = keycloakUserID
+	err = r.UpdatePerson(ctx, person)
+	if err != nil {
+		_ = r.keycloak.DeleteUser(ctx, keycloakUserID)
+		tx.Rollback()
+		return fmt.Errorf("failed to update person with keycloak user id: %w", err)
+	}
 
 	// commit transaction
 	err = tx.Commit()
@@ -72,5 +72,3 @@ func (r *repository) SavePerson(ctx context.Context, person *domain.Person) erro
 	return nil
 
 }
-
-
