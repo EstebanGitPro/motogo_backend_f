@@ -1,4 +1,4 @@
-package personnew
+package person
 
 import (
 	"database/sql"
@@ -19,9 +19,8 @@ type repository struct {
 	StmtGetByID    *sql.Stmt
 	StmtUpdate     *sql.Stmt
 	StmtDelete     *sql.Stmt
-	keycloak ports.AuthClient
+	keycloak       ports.AuthClient
 }
-
 
 const (
 	querySave       = "INSERT INTO persons (id, identity_number, first_name, last_name, second_last_name, email, phone_number, role, keycloak_user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
@@ -31,30 +30,29 @@ const (
 	queryDelete     = "DELETE FROM persons WHERE id = ?"
 )
 
-
-func NewClient(db *sql.DB, keycloak ports.AuthClient) (*repository, error) {
+func NewClientRepository(db *sql.DB, keycloak ports.AuthClient) (*repository, error) {
 	repo := &repository{
 		db:       db,
 		keycloak: keycloak,
 	}
-	
+
 	var err error
-	
+
 	repo.StmtSave, err = db.Prepare(querySave)
 	if err != nil {
-		repo.Close() 
+		repo.Close()
 		return nil, fmt.Errorf("error preparing stmtSave: %w", err)
 	}
 
 	repo.StmtGetByEmail, err = db.Prepare(queryGetByEmail)
 	if err != nil {
-		repo.Close() 
+		repo.Close()
 		return nil, fmt.Errorf("error preparing stmtGetByEmail: %w", err)
 	}
 
 	repo.StmtGetByID, err = db.Prepare(queryGetByID)
 	if err != nil {
-		repo.Close() 
+		repo.Close()
 		return nil, fmt.Errorf("error preparing stmtGetByID: %w", err)
 	}
 
@@ -63,17 +61,15 @@ func NewClient(db *sql.DB, keycloak ports.AuthClient) (*repository, error) {
 		repo.Close()
 		return nil, fmt.Errorf("error preparing stmtUpdate: %w", err)
 	}
-	
+
 	repo.StmtDelete, err = db.Prepare(queryDelete)
 	if err != nil {
 		repo.Close()
 		return nil, fmt.Errorf("error preparing stmtDelete: %w", err)
 	}
-	
+
 	return repo, nil
 }
-
-
 
 func (r *repository) Close() error {
 	var firstErr error
@@ -110,6 +106,3 @@ func (r *repository) Close() error {
 
 	return firstErr
 }
-
-
-

@@ -1,4 +1,4 @@
-package personnew
+package person
 
 import (
 	"context"
@@ -12,12 +12,10 @@ func (r *repository) SavePerson(ctx context.Context, person *domain.Person) erro
 
 	personToSave := FromDomain(*person)
 
-	// begin transaction
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
-
 
 	_, err = tx.ExecContext(ctx, querySave,
 		personToSave.ID,
@@ -33,7 +31,6 @@ func (r *repository) SavePerson(ctx context.Context, person *domain.Person) erro
 
 	if err != nil {
 		tx.Rollback()
-		// TODO log error
 		if mysqlErr, ok := err.(*mysql.MySQLError); ok && mysqlErr.Number == 1062 {
 			return domain.ErrDuplicateUser
 		} else {
@@ -42,7 +39,6 @@ func (r *repository) SavePerson(ctx context.Context, person *domain.Person) erro
 
 	}
 
-	// TODO logica de keycloak
 	keycloakUserID, err := r.keycloak.CreateUser(ctx, person)
 
 	if err != nil {
@@ -63,7 +59,6 @@ func (r *repository) SavePerson(ctx context.Context, person *domain.Person) erro
 		return fmt.Errorf("failed to update person with keycloak user id: %w", err)
 	}
 
-	// commit transaction
 	err = tx.Commit()
 	if err != nil {
 		return err

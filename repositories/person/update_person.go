@@ -1,5 +1,5 @@
 
-package personnew
+package person
 
 import (
 	"context"

@@ -1,4 +1,4 @@
-package personnew
+package person
 
 import (
 	"context"
@@ -14,7 +14,7 @@ func (r *repository) DeletePerson(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	result, err := tx.ExecContext(ctx, queryDelete, id)
 	if err != nil {
 		tx.Rollback()
@@ -32,7 +32,6 @@ func (r *repository) DeletePerson(ctx context.Context, id string) error {
 		return domain.ErrPersonNotFound
 	}
 
-	
 	err = tx.Commit()
 	if err != nil {
 		return err
@@ -40,4 +39,3 @@ func (r *repository) DeletePerson(ctx context.Context, id string) error {
 
 	return nil
 }
-

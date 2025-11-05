@@ -43,4 +43,3 @@ func FromDomain(domainPerson domain.Person) Person {
 		KeycloakUserID:      domainPerson.KeycloakUserID,
 	}
 }
-

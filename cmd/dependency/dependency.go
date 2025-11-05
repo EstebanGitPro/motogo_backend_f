@@ -29,12 +29,14 @@ func Init() (*Dependencies, error) {
 		return nil, err
 	}
 
-	personRepo, err := repo.NewRepository(db)
+
+	keycloakClient, err := keycloak.NewClient(&cfg.Keycloak)
 	if err != nil {
 		return nil, err
 	}
 
-	keycloakClient, err := keycloak.NewClient(&cfg.Keycloak)
+
+	personRepo, err := repo.NewClientRepository(db, keycloakClient)
 	if err != nil {
 		return nil, err
 	}
