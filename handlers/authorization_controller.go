@@ -4,18 +4,18 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/EstebanGitPro/motogo-backend/core/domain"
-	"github.com/EstebanGitPro/motogo-backend/core/ports"
+	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
+	"github.com/EstebanGitPro/motogo-backend/core/ports/input"
 	"github.com/gin-gonic/gin"
 )
 
 // AuthorizationController maneja las operaciones de autorización
 type AuthorizationController struct {
-	authzService ports.AuthorizationService
+	authzService input.AuthorizationService
 }
 
 // NewAuthorizationController crea un nuevo controlador de autorización
-func NewAuthorizationController(authzService ports.AuthorizationService) *AuthorizationController {
+func NewAuthorizationController(authzService input.AuthorizationService) *AuthorizationController {
 	return &AuthorizationController{
 		authzService: authzService,
 	}

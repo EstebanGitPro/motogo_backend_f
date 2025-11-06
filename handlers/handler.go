@@ -1,14 +1,14 @@
 package handlers
 
 import (
-	"github.com/EstebanGitPro/motogo-backend/core/ports"
+	"github.com/EstebanGitPro/motogo-backend/core/ports/input"
 )
 
 type handler struct {
-	PersonService ports.Service
+	PersonService input.Service
 }
 
-func New(service ports.Service) *handler {
+func New(service input.Service) *handler {
 	return &handler{
 		PersonService: service,
 	}

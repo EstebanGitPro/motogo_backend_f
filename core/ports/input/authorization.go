@@ -1,9 +1,9 @@
-package ports
+package input
 
 import (
 	"context"
 
-	"github.com/EstebanGitPro/motogo-backend/core/domain"
+	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/Nerzal/gocloak/v13"
 )
 

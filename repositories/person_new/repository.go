@@ -3,7 +3,7 @@ package personnew
 import (
 	"database/sql"
 
-	"github.com/EstebanGitPro/motogo-backend/core/ports"
+	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
 )
 
 const (
@@ -15,11 +15,11 @@ const (
 )
 
 type repository struct {
-	keycloak ports.AuthClient
+	keycloak output.AuthClient
 	db *sql.DB
 }
 
-func NewClient(db *sql.DB, keycloak ports.AuthClient) (*repository, error) {
+func NewClient(db *sql.DB, keycloak output.AuthClient) (*repository, error) {
 	return &repository{
 		keycloak: keycloak,
 		db: db,

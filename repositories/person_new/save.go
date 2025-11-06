@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/EstebanGitPro/motogo-backend/core/domain"
+	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/go-sql-driver/mysql"
 )
 

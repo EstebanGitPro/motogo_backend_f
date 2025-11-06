@@ -1,6 +1,6 @@
-package ports
+package output
 
-import "github.com/EstebanGitPro/motogo-backend/core/domain"
+import "github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 
 type Repository interface {
 	SavePerson(person domain.Person) error

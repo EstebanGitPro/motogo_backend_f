@@ -4,17 +4,17 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/EstebanGitPro/motogo-backend/core/ports"
+	"github.com/EstebanGitPro/motogo-backend/core/ports/input"
 	"github.com/gin-gonic/gin"
 )
 
 // AuthorizationMiddleware middleware para verificar roles usando Keycloak
 type AuthorizationMiddleware struct {
-	authzService ports.AuthorizationService
+	authzService input.AuthorizationService
 }
 
 // NewAuthorizationMiddleware crea un nuevo middleware de autorización
-func NewAuthorizationMiddleware(authzService ports.AuthorizationService) *AuthorizationMiddleware {
+func NewAuthorizationMiddleware(authzService input.AuthorizationService) *AuthorizationMiddleware {
 	return &AuthorizationMiddleware{
 		authzService: authzService,
 	}

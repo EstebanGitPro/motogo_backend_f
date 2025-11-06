@@ -4,7 +4,7 @@ package personnew
 import (
 	"context"
 
-	"github.com/EstebanGitPro/motogo-backend/core/domain"
+	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 )
 
 func (r *repository) UpdatePerson(ctx context.Context, person *domain.Person) error {

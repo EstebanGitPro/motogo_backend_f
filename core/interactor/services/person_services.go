@@ -1,19 +1,19 @@
 package services
 
 import (
-
 	"github.com/EstebanGitPro/motogo-backend/config"
-	"github.com/EstebanGitPro/motogo-backend/core/domain"
-	"github.com/EstebanGitPro/motogo-backend/core/dto"
-	"github.com/EstebanGitPro/motogo-backend/core/ports"
+	"github.com/EstebanGitPro/motogo-backend/core/interactor/dto"
+	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
+	"github.com/EstebanGitPro/motogo-backend/core/ports/input"
+	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
 )
 
 type service struct {
-	repository     ports.Repository
+	repository     output.Repository
 	config         *config.Config
 }
 
-func NewService(repo ports.Repository, cfg *config.Config) ports.Service {
+func NewService(repo output.Repository, cfg *config.Config) input.Service {
 	return &service{
 		repository:     repo,
 		config:         cfg,

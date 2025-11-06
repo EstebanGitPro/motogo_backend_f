@@ -3,7 +3,7 @@ package handlers
 import (
 	"net/http"
 
-	domain "github.com/EstebanGitPro/motogo-backend/core/domain"
+	domain "github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/gin-gonic/gin"
 )
 

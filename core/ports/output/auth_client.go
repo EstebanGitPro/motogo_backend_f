@@ -1,9 +1,9 @@
-package ports
+package output
 
 import (
 	"context"
 
-	"github.com/EstebanGitPro/motogo-backend/core/domain"
+	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/Nerzal/gocloak/v13"
 )
 
@@ -33,4 +33,9 @@ type AuthClient interface {
 	// Sesiones
 	Logout(ctx context.Context, refreshToken string) error
 	RefreshToken(ctx context.Context, refreshToken string) (*gocloak.JWT, error)
+}
+
+type Tx interface{
+	Commit() error
+	Rollback() error
 }

@@ -3,7 +3,7 @@ package middleware
 import (
 	"net/http"
 
-	"github.com/EstebanGitPro/motogo-backend/core/domain"
+	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/gin-gonic/gin"
 )
 

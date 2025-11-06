@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 
-	domain "github.com/EstebanGitPro/motogo-backend/core/domain"
-	"github.com/EstebanGitPro/motogo-backend/core/ports"
+	domain "github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
+	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
 	"github.com/go-sql-driver/mysql"
 )
 
@@ -17,7 +17,7 @@ type repository struct {
 	stmtUpdate     *sql.Stmt
 }
 
-func NewRepository(db *sql.DB) (ports.Repository, error) {
+func NewRepository(db *sql.DB) (output.Repository, error) {
 	stmtSave, err := db.Prepare(querySave)
 	if err != nil {
 		return nil, fmt.Errorf("error preparing stmtSave: %w", err)

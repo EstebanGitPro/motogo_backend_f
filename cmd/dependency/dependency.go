@@ -2,8 +2,9 @@ package dependency
 
 import (
 	"github.com/EstebanGitPro/motogo-backend/config"
-	"github.com/EstebanGitPro/motogo-backend/core/ports"
-	"github.com/EstebanGitPro/motogo-backend/core/services"
+	"github.com/EstebanGitPro/motogo-backend/core/ports/input"
+	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
+	"github.com/EstebanGitPro/motogo-backend/core/interactor/services"
 	"github.com/EstebanGitPro/motogo-backend/platform/keycloak"
 
 	mysql "github.com/EstebanGitPro/motogo-backend/platform/mysql"
@@ -12,9 +13,9 @@ import (
 )
 
 type Dependencies struct {
-	PersonService  ports.Service
-	PersonRepo     ports.Repository
-	KeycloakClient ports.AuthClient
+	PersonService  input.Service
+	PersonRepo     output.Repository
+	KeycloakClient output.AuthClient
 	Config         *config.Config
 }
 

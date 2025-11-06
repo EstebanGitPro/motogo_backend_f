@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/EstebanGitPro/motogo-backend/config"
-	"github.com/EstebanGitPro/motogo-backend/core/domain"
-	"github.com/EstebanGitPro/motogo-backend/core/ports"
+	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
+	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
 	"github.com/Nerzal/gocloak/v13"
 )
 
@@ -21,7 +21,7 @@ type client struct {
 	tokenMutex     sync.RWMutex
 }
 
-func NewClient(cfg *config.KeycloakConfig) (ports.AuthClient, error) {
+func NewClient(cfg *config.KeycloakConfig) (output.AuthClient, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("keycloak config cannot be nil")
 	}
