@@ -11,7 +11,7 @@ func (h handler) GetPersonByEmail() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		email := c.Param("email")
 
-		person, err := h.PersonService.GetPersonByEmail(email)
+		person, err := h.PersonService.GetPersonByEmail(c,email)
 		if err != nil {
 			c.Error(err)
 			return
@@ -30,7 +30,7 @@ func (h handler) RegisterPerson() func(c *gin.Context) {
 			return
 		}
 
-		result, err := h.PersonService.RegisterPerson(personRequest.ToDomain())
+		result, err := h.PersonService.RegisterPerson(c,personRequest.ToDomain())
 		if err != nil {
 			c.Error(err)
 			return

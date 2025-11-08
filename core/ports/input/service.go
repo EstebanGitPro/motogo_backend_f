@@ -1,14 +1,16 @@
 package input
 
 import (
-	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
+	"context"
+
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/dto"
+	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 )
 
 
 type Service interface {
-	RegisterPerson(person domain.Person) (*dto.RegistrationResult, error)
-	GetPersonByEmail(email string) (*domain.Person, error)
+	RegisterPerson(ctx context.Context,person domain.Person) (*dto.RegistrationResult, error)
+	GetPersonByEmail(ctx context.Context,email string) (*domain.Person, error)
 }
 
 

@@ -1,5 +1,5 @@
 
-package personnew
+package person
 
 import (
 	"context"
@@ -7,15 +7,15 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 )
 
-func (r *repository) UpdatePerson(ctx context.Context, person *domain.Person) error {
-	personToUpdate := FromDomain(*person)
+func (r *repository) UpdatePerson(person domain.Person) error {
+	personToUpdate := FromDomain(person)
 
 	tx, err := r.db.BeginTx(context.Background(), nil)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.ExecContext(ctx, queryUpdate,
+	_, err = tx.ExecContext(context.Background(), queryUpdate,
 		personToUpdate.IdentityNumber,
 		personToUpdate.FirstName,
 		personToUpdate.LastName,

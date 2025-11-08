@@ -1,4 +1,4 @@
-package personnew
+package person
 
 import (
 	"database/sql"
@@ -19,7 +19,7 @@ type repository struct {
 	db *sql.DB
 }
 
-func NewClient(db *sql.DB, keycloak output.AuthClient) (*repository, error) {
+func NewClientRepository(db *sql.DB, keycloak output.AuthClient) (*repository, error) {
 	return &repository{
 		keycloak: keycloak,
 		db: db,

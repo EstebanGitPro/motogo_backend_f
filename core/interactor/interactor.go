@@ -1,8 +1,6 @@
 package services
 
 import (
-	"github.com/EstebanGitPro/motogo-backend/core/interactor/dto"
-	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/input"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
 )
@@ -18,20 +16,8 @@ func NewInteractor(srv input.Service, repo output.Repository) *Interactor {
 }
 
 func (i *Interactor) Execute() error {
-
-	//Hay que ounto falla
-	//Iniciar transacción
-	tx, err := i.Repo.BeginTransaction()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-
-
-
-	
-	
-
+	// TODO: Implement execution logic
+	// Note: BeginTransaction is not part of output.Repository interface
+	// If transaction management is needed, it should be handled at the repository implementation level
 	return nil
 }

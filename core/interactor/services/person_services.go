@@ -1,7 +1,9 @@
 package services
 
 import (
-	"github.com/EstebanGitPro/motogo-backend/config"
+	"context"
+	"fmt"
+
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/dto"
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/input"
@@ -10,18 +12,18 @@ import (
 
 type service struct {
 	repository     output.Repository
-	config         *config.Config
+	keycloak       output.AuthClient
 }
 
-func NewService(repo output.Repository, cfg *config.Config) input.Service {
+func NewService(repository output.Repository, keycloak output.AuthClient ) input.Service {
 	return &service{
-		repository:     repo,
-		config:         cfg,
+		repository:     repository,
+		keycloak:       keycloak,
 	}			
 }
 
 
-func (s service) RegisterPerson(person domain.Person) (*dto.RegistrationResult, error) {
+func (s service) RegisterPerson(ctx context.Context,person domain.Person) (*dto.RegistrationResult, error) {
 	existingPerson, err := s.repository.GetPersonByEmail(person.Email)
 	if err == nil && existingPerson != nil {
 		return nil, domain.ErrDuplicateUser
@@ -39,6 +41,32 @@ func (s service) RegisterPerson(person domain.Person) (*dto.RegistrationResult, 
 		return nil, err
 	}
 
+	keycloakUserID, err := s.keycloak.CreateUser(ctx,&person)
+
+		if err != nil {
+
+		existingUser, getErr := s.keycloak.GetUserByEmail(ctx,person.Email)
+		if getErr != nil {
+			return nil, fmt.Errorf("failed to create or get user in keycloak: %w", err)
+		}
+		keycloakUserID = *existingUser.ID
+		}
+	
+		
+
+		person.KeycloakUserID = keycloakUserID
+		err = s.repository.UpdatePerson(person)
+		if err != nil {
+			_ = s.keycloak.DeleteUser(ctx,keycloakUserID)
+			return nil,fmt.Errorf("failed to update person with keycloak user id: %w", err)
+		}
+
+	// commit transaction
+	if err != nil {
+		return nil,err
+	}
+
+
 
 		
 		return nil, domain.ErrRegistrationFailed
@@ -46,6 +74,6 @@ func (s service) RegisterPerson(person domain.Person) (*dto.RegistrationResult, 
 
 
 
-func (s service) GetPersonByEmail(email string) (*domain.Person, error) {
+func (s service) GetPersonByEmail(ctx context.Context,email string) (*domain.Person, error) {
 	return s.repository.GetPersonByEmail(email)
 }

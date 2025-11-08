@@ -5,11 +5,11 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/core/ports/input"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services"
-	"github.com/EstebanGitPro/motogo-backend/platform/keycloak"
+	"github.com/EstebanGitPro/motogo-backend/platform/identity_provider/keycloak"
 
-	mysql "github.com/EstebanGitPro/motogo-backend/platform/mysql"
+	mysql "github.com/EstebanGitPro/motogo-backend/platform/databases/mysql"
 
-	repo "github.com/EstebanGitPro/motogo-backend/repositories/person"
+	repo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/person"
 )
 
 type Dependencies struct {
@@ -30,18 +30,20 @@ func Init() (*Dependencies, error) {
 		return nil, err
 	}
 
-	personRepo, err := repo.NewRepository(db)
-	if err != nil {
-		return nil, err
-	}
+	
 
 	keycloakClient, err := keycloak.NewClient(&cfg.Keycloak)
 	if err != nil {
 		return nil, err
 	}
 
+	personRepo, err := repo.NewClientRepository(db,keycloakClient)
+	if err != nil {
+		return nil, err
+	}
 
-	personService := services.NewService(personRepo, cfg)
+
+	personService := services.NewService(personRepo,keycloakClient)
 
 	return &Dependencies{
 		PersonService:  personService,
