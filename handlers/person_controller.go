@@ -30,7 +30,7 @@ func (h handler) RegisterPerson() func(c *gin.Context) {
 			return
 		}
 
-		result, err := h.PersonService.RegisterPerson(c,personRequest.ToDomain())
+		result, err := h.Interactor.RegisterPerson(c, personRequest.ToDomain())
 		if err != nil {
 			c.Error(err)
 			return

@@ -7,5 +7,6 @@ type Repository interface {
 	GetPersonByEmail(email string) (*domain.Person, error)
 	GetPersonByID(id string) (*domain.Person, error)
 	UpdatePerson(person domain.Person) error
+	PatchPerson(id string, keycloakUserID string) error
 	DeletePerson(id string) error
 }

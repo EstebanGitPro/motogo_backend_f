@@ -2,9 +2,10 @@ package dependency
 
 import (
 	"github.com/EstebanGitPro/motogo-backend/config"
+	"github.com/EstebanGitPro/motogo-backend/core/interactor"
+	"github.com/EstebanGitPro/motogo-backend/core/interactor/services"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/input"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
-	"github.com/EstebanGitPro/motogo-backend/core/interactor/services"
 	"github.com/EstebanGitPro/motogo-backend/platform/identity_provider/keycloak"
 
 	mysql "github.com/EstebanGitPro/motogo-backend/platform/databases/mysql"
@@ -16,6 +17,7 @@ type Dependencies struct {
 	PersonService  input.Service
 	PersonRepo     output.Repository
 	KeycloakClient output.AuthClient
+	Interactor     *interactor.Interactor
 	Config         *config.Config
 }
 
@@ -43,12 +45,15 @@ func Init() (*Dependencies, error) {
 	}
 
 
-	personService := services.NewService(personRepo,keycloakClient)
+	personService := services.NewService(personRepo, keycloakClient)
+
+	interactorFacade := interactor.NewInteractor(personService)
 
 	return &Dependencies{
 		PersonService:  personService,
 		PersonRepo:     personRepo,
 		KeycloakClient: keycloakClient,
+		Interactor:     interactorFacade,
 		Config:         cfg,
 	}, nil
 }

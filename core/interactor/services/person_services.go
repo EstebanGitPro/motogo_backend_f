@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/dto"
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
@@ -11,19 +10,22 @@ import (
 )
 
 type service struct {
-	repository     output.Repository
-	keycloak       output.AuthClient
+	repository output.Repository
+	keycloak   output.AuthClient
 }
 
-func NewService(repository output.Repository, keycloak output.AuthClient ) input.Service {
+func NewService(repository output.Repository, keycloak output.AuthClient) input.Service {
 	return &service{
-		repository:     repository,
-		keycloak:       keycloak,
-	}			
+		repository: repository,
+		keycloak:   keycloak,
+	}
 }
 
+func (s service) GetPersonByEmail(ctx context.Context, email string) (*domain.Person, error) {
+	return s.repository.GetPersonByEmail(email)
+}
 
-func (s service) RegisterPerson(ctx context.Context,person domain.Person) (*dto.RegistrationResult, error) {
+func (s service) RegisterPerson(ctx context.Context, person domain.Person) (*dto.RegistrationResult, error) {
 	existingPerson, err := s.repository.GetPersonByEmail(person.Email)
 	if err == nil && existingPerson != nil {
 		return nil, domain.ErrDuplicateUser
@@ -33,47 +35,44 @@ func (s service) RegisterPerson(ctx context.Context,person domain.Person) (*dto.
 		return nil, domain.ErrRoleRequired
 	}
 
-	person.SetID()
-	
-	
-	err = s.repository.SavePerson(person)
-	if err != nil {
-		return nil, err
-	}
-
-	keycloakUserID, err := s.keycloak.CreateUser(ctx,&person)
-
-		if err != nil {
-
-		existingUser, getErr := s.keycloak.GetUserByEmail(ctx,person.Email)
-		if getErr != nil {
-			return nil, fmt.Errorf("failed to create or get user in keycloak: %w", err)
-		}
-		keycloakUserID = *existingUser.ID
-		}
-	
-		
-
-		person.KeycloakUserID = keycloakUserID
-		err = s.repository.UpdatePerson(person)
-		if err != nil {
-			_ = s.keycloak.DeleteUser(ctx,keycloakUserID)
-			return nil,fmt.Errorf("failed to update person with keycloak user id: %w", err)
-		}
-
-	// commit transaction
-	if err != nil {
-		return nil,err
-	}
-
-
-
-		
-		return nil, domain.ErrRegistrationFailed
-	}
-
-
-
-func (s service) GetPersonByEmail(ctx context.Context,email string) (*domain.Person, error) {
-	return s.repository.GetPersonByEmail(email)
+	return &dto.RegistrationResult{
+		Person:  person,
+		Message: "Validaciones exitosas",
+	}, nil
 }
+
+// SavePersonToDB - Transacción 1: Guardar persona en base de datos
+func (s service) SavePersonToDB(ctx context.Context, person domain.Person) error {
+	return s.repository.SavePerson(person)
+}
+
+// CreateUserInKeycloak - Transacción 2: Crear usuario en Keycloak
+func (s service) CreateUserInKeycloak(ctx context.Context, person *domain.Person) (string, error) {
+	return s.keycloak.CreateUser(ctx, person)
+}
+
+// SetUserPassword - Transacción 3: Establecer contraseña en Keycloak
+func (s service) SetUserPassword(ctx context.Context, userID string, password string) error {
+	return s.keycloak.SetPassword(ctx, userID, password, true)
+}
+
+// AssignUserRole - Transacción 4: Asignar rol en Keycloak
+func (s service) AssignUserRole(ctx context.Context, userID string, role string) error {
+	return s.keycloak.AssignRole(ctx, userID, role)
+}
+
+// UpdatePersonKeycloakID - Actualizar keycloak_user_id en DB
+func (s service) UpdatePersonKeycloakID(ctx context.Context, personID string, keycloakUserID string) error {
+	return s.repository.PatchPerson(personID, keycloakUserID)
+}
+
+// RollbackPerson - Compensación: Eliminar persona de DB
+func (s service) RollbackPerson(ctx context.Context, personID string) error {
+	return s.repository.DeletePerson(personID)
+}
+
+// RollbackKeycloakUser - Compensación: Eliminar usuario de Keycloak
+func (s service) RollbackKeycloakUser(ctx context.Context, keycloakUserID string) error {
+	return s.keycloak.DeleteUser(ctx, keycloakUserID)
+}
+
