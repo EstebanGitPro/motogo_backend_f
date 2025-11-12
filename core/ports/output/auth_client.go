@@ -33,8 +33,3 @@ type AuthClient interface {
 	Logout(ctx context.Context, refreshToken string) error
 	RefreshToken(ctx context.Context, refreshToken string) (*gocloak.JWT, error)
 }
-
-type Tx interface {
-	Commit() error
-	Rollback() error
-}

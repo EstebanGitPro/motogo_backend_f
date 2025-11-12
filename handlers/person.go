@@ -5,40 +5,39 @@ import (
 )
 
 type PersonRequest struct {
-	IdentityNumber      string `json:"identity_number"`
-	FirstName           string `json:"first_name"`
-	LastName            string `json:"last_name"`
-	SecondLastName      string `json:"second_last_name"`
-	Email               string `json:"email"`
-	PhoneNumber         string `json:"phone_number"`
-	Password            string `json:"password"`
-	Role                string `json:"role"`
+	IdentityNumber string `json:"identity_number"`
+	FirstName      string `json:"first_name"`
+	LastName       string `json:"last_name"`
+	SecondLastName string `json:"second_last_name"`
+	Email          string `json:"email"`
+	PhoneNumber    string `json:"phone_number"`
+	Password       string `json:"password"`
+	Role           string `json:"role"`
 }
 
 type PersonResponse struct {
-	ID                  string `json:"id"`
-	IdentityNumber      string `json:"identity_number"`
-	FirstName           string `json:"first_name"`
-	LastName            string `json:"last_name"`
-	SecondLastName      string `json:"second_last_name"`
-	Email               string `json:"email"`
-	PhoneNumber         string `json:"phone_number"`
-	Role                string `json:"role"`
+	ID             string `json:"id"`
+	IdentityNumber string `json:"identity_number"`
+	FirstName      string `json:"first_name"`
+	LastName       string `json:"last_name"`
+	SecondLastName string `json:"second_last_name"`
+	Email          string `json:"email"`
+	PhoneNumber    string `json:"phone_number"`
+	Role           string `json:"role"`
 }
 
-// RegistrationResponse incluye los datos del usuario y un mensaje de confirmación
+
 type RegistrationResponse struct {
 	User    PersonResponse `json:"user"`
 	Message string         `json:"message"`
+	Links   []Link         `json:"_links"`
 }
 
-// LoginRequest para autenticación
 type LoginRequest struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required"`
 }
 
-// LoginResponse devuelve el token JWT de Keycloak
 type LoginResponse struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
@@ -46,17 +45,15 @@ type LoginResponse struct {
 	TokenType    string `json:"token_type"`
 }
 
-
-
 func (p PersonRequest) ToDomain() domain.Person {
 	return domain.Person{
-		IdentityNumber:      p.IdentityNumber,
-		FirstName:           p.FirstName,
-		LastName:            p.LastName,
-		SecondLastName:      p.SecondLastName,
-		Email:               p.Email,
-		PhoneNumber:         p.PhoneNumber,
-		Password:            p.Password,
-		Role:                p.Role,
+		IdentityNumber: p.IdentityNumber,
+		FirstName:      p.FirstName,
+		LastName:       p.LastName,
+		SecondLastName: p.SecondLastName,
+		Email:          p.Email,
+		PhoneNumber:    p.PhoneNumber,
+		Password:       p.Password,
+		Role:           p.Role,
 	}
 }

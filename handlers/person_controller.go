@@ -7,20 +7,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (h handler) GetPersonByEmail() func(c *gin.Context) {
-	return func(c *gin.Context) {
-		email := c.Param("email")
-
-		person, err := h.PersonService.GetPersonByEmail(c,email)
-		if err != nil {
-			c.Error(err)
-			return
-		}
-
-		c.JSON(http.StatusOK, person)
-	}
-}
-
 func (h handler) RegisterPerson() func(c *gin.Context) {
 	return func(c *gin.Context) {
 
@@ -36,6 +22,16 @@ func (h handler) RegisterPerson() func(c *gin.Context) {
 			return
 		}
 
+		scheme := "http"
+		if c.Request.TLS != nil {
+			scheme = "https"
+		}
+		baseURL := scheme + "://" + c.Request.Host
+		links := BuildAccountLinks(baseURL, result.Person.ID)
+		
+		locationURL := baseURL + "/motogo/api/v1/accounts/" + result.Person.ID
+		c.Header("Location", locationURL)
+
 		response := RegistrationResponse{
 			User: PersonResponse{
 				ID:                  result.Person.ID,
@@ -48,8 +44,10 @@ func (h handler) RegisterPerson() func(c *gin.Context) {
 				Role:                result.Person.Role,
 			},
 			Message: result.Message,
+			Links:   links,
 		}
 
+	
 		c.JSON(http.StatusCreated, response)
 	}
 }

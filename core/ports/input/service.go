@@ -10,9 +10,10 @@ import (
 
 // Service - Use Cases atómicos que el Interactor orquesta
 type Service interface {
-	// Validaciones
+	// Validaciones y consultas
 	RegisterPerson(ctx context.Context, person domain.Person) (*dto.RegistrationResult, error)
 	GetPersonByEmail(ctx context.Context, email string) (*domain.Person, error)
+	GetPersonByID(ctx context.Context, id string) (*domain.Person, error)
 	
 	// Transacciones atómicas
 	SavePersonToDB(ctx context.Context, person domain.Person) error
