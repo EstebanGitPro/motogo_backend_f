@@ -33,16 +33,6 @@ func (h handler) RegisterPerson() func(c *gin.Context) {
 		c.Header("Location", locationURL)
 
 		response := RegistrationResponse{
-			User: PersonResponse{
-				ID:                  result.Person.ID,
-				IdentityNumber:      result.Person.IdentityNumber,
-				FirstName:           result.Person.FirstName,
-				LastName:            result.Person.LastName,
-				SecondLastName:      result.Person.SecondLastName,
-				Email:               result.Person.Email,
-				PhoneNumber:         result.Person.PhoneNumber,
-				Role:                result.Person.Role,
-			},
 			Message: result.Message,
 			Links:   links,
 		}

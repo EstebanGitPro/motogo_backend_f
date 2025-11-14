@@ -1,27 +1,28 @@
 package person
 
 import (
-	"context"
+    "context"
 
-	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
+    "github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
+    "github.com/EstebanGitPro/motogo-backend/core/ports/output"
 )
 
-func (r *repository) DeletePerson(id string) error {
-	tx, err := r.db.BeginTx(context.Background(), nil)
-	if err != nil {
-		return err
-	}
+func (r *repository) DeletePerson(ctx context.Context, tx output.Tx, id string) error {
+    dbTx, err := r.db.BeginTx(ctx, nil)
+    if err != nil {
+        return err
+    }
 
-	_, err = tx.ExecContext(context.Background(), queryDelete, id)
-	if err != nil {
-		tx.Rollback()
-		return domain.ErrUserCannotSave
-	}
+    _, err = dbTx.ExecContext(ctx, queryDelete, id)
+    if err != nil {
+        dbTx.Rollback()
+        return domain.ErrUserCannotSave
+    }
 
-	err = tx.Commit()
-	if err != nil {
-		return err
-	}
+    err = dbTx.Commit()
+    if err != nil {
+        return err
+    }
 
-	return nil
+    return nil
 }

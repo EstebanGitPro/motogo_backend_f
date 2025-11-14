@@ -28,7 +28,6 @@ type PersonResponse struct {
 
 
 type RegistrationResponse struct {
-	User    PersonResponse `json:"user"`
 	Message string         `json:"message"`
 	Links   []Link         `json:"_links"`
 }
