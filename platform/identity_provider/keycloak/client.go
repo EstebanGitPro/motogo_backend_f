@@ -3,13 +3,13 @@ package keycloak
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"sync"
 	"time"
 
 	"github.com/EstebanGitPro/motogo-backend/config"
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
+	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 	"github.com/Nerzal/gocloak/v13"
 )
 
@@ -19,37 +19,44 @@ type client struct {
 	token          *gocloak.JWT
 	tokenExpiresAt time.Time
 	tokenMutex     sync.RWMutex
+	logger         logger.Logger
 }
 
-func NewClient(cfg *config.KeycloakConfig) (output.AuthClient, error) {
+func NewClient(cfg *config.KeycloakConfig, log logger.Logger) (output.AuthClient, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("keycloak config cannot be nil")
 	}
+
+	log.Info("Iniciando cliente Keycloak", "server_url", cfg.ServerURL, "realm", cfg.Realm)
 
 	gc := gocloak.NewClient(cfg.ServerURL)
 
 	authClient := &client{
 		gocloak: gc,
 		config:  cfg,
+		logger:  log,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
+	log.Debug("Autenticando admin de Keycloak", "admin_user", cfg.AdminUser, "realm", cfg.Realm)
 	token, err := authClient.gocloak.LoginAdmin(ctx, authClient.config.AdminUser, authClient.config.AdminPass, authClient.config.Realm)
 	if err != nil {
+		log.Error("Error autenticando admin de Keycloak", "error", err, "realm", cfg.Realm)
 		return nil, fmt.Errorf("failed to initialize admin token: %w", err)
 	}
 	authClient.token = token
 	authClient.tokenExpiresAt = time.Now().Add(time.Duration(token.ExpiresIn) * time.Second)
 
+	log.Success("Cliente Keycloak inicializado correctamente", "realm", cfg.Realm, "expires_in", token.ExpiresIn)
+
 	return authClient, nil
 }
 
-
 func (c *client) ensureValidToken(ctx context.Context) error {
 	c.tokenMutex.RLock()
-	
+
 	needsRefresh := time.Now().Add(30 * time.Second).After(c.tokenExpiresAt)
 	c.tokenMutex.RUnlock()
 
@@ -60,20 +67,18 @@ func (c *client) ensureValidToken(ctx context.Context) error {
 	c.tokenMutex.Lock()
 	defer c.tokenMutex.Unlock()
 
-	
 	if time.Now().Add(30 * time.Second).Before(c.tokenExpiresAt) {
 		return nil
 	}
 
-	slog.Info("Refreshing Keycloak admin token",
+	c.logger.Info("Refrescando token de admin de Keycloak",
 		"realm", c.config.Realm,
 		"admin_user", c.config.AdminUser,
 		"token_expires_at", c.tokenExpiresAt.Format(time.RFC3339))
 
-	
 	token, err := c.gocloak.LoginAdmin(ctx, c.config.AdminUser, c.config.AdminPass, c.config.Realm)
 	if err != nil {
-		slog.Error("Failed to refresh Keycloak admin token",
+		c.logger.Error("Error refrescando token de admin de Keycloak",
 			"realm", c.config.Realm,
 			"admin_user", c.config.AdminUser,
 			"error", err)
@@ -83,7 +88,7 @@ func (c *client) ensureValidToken(ctx context.Context) error {
 	c.token = token
 	c.tokenExpiresAt = time.Now().Add(time.Duration(token.ExpiresIn) * time.Second)
 
-	slog.Info("Keycloak admin token refreshed successfully",
+	c.logger.Success("Token de admin refrescado exitosamente",
 		"realm", c.config.Realm,
 		"admin_user", c.config.AdminUser,
 		"new_expires_at", c.tokenExpiresAt.Format(time.RFC3339),
@@ -97,18 +102,22 @@ func (c *client) LoginUser(ctx context.Context, username, password string) (*goc
 		return nil, fmt.Errorf("username and password cannot be empty")
 	}
 
+	c.logger.Info("Intentando login de usuario", "username", username, "realm", c.config.Realm)
+
 	token, err := c.gocloak.Login(
 		ctx,
 		c.config.ClientID,
 		c.config.ClientSecret,
 		c.config.Realm,
-		username, 
+		username,
 		password,
 	)
 	if err != nil {
+		c.logger.Error("Error en login de usuario", "username", username, "error", err)
 		return nil, fmt.Errorf("user login failed: %w", err)
 	}
 
+	c.logger.Success("Login de usuario exitoso", "username", username)
 	return token, nil
 }
 
@@ -121,12 +130,14 @@ func (c *client) CreateUser(ctx context.Context, person *domain.Person) (string,
 		return "", err
 	}
 
+	c.logger.Info("Creando usuario en Keycloak", "email", person.Email, "realm", c.config.Realm)
+
 	keycloakUser := gocloak.User{
-		Email:         &person.Email,
-		FirstName:     &person.FirstName,
-		LastName:      &person.LastName,
-		Enabled:       gocloak.BoolP(true),
-		Username:      &person.Email,
+		Email:     &person.Email,
+		FirstName: &person.FirstName,
+		LastName:  &person.LastName,
+		Enabled:   gocloak.BoolP(true),
+		Username:  &person.Email,
 	}
 
 	userID, err := c.gocloak.CreateUser(
@@ -136,9 +147,11 @@ func (c *client) CreateUser(ctx context.Context, person *domain.Person) (string,
 		keycloakUser,
 	)
 	if err != nil {
+		c.logger.Error("Error creando usuario en Keycloak", "email", person.Email, "error", err)
 		return "", fmt.Errorf("failed to create user in keycloak: %w", err)
 	}
 
+	c.logger.Success("Usuario creado en Keycloak", "email", person.Email, "user_id", userID)
 	return userID, nil
 }
 
@@ -151,7 +164,6 @@ func (c *client) GetUserByEmail(ctx context.Context, email string) (*gocloak.Use
 		return nil, err
 	}
 
-	
 	users, err := c.gocloak.GetUsers(
 		ctx,
 		c.token.AccessToken,
@@ -225,6 +237,8 @@ func (c *client) DeleteUser(ctx context.Context, userID string) error {
 		return err
 	}
 
+	c.logger.Warn("Eliminando usuario de Keycloak", "user_id", userID)
+
 	err := c.gocloak.DeleteUser(
 		ctx,
 		c.token.AccessToken,
@@ -232,9 +246,11 @@ func (c *client) DeleteUser(ctx context.Context, userID string) error {
 		userID,
 	)
 	if err != nil {
+		c.logger.Error("Error eliminando usuario de Keycloak", "user_id", userID, "error", err)
 		return fmt.Errorf("failed to delete user: %w", err)
 	}
 
+	c.logger.Info("Usuario eliminado de Keycloak", "user_id", userID)
 	return nil
 }
 
@@ -247,6 +263,8 @@ func (c *client) SetPassword(ctx context.Context, userID string, password string
 		return err
 	}
 
+	c.logger.Debug("Configurando password para usuario", "user_id", userID, "temporary", temporary)
+
 	err := c.gocloak.SetPassword(
 		ctx,
 		c.token.AccessToken,
@@ -256,9 +274,11 @@ func (c *client) SetPassword(ctx context.Context, userID string, password string
 		temporary,
 	)
 	if err != nil {
+		c.logger.Error("Error configurando password", "user_id", userID, "error", err)
 		return fmt.Errorf("failed to set password: %w", err)
 	}
 
+	c.logger.Success("Password configurado exitosamente", "user_id", userID)
 	return nil
 }
 
@@ -271,6 +291,8 @@ func (c *client) AssignRole(ctx context.Context, userID string, roleName string)
 		return err
 	}
 
+	c.logger.Info("Asignando rol a usuario", "user_id", userID, "role", roleName)
+
 	// Obtener el role por nombre
 	role, err := c.gocloak.GetRealmRole(
 		ctx,
@@ -279,6 +301,7 @@ func (c *client) AssignRole(ctx context.Context, userID string, roleName string)
 		roleName,
 	)
 	if err != nil {
+		c.logger.Error("Error obteniendo rol", "role", roleName, "error", err)
 		return fmt.Errorf("failed to get role %s: %w", roleName, err)
 	}
 
@@ -291,9 +314,11 @@ func (c *client) AssignRole(ctx context.Context, userID string, roleName string)
 		[]gocloak.Role{*role},
 	)
 	if err != nil {
+		c.logger.Error("Error asignando rol a usuario", "user_id", userID, "role", roleName, "error", err)
 		return fmt.Errorf("failed to assign role to user: %w", err)
 	}
 
+	c.logger.Success("Rol asignado exitosamente", "user_id", userID, "role", roleName)
 	return nil
 }
 
@@ -385,7 +410,6 @@ func (c *client) VerifyEmail(ctx context.Context, userID string) error {
 		return fmt.Errorf("userID cannot be empty")
 	}
 
-
 	user, err := c.GetUserByID(ctx, userID)
 	if err != nil {
 		return err
@@ -431,7 +455,7 @@ func (c *client) RefreshToken(ctx context.Context, refreshToken string) (*gocloa
 		return nil, fmt.Errorf("refreshToken cannot be empty")
 	}
 
-	slog.Info("Refreshing user token",
+	c.logger.Info("Refrescando token de usuario",
 		"realm", c.config.Realm,
 		"client_id", c.config.ClientID)
 
@@ -443,14 +467,14 @@ func (c *client) RefreshToken(ctx context.Context, refreshToken string) (*gocloa
 		c.config.Realm,
 	)
 	if err != nil {
-		slog.Error("Failed to refresh user token",
+		c.logger.Error("Error refrescando token de usuario",
 			"realm", c.config.Realm,
 			"client_id", c.config.ClientID,
 			"error", err)
 		return nil, fmt.Errorf("failed to refresh token: %w", err)
 	}
 
-	slog.Info("User token refreshed successfully",
+	c.logger.Success("Token de usuario refrescado exitosamente",
 		"realm", c.config.Realm,
 		"client_id", c.config.ClientID,
 		"expires_in_seconds", token.ExpiresIn,

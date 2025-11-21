@@ -15,28 +15,46 @@ const (
 	queryDelete     = "DELETE FROM persons WHERE id = ?"
 )
 
-// sqlTx es un wrapper para sql.Tx que implementa output.Tx
-type sqlTx struct {
-	*sql.Tx
-}
 
+type sqlTx struct {
+	tx     *sql.Tx
+	closed bool 
+}
 func (t *sqlTx) Commit() error {
-	return t.Tx.Commit()
+	if t.closed {
+		panic("sqlTx: commit on closed transaction")
+	}
+	t.closed = true
+	return t.tx.Commit()
 }
 
 func (t *sqlTx) Rollback() error {
-	return t.Tx.Rollback()
+	if t.closed {
+		panic("sqlTx: rollback on closed transaction")
+	}
+	t.closed = true
+	return t.tx.Rollback()
+}
+
+
+func (t *sqlTx) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+	return t.tx.ExecContext(ctx, query, args...)
+}
+
+func (t *sqlTx) QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row {
+	return t.tx.QueryRowContext(ctx, query, args...)
 }
 
 type repository struct {
-	keycloak output.AuthClient
-	db       *sql.DB
+	db *sql.DB
 }
 
-func NewClientRepository(db *sql.DB, keycloak output.AuthClient) (*repository, error) {
+func NewClientRepository(db *sql.DB) (*repository, error) {
+	if db == nil {
+		return nil, sql.ErrConnDone
+	}
 	return &repository{
-		keycloak: keycloak,
-		db:       db,
+		db: db,
 	}, nil
 }
 
@@ -45,5 +63,5 @@ func (r *repository) BeginTx(ctx context.Context) (output.Tx, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &sqlTx{Tx: tx}, nil
+	return &sqlTx{tx: tx}, nil
 }

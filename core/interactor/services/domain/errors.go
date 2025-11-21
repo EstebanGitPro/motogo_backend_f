@@ -2,12 +2,12 @@ package domain
 
 import "errors"
 
-
 // User Management Errors (MOD_U_*)
 var (
-	ErrDuplicateUser  = errors.New("usuario ya existe")
-	ErrUserCannotSave = errors.New("no se puede guardar el usuario")
-	ErrPersonNotFound = errors.New("persona no encontrada")
+	ErrDuplicateUser      = errors.New("usuario ya existe")
+	ErrUserCannotSave     = errors.New("no se puede guardar el usuario")
+	ErrPersonNotFound     = errors.New("persona no encontrada")
+	ErrInvalidTransaction = errors.New("transacción inválida")
 
 	ErrGettingUserByEmail        = errors.New("error obteniendo usuario por email")
 	ErrNotFoundUserByEmail       = errors.New("usuario no encontrado por email")

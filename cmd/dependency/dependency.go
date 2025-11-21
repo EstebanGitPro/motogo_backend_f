@@ -7,6 +7,7 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/core/ports/input"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
 	"github.com/EstebanGitPro/motogo-backend/platform/identity_provider/keycloak"
+	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 
 	mysql "github.com/EstebanGitPro/motogo-backend/platform/databases/mysql"
 
@@ -19,35 +20,46 @@ type Dependencies struct {
 	KeycloakClient output.AuthClient
 	Interactor     *interactor.Interactor
 	Config         *config.Config
+	Logger         logger.Logger
 }
 
 func Init() (*Dependencies, error) {
+	// Inicializar logger
+	log := logger.NewSlogLogger()
+	log.Info("Iniciando aplicación MotoGo Backend")
+
 	cfg, err := config.LoadConfig()
 	if err != nil {
+		log.Error("Error cargando configuración", "error", err)
 		return nil, err
 	}
+	log.Info("Configuración cargada exitosamente")
 
-	db, err := mysql.GetDB(cfg.Database)
+	db, err := mysql.GetDB(cfg.Database, log)
 	if err != nil {
+		log.Error("Error conectando a base de datos", "error", err)
 		return nil, err
 	}
+	log.Success("Conexión a base de datos establecida")
 
-	
-
-	keycloakClient, err := keycloak.NewClient(&cfg.Keycloak)
+	keycloakClient, err := keycloak.NewClient(&cfg.Keycloak, log)
 	if err != nil {
+		log.Error("Error inicializando cliente Keycloak", "error", err)
 		return nil, err
 	}
+	log.Success("Cliente Keycloak inicializado")
 
-	personRepo, err := repo.NewClientRepository(db,keycloakClient)
+	personRepo, err := repo.NewClientRepository(db)
 	if err != nil {
+		log.Error("Error inicializando repositorio", "error", err)
 		return nil, err
 	}
 
+	personService := services.NewService(personRepo, keycloakClient, log)
 
-	personService := services.NewService(personRepo, keycloakClient)
+	interactorFacade := interactor.NewInteractor(personService, log)
 
-	interactorFacade := interactor.NewInteractor(personService)
+	log.Success("Dependencias inicializadas correctamente")
 
 	return &Dependencies{
 		PersonService:  personService,
@@ -55,5 +67,6 @@ func Init() (*Dependencies, error) {
 		KeycloakClient: keycloakClient,
 		Interactor:     interactorFacade,
 		Config:         cfg,
+		Logger:         log,
 	}, nil
 }
