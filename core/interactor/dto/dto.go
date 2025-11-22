@@ -1,7 +1,7 @@
 package dto
 
 import (
-	"github.com/EstebanGitPro/motogo-backend/core/domain"
+	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 )
 
 // RegistrationResult contiene el resultado del registro de usuario
