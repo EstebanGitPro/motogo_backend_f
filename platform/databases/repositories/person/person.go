@@ -1,7 +1,7 @@
 package person
 
 import (
-	domain "github.com/EstebanGitPro/motogo-backend/core/domain"
+	domain "github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 )
 
 type Person struct {
@@ -43,4 +43,3 @@ func FromDomain(domainPerson domain.Person) Person {
 		KeycloakUserID:      domainPerson.KeycloakUserID,
 	}
 }
-

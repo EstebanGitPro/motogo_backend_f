@@ -19,5 +19,7 @@ type Person struct {
 
 func (u *Person) SetID() {
 	u.ID = uuid.New().String()
-}
+} 
+
+//TODO : Tolog.person
 
