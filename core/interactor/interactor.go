@@ -22,9 +22,7 @@ func NewInteractor(service input.Service, log logger.Logger) *Interactor {
 }
 
 func (i *Interactor) RegisterPerson(ctx context.Context, person domain.Person) (result *dto.RegistrationResult, err error) {
-	i.logger.Info("Iniciando proceso de registro",
-		"email", person.Email,
-		"role", person.Role)
+	i.logger.Info("Iniciando proceso de registro", person.ToLogger())
 
 	// PASO 1: Validaciones iniciales
 	result, err = i.service.RegisterPerson(ctx, person)
@@ -117,9 +115,9 @@ func (i *Interactor) RegisterPerson(ctx context.Context, person domain.Person) (
 	result.Person = person
 	result.Message = "Usuario registrado exitosamente"
 
+	//TODO: preguntar si dejar info en el logger success
 	i.logger.Success("Registro completado exitosamente",
-		"email", person.Email,
-		"person_id", person.ID,
+		person.ToLogger(),
 		"keycloak_user_id", keycloakUserID)
 
 	err = nil //asegurar que defer NO ejecute rollback

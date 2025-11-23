@@ -8,6 +8,7 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
 	"github.com/EstebanGitPro/motogo-backend/platform/identity_provider/keycloak"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
+	"github.com/EstebanGitPro/motogo-backend/tools/idencoder"
 
 	mysql "github.com/EstebanGitPro/motogo-backend/platform/databases/mysql"
 
@@ -21,6 +22,7 @@ type Dependencies struct {
 	Interactor     *interactor.Interactor
 	Config         *config.Config
 	Logger         logger.Logger
+	IDEncoder      *idencoder.HashidsEncoder
 }
 
 func Init() (*Dependencies, error) {
@@ -59,6 +61,17 @@ func Init() (*Dependencies, error) {
 
 	interactorFacade := interactor.NewInteractor(personService, log)
 
+	// Inicializar IDEncoder
+	encoder, err := idencoder.NewHashidsEncoder(idencoder.Config{
+		Secret:    cfg.IDEncoder.Secret,
+		MinLength: cfg.IDEncoder.MinLength,
+	})
+	if err != nil {
+		log.Error("Error inicializando ID encoder", "error", err)
+		return nil, err
+	}
+	log.Success("ID Encoder inicializado correctamente")
+
 	log.Success("Dependencias inicializadas correctamente")
 
 	return &Dependencies{
@@ -68,5 +81,6 @@ func Init() (*Dependencies, error) {
 		Interactor:     interactorFacade,
 		Config:         cfg,
 		Logger:         log,
+		IDEncoder:      encoder,
 	}, nil
 }

@@ -31,5 +31,9 @@
       },
     "verification": {
         "base_url": "http://localhost:8085"
+    },
+    "id_encoder": {
+        "secret": "motogo-secure-salt-change-in-production-2024",
+        "min_length": 36
     }
 }

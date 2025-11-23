@@ -6,8 +6,13 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+
+	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 	"github.com/EstebanGitPro/motogo-backend/tools/utils"
 )
+
+var log = logger.SlogLogger{}
+
 
 type Config struct {
 	Environment  string         `json:"environment"`
@@ -16,6 +21,12 @@ type Config struct {
 	Resend       Resend         `json:"resend"`
 	Verification Verification   `json:"verification"`
 	Keycloak     KeycloakConfig `json:"keycloak"`
+	IDEncoder    IDEncoder      `json:"id_encoder"`
+}
+
+type IDEncoder struct {
+	Secret    string `json:"secret"`
+	MinLength int    `json:"min_length"`
 }
 
 type Verification struct {
@@ -23,17 +34,17 @@ type Verification struct {
 }
 
 type Database struct {
-	Driver   string `json:"driver"`
-	Host     string `json:"host"`
-	Port     string `json:"port"`
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Name     string `json:"name"`
-	SSL      string `json:"ssl,omitempty"`
-	MaxOpenConns int `json:"max_open_conns"`
-	MaxIdleConns int `json:"max_idle_conns"`
-	ConnMaxLifetime int `json:"conn_max_lifetime"`
-	ConnMaxIdleTime int `json:"conn_max_idle_time"`
+	Driver          string `json:"driver"`
+	Host            string `json:"host"`
+	Port            string `json:"port"`
+	Username        string `json:"username"`
+	Password        string `json:"password"`
+	Name            string `json:"name"`
+	SSL             string `json:"ssl,omitempty"`
+	MaxOpenConns    int    `json:"max_open_conns"`
+	MaxIdleConns    int    `json:"max_idle_conns"`
+	ConnMaxLifetime int    `json:"conn_max_lifetime"`
+	ConnMaxIdleTime int    `json:"conn_max_idle_time"`
 }
 
 type Server struct {
@@ -58,7 +69,8 @@ type KeycloakConfig struct {
 func LoadConfig() (*Config, error) {
 	root, err := utils.FindModuleRoot()
 	if err != nil {
-		return nil, fmt.Errorf("error finding module root: %w", err)
+		log.Error("error finding module root", err)
+		return nil, err
 	}
 
 	env := os.Getenv("APP_ENV")
