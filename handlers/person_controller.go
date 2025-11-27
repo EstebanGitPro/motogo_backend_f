@@ -37,15 +37,17 @@ func (h handler) RegisterPerson() func(c *gin.Context) {
 			return
 		}
 
-		scheme := "http"
-		if c.Request.TLS != nil {
-			scheme = "https"
+		// Ofuscar el ID antes de exponerlo en la API
+		encodedID, err := h.EncodeID(result.Person.ID)
+		if err != nil {
+			h.HandleIDEncodingError(c, result.Person.ID, err)
+			return
 		}
-		baseURL := scheme + "://" + c.Request.Host
-		links := BuildAccountLinks(baseURL, result.Person.ID)
 
-		locationURL := baseURL + "/motogo/api/v1/accounts/" + result.Person.ID
-		c.Header("Location", locationURL)
+		// Construir respuesta con HATEOAS
+		baseURL := GetBaseURL(c)
+		links := BuildAccountLinks(baseURL, encodedID)
+		SetLocationHeader(c, baseURL, "accounts", encodedID)
 
 		response := RegistrationResponse{
 			Message: result.Message,
@@ -53,8 +55,8 @@ func (h handler) RegisterPerson() func(c *gin.Context) {
 		}
 
 		h.Logger.Success("Registro completado exitosamente",
-			"email", result.Person.Email,
-			"person_id", result.Person.ID,
+			result.Person.ToLogger(),
+			"encoded_id", encodedID,
 			"status", http.StatusCreated,
 			"client_ip", c.ClientIP())
 

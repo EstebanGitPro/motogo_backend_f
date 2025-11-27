@@ -109,7 +109,7 @@ Cada recurso incluye un array `_links` con hipervínculos relacionados:
 ```json
 {
   "user": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "id": "yYyWTE5wS6onSL4ouaAgs9MnFY2GinYa",
     "identity_number": "123456789",
     "first_name": "Juan",
     "last_name": "Pérez",
@@ -120,17 +120,17 @@ Cada recurso incluye un array `_links` con hipervínculos relacionados:
     "keycloak_user_id": "keycloak-uuid-here",
     "_links": [
       {
-        "href": "http://localhost:8080/motogo/api/v1/accounts/550e8400-e29b-41d4-a716-446655440000",
+        "href": "http://localhost:8080/motogo/api/v1/accounts/yYyWTE5wS6onSL4ouaAgs9MnFY2GinYa",
         "rel": "self",
         "method": "GET"
       },
       {
-        "href": "http://localhost:8080/motogo/api/v1/accounts/550e8400-e29b-41d4-a716-446655440000",
+        "href": "http://localhost:8080/motogo/api/v1/accounts/yYyWTE5wS6onSL4ouaAgs9MnFY2GinYa",
         "rel": "update",
         "method": "PUT"
       },
       {
-        "href": "http://localhost:8080/motogo/api/v1/accounts/550e8400-e29b-41d4-a716-446655440000",
+        "href": "http://localhost:8080/motogo/api/v1/accounts/yYyWTE5wS6onSL4ouaAgs9MnFY2GinYa",
         "rel": "delete",
         "method": "DELETE"
       },
@@ -223,7 +223,29 @@ Según las recomendaciones del profesor:
 - La autenticación se maneja con Keycloak
 - La lógica de negocio usa el ID local
 
-### 5. Servicios de Negocio
+### 5. Ofuscamiento de IDs (Seguridad)
+
+✅ **IDs Ofuscados** Los IDs internos de base de datos se ofuscan usando Hashids
+
+**Beneficios de seguridad**:
+- ❌ Los UUIDs internos NO se exponen directamente en la API
+- ✅ Previene enumeración de recursos (predictibilidad reducida)
+- ✅ IDs más cortos y amigables (10-32 caracteres)
+- ✅ Reversibles solo con el secreto correcto
+- ✅ Consistentes (mismo UUID = mismo ID ofuscado)
+
+**Ejemplo**:
+```
+UUID interno:  14c0a7bf-adef-4d20-a7ed-591ae9ac93c2
+ID ofuscado:   yYyWTE5wS6onSL4ouaAgs9MnFY2GinYa
+```
+
+**Configuración**:
+- Secret: Definido en `config/local-config.json` (cambiar en producción)
+- Longitud mínima: 10 caracteres
+- Alfabeto: Sin caracteres ambiguos (sin 0, O, I, l)
+
+### 6. Servicios de Negocio
 
 ✅ Los endpoints representan operaciones de negocio:
 - **POST /accounts** - Registrar nuevo usuario en el sistema
