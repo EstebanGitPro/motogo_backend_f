@@ -51,7 +51,7 @@ func (s service) BeginTx(ctx context.Context) (output.Tx, error) {
 }
 
 func (s service) RegisterPerson(ctx context.Context, person domain.Person) (*dto.RegistrationResult, error) {
-	s.logger.Info("Iniciando validaciones de registro", "email", person.Email)
+	s.logger.Info("Iniciando validaciones de registro", person.ToLogger())
 
 	existingPerson, err := s.repository.GetPersonByEmail(ctx, person.Email)
 	if err == nil && existingPerson != nil {
@@ -59,7 +59,7 @@ func (s service) RegisterPerson(ctx context.Context, person domain.Person) (*dto
 		return nil, domain.ErrDuplicateUser
 	}
 
-	s.logger.Info("Validaciones de registro completadas", "email", person.Email)
+	s.logger.Info("Validaciones de registro completadas", person.ToLogger())
 	return &dto.RegistrationResult{
 		Person:  person,
 		Message: "Validaciones exitosas",
@@ -67,24 +67,24 @@ func (s service) RegisterPerson(ctx context.Context, person domain.Person) (*dto
 }
 
 func (s service) SavePersonToDB(ctx context.Context, tx output.Tx, person domain.Person) error {
-	s.logger.Info("Guardando persona en base de datos", "email", person.Email, "person_id", person.ID)
+	s.logger.Info("Guardando persona en base de datos", person.ToLogger())
 	err := s.repository.SavePerson(ctx, tx, person)
 	if err != nil {
-		s.logger.Error("Error guardando persona en BD", "email", person.Email, "error", err)
+		s.logger.Error("Error guardando persona en BD", person.ToLogger(), "error", err)
 		return err
 	}
-	s.logger.Success("Persona guardada en base de datos", "email", person.Email, "person_id", person.ID)
+	s.logger.Success("Persona guardada en base de datos", person.ToLogger())
 	return nil
 }
 
 func (s service) CreateUserInKeycloak(ctx context.Context, person *domain.Person) (string, error) {
-	s.logger.Info("Creando usuario en Keycloak", "email", person.Email, "person_id", person.ID)
+	s.logger.Info("Creando usuario en Keycloak", person.ToLogger())
 	userID, err := s.keycloak.CreateUser(ctx, person)
 	if err != nil {
-		s.logger.Error("Error creando usuario en Keycloak", "email", person.Email, "error", err)
+		s.logger.Error("Error creando usuario en Keycloak", person.ToLogger(), "error", err)
 		return "", err
 	}
-	s.logger.Success("Usuario creado en Keycloak", "email", person.Email, "keycloak_user_id", userID)
+	s.logger.Success("Usuario creado en Keycloak", person.ToLogger(), "keycloak_user_id", userID)
 	return userID, nil
 }
 

@@ -26,6 +26,7 @@ var (
 	ErrInvalidJSONFormat = errors.New("formato JSON inválido")
 	ErrInvalidRequest    = errors.New("parámetros de solicitud inválidos")
 	ErrInvalidID         = errors.New("ID no válido")
+	ErrInternalServer    = errors.New("error interno del servidor")
 )
 
 // Authorization Errors (MOD_A_*)
