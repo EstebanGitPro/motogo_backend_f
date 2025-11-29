@@ -32,6 +32,10 @@ func (b *Builder) WithValidateRegister() gin.HandlerFunc {
 	return b.jsonValidator(b.Validators.RegisterValidator)
 }
 
+func (b *Builder) WithValidateMessage() gin.HandlerFunc {
+	return b.jsonValidator(b.Validators.MessageValidator)
+}
+
 func (b *Builder) jsonValidator(schema *jsonschema.Schema) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
@@ -40,7 +44,7 @@ func (b *Builder) jsonValidator(schema *jsonschema.Schema) gin.HandlerFunc {
 			if b.log != nil {
 				b.log.Error(logger.LogMiddlewareBodyReadError, "error", err, "path", c.Request.URL.Path)
 			}
-			c.Error(json_schema.NewFieldSchemaError(json_schema.ErrBodyReadFailed, err.Error()))
+			c.Error(json_schema.ErrBodyReadFailed)
 			c.Abort()
 			return
 		}
@@ -59,7 +63,7 @@ func (b *Builder) jsonValidator(schema *jsonschema.Schema) gin.HandlerFunc {
 
 		result := schema.Validate(data)
 		if !result.IsValid() {
-			// Collect all field names with errors
+			// Collect all field names with errors for logging
 			var fieldNames []string
 
 			// Process all errors to extract field names
@@ -90,39 +94,45 @@ func (b *Builder) jsonValidator(schema *jsonschema.Schema) gin.HandlerFunc {
 				}
 			}
 
-			var schemaError *json_schema.SchemaError
+			// Determine which validation error to use based on validation type
+			var validationError error
 
-			if len(fieldNames) == 1 {
-				// Single field error - get the error type from the first error
+			// If multiple fields failed, use specific multiple fields error
+			if len(fieldNames) > 1 {
+				validationError = json_schema.ErrMultipleFields
+			} else {
+				// Single field error - determine specific error type
 				var firstError *jsonschema.EvaluationError
 				for _, err := range result.Errors {
 					firstError = err
 					break
 				}
 
-				fieldName := fieldNames[0]
-				switch firstError.Code {
-				case "property_mismatch":
-					schemaError = json_schema.NewFieldSchemaError(json_schema.ErrFieldPropertyMismatch, fieldName)
-				case "required":
-					schemaError = json_schema.NewFieldSchemaError(json_schema.ErrFieldRequired, fieldName)
-				case "type":
-					schemaError = json_schema.NewFieldSchemaError(json_schema.ErrFieldTypeInvalid, fieldName)
-				default:
-					schemaError = json_schema.NewFieldSchemaError(json_schema.ErrValidationFailed, fieldName)
+				if firstError != nil {
+					switch firstError.Code {
+					case "property_mismatch":
+						validationError = json_schema.ErrFieldPropertyMismatch
+					case "required":
+						validationError = json_schema.ErrFieldRequired
+					case "type":
+						validationError = json_schema.ErrFieldTypeInvalid
+					default:
+						validationError = json_schema.ErrValidationFailed
+					}
+				} else {
+					validationError = json_schema.ErrValidationFailed
 				}
-			} else if len(fieldNames) > 1 {
-				// Multiple field errors
-				schemaError = json_schema.NewMultipleFieldSchemaError(fieldNames)
-			} else {
-				// No specific field information
-				schemaError = json_schema.ErrValidationFailed
+			}
+
+			// Store field names in context for error_handler to use in message parameters
+			if len(fieldNames) > 0 {
+				c.Set("validation_fields", fieldNames)
 			}
 
 			if b.log != nil {
 				b.log.Warn(logger.LogMiddlewareValidationFailed, "path", c.Request.URL.Path, "fields", fieldNames)
 			}
-			c.Error(schemaError)
+			c.Error(validationError)
 			c.Abort()
 			return
 		}

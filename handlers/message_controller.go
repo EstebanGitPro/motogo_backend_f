@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"net/http"
-
 	domain "github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 	"github.com/gin-gonic/gin"
@@ -57,19 +55,17 @@ func (h handler) CreateMessage() func(c *gin.Context) {
 		SetLocationHeader(c, baseURL, "messages", encodedID)
 
 		response := MessageCreatedResponse{
-			Message: "Mensaje creado exitosamente",
-			ID:      encodedID,
-			Links:   links,
+			ID:    encodedID,
+			Links: links,
 		}
 
 		h.Logger.Success("Mensaje creado exitosamente",
 			"id", result.ID,
 			"encoded_id", encodedID,
 			"code", result.Code,
-			"status", http.StatusCreated,
 			"client_ip", c.ClientIP())
 
-		c.JSON(http.StatusCreated, response)
+		h.Response.SuccessWithData(c, domain.MsgMessageCreated, response)
 	}
 }
 
@@ -124,17 +120,15 @@ func (h handler) UpdateMessage() func(c *gin.Context) {
 		links := BuildMessageUpdatedLinks(baseURL, encodedID)
 
 		response := MessageUpdatedResponse{
-			Message: "Mensaje actualizado exitosamente",
-			Links:   links,
+			Links: links,
 		}
 
 		h.Logger.Success("Mensaje actualizado exitosamente",
 			"id", result.ID,
 			"code", result.Code,
-			"status", http.StatusOK,
 			"client_ip", c.ClientIP())
 
-		c.JSON(http.StatusOK, response)
+		h.Response.SuccessWithData(c, domain.MsgMessageUpdated, response)
 	}
 }
 
@@ -170,16 +164,11 @@ func (h handler) DeleteMessage() func(c *gin.Context) {
 			return
 		}
 
-		response := MessageDeletedResponse{
-			Message: "Mensaje eliminado exitosamente",
-		}
-
 		h.Logger.Success("Mensaje eliminado exitosamente",
 			"id", uuid,
-			"status", http.StatusOK,
 			"client_ip", c.ClientIP())
 
-		c.JSON(http.StatusOK, response)
+		h.Response.Success(c, domain.MsgMessageDeleted)
 	}
 }
 
@@ -229,10 +218,9 @@ func (h handler) GetMessageByID() func(c *gin.Context) {
 		h.Logger.Debug(logger.LogMessageGetOK,
 			"id", uuid,
 			"code", message.Code,
-			"status", http.StatusOK,
 			"client_ip", c.ClientIP())
 
-		c.JSON(http.StatusOK, response)
+		h.Response.DataOnly(c, response)
 	}
 }
 
@@ -288,9 +276,8 @@ func (h handler) ListMessages() func(c *gin.Context) {
 
 		h.Logger.Debug(logger.LogMessageListOK,
 			"count", len(messages),
-			"status", http.StatusOK,
 			"client_ip", c.ClientIP())
 
-		c.JSON(http.StatusOK, response)
+		h.Response.DataOnly(c, response)
 	}
 }

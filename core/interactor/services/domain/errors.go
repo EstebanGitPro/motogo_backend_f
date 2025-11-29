@@ -31,6 +31,19 @@ var (
 	ErrInvalidRequest    = errors.New("ERR_INVALID_REQUEST")
 	ErrInvalidID         = errors.New("ERR_INVALID_ID")
 	ErrInternalServer    = errors.New("ERR_INTERNAL_SERVER")
+
+	// Schema validation errors
+	ErrSchemaBadRequest       = errors.New("ERR_SCHEMA_BAD_REQUEST")
+	ErrSchemaInvalidRequest   = errors.New("ERR_SCHEMA_INVALID_REQUEST")
+	ErrSchemaReadFailed       = errors.New("ERR_SCHEMA_READ_FAILED")
+	ErrSchemaEmpty            = errors.New("ERR_SCHEMA_EMPTY")
+	ErrSchemaCompileFailed    = errors.New("ERR_SCHEMA_COMPILE_FAILED")
+	ErrSchemaValidationFailed = errors.New("ERR_SCHEMA_VALIDATION_FAILED")
+	ErrSchemaBodyReadFailed   = errors.New("ERR_SCHEMA_BODY_READ_FAILED")
+	ErrSchemaFieldFormat      = errors.New("ERR_SCHEMA_FIELD_FORMAT")
+	ErrSchemaFieldRequired    = errors.New("ERR_SCHEMA_FIELD_REQUIRED")
+	ErrSchemaFieldType        = errors.New("ERR_SCHEMA_FIELD_TYPE")
+	ErrSchemaMultipleFields   = errors.New("ERR_SCHEMA_MULTIPLE_FIELDS")
 )
 
 // Authorization Errors (MOD_A_*)
@@ -85,10 +98,10 @@ const (
 
 // Person Module (MOD_P_*)
 const (
-	MsgPersonNotFound   = "MOD_P_NOT_FOUND_ERR_00001"
-	MsgPersonInvalidTx  = "MOD_P_TRANS_ERR_00002"
-	MsgPersonRegistered = "MOD_P_REG_EXI_00001"
-	MsgPersonUpdated    = "MOD_P_UPD_EXI_00002"
+	MsgPersonNotFound     = "MOD_P_NOT_FOUND_ERR_00001"
+	MsgPersonInvalidTx    = "MOD_P_TRANS_ERR_00002"
+	MsgPersonRegistered   = "MOD_P_REG_EXI_00001"
+	MsgPersonUpdated      = "MOD_P_UPD_EXI_00002"
 	MsgPersonCannotDelete = "MOD_P_DEL_ERR_00003"
 )
 

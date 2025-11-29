@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"net/http"
-
 	domain "github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 	"github.com/gin-gonic/gin"
@@ -51,16 +49,14 @@ func (h handler) RegisterPerson() func(c *gin.Context) {
 		SetLocationHeader(c, baseURL, "accounts", encodedID)
 
 		response := RegistrationResponse{
-			Message: result.Message,
-			Links:   links,
+			Links: links,
 		}
 
 		h.Logger.Success("Registro completado exitosamente",
 			result.Person.ToLogger(),
 			"encoded_id", encodedID,
-			"status", http.StatusCreated,
 			"client_ip", c.ClientIP())
 
-		c.JSON(http.StatusCreated, response)
+		h.Response.SuccessWithData(c, domain.MsgPersonRegistered, response)
 	}
 }

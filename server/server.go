@@ -18,7 +18,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 	errorHandler := middleware.NewErrorHandler(dependencies.MessagingCache, dependencies.Logger)
 	app.Use(errorHandler.Handle())
 
-	handler := handlers.New(dependencies.PersonService, dependencies.Interactor, dependencies.MessageInteractor, dependencies.Logger, dependencies.IDEncoder)
+	handler := handlers.New(dependencies.PersonService, dependencies.Interactor, dependencies.MessageInteractor, dependencies.Logger, dependencies.IDEncoder, dependencies.ResponseHandler)
 
 	validators, err := schema.NewValidator(&schema.DefaultFileReader{})
 	if err != nil {
@@ -45,10 +45,10 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 
 		// === MESSAGES ENDPOINTS (System Administration) ===
 		// POST /messages - Crear nuevo mensaje del sistema
-		public.POST("/messages", handler.CreateMessage())
+		public.POST("/messages", validator.WithValidateMessage(), handler.CreateMessage())
 
 		// PUT /messages/:id - Actualizar mensaje existente
-		public.PUT("/messages/:id", handler.UpdateMessage())
+		public.PUT("/messages/:id", validator.WithValidateMessage(), handler.UpdateMessage())
 
 		// DELETE /messages/:id - Eliminar mensaje
 		public.DELETE("/messages/:id", handler.DeleteMessage())

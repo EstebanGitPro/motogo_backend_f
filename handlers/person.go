@@ -29,8 +29,7 @@ type PersonResponse struct {
 }
 
 type RegistrationResponse struct {
-	Message string `json:"message"`
-	Links   []Link `json:"_links"`
+	Links []Link `json:"_links"`
 }
 
 type LoginRequest struct {

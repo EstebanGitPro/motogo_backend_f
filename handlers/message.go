@@ -37,20 +37,18 @@ type MessageListResponse struct {
 
 // MessageCreatedResponse represents the response for message creation
 type MessageCreatedResponse struct {
-	Message string `json:"message"`
-	ID      string `json:"id"`
-	Links   []Link `json:"_links"`
+	ID    string `json:"id"`
+	Links []Link `json:"_links"`
 }
 
 // MessageUpdatedResponse represents the response for message update
 type MessageUpdatedResponse struct {
-	Message string `json:"message"`
-	Links   []Link `json:"_links"`
+	Links []Link `json:"_links"`
 }
 
 // MessageDeletedResponse represents the response for message deletion
 type MessageDeletedResponse struct {
-	Message string `json:"message"`
+	// Empty struct - message comes from unified messaging system
 }
 
 // ToDomain converts MessageRequest to domain.Message
