@@ -16,7 +16,7 @@ const (
 // CachedMessage represents a message in the cache
 // This is cache's own type, independent from domain
 type CachedMessage struct {
-	ID       int64
+	ID       string 
 	Code     string
 	Type     MessageType
 	Category string

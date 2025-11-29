@@ -138,7 +138,7 @@ func (i *MessageInteractor) UpdateMessage(ctx context.Context, message domain.Me
 }
 
 // DeleteMessage deletes a system message with transaction handling
-func (i *MessageInteractor) DeleteMessage(ctx context.Context, id int64) (err error) {
+func (i *MessageInteractor) DeleteMessage(ctx context.Context, id string) (err error) {
 	i.logger.Info(logger.LogMessageDelete, "id", id)
 
 	// PASO 1: Validate message exists
@@ -193,7 +193,7 @@ func (i *MessageInteractor) DeleteMessage(ctx context.Context, id int64) (err er
 }
 
 // GetMessageByID retrieves a message by ID (read-only, no transaction)
-func (i *MessageInteractor) GetMessageByID(ctx context.Context, id int64) (*domain.Message, error) {
+func (i *MessageInteractor) GetMessageByID(ctx context.Context, id string) (*domain.Message, error) {
 	i.logger.Debug(logger.LogMessageGet, "id", id)
 
 	message, err := i.service.GetMessageByID(ctx, id)

@@ -6,18 +6,18 @@ import (
 
 // MessageRequest represents the request payload for creating/updating a message
 type MessageRequest struct {
-	Code     string             `json:"code" binding:"optional"`
-	Type     domain.MessageType `json:"type" binding:"optional"`
-	Category string             `json:"category" binding:"optional"`
-	Module   string             `json:"module" binding:"optional"`
-	Title    string             `json:"title" binding:"optional"`
-	Content  string             `json:"content" binding:"optional"`
+	Code     string             `json:"code" binding:"omitempty"`
+	Type     domain.MessageType `json:"type" binding:"omitempty"`
+	Category string             `json:"category" binding:"omitempty"`
+	Module   string             `json:"module" binding:"omitempty"`
+	Title    string             `json:"title" binding:"omitempty"`
+	Content  string             `json:"content" binding:"omitempty"`
 	Active   bool               `json:"active"`
 }
 
 // MessageResponse represents the response payload for a message
 type MessageResponse struct {
-	ID       int64              `json:"id"`
+	ID       string             `json:"id"`
 	Code     string             `json:"code"`
 	Type     domain.MessageType `json:"type"`
 	Category string             `json:"category"`
@@ -38,7 +38,7 @@ type MessageListResponse struct {
 // MessageCreatedResponse represents the response for message creation
 type MessageCreatedResponse struct {
 	Message string `json:"message"`
-	ID      int64  `json:"id"`
+	ID      string `json:"id"`
 	Links   []Link `json:"_links"`
 }
 

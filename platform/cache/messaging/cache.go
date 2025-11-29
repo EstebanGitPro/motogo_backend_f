@@ -27,18 +27,18 @@ const (
 // MessageCache handles message caching in memory (future: Redis)
 type MessageCache struct {
 	repo            MessageCacheRepository
-	log             logger.Logger
 	messages        map[string]*CachedMessage
 	mu              sync.RWMutex
 	refreshInterval time.Duration
 	stopRefresh     chan bool
 }
 
+var log logger.Logger = logger.NewSlogLogger()
+
 // NewMessageCache creates a new message cache instance
-func NewMessageCache(repo MessageCacheRepository, log logger.Logger, refreshInterval time.Duration) *MessageCache {
+func NewMessageCache(repo MessageCacheRepository, refreshInterval time.Duration) *MessageCache {
 	return &MessageCache{
 		repo:            repo,
-		log:             log,
 		messages:        make(map[string]*CachedMessage),
 		refreshInterval: refreshInterval,
 		stopRefresh:     make(chan bool),
@@ -51,7 +51,7 @@ func NewMessageCache(repo MessageCacheRepository, log logger.Logger, refreshInte
 func (c *MessageCache) LoadMessages(ctx context.Context) error {
 	messages, err := c.repo.GetAllActiveForCache(ctx)
 	if err != nil {
-		c.log.Error(logger.LogMsgCacheLoadError, "error", err.Error())
+		log.Error(logger.LogMsgCacheLoadError, "error", err.Error())
 		return err
 	}
 
@@ -63,7 +63,7 @@ func (c *MessageCache) LoadMessages(ctx context.Context) error {
 		c.messages[messages[i].Code] = &messages[i]
 	}
 
-	c.log.Info(logger.LogMsgCacheLoaded, "count", len(c.messages))
+	log.Info(logger.LogMsgCacheLoaded, "count", len(c.messages))
 	return nil
 }
 
@@ -77,11 +77,11 @@ func (c *MessageCache) ReloadMessages(ctx context.Context) error {
 // Should be called after LoadMessages in dependency initialization
 func (c *MessageCache) StartAutoRefresh(ctx context.Context) {
 	if c.refreshInterval <= 0 {
-		c.log.Info(logger.LogMsgCacheRefreshDisabled)
+		log.Info(logger.LogMsgCacheRefreshDisabled)
 		return
 	}
 
-	c.log.Info(logger.LogMsgCacheRefreshStart, "interval", c.refreshInterval.String())
+	log.Info(logger.LogMsgCacheRefreshStart, "interval", c.refreshInterval.String())
 
 	go func() {
 		ticker := time.NewTicker(c.refreshInterval)
@@ -90,14 +90,14 @@ func (c *MessageCache) StartAutoRefresh(ctx context.Context) {
 		for {
 			select {
 			case <-ticker.C:
-				c.log.Debug(logger.LogMsgCacheRefreshing)
+				log.Debug(logger.LogMsgCacheRefreshing)
 				if err := c.ReloadMessages(ctx); err != nil {
-					c.log.Error(logger.LogMsgCacheRefreshError, "error", err.Error())
+					log.Error(logger.LogMsgCacheRefreshError, "error", err.Error())
 				} else {
-					c.log.Debug(logger.LogMsgCacheRefreshOK, "count", c.MessageCount())
+					log.Debug(logger.LogMsgCacheRefreshOK, "count", c.MessageCount())
 				}
 			case <-c.stopRefresh:
-				c.log.Info(logger.LogMsgCacheRefreshStop)
+				log.Info(logger.LogMsgCacheRefreshStop)
 				return
 			}
 		}
@@ -124,10 +124,10 @@ func (c *MessageCache) GetMessage(code string) *CachedMessage {
 	}
 
 	// Not in cache, try DB
-	c.log.Debug(logger.LogMsgNotInCache, "code", code)
+	log.Debug(logger.LogMsgNotInCache, "code", code)
 	dbMsg, err := c.repo.GetByCodeForCache(context.Background(), code)
 	if err != nil || dbMsg == nil {
-		c.log.Warn(logger.LogMsgNotInDB, "code", code, "error", err)
+		log.Warn(logger.LogMsgNotInDB, "code", code, "error", err)
 		return nil
 	}
 
@@ -136,7 +136,7 @@ func (c *MessageCache) GetMessage(code string) *CachedMessage {
 	c.messages[code] = dbMsg
 	c.mu.Unlock()
 
-	c.log.Debug(logger.LogMsgCachedFromDB, "code", code)
+	log.Debug(logger.LogMsgCachedFromDB, "code", code)
 	return dbMsg
 }
 

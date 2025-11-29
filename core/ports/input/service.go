@@ -39,7 +39,7 @@ type MessageService interface {
 
 	// Messages - Validaciones y operaciones
 	ValidateMessage(ctx context.Context, message domain.Message) error
-	GetMessageByID(ctx context.Context, id int64) (*domain.Message, error)
+	GetMessageByID(ctx context.Context, id string) (*domain.Message, error)
 	GetMessageByCode(ctx context.Context, code string) (*domain.Message, error)
 	ListMessages(ctx context.Context, filters map[string]interface{}) ([]domain.Message, error)
 	ListActiveMessages(ctx context.Context) ([]domain.Message, error)
@@ -47,5 +47,5 @@ type MessageService interface {
 	// Messages - Operaciones transaccionales de BD
 	SaveMessageToDB(ctx context.Context, tx output.Tx, message domain.Message) error
 	UpdateMessageInDB(ctx context.Context, tx output.Tx, message domain.Message) error
-	DeleteMessageFromDB(ctx context.Context, tx output.Tx, id int64) error
+	DeleteMessageFromDB(ctx context.Context, tx output.Tx, id string) error
 }

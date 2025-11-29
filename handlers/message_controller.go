@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"net/http"
-	"strconv"
 
 	domain "github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
@@ -31,6 +30,8 @@ func (h handler) CreateMessage() func(c *gin.Context) {
 			"type", messageRequest.Type)
 
 		message := messageRequest.ToDomain()
+		message.SetID() // Generate UUID
+
 		result, err := h.MessageInteractor.CreateMessage(c, message)
 		if err != nil {
 			h.Logger.Error(logger.LogMessageCreateError,
@@ -41,22 +42,29 @@ func (h handler) CreateMessage() func(c *gin.Context) {
 			return
 		}
 
+		// Encode UUID for public API
+		encodedID, err := h.EncodeID(result.ID)
+		if err != nil {
+			h.HandleIDEncodingError(c, result.ID, err)
+			return
+		}
+
 		// Build HATEOAS links
 		baseURL := GetBaseURL(c)
-		messageID := strconv.FormatInt(result.ID, 10)
-		links := BuildMessageCreatedLinks(baseURL, messageID)
+		links := BuildMessageCreatedLinks(baseURL, encodedID)
 
 		// Set Location header
-		SetLocationHeader(c, baseURL, "messages", messageID)
+		SetLocationHeader(c, baseURL, "messages", encodedID)
 
 		response := MessageCreatedResponse{
 			Message: "Mensaje creado exitosamente",
-			ID:      result.ID,
+			ID:      encodedID,
 			Links:   links,
 		}
 
 		h.Logger.Success("Mensaje creado exitosamente",
 			"id", result.ID,
+			"encoded_id", encodedID,
 			"code", result.Code,
 			"status", http.StatusCreated,
 			"client_ip", c.ClientIP())
@@ -73,12 +81,12 @@ func (h handler) UpdateMessage() func(c *gin.Context) {
 			"path", c.Request.URL.Path,
 			"client_ip", c.ClientIP())
 
-		// Get ID from URL parameter
-		idParam := c.Param("id")
-		id, err := strconv.ParseInt(idParam, 10, 64)
+		// Get encoded ID from URL parameter and decode to UUID
+		encodedID := c.Param("id")
+		uuid, err := h.DecodeID(encodedID)
 		if err != nil {
 			h.Logger.Error(logger.LogMessageInvalidID,
-				"id_param", idParam,
+				"encoded_id", encodedID,
 				"error", err,
 				"client_ip", c.ClientIP())
 			c.Error(domain.ErrInvalidID)
@@ -95,16 +103,16 @@ func (h handler) UpdateMessage() func(c *gin.Context) {
 		}
 
 		h.Logger.Info(logger.LogMessageUpdateProcessing,
-			"id", id,
+			"id", uuid,
 			"code", messageRequest.Code)
 
 		message := messageRequest.ToDomain()
-		message.ID = id
+		message.ID = uuid
 
 		result, err := h.MessageInteractor.UpdateMessage(c, message)
 		if err != nil {
 			h.Logger.Error(logger.LogMessageUpdateError,
-				"id", id,
+				"id", uuid,
 				"error", err,
 				"client_ip", c.ClientIP())
 			c.Error(err)
@@ -113,8 +121,7 @@ func (h handler) UpdateMessage() func(c *gin.Context) {
 
 		// Build HATEOAS links
 		baseURL := GetBaseURL(c)
-		messageID := strconv.FormatInt(result.ID, 10)
-		links := BuildMessageUpdatedLinks(baseURL, messageID)
+		links := BuildMessageUpdatedLinks(baseURL, encodedID)
 
 		response := MessageUpdatedResponse{
 			Message: "Mensaje actualizado exitosamente",
@@ -139,24 +146,24 @@ func (h handler) DeleteMessage() func(c *gin.Context) {
 			"path", c.Request.URL.Path,
 			"client_ip", c.ClientIP())
 
-		// Get ID from URL parameter
-		idParam := c.Param("id")
-		id, err := strconv.ParseInt(idParam, 10, 64)
+		// Get encoded ID from URL parameter and decode to UUID
+		encodedID := c.Param("id")
+		uuid, err := h.DecodeID(encodedID)
 		if err != nil {
 			h.Logger.Error(logger.LogMessageInvalidID,
-				"id_param", idParam,
+				"encoded_id", encodedID,
 				"error", err,
 				"client_ip", c.ClientIP())
 			c.Error(domain.ErrInvalidID)
 			return
 		}
 
-		h.Logger.Info(logger.LogMessageDeleteProcessing, "id", id)
+		h.Logger.Info(logger.LogMessageDeleteProcessing, "id", uuid)
 
-		err = h.MessageInteractor.DeleteMessage(c, id)
+		err = h.MessageInteractor.DeleteMessage(c, uuid)
 		if err != nil {
 			h.Logger.Error(logger.LogMessageDeleteError,
-				"id", id,
+				"id", uuid,
 				"error", err,
 				"client_ip", c.ClientIP())
 			c.Error(err)
@@ -168,7 +175,7 @@ func (h handler) DeleteMessage() func(c *gin.Context) {
 		}
 
 		h.Logger.Success("Mensaje eliminado exitosamente",
-			"id", id,
+			"id", uuid,
 			"status", http.StatusOK,
 			"client_ip", c.ClientIP())
 
@@ -184,36 +191,43 @@ func (h handler) GetMessageByID() func(c *gin.Context) {
 			"path", c.Request.URL.Path,
 			"client_ip", c.ClientIP())
 
-		// Get ID from URL parameter
-		idParam := c.Param("id")
-		id, err := strconv.ParseInt(idParam, 10, 64)
+		// Get encoded ID from URL parameter and decode to UUID
+		encodedID := c.Param("id")
+		uuid, err := h.DecodeID(encodedID)
 		if err != nil {
 			h.Logger.Error(logger.LogMessageInvalidID,
-				"id_param", idParam,
+				"encoded_id", encodedID,
 				"error", err,
 				"client_ip", c.ClientIP())
 			c.Error(domain.ErrInvalidID)
 			return
 		}
 
-		message, err := h.MessageInteractor.GetMessageByID(c, id)
+		message, err := h.MessageInteractor.GetMessageByID(c, uuid)
 		if err != nil {
 			h.Logger.Error(logger.LogMessageGetError,
-				"id", id,
+				"id", uuid,
 				"error", err,
 				"client_ip", c.ClientIP())
 			c.Error(err)
 			return
 		}
 
+		// Encode UUID for response
+		encodedIDForResponse, err := h.EncodeID(message.ID)
+		if err != nil {
+			h.HandleIDEncodingError(c, message.ID, err)
+			return
+		}
+
 		// Build HATEOAS links
 		baseURL := GetBaseURL(c)
-		messageID := strconv.FormatInt(message.ID, 10)
 		response := ToMessageResponse(message)
-		response.Links = BuildMessageLinks(baseURL, messageID)
+		response.ID = encodedIDForResponse // Use encoded ID in response
+		response.Links = BuildMessageLinks(baseURL, encodedIDForResponse)
 
 		h.Logger.Debug(logger.LogMessageGetOK,
-			"id", id,
+			"id", uuid,
 			"code", message.Code,
 			"status", http.StatusOK,
 			"client_ip", c.ClientIP())
@@ -258,9 +272,18 @@ func (h handler) ListMessages() func(c *gin.Context) {
 			return
 		}
 
-		// Build HATEOAS links
+		// Encode UUIDs for each message in response
 		baseURL := GetBaseURL(c)
 		response := ToMessageListResponse(messages)
+		for i := range response.Messages {
+			encodedID, err := h.EncodeID(messages[i].ID)
+			if err != nil {
+				h.HandleIDEncodingError(c, messages[i].ID, err)
+				return
+			}
+			response.Messages[i].ID = encodedID
+			response.Messages[i].Links = BuildMessageLinks(baseURL, encodedID)
+		}
 		response.Links = BuildMessageListLinks(baseURL)
 
 		h.Logger.Debug(logger.LogMessageListOK,

@@ -1,4 +1,4 @@
-package person
+package message
 
 import (
 	"context"
@@ -8,19 +8,17 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/databases/common"
 )
 
-func (r *repository) DeletePerson(ctx context.Context, tx output.Tx, id string) error {
-	// Type assertion segura
+func (r *repository) DeleteMessage(ctx context.Context, tx output.Tx, id string) error {
+
 	dbTx, ok := tx.(*common.SQLTx)
 	if !ok {
 		return domain.ErrInvalidTransaction
 	}
 
-	// Solo ejecutar el query - NO manejar commit/rollback
-	_, err := dbTx.ExecContext(ctx, queryDelete, id)
+	_, err := dbTx.ExecContext(ctx, queryMessageDelete, id)
 	if err != nil {
-		return domain.ErrUserCannotDelete
+		return domain.ErrMessageCannotDelete
 	}
 
 	return nil
 }
-

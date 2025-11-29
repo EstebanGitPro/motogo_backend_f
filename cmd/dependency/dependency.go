@@ -92,7 +92,7 @@ func Init() (*Dependencies, error) {
 	// Auto-refresh cada 5 minutos (ajustable según necesidad)
 	// msgRepo implementa cachetypes.MessageCacheRepository
 	refreshInterval := 5 * time.Minute
-	messagingCache := messagingCache.NewMessageCache(msgRepo, log, refreshInterval)
+	messagingCache := messagingCache.NewMessageCache(msgRepo,refreshInterval)
 
 	if err := messagingCache.LoadMessages(context.Background()); err != nil {
 		log.Warn(logger.LogMsgCacheLoadError, "error", err)

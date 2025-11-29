@@ -22,6 +22,7 @@ var (
 	ErrTokenAlreadyUsed          = errors.New("ERR_TOKEN_ALREADY_USED")
 	ErrRegistrationFailed        = errors.New("ERR_REGISTRATION_FAILED")
 	ErrRoleRequired              = errors.New("ERR_ROLE_REQUIRED")
+	ErrUserCannotDelete          = errors.New("ERR_USER_CANNOT_DELETE")
 )
 
 // Request Validation Errors (MOD_V_*)
@@ -74,6 +75,7 @@ const (
 	MsgUserTokenUsed        = "MOD_U_TOKEN_USED_ERR_00009"
 	MsgUserRegError         = "MOD_U_REG_ERR_00010"
 	MsgUserRoleRequired     = "MOD_U_ROLE_REQ_ERR_00011"
+	MsgUserCannotDelete     = "MOD_U_DEL_ERR_00012"
 
 	MsgUserRegistered    = "MOD_U_REG_EXI_00001"
 	MsgUserUpdated       = "MOD_U_UPD_EXI_00002"
@@ -87,6 +89,7 @@ const (
 	MsgPersonInvalidTx  = "MOD_P_TRANS_ERR_00002"
 	MsgPersonRegistered = "MOD_P_REG_EXI_00001"
 	MsgPersonUpdated    = "MOD_P_UPD_EXI_00002"
+	MsgPersonCannotDelete = "MOD_P_DEL_ERR_00003"
 )
 
 // Validation Module (MOD_V_*)
@@ -141,6 +144,7 @@ const (
 	MsgMessageDeleteError    = "MOD_M_DELETE_ERR_00011"
 	MsgMessageInvalidType    = "MOD_M_TYPE_INV_ERR_00012"
 	MsgMessageListError      = "MOD_M_LIST_ERR_00013"
+	MsgMessageCannotDelete   = "MOD_M_DEL_ERR_00014"
 
 	MsgMessageCreated = "MOD_M_CREATE_EXI_00001"
 	MsgMessageUpdated = "MOD_M_UPDATE_EXI_00002"

@@ -12,7 +12,7 @@ import (
 // errorToMessageCode maps domain errors to message codes
 // Messages are loaded from cache (DB) - not hardcoded
 var errorToMessageCode = map[error]string{
-	// User errors
+	// User Management Errors (MOD_U_*)
 	domain.ErrDuplicateUser:             domain.MsgUserDuplicate,
 	domain.ErrUserCannotSave:            domain.MsgUserCannotSave,
 	domain.ErrUserCannotFound:           domain.MsgUserNotFound,
@@ -25,6 +25,7 @@ var errorToMessageCode = map[error]string{
 	domain.ErrTokenAlreadyUsed:          domain.MsgUserTokenUsed,
 	domain.ErrRegistrationFailed:        domain.MsgUserRegError,
 	domain.ErrRoleRequired:              domain.MsgUserRoleRequired,
+	domain.ErrUserCannotDelete:          domain.MsgUserCannotDelete,
 
 	// Person errors
 	domain.ErrPersonNotFound:     domain.MsgPersonNotFound,

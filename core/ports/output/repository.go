@@ -34,13 +34,13 @@ type MessageRepository interface {
 	// Message operations - transactional
 	SaveMessage(ctx context.Context, tx Tx, message domain.Message) error
 	UpdateMessage(ctx context.Context, tx Tx, message domain.Message) error
-	DeleteMessage(ctx context.Context, tx Tx, id int64) error
+	DeleteMessage(ctx context.Context, tx Tx, id string) error
 
 	// Message operations - read
 	GetAllActive(ctx context.Context) ([]domain.Message, error)
+	GetByID(ctx context.Context, id string) (*domain.Message, error)
 	GetByCode(ctx context.Context, code string) (*domain.Message, error)
 	GetByType(ctx context.Context, msgType string) ([]domain.Message, error)
 	GetByModule(ctx context.Context, module string) ([]domain.Message, error)
 
 }
-

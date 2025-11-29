@@ -37,7 +37,7 @@ func (s *MessageService) ValidateMessage(ctx context.Context, message domain.Mes
 	}
 
 	// Check if code already exists (for create operations)
-	if message.ID == 0 {
+	if message.ID == "" {
 		existing, err := s.repository.GetByCode(ctx, message.Code)
 		if err == nil && existing != nil {
 			s.logger.Warn(logger.LogMessageCodeDuplicate, "code", message.Code)
@@ -49,26 +49,23 @@ func (s *MessageService) ValidateMessage(ctx context.Context, message domain.Mes
 	return nil
 }
 
-// GetMessageByID retrieves a message by ID
-func (s *MessageService) GetMessageByID(ctx context.Context, id int64) (*domain.Message, error) {
+// GetMessageByID retrieves a message by ID (includes inactive messages for CRUD operations)
+func (s *MessageService) GetMessageByID(ctx context.Context, id string) (*domain.Message, error) {
 	s.logger.Debug(logger.LogMessageGet, "id", id)
 
-	// GetMessageByID - iterate through all messages to find by ID
-	messages, err := s.repository.GetAllActive(ctx)
+	message, err := s.repository.GetByID(ctx, id)
 	if err != nil {
 		s.logger.Error(logger.LogMessageGetError, "id", id, "error", err)
 		return nil, err
 	}
 
-	for i := range messages {
-		if messages[i].ID == id {
-			s.logger.Debug(logger.LogMessageGetOK, messages[i].ToLogger())
-			return &messages[i], nil
-		}
+	if message == nil {
+		s.logger.Warn(logger.LogMessageGetError, "id", id, "error", "not found")
+		return nil, domain.ErrMessageNotFound
 	}
 
-	s.logger.Warn(logger.LogMessageGetError, "id", id, "error", "not found")
-	return nil, domain.ErrMessageNotFound
+	s.logger.Debug(logger.LogMessageGetOK, message.ToLogger())
+	return message, nil
 }
 
 // GetMessageByCode retrieves a message by code
@@ -143,7 +140,7 @@ func (s *MessageService) UpdateMessageInDB(ctx context.Context, tx output.Tx, me
 }
 
 // DeleteMessageFromDB deletes a message from the database
-func (s *MessageService) DeleteMessageFromDB(ctx context.Context, tx output.Tx, id int64) error {
+func (s *MessageService) DeleteMessageFromDB(ctx context.Context, tx output.Tx, id string) error {
 	s.logger.Info(logger.LogMessageDelete, "id", id)
 
 	err := s.repository.DeleteMessage(ctx, tx, id)

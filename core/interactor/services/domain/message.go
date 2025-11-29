@@ -1,6 +1,10 @@
 package domain
 
-import "time"
+import (
+	"time"
+
+	uuid "github.com/EstebanGitPro/motogo-backend/tools/utils"
+)
 
 // MessageType represents system message types
 type MessageType string
@@ -15,7 +19,7 @@ const (
 
 // Message represents a system message in the domain
 type Message struct {
-	ID        int64       `json:"id"`
+	ID        string      `json:"id"`
 	Code      string      `json:"code"`
 	Type      MessageType `json:"type"`
 	Category  string      `json:"category"`
@@ -27,18 +31,22 @@ type Message struct {
 	UpdatedAt time.Time   `json:"updated_at"`
 }
 
+// SetID generates a new UUID for the message
+func (m *Message) SetID() {
+	m.ID = uuid.Generate()
+}
+
 // ToLogger returns a slice of strings for logging
 func (m *Message) ToLogger() []string {
 	return []string{
-		"id:" + string(rune(m.ID)),
+		"id:" + m.ID,
 		"code:" + m.Code,
 		"type:" + string(m.Type),
 		"module:" + m.Module,
 	}
 }
 
-
-//TODO: quitar estas validaciones de aqui
+// TODO: quitar estas validaciones de aqui
 // IsValid validates the message fields
 func (m *Message) Validate() error {
 	if m.Code == "" {
