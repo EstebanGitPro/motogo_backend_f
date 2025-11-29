@@ -4,32 +4,33 @@ import (
 	"net/http"
 
 	domain "github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
+	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 	"github.com/gin-gonic/gin"
 )
 
 func (h handler) RegisterPerson() func(c *gin.Context) {
 	return func(c *gin.Context) {
-		h.Logger.Info("Nueva solicitud de registro recibida",
+		h.Logger.Info(logger.LogRegRequestReceived,
 			"method", c.Request.Method,
 			"path", c.Request.URL.Path,
 			"client_ip", c.ClientIP())
 
 		var personRequest PersonRequest
 		if err := c.ShouldBindJSON(&personRequest); err != nil {
-			h.Logger.Error("Error parseando JSON del request",
+			h.Logger.Error(logger.LogRegJSONParseError,
 				"error", err,
 				"client_ip", c.ClientIP())
 			c.Error(domain.ErrInvalidJSONFormat)
 			return
 		}
 
-		h.Logger.Info("Procesando registro de usuario",
+		h.Logger.Info(logger.LogRegProcessing,
 			"email", personRequest.Email,
 			"role", personRequest.Role)
 
 		result, err := h.Interactor.RegisterPerson(c, personRequest.ToDomain())
 		if err != nil {
-			h.Logger.Error("Error en proceso de registro",
+			h.Logger.Error(logger.LogRegProcessError,
 				"email", personRequest.Email,
 				"error", err,
 				"client_ip", c.ClientIP())

@@ -1,32 +1,37 @@
 package server
 
 import (
+	"log/slog"
+
 	"github.com/EstebanGitPro/motogo-backend/cmd/dependency"
 	"github.com/EstebanGitPro/motogo-backend/handlers"
 	"github.com/EstebanGitPro/motogo-backend/middleware"
+	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 	"github.com/EstebanGitPro/motogo-backend/platform/schema"
 
 	"github.com/gin-gonic/gin"
 )
 
 func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
-	dependencies.Logger.Info("Configurando rutas de la aplicación")
+	dependencies.Logger.Info(logger.LogRouteConfiguring)
 
-	app.Use(middleware.ErrorHandler(dependencies.Logger))
+	errorHandler := middleware.NewErrorHandler(dependencies.MessagingCache, dependencies.Logger)
+	app.Use(errorHandler.Handle())
 
-	handler := handlers.New(dependencies.PersonService, dependencies.Interactor, dependencies.Logger, dependencies.IDEncoder)
+	handler := handlers.New(dependencies.PersonService, dependencies.Interactor, dependencies.MessageInteractor, dependencies.Logger, dependencies.IDEncoder)
 
 	validators, err := schema.NewValidator(&schema.DefaultFileReader{})
 	if err != nil {
-		dependencies.Logger.Error("Error creando validador de schema", "error", err)
-		dependencies.Logger.Fatal("Failed to initialize schema validator", "error", err)
+		dependencies.Logger.Error(logger.LogRouteValidatorError, "error", err)
+		dependencies.Logger.Fatal(logger.LogRouteValidatorError, "error", err)
 	}
-	dependencies.Logger.Success("Validador de schema inicializado")
-	validator := middleware.NewMiddlewareValidator(validators)
+	dependencies.Logger.Success(logger.LogRouteValidatorOK)
+	validator := middleware.NewMiddlewareValidator(validators, dependencies.Logger)
 
 	// Richardson Maturity Model Nivel 2-3: Recursos con URIs únicas + HATEOAS
 	public := app.Group("motogo/api/v1")
 	{
+		// === ACCOUNTS ENDPOINTS ===
 		// POST /accounts - Crear nueva cuenta
 		// Devuelve: 201 Created + Location header + HATEOAS links
 		public.POST("/accounts", validator.WithValidateRegister(), handler.RegisterPerson())
@@ -37,16 +42,33 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 
 		//public.POST("/auth/login", handler.Login())
 		//public.GET("/accounts/email/:email", handler.GetPersonByEmail())
+
+		// === MESSAGES ENDPOINTS (System Administration) ===
+		// POST /messages - Crear nuevo mensaje del sistema
+		public.POST("/messages", handler.CreateMessage())
+
+		// PUT /messages/:id - Actualizar mensaje existente
+		public.PUT("/messages/:id", handler.UpdateMessage())
+
+		// DELETE /messages/:id - Eliminar mensaje
+		public.DELETE("/messages/:id", handler.DeleteMessage())
+
+		// GET /messages/:id - Obtener mensaje por ID
+		public.GET("/messages/:id", handler.GetMessageByID())
+
+		// GET /messages - Listar mensajes (con filtros opcionales)
+		// Query params: ?module=users&type=ERROR&category=usuario_final&active=true
+		public.GET("/messages", handler.ListMessages())
 	}
 
-	dependencies.Logger.Success("Rutas configuradas correctamente")
+	dependencies.Logger.Success(logger.LogRouteConfigured)
 }
 
 func Boostrap(app *gin.Engine) *dependency.Dependencies {
 	dependencies, err := dependency.Init()
 	if err != nil {
-		dependencies.Logger.Fatal("Error initializing dependencies", "error", err)
-		return nil
+		slog.Error("Failed to initialize dependencies", slog.String("error", err.Error()))
+		panic(err)
 	}
 
 	routing(app, dependencies)

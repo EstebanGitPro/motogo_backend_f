@@ -8,17 +8,19 @@ import (
 )
 
 type handler struct {
-	PersonService input.Service
-	Interactor    *interactor.Interactor
-	Logger        logger.Logger
-	IDEncoder     *idencoder.HashidsEncoder
+	PersonService     input.Service
+	Interactor        *interactor.Interactor
+	MessageInteractor *interactor.MessageInteractor
+	Logger            logger.Logger
+	IDEncoder         *idencoder.HashidsEncoder
 }
 
-func New(service input.Service, interactor *interactor.Interactor, log logger.Logger, encoder *idencoder.HashidsEncoder) *handler {
+func New(service input.Service, personInteractor *interactor.Interactor, messageInteractor *interactor.MessageInteractor, log logger.Logger, encoder *idencoder.HashidsEncoder) *handler {
 	return &handler{
-		PersonService: service,
-		Interactor:    interactor,
-		Logger:        log,
-		IDEncoder:     encoder,
+		PersonService:     service,
+		Interactor:        personInteractor,
+		MessageInteractor: messageInteractor,
+		Logger:            log,
+		IDEncoder:         encoder,
 	}
 }

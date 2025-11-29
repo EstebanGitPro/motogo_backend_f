@@ -2,39 +2,59 @@ package domain
 
 import "errors"
 
+// Domain errors - Used as keys for error-to-message mapping
+// The actual user-facing messages come from cache/database
+// These are only used internally for error identification and logging
+
 // User Management Errors (MOD_U_*)
 var (
-	ErrDuplicateUser      = errors.New("usuario ya existe")
-	ErrUserCannotSave     = errors.New("no se puede guardar el usuario")
-	ErrPersonNotFound     = errors.New("persona no encontrada")
-	ErrInvalidTransaction = errors.New("transacción inválida")
-
-	ErrGettingUserByEmail        = errors.New("error obteniendo usuario por email")
-	ErrNotFoundUserByEmail       = errors.New("usuario no encontrado por email")
-	ErrUserCannotFound           = errors.New("usuario no puede ser encontrado")
-	ErrUserCannotGet             = errors.New("usuario no puede ser obtenido")
-	ErrorEmailNotVerified        = errors.New("email no verificado")
-	ErrVerificationTokenNotFound = errors.New("token de verificación no encontrado")
-	ErrTokenExpired              = errors.New("token expirado")
-	ErrTokenAlreadyUsed          = errors.New("token ya utilizado")
-	ErrRegistrationFailed        = errors.New("error en el proceso de registro")
-	ErrRoleRequired              = errors.New("el rol es requerido")
+	ErrDuplicateUser             = errors.New("ERR_DUPLICATE_USER")
+	ErrUserCannotSave            = errors.New("ERR_USER_CANNOT_SAVE")
+	ErrPersonNotFound            = errors.New("ERR_PERSON_NOT_FOUND")
+	ErrInvalidTransaction        = errors.New("ERR_INVALID_TRANSACTION")
+	ErrGettingUserByEmail        = errors.New("ERR_GETTING_USER_BY_EMAIL")
+	ErrNotFoundUserByEmail       = errors.New("ERR_NOT_FOUND_USER_BY_EMAIL")
+	ErrUserCannotFound           = errors.New("ERR_USER_CANNOT_FOUND")
+	ErrUserCannotGet             = errors.New("ERR_USER_CANNOT_GET")
+	ErrorEmailNotVerified        = errors.New("ERR_EMAIL_NOT_VERIFIED")
+	ErrVerificationTokenNotFound = errors.New("ERR_VERIFICATION_TOKEN_NOT_FOUND")
+	ErrTokenExpired              = errors.New("ERR_TOKEN_EXPIRED")
+	ErrTokenAlreadyUsed          = errors.New("ERR_TOKEN_ALREADY_USED")
+	ErrRegistrationFailed        = errors.New("ERR_REGISTRATION_FAILED")
+	ErrRoleRequired              = errors.New("ERR_ROLE_REQUIRED")
 )
 
 // Request Validation Errors (MOD_V_*)
 var (
-	ErrInvalidJSONFormat = errors.New("formato JSON inválido")
-	ErrInvalidRequest    = errors.New("parámetros de solicitud inválidos")
-	ErrInvalidID         = errors.New("ID no válido")
-	ErrInternalServer    = errors.New("error interno del servidor")
+	ErrInvalidJSONFormat = errors.New("ERR_INVALID_JSON_FORMAT")
+	ErrInvalidRequest    = errors.New("ERR_INVALID_REQUEST")
+	ErrInvalidID         = errors.New("ERR_INVALID_ID")
+	ErrInternalServer    = errors.New("ERR_INTERNAL_SERVER")
 )
 
 // Authorization Errors (MOD_A_*)
 var (
-	ErrRoleAssignmentFailed = errors.New("error al asignar rol")
-	ErrRoleRemovalFailed    = errors.New("error al remover rol")
-	ErrRoleCheckFailed      = errors.New("error al verificar rol")
-	ErrGetUserRolesFailed   = errors.New("error al obtener roles del usuario")
+	ErrRoleAssignmentFailed = errors.New("ERR_ROLE_ASSIGNMENT_FAILED")
+	ErrRoleRemovalFailed    = errors.New("ERR_ROLE_REMOVAL_FAILED")
+	ErrRoleCheckFailed      = errors.New("ERR_ROLE_CHECK_FAILED")
+	ErrGetUserRolesFailed   = errors.New("ERR_GET_USER_ROLES_FAILED")
+)
+
+// Message Management Errors (MOD_M_*)
+var (
+	ErrMessageNotFound         = errors.New("ERR_MESSAGE_NOT_FOUND")
+	ErrMessageCodeRequired     = errors.New("ERR_MESSAGE_CODE_REQUIRED")
+	ErrMessageTypeRequired     = errors.New("ERR_MESSAGE_TYPE_REQUIRED")
+	ErrMessageTitleRequired    = errors.New("ERR_MESSAGE_TITLE_REQUIRED")
+	ErrMessageContentRequired  = errors.New("ERR_MESSAGE_CONTENT_REQUIRED")
+	ErrMessageModuleRequired   = errors.New("ERR_MESSAGE_MODULE_REQUIRED")
+	ErrMessageCategoryRequired = errors.New("ERR_MESSAGE_CATEGORY_REQUIRED")
+	ErrMessageCodeDuplicate    = errors.New("ERR_MESSAGE_CODE_DUPLICATE")
+	ErrMessageCannotSave       = errors.New("ERR_MESSAGE_CANNOT_SAVE")
+	ErrMessageCannotUpdate     = errors.New("ERR_MESSAGE_CANNOT_UPDATE")
+	ErrMessageCannotDelete     = errors.New("ERR_MESSAGE_CANNOT_DELETE")
+	ErrMessageInvalidType      = errors.New("ERR_MESSAGE_INVALID_TYPE")
+	ErrMessageListFailed       = errors.New("ERR_MESSAGE_LIST_FAILED")
 )
 
 // ============================================
@@ -104,4 +124,26 @@ const (
 	MsgOpSuccess     = "GEN_OPE_EXI_00001"
 	MsgInfoProcess   = "GEN_INFO_00001"
 	MsgWarningAction = "GEN_WARN_00001"
+)
+
+// Message Module (MOD_M_*)
+const (
+	MsgMessageNotFound       = "MOD_M_NOT_FOUND_ERR_00001"
+	MsgMessageCodeRequired   = "MOD_M_CODE_REQ_ERR_00002"
+	MsgMessageTypeRequired   = "MOD_M_TYPE_REQ_ERR_00003"
+	MsgMessageTitleRequired  = "MOD_M_TITLE_REQ_ERR_00004"
+	MsgMessageContentReq     = "MOD_M_CONTENT_REQ_ERR_00005"
+	MsgMessageModuleRequired = "MOD_M_MODULE_REQ_ERR_00006"
+	MsgMessageCategoryReq    = "MOD_M_CATEGORY_REQ_ERR_00007"
+	MsgMessageCodeDuplicate  = "MOD_M_CODE_DUP_ERR_00008"
+	MsgMessageSaveError      = "MOD_M_SAVE_ERR_00009"
+	MsgMessageUpdateError    = "MOD_M_UPDATE_ERR_00010"
+	MsgMessageDeleteError    = "MOD_M_DELETE_ERR_00011"
+	MsgMessageInvalidType    = "MOD_M_TYPE_INV_ERR_00012"
+	MsgMessageListError      = "MOD_M_LIST_ERR_00013"
+
+	MsgMessageCreated = "MOD_M_CREATE_EXI_00001"
+	MsgMessageUpdated = "MOD_M_UPDATE_EXI_00002"
+	MsgMessageDeleted = "MOD_M_DELETE_EXI_00003"
+	MsgMessageListed  = "MOD_M_LIST_EXI_00004"
 )

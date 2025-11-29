@@ -9,11 +9,11 @@ import (
 
 // ResponseHandler handles unified system responses
 type ResponseHandler struct {
-	cache *messagingCache.CacheService
+	cache *messagingCache.MessageCache
 }
 
 // NewResponseHandler creates a new response handler
-func NewResponseHandler(cache *messagingCache.CacheService) *ResponseHandler {
+func NewResponseHandler(cache *messagingCache.MessageCache) *ResponseHandler {
 	return &ResponseHandler{
 		cache: cache,
 	}

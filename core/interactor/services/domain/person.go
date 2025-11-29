@@ -21,7 +21,6 @@ func (u *Person) SetID() {
 	u.ID = uuid.New().String()
 }
 
-// TODO : Tolog.person
 func (p *Person) ToLogger() []string {
 	return []string{
 		"id:" + p.ID,

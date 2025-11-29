@@ -4,61 +4,122 @@ import (
 	"net/http"
 
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
+	messagingCache "github.com/EstebanGitPro/motogo-backend/platform/cache/messaging"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 	"github.com/gin-gonic/gin"
 )
 
-//TODO: hacer esto 
-var mapError = map[error]ErrorResponse{
+// errorToMessageCode maps domain errors to message codes
+// Messages are loaded from cache (DB) - not hardcoded
+var errorToMessageCode = map[error]string{
+	// User errors
+	domain.ErrDuplicateUser:             domain.MsgUserDuplicate,
+	domain.ErrUserCannotSave:            domain.MsgUserCannotSave,
+	domain.ErrUserCannotFound:           domain.MsgUserNotFound,
+	domain.ErrUserCannotGet:             domain.MsgUserNotFound,
+	domain.ErrNotFoundUserByEmail:       domain.MsgUserEmailNotFound,
+	domain.ErrGettingUserByEmail:        domain.MsgUserEmailError,
+	domain.ErrorEmailNotVerified:        domain.MsgUserEmailNotVerified,
+	domain.ErrVerificationTokenNotFound: domain.MsgUserTokenNotFound,
+	domain.ErrTokenExpired:              domain.MsgUserTokenExpired,
+	domain.ErrTokenAlreadyUsed:          domain.MsgUserTokenUsed,
+	domain.ErrRegistrationFailed:        domain.MsgUserRegError,
+	domain.ErrRoleRequired:              domain.MsgUserRoleRequired,
 
-	domain.ErrDuplicateUser: {
-		Code:    "MOD_U_DUP_ERR_00001",
-		Message: "Usuario duplicado",
-		Status:  http.StatusConflict,
-	},
-	domain.ErrPersonNotFound: {
-		Code:    "MOD_P_NOT_FOUND_ERR_00001",
-		Message: "Persona no encontrada",
-		Status:  http.StatusNotFound,
-	},
+	// Person errors
+	domain.ErrPersonNotFound:     domain.MsgPersonNotFound,
+	domain.ErrInvalidTransaction: domain.MsgPersonInvalidTx,
+
+	// Validation errors
+	domain.ErrInvalidJSONFormat: domain.MsgValJSONInvalid,
+	domain.ErrInvalidRequest:    domain.MsgValInvalidReq,
+	domain.ErrInvalidID:         domain.MsgValIDInvalid,
+
+	// Authorization errors
+	domain.ErrRoleAssignmentFailed: domain.MsgRoleAssignError,
+	domain.ErrRoleRemovalFailed:    domain.MsgRoleRemoveError,
+	domain.ErrRoleCheckFailed:      domain.MsgRoleCheckError,
+	domain.ErrGetUserRolesFailed:   domain.MsgRoleGetError,
+
+	// Message errors
+	domain.ErrMessageNotFound:         domain.MsgMessageNotFound,
+	domain.ErrMessageCodeRequired:     domain.MsgMessageCodeRequired,
+	domain.ErrMessageTypeRequired:     domain.MsgMessageTypeRequired,
+	domain.ErrMessageTitleRequired:    domain.MsgMessageTitleRequired,
+	domain.ErrMessageContentRequired:  domain.MsgMessageContentReq,
+	domain.ErrMessageModuleRequired:   domain.MsgMessageModuleRequired,
+	domain.ErrMessageCategoryRequired: domain.MsgMessageCategoryReq,
+	domain.ErrMessageCodeDuplicate:    domain.MsgMessageCodeDuplicate,
+	domain.ErrMessageCannotSave:       domain.MsgMessageSaveError,
+	domain.ErrMessageCannotUpdate:     domain.MsgMessageUpdateError,
+	domain.ErrMessageCannotDelete:     domain.MsgMessageDeleteError,
+	domain.ErrMessageInvalidType:      domain.MsgMessageInvalidType,
+	domain.ErrMessageListFailed:       domain.MsgMessageListError,
+
+	// General errors
+	domain.ErrInternalServer: domain.MsgServerError,
 }
 
 type ErrorResponse struct {
+	Success bool   `json:"success"`
 	Code    string `json:"code"`
 	Message string `json:"message"`
-	Status  int    `json:"-"`
 }
 
-func ErrorHandler(log logger.Logger) gin.HandlerFunc {
+type ErrorHandler struct {
+	cache *messagingCache.MessageCache
+	log   logger.Logger
+}
+
+func NewErrorHandler(cache *messagingCache.MessageCache, log logger.Logger) *ErrorHandler {
+	return &ErrorHandler{
+		cache: cache,
+		log:   log,
+	}
+}
+
+func (h *ErrorHandler) Handle() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Next()
 
-		
 		if len(c.Errors) > 0 {
-			
 			err := c.Errors.Last().Err
 
-			if response, ok := mapError[err]; ok {
-				log.Warn("Error de negocio capturado",
-					"error", err.Error(),
-					"code", response.Code,
-					"status", response.Status,
-					"path", c.Request.URL.Path,
-					"method", c.Request.Method,
-					"client_ip", c.ClientIP())
-				c.JSON(response.Status, response)
-				return
+			// Try to map domain error to message code
+			if messageCode, ok := errorToMessageCode[err]; ok {
+				// Get message from cache (or DB if not cached)
+				msg := h.cache.GetMessageResponse(messageCode)
+				status := h.cache.GetHTTPStatus(messageCode)
+
+				if msg != nil {
+					h.log.Warn(logger.LogMiddlewareErrorCaught,
+						"error", err.Error(),
+						"code", msg.Code,
+						"status", status,
+						"path", c.Request.URL.Path,
+						"method", c.Request.Method,
+						"client_ip", c.ClientIP())
+
+					c.JSON(status, ErrorResponse{
+						Success: false,
+						Code:    msg.Code,
+						Message: msg.Content,
+					})
+					return
+				}
 			}
 
-			log.Error("Error interno del servidor",
+			// Fallback for unmapped errors
+			h.log.Error(logger.LogMiddlewareInternalErr,
 				"error", err.Error(),
 				"path", c.Request.URL.Path,
 				"method", c.Request.Method,
 				"client_ip", c.ClientIP())
 
-			c.JSON(http.StatusInternalServerError, map[string]any{
-				"success": false,
-				"message": err.Error(),
+			c.JSON(http.StatusInternalServerError, ErrorResponse{
+				Success: false,
+				Code:    domain.MsgServerError,
+				Message: "Error interno del servidor",
 			})
 		}
 	}

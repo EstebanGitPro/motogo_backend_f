@@ -10,12 +10,10 @@ import (
 	hashids "github.com/speps/go-hashids/v2"
 )
 
-var log = logger.SlogLogger{}
-
 // HashidsEncoder maneja la ofuscación y desofuscación de IDs usando Hashids
 type HashidsEncoder struct {
 	hashData *hashids.HashIDData
-
+	logger   logger.Logger
 }
 
 // Config contiene la configuración para el encoder
@@ -25,13 +23,13 @@ type Config struct {
 }
 
 // NewHashidsEncoder crea una nueva instancia del encoder basado en Hashids
-func NewHashidsEncoder(cfg Config) (*HashidsEncoder, error) {
+func NewHashidsEncoder(cfg Config, log logger.Logger) (*HashidsEncoder, error) {
 	if cfg.Secret == "" {
 		return nil, fmt.Errorf("secret no puede estar vacío")
 	}
 
-	if cfg.MinLength == 36 {
-		log.Warn("MinLength es igual a 36, lo cual es el valor por defecto")
+	if log != nil && cfg.MinLength == 36 {
+		log.Warn(logger.LogIDEncoderMinLengthWarn)
 	}
 
 	hd := hashids.NewData()
@@ -42,6 +40,7 @@ func NewHashidsEncoder(cfg Config) (*HashidsEncoder, error) {
 
 	return &HashidsEncoder{
 		hashData: hd,
+		logger:   log,
 	}, nil
 }
 
@@ -50,7 +49,9 @@ func (e *HashidsEncoder) Encode(uuidStr string) (string, error) {
 	// Validar que sea un UUID válido
 	parsedUUID, err := uuid.Parse(uuidStr)
 	if err != nil {
-		log.Error("UUID inválido", err)
+		if e.logger != nil {
+			e.logger.Error(logger.LogIDEncoderInvalidUUID, "error", err, "uuid", uuidStr)
+		}
 		return "", err
 	}
 
@@ -67,13 +68,17 @@ func (e *HashidsEncoder) Encode(uuidStr string) (string, error) {
 	// Crear hashids y encodear
 	h, err := hashids.NewWithData(e.hashData)
 	if err != nil {
-		log.Error("error creando hashids", err)
+		if e.logger != nil {
+			e.logger.Error(logger.LogIDEncoderHashidsCreate, "error", err)
+		}
 		return "", err
 	}
 
 	encoded, err := h.Encode(numbers)
 	if err != nil {
-		log.Error("error encodeando UUID", err)
+		if e.logger != nil {
+			e.logger.Error(logger.LogIDEncoderEncodingError, "error", err, "uuid", uuidStr)
+		}
 		return "", err
 	}
 
@@ -83,26 +88,36 @@ func (e *HashidsEncoder) Encode(uuidStr string) (string, error) {
 // Decode convierte un ID ofuscado de vuelta a UUID
 func (e *HashidsEncoder) Decode(encoded string) (string, error) {
 	if encoded == "" {
-		log.Error("ID ofuscado no puede estar vacío")
-		return "", errors.New("ID ofuscado no puede estar vacío")
+		err := errors.New("ID ofuscado no puede estar vacío")
+		if e.logger != nil {
+			e.logger.Error(logger.LogIDEncoderEmptyID, "error", err)
+		}
+		return "", err
 	}
 
 	// Crear hashids y decodear
 	h, err := hashids.NewWithData(e.hashData)
 	if err != nil {
-		log.Error("error creando hashids", err)
+		if e.logger != nil {
+			e.logger.Error(logger.LogIDEncoderHashidsCreate, "error", err)
+		}
 		return "", err
 	}
 
 	numbers, err := h.DecodeWithError(encoded)
 	if err != nil {
-		log.Error("error decodeando ID ofuscado", err)
+		if e.logger != nil {
+			e.logger.Error(logger.LogIDEncoderDecodingError, "error", err, "encoded", encoded)
+		}
 		return "", err
 	}
 
 	if len(numbers) != 8 {
-		log.Error("ID ofuscado tiene formato incorrecto")
-		return "", errors.New("ID ofuscado tiene formato incorrecto")
+		err := errors.New("ID ofuscado tiene formato incorrecto")
+		if e.logger != nil {
+			e.logger.Error(logger.LogIDEncoderInvalidFormat, "error", err, "encoded", encoded, "numbers_length", len(numbers))
+		}
+		return "", err
 	}
 
 	// Convertir números de vuelta a bytes
@@ -115,7 +130,9 @@ func (e *HashidsEncoder) Decode(encoded string) (string, error) {
 	// Crear UUID desde bytes
 	parsedUUID, err := uuid.FromBytes(uuidBytes)
 	if err != nil {
-		log.Error("error reconstruyendo UUID", err)
+		if e.logger != nil {
+			e.logger.Error(logger.LogIDEncoderUUIDError, "error", err, "encoded", encoded)
+		}
 		return "", err
 	}
 
@@ -126,7 +143,9 @@ func (e *HashidsEncoder) Decode(encoded string) (string, error) {
 func (e *HashidsEncoder) MustEncode(uuidStr string) string {
 	encoded, err := e.Encode(uuidStr)
 	if err != nil {
-		log.Error("error encodeando UUID", err)
+		if e.logger != nil {
+			e.logger.Error(logger.LogIDEncoderEncodingError, "error", err, "uuid", uuidStr)
+		}
 	}
 	return encoded
 }
