@@ -268,3 +268,16 @@ const (
 	LogMessageIDEncodeError     = "Error ofuscando ID"
 	LogMessageIDDecodeError     = "Error decodificando ID"
 )
+
+// ============================================
+// PROMETHEUS / OBSERVABILITY
+// ============================================
+const (
+	LogPrometheusInit          = "Inicializando métricas de Prometheus"
+	LogPrometheusInitOK        = "Métricas de Prometheus inicializadas correctamente"
+	LogPrometheusInitError     = "Error inicializando métricas de Prometheus"
+	LogPrometheusMetricRecord  = "Registrando métrica"
+	LogPrometheusMetricError   = "Error registrando métrica"
+	LogPrometheusScrapeSuccess = "Scraping de métricas exitoso"
+	LogPrometheusScrapeError   = "Error durante scraping de métricas"
+)

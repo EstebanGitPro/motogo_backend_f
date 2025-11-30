@@ -2,10 +2,23 @@ package handlers
 
 import (
 	domain "github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
+	"github.com/EstebanGitPro/motogo-backend/middleware"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 	"github.com/gin-gonic/gin"
 )
 
+// RegisterPerson godoc
+// @Summary      Registrar nueva cuenta
+// @Description  Crea una nueva cuenta de usuario en el sistema con sincronización a Keycloak
+// @Tags         accounts
+// @Accept       json
+// @Produce      json
+// @Param        account  body      PersonRequest  true  "Datos de la cuenta"
+// @Success      201  {object}  middleware.APIResponse{data=RegistrationResponse}  "Cuenta creada exitosamente"
+// @Failure      400  {object}  middleware.APIResponse  "Error de validación"
+// @Failure      409  {object}  middleware.APIResponse  "Email o número de identidad ya registrado"
+// @Failure      500  {object}  middleware.APIResponse  "Error interno del servidor"
+// @Router       /accounts [post]
 func (h handler) RegisterPerson() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		h.Logger.Info(logger.LogRegRequestReceived,
@@ -56,6 +69,9 @@ func (h handler) RegisterPerson() func(c *gin.Context) {
 			result.Person.ToLogger(),
 			"encoded_id", encodedID,
 			"client_ip", c.ClientIP())
+
+		// Record Prometheus metric for person registration
+		middleware.RecordPersonRegistration()
 
 		h.Response.SuccessWithData(c, domain.MsgPersonRegistered, response)
 	}

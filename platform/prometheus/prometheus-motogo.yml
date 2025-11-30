@@ -1,0 +1,23 @@
+# Configuración de Prometheus para Motogo Backend
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+# Configuración de scraping
+scrape_configs:
+  # Monitoreo de Prometheus mismo
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Monitoreo del Backend Motogo
+  - job_name: "motogo-backend"
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ["host.docker.internal:8085"]
+
+  # Monitoreo de Grafana
+  - job_name: "grafana"
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ["motogo-grafana:3000"]

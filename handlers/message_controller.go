@@ -2,11 +2,23 @@ package handlers
 
 import (
 	domain "github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
+	"github.com/EstebanGitPro/motogo-backend/middleware"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 	"github.com/gin-gonic/gin"
 )
 
-// CreateMessage handles POST requests to create a new system message
+// CreateMessage godoc
+// @Summary      Crear nuevo mensaje del sistema
+// @Description  Crea un nuevo mensaje de sistema para manejo de notificaciones, errores y mensajes informativos
+// @Tags         messages
+// @Accept       json
+// @Produce      json
+// @Param        message  body      MessageRequest  true  "Datos del mensaje"
+// @Success      201  {object}  middleware.APIResponse{data=MessageCreatedResponse}  "Mensaje creado exitosamente"
+// @Failure      400  {object}  middleware.APIResponse  "Error de validación"
+// @Failure      409  {object}  middleware.APIResponse  "Mensaje con código duplicado"
+// @Failure      500  {object}  middleware.APIResponse  "Error interno del servidor"
+// @Router       /messages [post]
 func (h handler) CreateMessage() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		h.Logger.Info(logger.LogMessageCreate,
@@ -65,11 +77,26 @@ func (h handler) CreateMessage() func(c *gin.Context) {
 			"code", result.Code,
 			"client_ip", c.ClientIP())
 
+		// Record Prometheus metric for message creation
+		middleware.RecordMessageCreated(result.Module, string(result.Type))
+
 		h.Response.SuccessWithData(c, domain.MsgMessageCreated, response)
 	}
 }
 
-// UpdateMessage handles PUT requests to update an existing system message
+// UpdateMessage godoc
+// @Summary      Actualizar mensaje existente
+// @Description  Actualiza un mensaje del sistema por su ID
+// @Tags         messages
+// @Accept       json
+// @Produce      json
+// @Param        id       path      string          true  "ID del mensaje (hashid)"
+// @Param        message  body      MessageRequest  true  "Datos actualizados del mensaje"
+// @Success      200  {object}  middleware.APIResponse{data=MessageUpdatedResponse}  "Mensaje actualizado exitosamente"
+// @Failure      400  {object}  middleware.APIResponse  "Error de validación"
+// @Failure      404  {object}  middleware.APIResponse  "Mensaje no encontrado"
+// @Failure      500  {object}  middleware.APIResponse  "Error interno del servidor"
+// @Router       /messages/{id} [put]
 func (h handler) UpdateMessage() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		h.Logger.Info(logger.LogMessageUpdate,
@@ -132,7 +159,18 @@ func (h handler) UpdateMessage() func(c *gin.Context) {
 	}
 }
 
-// DeleteMessage handles DELETE requests to delete a system message
+// DeleteMessage godoc
+// @Summary      Eliminar mensaje
+// @Description  Elimina un mensaje del sistema por su ID
+// @Tags         messages
+// @Accept       json
+// @Produce      json
+// @Param        id  path      string  true  "ID del mensaje (hashid)"
+// @Success      200  {object}  middleware.APIResponse  "Mensaje eliminado exitosamente"
+// @Failure      400  {object}  middleware.APIResponse  "ID inválido"
+// @Failure      404  {object}  middleware.APIResponse  "Mensaje no encontrado"
+// @Failure      500  {object}  middleware.APIResponse  "Error interno del servidor"
+// @Router       /messages/{id} [delete]
 func (h handler) DeleteMessage() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		h.Logger.Info(logger.LogMessageDelete,
@@ -172,7 +210,18 @@ func (h handler) DeleteMessage() func(c *gin.Context) {
 	}
 }
 
-// GetMessageByID handles GET requests to retrieve a message by ID
+// GetMessageByID godoc
+// @Summary      Obtener mensaje por ID
+// @Description  Obtiene un mensaje del sistema específico por su ID
+// @Tags         messages
+// @Accept       json
+// @Produce      json
+// @Param        id  path      string  true  "ID del mensaje (hashid)"
+// @Success      200  {object}  MessageResponse  "Mensaje encontrado"
+// @Failure      400  {object}  middleware.APIResponse  "ID inválido"
+// @Failure      404  {object}  middleware.APIResponse  "Mensaje no encontrado"
+// @Failure      500  {object}  middleware.APIResponse  "Error interno del servidor"
+// @Router       /messages/{id} [get]
 func (h handler) GetMessageByID() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		h.Logger.Debug(logger.LogMessageGet,
@@ -224,7 +273,19 @@ func (h handler) GetMessageByID() func(c *gin.Context) {
 	}
 }
 
-// ListMessages handles GET requests to list messages with optional filters
+// ListMessages godoc
+// @Summary      Listar mensajes
+// @Description  Obtiene una lista de mensajes del sistema con filtros opcionales
+// @Tags         messages
+// @Accept       json
+// @Produce      json
+// @Param        module    query     string  false  "Filtrar por módulo (ej: users, orders)"
+// @Param        type      query     string  false  "Filtrar por tipo (ERROR, SUCCESS, INFO, WARNING)"
+// @Param        category  query     string  false  "Filtrar por categoría (ej: usuario_final, admin)"
+// @Param        active    query     boolean  false  "Filtrar por estado activo (true/false)"
+// @Success      200  {object}  MessageListResponse  "Lista de mensajes"
+// @Failure      500  {object}  middleware.APIResponse  "Error interno del servidor"
+// @Router       /messages [get]
 func (h handler) ListMessages() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		h.Logger.Debug(logger.LogMessageList,
