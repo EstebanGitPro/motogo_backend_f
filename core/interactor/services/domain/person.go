@@ -1,7 +1,7 @@
 package domain
 
 import (
-	"github.com/google/uuid"
+	uuid "github.com/EstebanGitPro/motogo-backend/tools/utils"
 )
 
 type Person struct {
@@ -18,10 +18,9 @@ type Person struct {
 }
 
 func (u *Person) SetID() {
-	u.ID = uuid.New().String()
+	u.ID = uuid.Generate()
 }
 
-// TODO : Tolog.person
 func (p *Person) ToLogger() []string {
 	return []string{
 		"id:" + p.ID,

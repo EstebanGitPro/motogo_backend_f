@@ -10,7 +10,7 @@ func TestIDEncoder_EncodeDecodeUUID(t *testing.T) {
 	encoder, err := NewHashidsEncoder(Config{
 		Secret:    "test-secret-12345",
 		MinLength: 10,
-	})
+	}, nil)
 	if err != nil {
 		t.Fatalf("Error creating encoder: %v", err)
 	}
@@ -49,7 +49,7 @@ func TestIDEncoder_InvalidUUID(t *testing.T) {
 	encoder, err := NewHashidsEncoder(Config{
 		Secret:    "test-secret-12345",
 		MinLength: 10,
-	})
+	}, nil)
 	if err != nil {
 		t.Fatalf("Error creating encoder: %v", err)
 	}
@@ -65,7 +65,7 @@ func TestIDEncoder_InvalidEncodedID(t *testing.T) {
 	encoder, err := NewHashidsEncoder(Config{
 		Secret:    "test-secret-12345",
 		MinLength: 10,
-	})
+	}, nil)
 	if err != nil {
 		t.Fatalf("Error creating encoder: %v", err)
 	}
@@ -81,7 +81,7 @@ func TestIDEncoder_Consistency(t *testing.T) {
 	encoder, err := NewHashidsEncoder(Config{
 		Secret:    "test-secret-12345",
 		MinLength: 10,
-	})
+	}, nil)
 	if err != nil {
 		t.Fatalf("Error creating encoder: %v", err)
 	}

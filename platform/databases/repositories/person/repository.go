@@ -5,6 +5,7 @@ import (
 	"database/sql"
 
 	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
+	"github.com/EstebanGitPro/motogo-backend/platform/databases/common"
 )
 
 const (
@@ -14,36 +15,6 @@ const (
 	queryUpdate     = "UPDATE persons SET identity_number = ?, first_name = ?, last_name = ?, second_last_name = ?, email = ?, phone_number = ?, role = ?, keycloak_user_id = ? WHERE id = ?"
 	queryDelete     = "DELETE FROM persons WHERE id = ?"
 )
-
-
-type sqlTx struct {
-	tx     *sql.Tx
-	closed bool 
-}
-func (t *sqlTx) Commit() error {
-	if t.closed {
-		panic("sqlTx: commit on closed transaction")
-	}
-	t.closed = true
-	return t.tx.Commit()
-}
-
-func (t *sqlTx) Rollback() error {
-	if t.closed {
-		panic("sqlTx: rollback on closed transaction")
-	}
-	t.closed = true
-	return t.tx.Rollback()
-}
-
-
-func (t *sqlTx) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
-	return t.tx.ExecContext(ctx, query, args...)
-}
-
-func (t *sqlTx) QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row {
-	return t.tx.QueryRowContext(ctx, query, args...)
-}
 
 type repository struct {
 	db *sql.DB
@@ -63,5 +34,5 @@ func (r *repository) BeginTx(ctx context.Context) (output.Tx, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &sqlTx{tx: tx}, nil
+	return common.NewSQLTx(tx), nil
 }

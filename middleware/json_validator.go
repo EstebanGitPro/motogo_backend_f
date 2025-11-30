@@ -7,6 +7,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 	json_schema "github.com/EstebanGitPro/motogo-backend/platform/schema"
 	"github.com/gin-gonic/gin"
 	"github.com/kaptinlin/jsonschema"
@@ -14,115 +15,131 @@ import (
 
 type Builder struct {
 	Validators *json_schema.Validators
-    isLogin    bool 
+	log        logger.Logger
+	isLogin    bool
 }
 
+func NewMiddlewareValidator(validators *json_schema.Validators, log logger.Logger) *Builder {
 
-func NewMiddlewareValidator(validators *json_schema.Validators) *Builder {
-	
 	return &Builder{
 		Validators: validators,
+		log:        log,
 	}
 }
 
-
-
 func (b *Builder) WithValidateRegister() gin.HandlerFunc {
-    b.isLogin = false
-	return b.jsonValidator(b.Validators.RegisterValidator )
+	b.isLogin = false
+	return b.jsonValidator(b.Validators.RegisterValidator)
 }
 
+func (b *Builder) WithValidateMessage() gin.HandlerFunc {
+	return b.jsonValidator(b.Validators.MessageValidator)
+}
 
 func (b *Builder) jsonValidator(schema *jsonschema.Schema) gin.HandlerFunc {
-    return func(c *gin.Context) {
+	return func(c *gin.Context) {
 
-        bodyBytes, err := io.ReadAll(c.Request.Body)
-        if err != nil { 
-            c.Error(json_schema.NewFieldSchemaError(json_schema.ErrBodyReadFailed, err.Error()))
-            c.Abort()
-            return
-        }
+		bodyBytes, err := io.ReadAll(c.Request.Body)
+		if err != nil {
+			if b.log != nil {
+				b.log.Error(logger.LogMiddlewareBodyReadError, "error", err, "path", c.Request.URL.Path)
+			}
+			c.Error(json_schema.ErrBodyReadFailed)
+			c.Abort()
+			return
+		}
 
-      
-        c.Request.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+		c.Request.Body = io.NopCloser(bytes.NewReader(bodyBytes))
 
-      
-        var data map[string]interface{}
-        if err := json.Unmarshal(bodyBytes, &data); err != nil {
-            c.Error(json_schema.ErrBadRequest)
-            c.Abort()
-            return
-        }
+		var data map[string]interface{}
+		if err := json.Unmarshal(bodyBytes, &data); err != nil {
+			if b.log != nil {
+				b.log.Error(logger.LogMiddlewareJSONParseError, "error", err, "path", c.Request.URL.Path)
+			}
+			c.Error(json_schema.ErrBadRequest)
+			c.Abort()
+			return
+		}
 
-    
-        result := schema.Validate(data)
-        if !result.IsValid() {
-            // Collect all field names with errors
-            var fieldNames []string
-            
-            // Process all errors to extract field names
-            for _, validationError := range result.Errors {
-                if validationError.Params != nil {
-                    // Try "properties" (plural) first - for multiple fields
-                    if properties, exists := validationError.Params["properties"]; exists {
-                        propertiesStr := fmt.Sprintf("%v", properties)
-                        // Parse multiple properties: "'email', 'role'" -> ["email", "role"]
-                        fields := strings.Split(propertiesStr, ",")
-                        for _, field := range fields {
-                            field = strings.TrimSpace(field)
-                            // Remove quotes
-                            field = strings.Trim(field, "'\"")
-                            if field != "" {
-                                fieldNames = append(fieldNames, field)
-                            }
-                        }
-                    } else if property, exists := validationError.Params["property"]; exists {
-                        // Single property
-                        propertyName := fmt.Sprintf("%v", property)
-                        // Remove quotes if present
-                        propertyName = strings.Trim(propertyName, "'\"")
-                        if propertyName != "" {
-                            fieldNames = append(fieldNames, propertyName)
-                        }
-                    }
-                }
-            }
-            
-            var schemaError *json_schema.SchemaError
-            
-            if len(fieldNames) == 1 {
-                // Single field error - get the error type from the first error
-                var firstError *jsonschema.EvaluationError
-                for _, err := range result.Errors {
-                    firstError = err
-                    break
-                }
-                
-                fieldName := fieldNames[0]
-                switch firstError.Code {
-                case "property_mismatch":
-                    schemaError = json_schema.NewFieldSchemaError(json_schema.ErrFieldPropertyMismatch, fieldName)
-                case "required":
-                    schemaError = json_schema.NewFieldSchemaError(json_schema.ErrFieldRequired, fieldName)
-                case "type":
-                    schemaError = json_schema.NewFieldSchemaError(json_schema.ErrFieldTypeInvalid, fieldName)
-                default:
-                    schemaError = json_schema.NewFieldSchemaError(json_schema.ErrValidationFailed, fieldName)
-                }
-            } else if len(fieldNames) > 1 {
-                // Multiple field errors
-                schemaError = json_schema.NewMultipleFieldSchemaError(fieldNames)
-            } else {
-                // No specific field information
-                schemaError = json_schema.ErrValidationFailed
-            }
-            
-            c.Error(schemaError)
-            c.Abort()
-            return
-        }
+		result := schema.Validate(data)
+		if !result.IsValid() {
+			// Collect all field names with errors for logging
+			var fieldNames []string
 
-        
-        c.Next()
-    }
+			// Process all errors to extract field names
+			for _, validationError := range result.Errors {
+				if validationError.Params != nil {
+					// Try "properties" (plural) first - for multiple fields
+					if properties, exists := validationError.Params["properties"]; exists {
+						propertiesStr := fmt.Sprintf("%v", properties)
+						// Parse multiple properties: "'email', 'role'" -> ["email", "role"]
+						fields := strings.Split(propertiesStr, ",")
+						for _, field := range fields {
+							field = strings.TrimSpace(field)
+							// Remove quotes
+							field = strings.Trim(field, "'\"")
+							if field != "" {
+								fieldNames = append(fieldNames, field)
+							}
+						}
+					} else if property, exists := validationError.Params["property"]; exists {
+						// Single property
+						propertyName := fmt.Sprintf("%v", property)
+						// Remove quotes if present
+						propertyName = strings.Trim(propertyName, "'\"")
+						if propertyName != "" {
+							fieldNames = append(fieldNames, propertyName)
+						}
+					}
+				}
+			}
+
+			// Determine which validation error to use based on validation type
+			var validationError error
+
+			// If multiple fields failed, use specific multiple fields error
+			if len(fieldNames) > 1 {
+				validationError = json_schema.ErrMultipleFields
+			} else {
+				// Single field error - determine specific error type
+				var firstError *jsonschema.EvaluationError
+				for _, err := range result.Errors {
+					firstError = err
+					break
+				}
+
+				if firstError != nil {
+					switch firstError.Code {
+					case "property_mismatch":
+						validationError = json_schema.ErrFieldPropertyMismatch
+					case "required":
+						validationError = json_schema.ErrFieldRequired
+					case "type":
+						validationError = json_schema.ErrFieldTypeInvalid
+					default:
+						validationError = json_schema.ErrValidationFailed
+					}
+				} else {
+					validationError = json_schema.ErrValidationFailed
+				}
+			}
+
+			// Store field names in context for error_handler to use in message parameters
+			if len(fieldNames) > 0 {
+				c.Set("validation_fields", fieldNames)
+			}
+
+			if b.log != nil {
+				b.log.Warn(logger.LogMiddlewareValidationFailed, "path", c.Request.URL.Path, "fields", fieldNames)
+			}
+			c.Error(validationError)
+			c.Abort()
+			return
+		}
+
+		if b.log != nil {
+			b.log.Debug(logger.LogMiddlewareValidationOK, "path", c.Request.URL.Path)
+		}
+		c.Next()
+	}
 }

@@ -6,6 +6,7 @@ require (
 	github.com/Nerzal/gocloak/v13 v13.9.0
 	github.com/go-sql-driver/mysql v1.9.3
 	github.com/kaptinlin/jsonschema v0.4.14
+	github.com/speps/go-hashids/v2 v2.0.1
 )
 
 require (
@@ -36,7 +37,6 @@ require (
 	github.com/quic-go/qpack v0.5.1 // indirect
 	github.com/quic-go/quic-go v0.54.0 // indirect
 	github.com/segmentio/ksuid v1.0.4 // indirect
-	github.com/speps/go-hashids/v2 v2.0.1 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.3.0 // indirect
 	go.uber.org/mock v0.5.0 // indirect
