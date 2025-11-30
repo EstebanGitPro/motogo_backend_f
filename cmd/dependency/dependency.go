@@ -1,59 +1,68 @@
 package dependency
 
 import (
+	"context"
+	"time"
+
 	"github.com/EstebanGitPro/motogo-backend/config"
 	"github.com/EstebanGitPro/motogo-backend/core/interactor"
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/input"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
+	"github.com/EstebanGitPro/motogo-backend/middleware"
+	messagingCache "github.com/EstebanGitPro/motogo-backend/platform/cache/messaging"
 	"github.com/EstebanGitPro/motogo-backend/platform/identity_provider/keycloak"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 	"github.com/EstebanGitPro/motogo-backend/tools/idencoder"
 
 	mysql "github.com/EstebanGitPro/motogo-backend/platform/databases/mysql"
 
+	messageRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/message"
 	repo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/person"
 )
 
 type Dependencies struct {
-	PersonService  input.Service
-	PersonRepo     output.Repository
-	KeycloakClient output.AuthClient
-	Interactor     *interactor.Interactor
-	Config         *config.Config
-	Logger         logger.Logger
-	IDEncoder      *idencoder.HashidsEncoder
+	PersonService     input.Service
+	PersonRepo        output.Repository
+	KeycloakClient    output.AuthClient
+	Interactor        *interactor.Interactor
+	MessageInteractor *interactor.MessageInteractor
+	Config            *config.Config
+	Logger            logger.Logger
+	IDEncoder         *idencoder.HashidsEncoder
+	MessagingCache    *messagingCache.MessageCache
+	ResponseHandler   *middleware.ResponseHandler
 }
 
 func Init() (*Dependencies, error) {
 	// Inicializar logger
 	log := logger.NewSlogLogger()
-	log.Info("Iniciando aplicación MotoGo Backend")
+	log.Info(logger.LogAppStarting)
 
 	cfg, err := config.LoadConfig()
 	if err != nil {
-		log.Error("Error cargando configuración", "error", err)
+		log.Error(logger.LogAppConfigError, "error", err)
 		return nil, err
 	}
-	log.Info("Configuración cargada exitosamente")
+	log.Info(logger.LogAppConfigLoaded)
 
 	db, err := mysql.GetDB(cfg.Database, log)
 	if err != nil {
-		log.Error("Error conectando a base de datos", "error", err)
+		log.Error(logger.LogAppDatabaseError, "error", err)
 		return nil, err
 	}
-	log.Success("Conexión a base de datos establecida")
+	log.Success(logger.LogAppDatabaseConnected)
 
 	keycloakClient, err := keycloak.NewClient(&cfg.Keycloak, log)
 	if err != nil {
-		log.Error("Error inicializando cliente Keycloak", "error", err)
+		log.Error(logger.LogKeycloakClientError, "error", err)
 		return nil, err
 	}
-	log.Success("Cliente Keycloak inicializado")
+	log.Success(logger.LogKeycloakClientOK)
 
 	personRepo, err := repo.NewClientRepository(db)
 	if err != nil {
-		log.Error("Error inicializando repositorio", "error", err)
+		log.Error(logger.LogPersonRepoInitError, "error", err)
 		return nil, err
 	}
 
@@ -65,22 +74,52 @@ func Init() (*Dependencies, error) {
 	encoder, err := idencoder.NewHashidsEncoder(idencoder.Config{
 		Secret:    cfg.IDEncoder.Secret,
 		MinLength: cfg.IDEncoder.MinLength,
-	})
+	}, log)
 	if err != nil {
-		log.Error("Error inicializando ID encoder", "error", err)
+		log.Error(logger.LogIDEncoderInitError, "error", err)
 		return nil, err
 	}
-	log.Success("ID Encoder inicializado correctamente")
+	log.Success(logger.LogIDEncodeOK)
 
-	log.Success("Dependencias inicializadas correctamente")
+	// Inicializar repositorio de mensajes (implementa ambas interfaces)
+	msgRepo, err := messageRepo.NewMessageRepository(db)
+	if err != nil {
+		log.Error(logger.LogRepoMsgInitError, "error", err)
+		return nil, err
+	}
+	log.Success("MessageRepository inicializado")
+
+	// Auto-refresh cada 5 minutos (ajustable según necesidad)
+	// msgRepo implementa cachetypes.MessageCacheRepository
+	refreshInterval := 5 * time.Minute
+	messagingCache := messagingCache.NewMessageCache(msgRepo,refreshInterval)
+
+	if err := messagingCache.LoadMessages(context.Background()); err != nil {
+		log.Warn(logger.LogMsgCacheLoadError, "error", err)
+		// Don't return error, continue with fallback
+	}
+	log.Success(logger.LogMsgCacheInit, "messages_loaded", messagingCache.MessageCount())
+
+	// Iniciar auto-refresh en background
+	messagingCache.StartAutoRefresh(context.Background())
+
+	responseHandler := middleware.NewResponseHandler(messagingCache)
+
+	// Inicializar servicio de mensajes (msgRepo también implementa output.MessageRepository)
+	messageService := services.NewMessageService(msgRepo, log)
+	messageInteractor := interactor.NewMessageInteractor(messageService, log)
+	log.Success("MessageInteractor inicializado")
 
 	return &Dependencies{
-		PersonService:  personService,
-		PersonRepo:     personRepo,
-		KeycloakClient: keycloakClient,
-		Interactor:     interactorFacade,
-		Config:         cfg,
-		Logger:         log,
-		IDEncoder:      encoder,
+		PersonService:     personService,
+		PersonRepo:        personRepo,
+		KeycloakClient:    keycloakClient,
+		Interactor:        interactorFacade,
+		MessageInteractor: messageInteractor,
+		Config:            cfg,
+		Logger:            log,
+		IDEncoder:         encoder,
+		MessagingCache:    messagingCache,
+		ResponseHandler:   responseHandler,
 	}, nil
 }

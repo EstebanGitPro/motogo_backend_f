@@ -2,6 +2,7 @@ package handlers
 
 import (
 	domain "github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
+	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 	"github.com/gin-gonic/gin"
 )
 
@@ -27,10 +28,8 @@ type PersonResponse struct {
 	Role           string `json:"role"`
 }
 
-
 type RegistrationResponse struct {
-	Message string         `json:"message"`
-	Links   []Link         `json:"_links"`
+	Links []Link `json:"_links"`
 }
 
 type LoginRequest struct {
@@ -58,22 +57,12 @@ func (p PersonRequest) ToDomain() domain.Person {
 	}
 }
 
-
-// GetBaseURL extrae la URL base de la petición (scheme + host)
-func GetBaseURL(c *gin.Context) string {
-	scheme := "http"
-	if c.Request.TLS != nil {
-		scheme = "https"
-	}
-	return scheme + "://" + c.Request.Host
-}
-
 // EncodeID ofusca un UUID usando el encoder del handler
 // Retorna el ID ofuscado o un error si falla
 func (h *handler) EncodeID(uuid string) (string, error) {
 	encodedID, err := h.IDEncoder.Encode(uuid)
 	if err != nil {
-		h.Logger.Error("Error ofuscando ID",
+		h.Logger.Error(logger.LogMessageIDEncodeError,
 			"uuid", uuid,
 			"error", err)
 		return "", err
@@ -86,7 +75,7 @@ func (h *handler) EncodeID(uuid string) (string, error) {
 func (h *handler) DecodeID(encodedID string) (string, error) {
 	uuid, err := h.IDEncoder.Decode(encodedID)
 	if err != nil {
-		h.Logger.Error("Error decodificando ID",
+		h.Logger.Error(logger.LogMessageIDDecodeError,
 			"encoded_id", encodedID,
 			"error", err)
 		return "", err
@@ -96,7 +85,7 @@ func (h *handler) DecodeID(encodedID string) (string, error) {
 
 // HandleIDEncodingError maneja errores de ofuscamiento y envía respuesta apropiada
 func (h *handler) HandleIDEncodingError(c *gin.Context, uuid string, err error) {
-	h.Logger.Error("Error ofuscando ID",
+	h.Logger.Error(logger.LogMessageIDEncodeError,
 		"uuid", uuid,
 		"error", err,
 		"client_ip", c.ClientIP())
@@ -105,15 +94,9 @@ func (h *handler) HandleIDEncodingError(c *gin.Context, uuid string, err error) 
 
 // HandleIDDecodingError maneja errores de desofuscamiento y envía respuesta apropiada
 func (h *handler) HandleIDDecodingError(c *gin.Context, encodedID string, err error) {
-	h.Logger.Error("Error decodificando ID",
+	h.Logger.Error(logger.LogMessageIDDecodeError,
 		"encoded_id", encodedID,
 		"error", err,
 		"client_ip", c.ClientIP())
 	c.Error(domain.ErrInvalidID)
-}
-
-// SetLocationHeader establece el Location header con la URL del recurso
-func SetLocationHeader(c *gin.Context, baseURL, resource, encodedID string) {
-	locationURL := BuildResourceURL(baseURL, resource, encodedID)
-	c.Header("Location", locationURL)
 }
