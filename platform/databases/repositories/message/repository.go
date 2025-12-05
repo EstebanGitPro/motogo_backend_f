@@ -48,7 +48,14 @@ const (
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 
 	queryMessageDelete = `DELETE FROM system_messages WHERE id = ?`
+
+	queryGetByCodeIncludingInactive = `
+		SELECT id, message_code, type, category, module, message_title, message_content, is_active, created_at, updated_at 
+		FROM system_messages 
+		WHERE message_code = ?
+		LIMIT 1`
 )
+
 
 // repository implements output.MessageRepository
 type repository struct {

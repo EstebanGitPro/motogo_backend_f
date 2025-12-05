@@ -113,6 +113,7 @@ func (c *MessageCache) StopAutoRefresh() {
 
 // GetMessage retrieves a message by its code from cache
 // If not found in cache, falls back to DB and caches it
+// If message exists but is inactive or doesn't exist, returns a specific error message
 func (c *MessageCache) GetMessage(code string) *CachedMessage {
 	// Try cache first (read lock)
 	c.mu.RLock()
@@ -123,21 +124,52 @@ func (c *MessageCache) GetMessage(code string) *CachedMessage {
 		return msg
 	}
 
-	// Not in cache, try DB
+	// Not in cache, try DB (only active messages)
 	log.Debug(logger.LogMsgNotInCache, "code", code)
 	dbMsg, err := c.repo.GetByCodeForCache(context.Background(), code)
-	if err != nil || dbMsg == nil {
+	if err != nil {
 		log.Warn(logger.LogMsgNotInDB, "code", code, "error", err)
-		return nil
+		// Avoid infinite recursion if the fallback message itself doesn't exist
+		if code == "GEN_MSG_INACTIVE_ERR_00002" {
+			return nil
+		}
+		return c.GetMessage("GEN_MSG_INACTIVE_ERR_00002")
 	}
 
-	// Cache it for future use (write lock)
-	c.mu.Lock()
-	c.messages[code] = dbMsg
-	c.mu.Unlock()
+	if dbMsg != nil {
+		// Cache it for future use (write lock)
+		c.mu.Lock()
+		c.messages[code] = dbMsg
+		c.mu.Unlock()
 
-	log.Debug(logger.LogMsgCachedFromDB, "code", code)
-	return dbMsg
+		log.Debug(logger.LogMsgCachedFromDB, "code", code)
+		return dbMsg
+	}
+
+	// Not found in active messages, check if it exists but is inactive
+	inactiveMsg, err := c.repo.GetByCodeIncludingInactive(context.Background(), code)
+	if err != nil {
+		log.Warn(logger.LogMsgNotInDB, "code", code, "error", err)
+		// Avoid infinite recursion
+		if code == "GEN_MSG_INACTIVE_ERR_00002" {
+			return nil
+		}
+		return c.GetMessage("GEN_MSG_INACTIVE_ERR_00002")
+	}
+
+	if inactiveMsg != nil && !inactiveMsg.Active {
+		// Message exists but is inactive - return specific error message
+		log.Warn(logger.LogMsgInactive, "code", code)
+		return c.GetMessage("GEN_MSG_INACTIVE_ERR_00002")
+	}
+
+	// Message truly doesn't exist (not even in DB)
+	log.Warn(logger.LogMsgNotInDB, "code", code)
+	// Avoid infinite recursion
+	if code == "GEN_MSG_INACTIVE_ERR_00002" {
+		return nil
+	}
+	return c.GetMessage("GEN_MSG_INACTIVE_ERR_00002")
 }
 
 // GetMessageResponse retrieves formatted message response
@@ -181,10 +213,11 @@ func replaceAll(s, old, new string) string {
 var messageCodeToHTTPStatus = map[string]int{
 	"MOD_U_DUP_ERR_00001": http.StatusConflict,
 
-	"MOD_U_EMAIL_NF_ERR_00005":  http.StatusNotFound,
-	"MOD_P_NOT_FOUND_ERR_00001": http.StatusNotFound,
-	"MOD_U_GET_ERR_00003":       http.StatusNotFound,
-	"MOD_U_TOKEN_NF_ERR_00007":  http.StatusNotFound,
+	"MOD_U_EMAIL_NF_ERR_00005":   http.StatusNotFound,
+	"MOD_P_NOT_FOUND_ERR_00001":  http.StatusNotFound,
+	"MOD_U_GET_ERR_00003":        http.StatusNotFound,
+	"MOD_U_TOKEN_NF_ERR_00007":   http.StatusNotFound,
+	"GEN_MSG_INACTIVE_ERR_00002": http.StatusServiceUnavailable,
 
 	"MOD_V_VAL_ERR_00001":  http.StatusBadRequest,
 	"MOD_V_VAL_ERR_00002":  http.StatusBadRequest,

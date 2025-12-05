@@ -66,6 +66,7 @@ const (
 	LogMsgNotInCache           = "Mensaje no encontrado en cache, cargando desde BD"
 	LogMsgNotInDB              = "Mensaje no encontrado en base de datos"
 	LogMsgCachedFromDB         = "Mensaje cargado desde BD y cacheado"
+	LogMsgInactive             = "Mensaje encontrado pero está desactivado"
 )
 
 // ============================================

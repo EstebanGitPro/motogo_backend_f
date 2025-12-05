@@ -31,7 +31,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 	errorHandler := middleware.NewErrorHandler(dependencies.MessagingCache, dependencies.Logger)
 	app.Use(errorHandler.Handle())
 
-	handler := handlers.New(dependencies.PersonService, dependencies.Interactor, dependencies.MessageInteractor, dependencies.Logger, dependencies.IDEncoder, dependencies.ResponseHandler)
+	handler := handlers.New(dependencies.PersonService, dependencies.Interactor, dependencies.MessageInteractor, dependencies.MessagingCache, dependencies.Logger, dependencies.IDEncoder, dependencies.ResponseHandler)
 
 	validators, err := schema.NewValidator(&schema.DefaultFileReader{})
 	if err != nil {
@@ -72,6 +72,10 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		// GET /messages - Listar mensajes (con filtros opcionales)
 		// Query params: ?module=users&type=ERROR&category=usuario_final&active=true
 		public.GET("/messages", handler.ListMessages())
+
+		// POST /messages/cache/reload - Recargar caché de mensajes desde BD
+		// Endpoint administrativo para forzar recarga después de cambios manuales
+		public.POST("/messages/cache/reload", handler.ReloadMessageCache())
 	}
 
 	dependencies.Logger.Success(logger.LogRouteConfigured)
