@@ -28,47 +28,47 @@ func (i *MessageInteractor) CreateMessage(ctx context.Context, message domain.Me
 
 	// PASO 1: Validate message
 	if err = i.service.ValidateMessage(ctx, message); err != nil {
-		i.logger.Error("[PASO 1/3] Validación de mensaje fallida", "error", err)
+		i.logger.Error(logger.LogMessageInteractorCreateStep1Error, "error", err)
 		return
 	}
-	i.logger.Success("[PASO 1/3] Validación de mensaje completada")
+	i.logger.Success(logger.LogMessageInteractorCreateStep1OK)
 
 	// PASO 2: Begin transaction
 	tx, err := i.service.BeginTx(ctx)
 	if err != nil {
-		i.logger.Error("[PASO 2/3] Error iniciando transacción", "error", err)
+		i.logger.Error(logger.LogMessageInteractorCreateStep2Error, "error", err)
 		return
 	}
-	i.logger.Success("[PASO 2/3] Transacción iniciada")
+	i.logger.Success(logger.LogMessageInteractorCreateStep2OK)
 
 	defer func() {
 		if err != nil {
 			if rbErr := tx.Rollback(); rbErr != nil {
-				i.logger.Error("ROLLBACK BD FALLÓ - ALERTA CRÍTICA",
+				i.logger.Error(logger.LogMessageInteractorRollbackError,
 					"rollback_error", rbErr,
 					"original_error", err)
 			} else {
-				i.logger.Warn("Rollback BD ejecutado correctamente")
+				i.logger.Warn(logger.LogMessageInteractorRollbackOK)
 			}
 		}
 	}()
 
 	// PASO 3: Save message to DB
 	if err = i.service.SaveMessageToDB(ctx, tx, message); err != nil {
-		i.logger.Error("[PASO 3/3] Error guardando mensaje", "error", err)
+		i.logger.Error(logger.LogMessageInteractorCreateStep3Error, "error", err)
 		return
 	}
-	i.logger.Success("[PASO 3/3] Mensaje guardado en BD")
+	i.logger.Success(logger.LogMessageInteractorCreateStep3OK)
 
 	// COMMIT: Confirm transaction
 	if err = tx.Commit(); err != nil {
-		i.logger.Error("COMMIT FALLÓ - ALERTA CRÍTICA", "error", err)
+		i.logger.Error(logger.LogMessageInteractorCreateCommitErr, "error", err)
 		return
 	}
-	i.logger.Success("Transacción confirmada exitosamente")
+	i.logger.Success(logger.LogMessageInteractorCreateCommitOK)
 
 	result = &message
-	i.logger.Success("Mensaje creado exitosamente", message.ToLogger())
+	i.logger.Success(logger.LogMessageInteractorCreateComplete, message.ToLogger())
 
 	err = nil // ensure defer does NOT execute rollback
 	return
@@ -81,54 +81,54 @@ func (i *MessageInteractor) UpdateMessage(ctx context.Context, message domain.Me
 	// PASO 1: Validate message exists
 	_, err = i.service.GetMessageByID(ctx, message.ID)
 	if err != nil {
-		i.logger.Error("[PASO 1/4] Mensaje no encontrado", "error", err)
+		i.logger.Error(logger.LogMessageInteractorUpdateStep1Error, "error", err)
 		return nil, err
 	}
-	i.logger.Success("[PASO 1/4] Mensaje encontrado")
+	i.logger.Success(logger.LogMessageInteractorUpdateStep1OK)
 
 	// PASO 2: Validate message data
 	if err = i.service.ValidateMessage(ctx, message); err != nil {
-		i.logger.Error("[PASO 2/4] Validación de mensaje fallida", "error", err)
+		i.logger.Error(logger.LogMessageInteractorUpdateStep2Error, "error", err)
 		return
 	}
-	i.logger.Success("[PASO 2/4] Validación de mensaje completada")
+	i.logger.Success(logger.LogMessageInteractorUpdateStep2OK)
 
 	// PASO 3: Begin transaction
 	tx, err := i.service.BeginTx(ctx)
 	if err != nil {
-		i.logger.Error("[PASO 3/4] Error iniciando transacción", "error", err)
+		i.logger.Error(logger.LogMessageInteractorUpdateStep3Error, "error", err)
 		return
 	}
-	i.logger.Success("[PASO 3/4] Transacción iniciada")
+	i.logger.Success(logger.LogMessageInteractorUpdateStep3OK)
 
 	defer func() {
 		if err != nil {
 			if rbErr := tx.Rollback(); rbErr != nil {
-				i.logger.Error("ROLLBACK BD FALLÓ - ALERTA CRÍTICA",
+				i.logger.Error(logger.LogMessageInteractorRollbackError,
 					"rollback_error", rbErr,
 					"original_error", err)
 			} else {
-				i.logger.Warn("Rollback BD ejecutado correctamente")
+				i.logger.Warn(logger.LogMessageInteractorRollbackOK)
 			}
 		}
 	}()
 
 	// PASO 4: Update message in DB
 	if err = i.service.UpdateMessageInDB(ctx, tx, message); err != nil {
-		i.logger.Error("[PASO 4/4] Error actualizando mensaje", "error", err)
+		i.logger.Error(logger.LogMessageInteractorUpdateStep4Error, "error", err)
 		return
 	}
-	i.logger.Success("[PASO 4/4] Mensaje actualizado en BD")
+	i.logger.Success(logger.LogMessageInteractorUpdateStep4OK)
 
 	// COMMIT: Confirm transaction
 	if err = tx.Commit(); err != nil {
-		i.logger.Error("COMMIT FALLÓ - ALERTA CRÍTICA", "error", err)
+		i.logger.Error(logger.LogMessageInteractorUpdateCommitErr, "error", err)
 		return
 	}
-	i.logger.Success("Transacción confirmada exitosamente")
+	i.logger.Success(logger.LogMessageInteractorUpdateCommitOK)
 
 	result = &message
-	i.logger.Success("Mensaje actualizado exitosamente", message.ToLogger())
+	i.logger.Success(logger.LogMessageInteractorUpdateComplete, message.ToLogger())
 
 	// Refresh cache after update
 	i.logger.Info(logger.LogMessageCacheRefresh)
@@ -144,46 +144,46 @@ func (i *MessageInteractor) DeleteMessage(ctx context.Context, id string) (err e
 	// PASO 1: Validate message exists
 	_, err = i.service.GetMessageByID(ctx, id)
 	if err != nil {
-		i.logger.Error("[PASO 1/3] Mensaje no encontrado", "error", err)
+		i.logger.Error(logger.LogMessageInteractorDeleteStep1Error, "error", err)
 		return err
 	}
-	i.logger.Success("[PASO 1/3] Mensaje encontrado")
+	i.logger.Success(logger.LogMessageInteractorDeleteStep1OK)
 
 	// PASO 2: Begin transaction
 	tx, err := i.service.BeginTx(ctx)
 	if err != nil {
-		i.logger.Error("[PASO 2/3] Error iniciando transacción", "error", err)
+		i.logger.Error(logger.LogMessageInteractorDeleteStep2Error, "error", err)
 		return err
 	}
-	i.logger.Success("[PASO 2/3] Transacción iniciada")
+	i.logger.Success(logger.LogMessageInteractorDeleteStep2OK)
 
 	defer func() {
 		if err != nil {
 			if rbErr := tx.Rollback(); rbErr != nil {
-				i.logger.Error("ROLLBACK BD FALLÓ - ALERTA CRÍTICA",
+				i.logger.Error(logger.LogMessageInteractorRollbackError,
 					"rollback_error", rbErr,
 					"original_error", err)
 			} else {
-				i.logger.Warn("Rollback BD ejecutado correctamente")
+				i.logger.Warn(logger.LogMessageInteractorRollbackOK)
 			}
 		}
 	}()
 
 	// PASO 3: Delete message from DB
 	if err = i.service.DeleteMessageFromDB(ctx, tx, id); err != nil {
-		i.logger.Error("[PASO 3/3] Error eliminando mensaje", "error", err)
+		i.logger.Error(logger.LogMessageInteractorDeleteStep3Error, "error", err)
 		return err
 	}
-	i.logger.Success("[PASO 3/3] Mensaje eliminado de BD")
+	i.logger.Success(logger.LogMessageInteractorDeleteStep3OK)
 
 	// COMMIT: Confirm transaction
 	if err = tx.Commit(); err != nil {
-		i.logger.Error("COMMIT FALLÓ - ALERTA CRÍTICA", "error", err)
+		i.logger.Error(logger.LogMessageInteractorDeleteCommitErr, "error", err)
 		return err
 	}
-	i.logger.Success("Transacción confirmada exitosamente")
+	i.logger.Success(logger.LogMessageInteractorDeleteCommitOK)
 
-	i.logger.Success("Mensaje eliminado exitosamente", "id", id)
+	i.logger.Success(logger.LogMessageInteractorDeleteComplete, "id", id)
 
 	// Refresh cache after delete
 	i.logger.Info(logger.LogMessageCacheRefresh)

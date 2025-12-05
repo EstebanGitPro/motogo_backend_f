@@ -91,10 +91,8 @@ func Init() (*Dependencies, error) {
 		log.Error(logger.LogRepoMsgInitError, "error", err)
 		return nil, err
 	}
-	log.Success("MessageRepository inicializado")
+	log.Success(logger.LogDependencyMessageRepoInit)
 
-	// Auto-refresh cada 5 minutos (ajustable según necesidad)
-	// msgRepo implementa cachetypes.MessageCacheRepository
 	refreshInterval := 5 * time.Minute
 	messagingCache := messagingCache.NewMessageCache(msgRepo, refreshInterval)
 
@@ -112,7 +110,7 @@ func Init() (*Dependencies, error) {
 	// Inicializar servicio de mensajes (msgRepo también implementa output.MessageRepository)
 	messageService := services.NewMessageService(msgRepo, log)
 	messageInteractor := interactor.NewMessageInteractor(messageService, log)
-	log.Success("MessageInteractor inicializado")
+	log.Success(logger.LogDependencyMessageIntInit)
 
 	return &Dependencies{
 		PersonService:     personService,

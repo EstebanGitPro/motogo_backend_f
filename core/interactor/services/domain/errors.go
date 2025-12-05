@@ -25,6 +25,13 @@ var (
 	ErrUserCannotDelete          = errors.New("ERR_USER_CANNOT_DELETE")
 )
 
+// Infrastructure Errors (MOD_INFRA_*)
+var (
+	ErrKeycloakInconsistentState  = errors.New("ERR_KC_INCONSISTENT_STATE")
+	ErrKeycloakUserCreationFailed = errors.New("ERR_KC_USER_CREATION_FAILED")
+	ErrKeycloakCleanupFailed      = errors.New("ERR_KC_CLEANUP_FAILED")
+)
+
 // Request Validation Errors (MOD_V_*)
 var (
 	ErrInvalidJSONFormat = errors.New("ERR_INVALID_JSON_FORMAT")
@@ -163,4 +170,11 @@ const (
 	MsgMessageUpdated = "MOD_M_UPDATE_EXI_00002"
 	MsgMessageDeleted = "MOD_M_DELETE_EXI_00003"
 	MsgMessageListed  = "MOD_M_LIST_EXI_00004"
+)
+
+// Infrastructure Module (MOD_INFRA_*)
+const (
+	MsgKeycloakInconsistentState = "MOD_INFRA_KC_INCONSISTENT_ERR_00001"
+	MsgKeycloakCreateError       = "MOD_INFRA_KC_CREATE_ERR_00002"
+	MsgKeycloakCleanupError      = "MOD_INFRA_KC_CLEANUP_ERR_00003"
 )

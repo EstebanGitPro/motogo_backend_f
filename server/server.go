@@ -56,7 +56,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		//public.POST("/auth/login", handler.Login())
 		//public.GET("/accounts/email/:email", handler.GetPersonByEmail())
 
-		// === MESSAGES ENDPOINTS (System Administration) ===
+		// === MESSAGES ENDPOINTS (system administration) ===
 		// POST /messages - Crear nuevo mensaje del sistema
 		public.POST("/messages", validator.WithValidateMessage(), handler.CreateMessage())
 

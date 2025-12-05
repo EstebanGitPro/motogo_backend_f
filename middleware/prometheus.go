@@ -70,9 +70,9 @@ func PrometheusInit() {
 func TrackMetrics() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
-		path := c.FullPath() // Use FullPath to get route pattern, not actual path
+		path := c.FullPath() 
 		if path == "" {
-			path = c.Request.URL.Path // Fallback for non-matched routes
+			path = c.Request.URL.Path 
 		}
 		method := c.Request.Method
 
@@ -120,13 +120,11 @@ func getErrorType(status int) string {
 }
 
 // RecordPersonRegistration increments the person registration counter
-// Call this from the registration handler after successful person registration
 func RecordPersonRegistration() {
 	userRegistrationsTotal.Inc()
 }
 
 // RecordMessageCreated increments the message creation counter
-// Call this from the message handler after successful creation
 func RecordMessageCreated(module, msgType string) {
 	messagesCreatedTotal.WithLabelValues(module, msgType).Inc()
 }
