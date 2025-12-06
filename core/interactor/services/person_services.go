@@ -54,12 +54,42 @@ func (s service) RegisterPerson(ctx context.Context, person domain.Person) (*dto
 	s.logger.Info(logger.LogPersonServiceValidationStart, person.ToLogger())
 	s.logger.Debug(logger.LogDualSystemCheck, "email", person.Email)
 
-	// Check in business database
+	// Check in business database - IMPORTANTE: detectar indisponibilidad
 	existingPerson, errDB := s.repository.GetPersonByEmail(ctx, person.Email)
+
+	// CRÍTICO: Si hay error de conexión/timeout, la base de datos está caída
+	if errDB != nil {
+		if isConnectionError(errDB) || isTimeoutError(errDB) {
+			//TODO: Agregar mensaje de log aquí
+			s.logger.Error(logger.LogDatabaseUnavailable,
+				"email", person.Email,
+				"error", errDB,
+				"error_type", "connection")
+			return nil, domain.ErrDatabaseUnavailable
+		}
+		// Si el error NO es de conexión, asumimos que el usuario no existe
+		// (errores como "record not found" son normales)
+	}
+
 	dbExists := errDB == nil && existingPerson != nil
 
-	// Check in Keycloak
+	//TODO: CRÍTICO: Si hay error de conexión/timeout, Keycloak está caído
+	// Check in Keycloak - IMPORTANTE: detectar indisponibilidad
 	keycloakUser, errKC := s.keycloak.GetUserByEmail(ctx, person.Email)
+
+	// CRÍTICO: Si hay error de conexión/timeout, Keycloak está caído
+	if errKC != nil {
+		if isConnectionError(errKC) || isTimeoutError(errKC) {
+			s.logger.Error(logger.LogKeycloakUnavailable,
+				"email", person.Email,
+				"error", errKC,
+				"error_type", "connection")
+			return nil, domain.ErrKeycloakUnavailable
+		}
+		// Si el error NO es de conexión, asumimos que el usuario no existe
+		// (errores como 404 Not Found son normales)
+	}
+
 	kcExists := errKC == nil && keycloakUser != nil
 
 	// Log where the user exists
