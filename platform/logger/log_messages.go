@@ -129,6 +129,39 @@ const (
 )
 
 // ============================================
+// KEYCLOAK AVAILABILITY
+// ============================================
+const (
+	LogKeycloakAvailabilityCheck = "Verificando disponibilidad de Keycloak"
+	LogKeycloakAvailable         = "Keycloak disponible y respondiendo"
+	LogKeycloakUnavailable       = "Keycloak no disponible"
+	LogKeycloakConnectionError   = "Error de conexión con Keycloak"
+	LogKeycloakTimeoutError      = "Timeout en conexión con Keycloak"
+)
+
+// ============================================
+// DATABASE AVAILABILITY
+// ============================================
+const (
+	LogDatabaseAvailabilityCheck = "Verificando disponibilidad de base de datos"
+	LogDatabaseAvailable         = "Base de datos disponible y respondiendo"
+	LogDatabaseUnavailable       = "Base de datos no disponible"
+	LogDatabaseConnectionError   = "Error de conexión con base de datos"
+)
+
+// ============================================
+// DUAL SYSTEM VALIDATION
+// ============================================
+const (
+	LogDualSystemCheck          = "Validando existencia en ambos sistemas"
+	LogUserExistsInBoth         = "Usuario existe en ambos sistemas"
+	LogUserExistsOnlyInDB       = "Usuario existe solo en base de datos"
+	LogUserExistsOnlyInKeycloak = "Usuario existe solo en Keycloak"
+	LogUserNotFoundInEither     = "Usuario no encontrado en ningún sistema"
+	LogInconsistentStateDetect  = "Estado inconsistente detectado entre sistemas"
+)
+
+// ============================================
 // REPOSITORY / MESSAGE REPOSITORY
 // ============================================
 const (
@@ -327,31 +360,34 @@ const (
 // PERSON INTERACTOR
 // ============================================
 const (
-	LogPersonInteractorRegStart            = "Iniciando proceso de registro"
-	LogPersonInteractorStep1Error          = "[PASO 1/8] Validaciones fallidas"
-	LogPersonInteractorStep1OK             = "[PASO 1/8] Validaciones completadas"
-	LogPersonInteractorIDGenerated         = "ID generado para persona"
-	LogPersonInteractorStep15Error         = "[PASO 1.5/8] Estado inconsistente detectado y limpiado"
-	LogPersonInteractorStep15OK            = "[PASO 1.5/8] Estado consistente verificado"
-	LogPersonInteractorStep2Error          = "[PASO 2/8] Error iniciando transacción"
-	LogPersonInteractorStep2OK             = "[PASO 2/8] Transacción iniciada"
-	LogPersonInteractorStep3Error          = "[PASO 3/8] Error guardando persona"
-	LogPersonInteractorStep3OK             = "[PASO 3/8] Persona guardada en BD"
-	LogPersonInteractorStep4Error          = "[PASO 4/8] Error creando usuario en Keycloak"
-	LogPersonInteractorStep4OK             = "[PASO 4/8] Usuario creado en Keycloak"
-	LogPersonInteractorStep5Error          = "[PASO 5/8] Error configurando password"
-	LogPersonInteractorStep5OK             = "[PASO 5/8] Password configurado"
-	LogPersonInteractorStep6Error          = "[PASO 6/8] Error asignando rol"
-	LogPersonInteractorStep6OK             = "[PASO 6/8] Rol asignado"
-	LogPersonInteractorStep7Error          = "[PASO 7/8] Error actualizando Keycloak ID en BD"
-	LogPersonInteractorStep7OK             = "[PASO 7/8] Keycloak_user_id actualizado en BD"
-	LogPersonInteractorCommitError         = "COMMIT FALLÓ - ALERTA CRÍTICA"
-	LogPersonInteractorCommitOK            = "Transacción confirmada exitosamente"
-	LogPersonInteractorRegComplete         = "Registro completado exitosamente"
-	LogPersonInteractorRollbackDBError     = "ROLLBACK BD FALLÓ - ALERTA CRÍTICA"
-	LogPersonInteractorRollbackDBOK        = "Rollback BD ejecutado correctamente"
-	LogPersonInteractorRollbackKeycloakErr = "ROLLBACK KEYCLOAK FALLÓ - ALERTA CRÍTICA"
-	LogPersonInteractorRollbackKeycloakOK  = "Rollback Keycloak ejecutado correctamente"
+	LogPersonInteractorRegStart             = "Iniciando proceso de registro"
+	LogPersonInteractorStep1_Error          = "[PASO 1/8] Validaciones fallidas"
+	LogPersonInteractorStep1_OK             = "[PASO 1/8] Validaciones completadas"
+	LogPersonInteractorIDGenerated          = "ID generado para persona"
+	LogPersonInteractorStep15_Error         = "[PASO 1.5/8] Estado inconsistente detectado y limpiado"
+	LogPersonInteractorStep15_OK            = "[PASO 1.5/8] Estado consistente verificado"
+	LogPersonInteractorStep2_Error          = "[PASO 2/8] Error iniciando transacción"
+	LogPersonInteractorStep2_OK             = "[PASO 2/8] Transacción iniciada"
+	LogPersonInteractorStep3_Error          = "[PASO 3/8] Error guardando persona"
+	LogPersonInteractorStep3_OK             = "[PASO 3/8] Persona guardada en BD"
+	LogPersonInteractorStep4_Error          = "[PASO 4/8] Error creando usuario en Keycloak"
+	LogPersonInteractorStep4_OK             = "[PASO 4/8] Usuario creado en Keycloak"
+	LogPersonInteractorStep5_Error          = "[PASO 5/8] Error configurando password"
+	LogPersonInteractorStep5_OK             = "[PASO 5/8] Password configurado"
+	LogPersonInteractorStep6_Error          = "[PASO 6/8] Error asignando rol"
+	LogPersonInteractorStep6_OK             = "[PASO 6/8] Rol asignado"
+	LogPersonInteractorStep7_Error          = "[PASO 7/8] Error actualizando Keycloak ID en BD"
+	LogPersonInteractorStep7_OK             = "[PASO 7/8] Keycloak_user_id actualizado en BD"
+	LogPersonInteractorCommit_Error         = "COMMIT FALLÓ - ALERTA CRÍTICA"
+	LogPersonInteractorCommit_OK            = "Transacción confirmada exitosamente"
+	LogPersonInteractorRegComplete          = "Registro completado exitosamente"
+	LogPersonInteractorRollbackDB_Error     = "ROLLBACK BD FALLÓ - ALERTA CRÍTICA"
+	LogPersonInteractorRollbackDB_OK        = "Rollback BD ejecutado correctamente"
+	LogPersonInteractorRollbackKeycloak_Err = "ROLLBACK KEYCLOAK FALLÓ - ALERTA CRÍTICA"
+	LogPersonInteractorRollbackKeycloak_OK  = "Rollback Keycloak ejecutado correctamente"
+	LogPersonInteractorIncompleteDetected   = "Registro incompleto detectado"
+	LogPersonInteractorCleanup_Error        = "Error limpiando estado inconsistente"
+	LogPersonInteractorCleanup_OK           = "Estado inconsistente limpiado exitosamente"
 )
 
 // ============================================

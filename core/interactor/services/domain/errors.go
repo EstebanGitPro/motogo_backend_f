@@ -30,6 +30,13 @@ var (
 	ErrKeycloakInconsistentState  = errors.New("ERR_KC_INCONSISTENT_STATE")
 	ErrKeycloakUserCreationFailed = errors.New("ERR_KC_USER_CREATION_FAILED")
 	ErrKeycloakCleanupFailed      = errors.New("ERR_KC_CLEANUP_FAILED")
+	// Dependency availability errors
+	ErrKeycloakUnavailable = errors.New("ERR_KC_UNAVAILABLE")
+	ErrDatabaseUnavailable = errors.New("ERR_DB_UNAVAILABLE")
+	// Specific user existence errors
+	ErrKeycloakUserExists     = errors.New("ERR_KC_USER_EXISTS")
+	ErrDatabaseUserExists     = errors.New("ERR_DB_USER_EXISTS")
+	ErrIncompleteRegistration = errors.New("ERR_INCOMPLETE_REGISTRATION")
 )
 
 // Request Validation Errors (MOD_V_*)
@@ -177,4 +184,12 @@ const (
 	MsgKeycloakInconsistentState = "MOD_INFRA_KC_INCONSISTENT_ERR_00001"
 	MsgKeycloakCreateError       = "MOD_INFRA_KC_CREATE_ERR_00002"
 	MsgKeycloakCleanupError      = "MOD_INFRA_KC_CLEANUP_ERR_00003"
+	// Dependency availability messages
+	MsgKeycloakUnavailable = "MOD_INFRA_KC_UNAVAIL_ERR_00004"
+	MsgDatabaseUnavailable = "MOD_INFRA_DB_UNAVAIL_ERR_00005"
+	MsgDependencyFailure   = "MOD_INFRA_DEP_FAIL_ERR_00006"
+	// Specific user existence messages
+	MsgKeycloakUserExists     = "MOD_INFRA_KC_USER_EXISTS_ERR_00007"
+	MsgDatabaseUserExists     = "MOD_INFRA_DB_USER_EXISTS_ERR_00008"
+	MsgIncompleteRegistration = "MOD_INFRA_INCOMPLETE_REG_ERR_00009"
 )
