@@ -66,6 +66,7 @@ const (
 	LogMsgNotInCache           = "Mensaje no encontrado en cache, cargando desde BD"
 	LogMsgNotInDB              = "Mensaje no encontrado en base de datos"
 	LogMsgCachedFromDB         = "Mensaje cargado desde BD y cacheado"
+	LogMsgInactive             = "Mensaje encontrado pero está desactivado"
 )
 
 // ============================================
@@ -125,6 +126,39 @@ const (
 	LogKeycloakUserTokenRefresh    = "Refrescando token de usuario"
 	LogKeycloakUserTokenRefreshOK  = "Token de usuario refrescado exitosamente"
 	LogKeycloakUserTokenRefreshErr = "Error refrescando token de usuario"
+)
+
+// ============================================
+// KEYCLOAK AVAILABILITY
+// ============================================
+const (
+	LogKeycloakAvailabilityCheck = "Verificando disponibilidad de Keycloak"
+	LogKeycloakAvailable         = "Keycloak disponible y respondiendo"
+	LogKeycloakUnavailable       = "Keycloak no disponible"
+	LogKeycloakConnectionError   = "Error de conexión con Keycloak"
+	LogKeycloakTimeoutError      = "Timeout en conexión con Keycloak"
+)
+
+// ============================================
+// DATABASE AVAILABILITY
+// ============================================
+const (
+	LogDatabaseAvailabilityCheck = "Verificando disponibilidad de base de datos"
+	LogDatabaseAvailable         = "Base de datos disponible y respondiendo"
+	LogDatabaseUnavailable       = "Base de datos no disponible"
+	LogDatabaseConnectionError   = "Error de conexión con base de datos"
+)
+
+// ============================================
+// DUAL SYSTEM VALIDATION
+// ============================================
+const (
+	LogDualSystemCheck          = "Validando existencia en ambos sistemas"
+	LogUserExistsInBoth         = "Usuario existe en ambos sistemas"
+	LogUserExistsOnlyInDB       = "Usuario existe solo en base de datos"
+	LogUserExistsOnlyInKeycloak = "Usuario existe solo en Keycloak"
+	LogUserNotFoundInEither     = "Usuario no encontrado en ningún sistema"
+	LogInconsistentStateDetect  = "Estado inconsistente detectado entre sistemas"
 )
 
 // ============================================
@@ -267,4 +301,156 @@ const (
 	LogMessageInvalidID         = "ID inválido"
 	LogMessageIDEncodeError     = "Error ofuscando ID"
 	LogMessageIDDecodeError     = "Error decodificando ID"
+)
+
+// ============================================
+// PROMETHEUS / OBSERVABILITY
+// ============================================
+const (
+	LogPrometheusInit          = "Inicializando métricas de Prometheus"
+	LogPrometheusInitOK        = "Métricas de Prometheus inicializadas correctamente"
+	LogPrometheusInitError     = "Error inicializando métricas de Prometheus"
+	LogPrometheusMetricRecord  = "Registrando métrica"
+	LogPrometheusMetricError   = "Error registrando métrica"
+	LogPrometheusScrapeSuccess = "Scraping de métricas exitoso"
+	LogPrometheusScrapeError   = "Error durante scraping de métricas"
+)
+
+// ============================================
+// PERSON SERVICES
+// ============================================
+const (
+	LogPersonServiceSearchByEmail             = "Buscando persona por email"
+	LogPersonServiceSearchByID                = "Buscando persona por ID"
+	LogPersonServiceFoundByEmail              = "Persona encontrada por email"
+	LogPersonServiceFoundByID                 = "Persona encontrada por ID"
+	LogPersonServiceErrorByEmail              = "Error buscando persona por email"
+	LogPersonServiceErrorByID                 = "Error buscando persona por ID"
+	LogPersonServiceValidationStart           = "Iniciando validaciones de registro"
+	LogPersonServiceValidationComplete        = "Validaciones de registro completadas"
+	LogPersonServiceDuplicateEmail            = "Intento de registro con email duplicado"
+	LogPersonServiceSavingToDB                = "Guardando persona en base de datos"
+	LogPersonServiceSavedToDB                 = "Persona guardada en base de datos"
+	LogPersonServiceSaveError                 = "Error guardando persona en BD"
+	LogPersonServiceCreatingKeycloak          = "Creando usuario en Keycloak"
+	LogPersonServiceCreatedKeycloak           = "Usuario creado en Keycloak"
+	LogPersonServiceKeycloakError             = "Error creando usuario en Keycloak"
+	LogPersonServicePasswordSet               = "Configurando password de usuario"
+	LogPersonServicePasswordSetOK             = "Password configurado"
+	LogPersonServicePasswordError             = "Error configurando password"
+	LogPersonServiceRoleAssigning             = "Asignando rol a usuario"
+	LogPersonServiceRoleAssigned              = "Rol asignado"
+	LogPersonServiceRoleError                 = "Error asignando rol"
+	LogPersonServiceKeycloakIDUpdate          = "Actualizando keycloak_user_id en BD"
+	LogPersonServiceKeycloakIDUpdated         = "Keycloak_user_id actualizado"
+	LogPersonServiceKeycloakIDUpdateError     = "Error actualizando keycloak_user_id"
+	LogPersonServiceRollbackPerson            = "Ejecutando rollback: eliminando persona de BD"
+	LogPersonServiceRollbackPersonError       = "Error en rollback de persona"
+	LogPersonServiceRollbackPersonComplete    = "Rollback de persona completado"
+	LogPersonServiceRollbackKeycloak          = "Ejecutando rollback: eliminando usuario de Keycloak"
+	LogPersonServiceRollbackKeycloakError     = "Error en rollback de usuario Keycloak"
+	LogPersonServiceRollbackKeycloakComplete  = "Rollback de usuario Keycloak completado"
+	LogPersonServiceInconsistentStateDetected = "Estado inconsistente detectado entre Keycloak y BD"
+	LogPersonServiceCleaningOrphan            = "Limpiando usuario huérfano"
+	LogPersonServiceOrphanCleaned             = "Usuario huérfano eliminado exitosamente"
+	LogPersonServiceOrphanCleanError          = "Error limpiando usuario huérfano"
+)
+
+// ============================================
+// PERSON INTERACTOR
+// ============================================
+const (
+	LogPersonInteractorRegStart             = "Iniciando proceso de registro"
+	LogPersonInteractorStep1_Error          = "[PASO 1/8] Validaciones fallidas"
+	LogPersonInteractorStep1_OK             = "[PASO 1/8] Validaciones completadas"
+	LogPersonInteractorIDGenerated          = "ID generado para persona"
+	LogPersonInteractorStep15_Error         = "[PASO 1.5/8] Estado inconsistente detectado y limpiado"
+	LogPersonInteractorStep15_OK            = "[PASO 1.5/8] Estado consistente verificado"
+	LogPersonInteractorStep2_Error          = "[PASO 2/8] Error iniciando transacción"
+	LogPersonInteractorStep2_OK             = "[PASO 2/8] Transacción iniciada"
+	LogPersonInteractorStep3_Error          = "[PASO 3/8] Error guardando persona"
+	LogPersonInteractorStep3_OK             = "[PASO 3/8] Persona guardada en BD"
+	LogPersonInteractorStep4_Error          = "[PASO 4/8] Error creando usuario en Keycloak"
+	LogPersonInteractorStep4_OK             = "[PASO 4/8] Usuario creado en Keycloak"
+	LogPersonInteractorStep5_Error          = "[PASO 5/8] Error configurando password"
+	LogPersonInteractorStep5_OK             = "[PASO 5/8] Password configurado"
+	LogPersonInteractorStep6_Error          = "[PASO 6/8] Error asignando rol"
+	LogPersonInteractorStep6_OK             = "[PASO 6/8] Rol asignado"
+	LogPersonInteractorStep7_Error          = "[PASO 7/8] Error actualizando Keycloak ID en BD"
+	LogPersonInteractorStep7_OK             = "[PASO 7/8] Keycloak_user_id actualizado en BD"
+	LogPersonInteractorCommit_Error         = "COMMIT FALLÓ - ALERTA CRÍTICA"
+	LogPersonInteractorCommit_OK            = "Transacción confirmada exitosamente"
+	LogPersonInteractorRegComplete          = "Registro completado exitosamente"
+	LogPersonInteractorRollbackDB_Error     = "ROLLBACK BD FALLÓ - ALERTA CRÍTICA"
+	LogPersonInteractorRollbackDB_OK        = "Rollback BD ejecutado correctamente"
+	LogPersonInteractorRollbackKeycloak_Err = "ROLLBACK KEYCLOAK FALLÓ - ALERTA CRÍTICA"
+	LogPersonInteractorRollbackKeycloak_OK  = "Rollback Keycloak ejecutado correctamente"
+	LogPersonInteractorIncompleteDetected   = "Registro incompleto detectado"
+	LogPersonInteractorCleanup_Error        = "Error limpiando estado inconsistente"
+	LogPersonInteractorCleanup_OK           = "Estado inconsistente limpiado exitosamente"
+)
+
+// ============================================
+// DEPENDENCY INITIALIZATION
+// ============================================
+const (
+	LogDependencyMessageRepoInit = "MessageRepository inicializado"
+	LogDependencyMessageIntInit  = "MessageInteractor inicializado"
+)
+
+// ============================================
+// DATABASE CONNECTION (MySQL)
+// ============================================
+const (
+	LogDBConnecting      = "Conectando a base de datos MySQL"
+	LogDBSSLEnabled      = "SSL habilitado para conexión a base de datos"
+	LogDBConnectionError = "Error abriendo conexión a base de datos"
+	LogDBPoolConfig      = "Configurando pool de conexiones"
+	LogDBPinging         = "Verificando conectividad con base de datos (ping)..."
+	LogDBPingError       = "Error en ping a base de datos"
+	LogDBConnected       = "Conexión a base de datos establecida exitosamente"
+)
+
+// ============================================
+// MESSAGE INTERACTOR
+// ============================================
+const (
+	// CREATE flow
+	LogMessageInteractorCreateStep1Error = "[PASO 1/3] Validación de mensaje fallida"
+	LogMessageInteractorCreateStep1OK    = "[PASO 1/3] Validación de mensaje completada"
+	LogMessageInteractorCreateStep2Error = "[PASO 2/3] Error iniciando transacción"
+	LogMessageInteractorCreateStep2OK    = "[PASO 2/3] Transacción iniciada"
+	LogMessageInteractorCreateStep3Error = "[PASO 3/3] Error guardando mensaje"
+	LogMessageInteractorCreateStep3OK    = "[PASO 3/3] Mensaje guardado en BD"
+	LogMessageInteractorCreateCommitErr  = "COMMIT FALLÓ - ALERTA CRÍTICA"
+	LogMessageInteractorCreateCommitOK   = "Transacción confirmada exitosamente"
+	LogMessageInteractorCreateComplete   = "Mensaje creado exitosamente"
+
+	// UPDATE flow
+	LogMessageInteractorUpdateStep1Error = "[PASO 1/4] Mensaje no encontrado"
+	LogMessageInteractorUpdateStep1OK    = "[PASO 1/4] Mensaje encontrado"
+	LogMessageInteractorUpdateStep2Error = "[PASO 2/4] Validación de mensaje fallida"
+	LogMessageInteractorUpdateStep2OK    = "[PASO 2/4] Validación de mensaje completada"
+	LogMessageInteractorUpdateStep3Error = "[PASO 3/4] Error iniciando transacción"
+	LogMessageInteractorUpdateStep3OK    = "[PASO 3/4] Transacción iniciada"
+	LogMessageInteractorUpdateStep4Error = "[PASO 4/4] Error actualizando mensaje"
+	LogMessageInteractorUpdateStep4OK    = "[PASO 4/4] Mensaje actualizado en BD"
+	LogMessageInteractorUpdateCommitErr  = "COMMIT FALLÓ - ALERTA CRÍTICA"
+	LogMessageInteractorUpdateCommitOK   = "Transacción confirmada exitosamente"
+	LogMessageInteractorUpdateComplete   = "Mensaje actualizado exitosamente"
+
+	// DELETE flow
+	LogMessageInteractorDeleteStep1Error = "[PASO 1/3] Mensaje no encontrado"
+	LogMessageInteractorDeleteStep1OK    = "[PASO 1/3] Mensaje encontrado"
+	LogMessageInteractorDeleteStep2Error = "[PASO 2/3] Error iniciando transacción"
+	LogMessageInteractorDeleteStep2OK    = "[PASO 2/3] Transacción iniciada"
+	LogMessageInteractorDeleteStep3Error = "[PASO 3/3] Error eliminando mensaje"
+	LogMessageInteractorDeleteStep3OK    = "[PASO 3/3] Mensaje eliminado de BD"
+	LogMessageInteractorDeleteCommitErr  = "COMMIT FALLÓ - ALERTA CRÍTICA"
+	LogMessageInteractorDeleteCommitOK   = "Transacción confirmada exitosamente"
+	LogMessageInteractorDeleteComplete   = "Mensaje eliminado exitosamente"
+
+	// Common rollback
+	LogMessageInteractorRollbackError = "ROLLBACK BD FALLÓ - ALERTA CRÍTICA"
+	LogMessageInteractorRollbackOK    = "Rollback BD ejecutado correctamente"
 )

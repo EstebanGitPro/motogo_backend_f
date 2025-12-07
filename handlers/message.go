@@ -51,6 +51,14 @@ type MessageDeletedResponse struct {
 	// Empty struct - message comes from unified messaging system
 }
 
+// CacheReloadResponse represents the response for cache reload operation
+type CacheReloadResponse struct {
+	Success     bool   `json:"success"`
+	BeforeCount int    `json:"before_count"`
+	AfterCount  int    `json:"after_count"`
+	Message     string `json:"message"`
+}
+
 // ToDomain converts MessageRequest to domain.Message
 func (m MessageRequest) ToDomain() domain.Message {
 	return domain.Message{

@@ -1,0 +1,63 @@
+# OPTIONAL: Use InfluxDB instead of Prometheus for k6 metrics
+# This is an alternative configuration for teams that prefer InfluxDB
+# 
+# Usage:
+#   docker-compose -f docker-compose.k6-influxdb.yml up -d
+#
+# Note: The default setup uses Prometheus (in docker-compose.grafana.yml)
+#       Only use this if you specifically need InfluxDB
+
+version: '3.8'
+
+services:
+  influxdb:
+    image: influxdb:2.7
+    container_name: motogo-influxdb
+    restart: unless-stopped
+    ports:
+      - "8086:8086"
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=adminpassword
+      - DOCKER_INFLUXDB_INIT_ORG=motogo
+      - DOCKER_INFLUXDB_INIT_BUCKET=k6
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=my-super-secret-auth-token
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+      - influxdb-config:/etc/influxdb2
+    networks:
+      - motogo-network
+
+  # Grafana datasource for InfluxDB
+  # Add this to platform/grafana/provisioning/datasources/influxdb.yml:
+  #
+  # datasources:
+  #   - name: InfluxDB
+  #     type: influxdb
+  #     access: proxy
+  #     url: http://influxdb:8086
+  #     jsonData:
+  #       version: Flux
+  #       organization: motogo
+  #       defaultBucket: k6
+  #       tlsSkipVerify: true
+  #     secureJsonData:
+  #       token: my-super-secret-auth-token
+
+volumes:
+  influxdb-data:
+    driver: local
+  influxdb-config:
+    driver: local
+
+networks:
+  motogo-network:
+    external: true
+
+# To run k6 with InfluxDB:
+# docker run --rm \
+#   --network motogo-network \
+#   -v "$(pwd)/platform/k6:/scripts" \
+#   grafana/k6:latest \
+#   run --out influxdb=http://influxdb:8086 /scripts/smoke-test.js

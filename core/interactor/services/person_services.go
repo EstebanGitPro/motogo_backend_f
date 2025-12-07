@@ -25,24 +25,24 @@ func NewService(repository output.Repository, keycloak output.AuthClient, log lo
 }
 
 func (s service) GetPersonByEmail(ctx context.Context, email string) (*domain.Person, error) {
-	s.logger.Debug("Buscando persona por email", "email", email)
+	s.logger.Debug(logger.LogPersonServiceSearchByEmail, "email", email)
 	person, err := s.repository.GetPersonByEmail(ctx, email)
 	if err != nil {
-		s.logger.Error("Error buscando persona por email", "email", email, "error", err)
+		s.logger.Error(logger.LogPersonServiceErrorByEmail, "email", email, "error", err)
 		return nil, err
 	}
-	s.logger.Debug("Persona encontrada por email", "email", email, "person_id", person.ID)
+	s.logger.Debug(logger.LogPersonServiceFoundByEmail, "email", email, "person_id", person.ID)
 	return person, nil
 }
 
 func (s service) GetPersonByID(ctx context.Context, id string) (*domain.Person, error) {
-	s.logger.Debug("Buscando persona por ID", "person_id", id)
+	s.logger.Debug(logger.LogPersonServiceSearchByID, "person_id", id)
 	person, err := s.repository.GetPersonByID(ctx, id)
 	if err != nil {
-		s.logger.Error("Error buscando persona por ID", "person_id", id, "error", err)
+		s.logger.Error(logger.LogPersonServiceErrorByID, "person_id", id, "error", err)
 		return nil, err
 	}
-	s.logger.Debug("Persona encontrada por ID", "person_id", id, "email", person.Email)
+	s.logger.Debug(logger.LogPersonServiceFoundByID, "person_id", id, "email", person.Email)
 	return person, nil
 }
 
@@ -51,15 +51,73 @@ func (s service) BeginTx(ctx context.Context) (output.Tx, error) {
 }
 
 func (s service) RegisterPerson(ctx context.Context, person domain.Person) (*dto.RegistrationResult, error) {
-	s.logger.Info("Iniciando validaciones de registro", person.ToLogger())
+	s.logger.Info(logger.LogPersonServiceValidationStart, person.ToLogger())
+	s.logger.Debug(logger.LogDualSystemCheck, "email", person.Email)
 
-	existingPerson, err := s.repository.GetPersonByEmail(ctx, person.Email)
-	if err == nil && existingPerson != nil {
-		s.logger.Warn("Intento de registro con email duplicado", "email", person.Email)
-		return nil, domain.ErrDuplicateUser
+	// Check in business database - IMPORTANTE: detectar indisponibilidad
+	existingPerson, errDB := s.repository.GetPersonByEmail(ctx, person.Email)
+
+	// CRÍTICO: Si hay error de conexión/timeout, la base de datos está caída
+	if errDB != nil {
+		if isConnectionError(errDB) || isTimeoutError(errDB) {
+			//TODO: Agregar mensaje de log aquí
+			s.logger.Error(logger.LogDatabaseUnavailable,
+				"email", person.Email,
+				"error", errDB,
+				"error_type", "connection")
+			return nil, domain.ErrDatabaseUnavailable
+		}
+		// Si el error NO es de conexión, asumimos que el usuario no existe
+		// (errores como "record not found" son normales)
 	}
 
-	s.logger.Info("Validaciones de registro completadas", person.ToLogger())
+	dbExists := errDB == nil && existingPerson != nil
+
+	//TODO: CRÍTICO: Si hay error de conexión/timeout, Keycloak está caído
+	// Check in Keycloak - IMPORTANTE: detectar indisponibilidad
+	keycloakUser, errKC := s.keycloak.GetUserByEmail(ctx, person.Email)
+
+	// CRÍTICO: Si hay error de conexión/timeout, Keycloak está caído
+	if errKC != nil {
+		if isConnectionError(errKC) || isTimeoutError(errKC) {
+			s.logger.Error(logger.LogKeycloakUnavailable,
+				"email", person.Email,
+				"error", errKC,
+				"error_type", "connection")
+			return nil, domain.ErrKeycloakUnavailable
+		}
+		// Si el error NO es de conexión, asumimos que el usuario no existe
+		// (errores como 404 Not Found son normales)
+	}
+
+	kcExists := errKC == nil && keycloakUser != nil
+
+	// Log where the user exists
+	if dbExists && kcExists {
+		s.logger.Warn(logger.LogUserExistsInBoth, "email", person.Email)
+		return nil, domain.ErrDuplicateUser // Usuario ya registrado completamente
+	}
+
+	if dbExists && !kcExists {
+		s.logger.Warn(logger.LogUserExistsOnlyInDB,
+			"email", person.Email,
+			"person_id", existingPerson.ID,
+			"action", "will be cleaned")
+		// Retornar error de registro incompleto (mensaje: intente más tarde)
+		return nil, domain.ErrIncompleteRegistration
+	}
+
+	if !dbExists && kcExists {
+		s.logger.Warn(logger.LogUserExistsOnlyInKeycloak,
+			"email", person.Email,
+			"keycloak_id", *keycloakUser.ID,
+			"action", "will be cleaned")
+		// Retornar error de registro incompleto (mensaje: intente más tarde)
+		return nil, domain.ErrIncompleteRegistration
+	}
+
+	s.logger.Debug(logger.LogUserNotFoundInEither, "email", person.Email)
+	s.logger.Info(logger.LogPersonServiceValidationComplete, person.ToLogger())
 	return &dto.RegistrationResult{
 		Person:  person,
 		Message: "Validaciones exitosas",
@@ -67,78 +125,233 @@ func (s service) RegisterPerson(ctx context.Context, person domain.Person) (*dto
 }
 
 func (s service) SavePersonToDB(ctx context.Context, tx output.Tx, person domain.Person) error {
-	s.logger.Info("Guardando persona en base de datos", person.ToLogger())
+	s.logger.Info(logger.LogPersonServiceSavingToDB, person.ToLogger())
 	err := s.repository.SavePerson(ctx, tx, person)
 	if err != nil {
-		s.logger.Error("Error guardando persona en BD", person.ToLogger(), "error", err)
+		s.logger.Error(logger.LogPersonServiceSaveError, person.ToLogger(), "error", err)
 		return err
 	}
-	s.logger.Success("Persona guardada en base de datos", person.ToLogger())
+	s.logger.Success(logger.LogPersonServiceSavedToDB, person.ToLogger())
 	return nil
 }
 
 func (s service) CreateUserInKeycloak(ctx context.Context, person *domain.Person) (string, error) {
-	s.logger.Info("Creando usuario en Keycloak", person.ToLogger())
+	s.logger.Info(logger.LogPersonServiceCreatingKeycloak, person.ToLogger())
+
 	userID, err := s.keycloak.CreateUser(ctx, person)
 	if err != nil {
-		s.logger.Error("Error creando usuario en Keycloak", person.ToLogger(), "error", err)
-		return "", err
+		// Distinguish between unavailability and other errors
+		if isConnectionError(err) || isTimeoutError(err) {
+			s.logger.Error(logger.LogKeycloakUnavailable,
+				person.ToLogger(),
+				"error", err,
+				"error_type", "connection")
+			return "", domain.ErrKeycloakUnavailable
+		}
+
+		s.logger.Error(logger.LogPersonServiceKeycloakError, person.ToLogger(), "error", err)
+		return "", domain.ErrKeycloakUserCreationFailed
 	}
-	s.logger.Success("Usuario creado en Keycloak", person.ToLogger(), "keycloak_user_id", userID)
+
+	s.logger.Success(logger.LogPersonServiceCreatedKeycloak, person.ToLogger(), "keycloak_user_id", userID)
 	return userID, nil
 }
 
 func (s service) SetUserPassword(ctx context.Context, userID string, password string) error {
-	s.logger.Debug("Configurando password de usuario", "keycloak_user_id", userID)
+	s.logger.Debug(logger.LogPersonServicePasswordSet, "keycloak_user_id", userID)
 	err := s.keycloak.SetPassword(ctx, userID, password, true)
 	if err != nil {
-		s.logger.Error("Error configurando password", "keycloak_user_id", userID, "error", err)
+		s.logger.Error(logger.LogPersonServicePasswordError, "keycloak_user_id", userID, "error", err)
 		return err
 	}
-	s.logger.Success("Password configurado", "keycloak_user_id", userID)
+	s.logger.Success(logger.LogPersonServicePasswordSetOK, "keycloak_user_id", userID)
 	return nil
 }
 
 func (s service) AssignUserRole(ctx context.Context, userID string, role string) error {
-	s.logger.Info("Asignando rol a usuario", "keycloak_user_id", userID, "role", role)
+	s.logger.Info(logger.LogPersonServiceRoleAssigning, "keycloak_user_id", userID, "role", role)
 	err := s.keycloak.AssignRole(ctx, userID, role)
 	if err != nil {
-		s.logger.Error("Error asignando rol", "keycloak_user_id", userID, "role", role, "error", err)
+		s.logger.Error(logger.LogPersonServiceRoleError, "keycloak_user_id", userID, "role", role, "error", err)
 		return err
 	}
-	s.logger.Success("Rol asignado", "keycloak_user_id", userID, "role", role)
+	s.logger.Success(logger.LogPersonServiceRoleAssigned, "keycloak_user_id", userID, "role", role)
 	return nil
 }
 
 func (s service) UpdatePersonKeycloakID(ctx context.Context, tx output.Tx, personID string, keycloakUserID string) error {
-	s.logger.Debug("Actualizando keycloak_user_id en BD", "person_id", personID, "keycloak_user_id", keycloakUserID)
+	s.logger.Debug(logger.LogPersonServiceKeycloakIDUpdate, "person_id", personID, "keycloak_user_id", keycloakUserID)
 	err := s.repository.PatchPerson(ctx, tx, personID, keycloakUserID)
 	if err != nil {
-		s.logger.Error("Error actualizando keycloak_user_id", "person_id", personID, "error", err)
+		s.logger.Error(logger.LogPersonServiceKeycloakIDUpdateError, "person_id", personID, "error", err)
 		return err
 	}
-	s.logger.Success("Keycloak_user_id actualizado", "person_id", personID, "keycloak_user_id", keycloakUserID)
+	s.logger.Success(logger.LogPersonServiceKeycloakIDUpdated, "person_id", personID, "keycloak_user_id", keycloakUserID)
 	return nil
 }
 
 func (s service) RollbackPerson(ctx context.Context, personID string) error {
-	s.logger.Warn("Ejecutando rollback: eliminando persona de BD", "person_id", personID)
+	s.logger.Warn(logger.LogPersonServiceRollbackPerson, "person_id", personID)
 	err := s.repository.DeletePerson(ctx, nil, personID)
 	if err != nil {
-		s.logger.Error("Error en rollback de persona", "person_id", personID, "error", err)
+		s.logger.Error(logger.LogPersonServiceRollbackPersonError, "person_id", personID, "error", err)
 		return err
 	}
-	s.logger.Info("Rollback de persona completado", "person_id", personID)
+	s.logger.Info(logger.LogPersonServiceRollbackPersonComplete, "person_id", personID)
 	return nil
 }
 
 func (s service) RollbackKeycloakUser(ctx context.Context, keycloakUserID string) error {
-	s.logger.Warn("Ejecutando rollback: eliminando usuario de Keycloak", "keycloak_user_id", keycloakUserID)
+	s.logger.Warn(logger.LogPersonServiceRollbackKeycloak, "keycloak_user_id", keycloakUserID)
 	err := s.keycloak.DeleteUser(ctx, keycloakUserID)
 	if err != nil {
-		s.logger.Error("Error en rollback de usuario Keycloak", "keycloak_user_id", keycloakUserID, "error", err)
+		s.logger.Error(logger.LogPersonServiceRollbackKeycloakError, "keycloak_user_id", keycloakUserID, "error", err)
 		return err
 	}
-	s.logger.Info("Rollback de usuario Keycloak completado", "keycloak_user_id", keycloakUserID)
+	s.logger.Info(logger.LogPersonServiceRollbackKeycloakComplete, "keycloak_user_id", keycloakUserID)
 	return nil
+}
+
+func (s service) CheckAndCleanInconsistentState(ctx context.Context, email string) error {
+	s.logger.Debug(logger.LogDualSystemCheck, "email", email)
+
+	// Check if user exists in business DB
+	personInDB, errDB := s.repository.GetPersonByEmail(ctx, email)
+	dbExists := errDB == nil && personInDB != nil
+
+	// Check if user exists in Keycloak
+	keycloakUser, errKC := s.keycloak.GetUserByEmail(ctx, email)
+	kcExists := errKC == nil && keycloakUser != nil
+
+	// Both exist or neither exist - consistent state
+	if (dbExists && kcExists) || (!dbExists && !kcExists) {
+		if dbExists && kcExists {
+			s.logger.Debug(logger.LogUserExistsInBoth, "email", email)
+		} else {
+			s.logger.Debug(logger.LogUserNotFoundInEither, "email", email)
+		}
+		return nil
+	}
+
+	// Log inconsistent state with details
+	s.logger.Warn(logger.LogInconsistentStateDetect,
+		"email", email,
+		"in_database", dbExists,
+		"in_keycloak", kcExists,
+		"db_person_id", func() string {
+			if dbExists {
+				return personInDB.ID
+			}
+			return "N/A"
+		}(),
+		"kc_user_id", func() string {
+			if kcExists {
+				return *keycloakUser.ID
+			}
+			return "N/A"
+		}())
+
+	// User exists only in Keycloak - clean it
+	if !dbExists && kcExists {
+		s.logger.Info(logger.LogPersonServiceCleaningOrphan,
+			"email", email,
+			"source", "keycloak",
+			"keycloak_user_id", *keycloakUser.ID,
+			"reason", "missing in business database")
+
+		if err := s.keycloak.DeleteUser(ctx, *keycloakUser.ID); err != nil {
+			s.logger.Error(logger.LogPersonServiceOrphanCleanError,
+				"email", email,
+				"source", "keycloak",
+				"keycloak_user_id", *keycloakUser.ID,
+				"error", err)
+			return domain.ErrKeycloakCleanupFailed
+		}
+
+		s.logger.Success(logger.LogPersonServiceOrphanCleaned,
+			"email", email,
+			"source", "keycloak",
+			"action", "deleted from Keycloak")
+		return nil // Limpiado exitosamente, puede reintentar
+	}
+
+	// User exists only in DB - clean it
+	if dbExists && !kcExists {
+		s.logger.Info(logger.LogPersonServiceCleaningOrphan,
+			"email", email,
+			"source", "database",
+			"person_id", personInDB.ID,
+			"reason", "missing in Keycloak")
+
+		if err := s.repository.DeletePerson(ctx, nil, personInDB.ID); err != nil {
+			s.logger.Error(logger.LogPersonServiceOrphanCleanError,
+				"email", email,
+				"source", "database",
+				"person_id", personInDB.ID,
+				"error", err)
+			return domain.ErrKeycloakCleanupFailed
+		}
+
+		s.logger.Success(logger.LogPersonServiceOrphanCleaned,
+			"email", email,
+			"source", "database",
+			"action", "deleted from business database")
+		return nil // Limpiado exitosamente, puede reintentar
+	}
+
+	return nil
+}
+
+// Helper functions to detect error types
+
+// isConnectionError checks if an error is a connection-related error
+func isConnectionError(err error) bool {
+	if err == nil {
+		return false
+	}
+	errStr := err.Error()
+	// Check for common connection error patterns
+	return contains(errStr, "connection refused") ||
+		contains(errStr, "no such host") ||
+		contains(errStr, "connection reset") ||
+		contains(errStr, "network is unreachable") ||
+		contains(errStr, "connect: connection refused")
+}
+
+// isTimeoutError checks if an error is a timeout-related error
+func isTimeoutError(err error) bool {
+	if err == nil {
+		return false
+	}
+	errStr := err.Error()
+	return contains(errStr, "timeout") ||
+		contains(errStr, "deadline exceeded") ||
+		contains(errStr, "context deadline exceeded")
+}
+
+// contains is a case-insensitive substring check
+func contains(s, substr string) bool {
+	// Simple case-insensitive check
+	for i := 0; i+len(substr) <= len(s); i++ {
+		match := true
+		for j := 0; j < len(substr); j++ {
+			c1 := s[i+j]
+			c2 := substr[j]
+			// Convert to lowercase for comparison
+			if c1 >= 'A' && c1 <= 'Z' {
+				c1 += 32
+			}
+			if c2 >= 'A' && c2 <= 'Z' {
+				c2 += 32
+			}
+			if c1 != c2 {
+				match = false
+				break
+			}
+		}
+		if match {
+			return true
+		}
+	}
+	return false
 }

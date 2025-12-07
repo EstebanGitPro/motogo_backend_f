@@ -8,10 +8,6 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/databases/common"
 )
 
-const (
-	queryPatch = "UPDATE persons SET keycloak_user_id = ? WHERE id = ?"
-)
-
 func (r *repository) PatchPerson(ctx context.Context, tx output.Tx, id string, keycloakUserID string) error {
 
 	dbTx, ok := tx.(*common.SQLTx)
