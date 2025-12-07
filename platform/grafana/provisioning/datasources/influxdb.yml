@@ -1,0 +1,15 @@
+apiVersion: 1
+
+datasources:
+  - name: InfluxDB_k6
+    type: influxdb
+    access: proxy
+    url: http://motogo-influxdb:8086
+    jsonData:
+      version: Flux
+      organization: motogo
+      defaultBucket: k6
+      tlsSkipVerify: true
+    secureJsonData:
+      token: my-super-secret-auth-token
+    editable: true

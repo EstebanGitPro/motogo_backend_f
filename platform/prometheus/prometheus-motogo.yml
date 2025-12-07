@@ -2,6 +2,14 @@
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
+  external_labels:
+    cluster: 'motogo'
+    environment: 'local'
+
+# Habilitar Remote Write Receiver (para k6)
+storage:
+  tsdb:
+    out_of_order_time_window: 30m
 
 # Configuración de scraping
 scrape_configs:
@@ -21,3 +29,9 @@ scrape_configs:
     metrics_path: '/metrics'
     static_configs:
       - targets: ["motogo-grafana:3000"]
+
+  # Monitoreo de K6 a través de Pushgateway
+  - job_name: "k6"
+    honor_labels: true
+    static_configs:
+      - targets: ["motogo-pushgateway:9091"]

@@ -25,6 +25,9 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 	// Swagger documentation endpoint
 	app.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
+	// Apply Request ID middleware (must be before other middleware for trace correlation)
+	app.Use(middleware.RequestID())
+
 	// Apply Prometheus metrics tracking middleware
 	app.Use(middleware.TrackMetrics())
 
@@ -40,6 +43,14 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 	}
 	dependencies.Logger.Success(logger.LogRouteValidatorOK)
 	validator := middleware.NewMiddlewareValidator(validators, dependencies.Logger)
+
+	// Health check endpoint (no authentication required)
+	app.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status":  "ok",
+			"service": "motogo-backend",
+		})
+	})
 
 	// Richardson Maturity Model Nivel 2-3: Recursos con URIs únicas + HATEOAS
 	public := app.Group("motogo/api/v1")

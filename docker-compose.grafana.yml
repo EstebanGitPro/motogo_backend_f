@@ -22,6 +22,7 @@ services:
       - motogo-network
     depends_on:
       - prometheus
+      - loki
 
   prometheus:
     image: prom/prometheus:v3.5.0
@@ -40,10 +41,39 @@ services:
     networks:
       - motogo-network
 
+  loki:
+    image: grafana/loki:3.0.0
+    container_name: motogo-loki
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./platform/loki/loki-config.yml:/etc/loki/local-config.yaml
+      - loki-data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - motogo-network
+
+  promtail:
+    image: grafana/promtail:3.0.0
+    container_name: motogo-promtail
+    restart: unless-stopped
+    volumes:
+      - ./platform/promtail/promtail-config.yml:/etc/promtail/config.yml
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /tmp/motogo-logs:/var/log/motogo:ro  # Mount for local development logs
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - motogo-network
+    depends_on:
+      - loki
+
 volumes:
   grafana-data:
     driver: local
   prometheus-data:
+    driver: local
+  loki-data:
     driver: local
 
 networks:

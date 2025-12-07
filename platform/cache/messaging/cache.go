@@ -238,14 +238,14 @@ var messageCodeToHTTPStatus = map[string]int{
 	"MOD_INFRA_KC_UNAVAIL_ERR_00004": http.StatusLocked, // 423
 	"MOD_INFRA_DB_UNAVAIL_ERR_00005": http.StatusLocked, // 423
 	"MOD_INFRA_DEP_FAIL_ERR_00006":   http.StatusLocked, // 423
+	"MOD_INFRA_KC_CLEANUP_ERR_00003": http.StatusLocked, // 423
+	"MOD_INFRA_KC_CREATE_ERR_00002":  http.StatusLocked, // 423
 
 	// Incomplete registration error - HTTP 409 (Conflict)
 	"MOD_INFRA_INCOMPLETE_REG_ERR_00009": http.StatusConflict, // 409
 
 	// Existing infrastructure errors - HTTP 500
 	"MOD_INFRA_KC_INCONSISTENT_ERR_00001": http.StatusInternalServerError,
-	"MOD_INFRA_KC_CREATE_ERR_00002":       http.StatusInternalServerError,
-	"MOD_INFRA_KC_CLEANUP_ERR_00003":      http.StatusInternalServerError,
 
 	"GEN_AUTH_ERR_00002":      http.StatusUnauthorized,
 	"GEN_FORBIDDEN_ERR_00003": http.StatusForbidden,

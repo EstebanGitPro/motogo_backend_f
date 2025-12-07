@@ -21,27 +21,31 @@ import (
 // @Router       /accounts [post]
 func (h handler) RegisterPerson() func(c *gin.Context) {
 	return func(c *gin.Context) {
-		h.Logger.Info(logger.LogRegRequestReceived,
+		// Create logger with trace ID for this request
+		traceID := middleware.GetRequestID(c)
+		log := h.Logger.WithTraceID(traceID)
+
+		log.Info(logger.LogRegRequestReceived,
 			"method", c.Request.Method,
 			"path", c.Request.URL.Path,
 			"client_ip", c.ClientIP())
 
 		var personRequest PersonRequest
 		if err := c.ShouldBindJSON(&personRequest); err != nil {
-			h.Logger.Error(logger.LogRegJSONParseError,
+			log.Error(logger.LogRegJSONParseError,
 				"error", err,
 				"client_ip", c.ClientIP())
 			c.Error(domain.ErrInvalidJSONFormat)
 			return
 		}
 
-		h.Logger.Info(logger.LogRegProcessing,
+		log.Info(logger.LogRegProcessing,
 			"email", personRequest.Email,
 			"role", personRequest.Role)
 
 		result, err := h.Interactor.RegisterPerson(c, personRequest.ToDomain())
 		if err != nil {
-			h.Logger.Error(logger.LogRegProcessError,
+			log.Error(logger.LogRegProcessError,
 				"email", personRequest.Email,
 				"error", err,
 				"client_ip", c.ClientIP())
@@ -65,7 +69,7 @@ func (h handler) RegisterPerson() func(c *gin.Context) {
 			Links: links,
 		}
 
-		h.Logger.Success("Registro completado exitosamente",
+		log.Success("Registro completado exitosamente",
 			result.Person.ToLogger(),
 			"encoded_id", encodedID,
 			"client_ip", c.ClientIP())
