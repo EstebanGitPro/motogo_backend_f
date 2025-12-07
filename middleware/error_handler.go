@@ -70,6 +70,16 @@ var errorToMessageCode = map[error]string{
 	domain.ErrMessageInvalidType:      domain.MsgMessageInvalidType,
 	domain.ErrMessageListFailed:       domain.MsgMessageListError,
 
+	// Infrastructure errors (MOD_INFRA_*)
+	domain.ErrKeycloakInconsistentState:  domain.MsgKeycloakInconsistentState,
+	domain.ErrKeycloakUserCreationFailed: domain.MsgKeycloakCreateError,
+	domain.ErrKeycloakCleanupFailed:      domain.MsgKeycloakCleanupError,
+	// Dependency availability errors
+	domain.ErrKeycloakUnavailable: domain.MsgKeycloakUnavailable,
+	domain.ErrDatabaseUnavailable: domain.MsgDatabaseUnavailable,
+	// Incomplete registration (cleanup in progress)
+	domain.ErrIncompleteRegistration: domain.MsgIncompleteRegistration,
+
 	// General errors
 	domain.ErrInternalServer: domain.MsgServerError,
 }

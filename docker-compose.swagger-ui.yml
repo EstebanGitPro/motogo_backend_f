@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  swagger-ui:
+    image: swaggerapi/swagger-ui:latest
+    container_name: motogo-swagger-ui
+    restart: unless-stopped
+    ports:
+      - "3001:8080"
+    volumes:
+      # Montar los archivos swagger generados
+      - ./platform/swaggo:/swagger
+    environment:
+      # Apuntar a tu archivo swagger.json
+      SWAGGER_JSON: /swagger/swagger.json
+      # Configuración adicional de Swagger UI
+      BASE_URL: /
+      VALIDATOR_URL: "null"
+    networks:
+      - motogo-network
+
+networks:
+  motogo-network:
+    driver: bridge

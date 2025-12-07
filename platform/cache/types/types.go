@@ -16,7 +16,7 @@ const (
 // CachedMessage represents a message in the cache
 // This is cache's own type, independent from domain
 type CachedMessage struct {
-	ID       string 
+	ID       string
 	Code     string
 	Type     MessageType
 	Category string
@@ -38,4 +38,5 @@ type MessageResponse struct {
 type MessageCacheRepository interface {
 	GetAllActiveForCache(ctx context.Context) ([]CachedMessage, error)
 	GetByCodeForCache(ctx context.Context, code string) (*CachedMessage, error)
+	GetByCodeIncludingInactive(ctx context.Context, code string) (*CachedMessage, error)
 }

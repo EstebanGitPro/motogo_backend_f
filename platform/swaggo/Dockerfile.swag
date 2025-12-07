@@ -1,0 +1,13 @@
+FROM golang:1.25-alpine
+
+# Instalar dependencias necesarias
+RUN apk add --no-cache git python3
+
+# Instalar swag CLI
+RUN go install github.com/swaggo/swag/cmd/swag@latest
+
+# Configurar directorio de trabajo
+WORKDIR /app
+
+# El comando se especificará al ejecutar docker run
+ENTRYPOINT ["/go/bin/swag"]
