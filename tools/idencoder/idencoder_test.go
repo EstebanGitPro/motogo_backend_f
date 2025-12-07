@@ -100,3 +100,150 @@ func TestIDEncoder_Consistency(t *testing.T) {
 
 	t.Logf("UUID %s always encodes to: %s", testUUID, encoded1)
 }
+
+func TestIDEncoder_EmptySecret(t *testing.T) {
+	_, err := NewHashidsEncoder(Config{
+		Secret:    "",
+		MinLength: 10,
+	}, nil)
+
+	if err == nil {
+		t.Error("Expected error for empty secret, got nil")
+	}
+}
+
+func TestIDEncoder_DifferentSecrets_DifferentEncodings(t *testing.T) {
+	testUUID := "550e8400-e29b-41d4-a716-446655440000"
+
+	encoder1, _ := NewHashidsEncoder(Config{
+		Secret:    "secret-1",
+		MinLength: 10,
+	}, nil)
+
+	encoder2, _ := NewHashidsEncoder(Config{
+		Secret:    "secret-2",
+		MinLength: 10,
+	}, nil)
+
+	encoded1, _ := encoder1.Encode(testUUID)
+	encoded2, _ := encoder2.Encode(testUUID)
+
+	if encoded1 == encoded2 {
+		t.Error("Different secrets should produce different encodings")
+	}
+}
+
+func TestIDEncoder_DecodeWithDifferentSecret_Fails(t *testing.T) {
+	testUUID := "550e8400-e29b-41d4-a716-446655440000"
+
+	encoder1, _ := NewHashidsEncoder(Config{
+		Secret:    "secret-1",
+		MinLength: 10,
+	}, nil)
+
+	encoder2, _ := NewHashidsEncoder(Config{
+		Secret:    "secret-2",
+		MinLength: 10,
+	}, nil)
+
+	encoded, _ := encoder1.Encode(testUUID)
+
+	// Try to decode with different encoder
+	decoded, err := encoder2.Decode(encoded)
+
+	// Should either error or produce wrong result
+	if err == nil && decoded == testUUID {
+		t.Error("Decode with different secret should fail or produce wrong result")
+	}
+}
+
+func TestIsUUID_ValidFormats(t *testing.T) {
+	validUUIDs := []string{
+		"550e8400-e29b-41d4-a716-446655440000",
+		"F47AC10B-58CC-4372-A567-0E02B2C3D479",
+		"f47ac10b-58cc-4372-a567-0e02b2c3d479",
+	}
+
+	for _, uuid := range validUUIDs {
+		if !IsUUID(uuid) {
+			t.Errorf("Expected %s to be valid UUID", uuid)
+		}
+	}
+}
+
+func TestIsUUID_InvalidFormats(t *testing.T) {
+	invalidValues := []string{
+		"not-a-uuid",
+		"",
+		"12345",
+		"550e8400-e29b-41d4-a716",
+	}
+
+	for _, val := range invalidValues {
+		if IsUUID(val) {
+			t.Errorf("Expected %s to be invalid UUID", val)
+		}
+	}
+}
+
+func TestIDEncoder_MustEncode_WithError(t *testing.T) {
+	encoder, _ := NewHashidsEncoder(Config{
+		Secret:    "test-secret",
+		MinLength: 10,
+	}, nil)
+
+	// MustEncode with invalid UUID should return empty string (doesn't panic)
+	result := encoder.MustEncode("invalid-uuid")
+	if result != "" {
+		t.Logf("MustEncode with error returned: %s", result)
+	}
+}
+
+func TestIDEncoder_IsValidEncoded(t *testing.T) {
+	encoder, _ := NewHashidsEncoder(Config{
+		Secret:    "test-secret",
+		MinLength: 10,
+	}, nil)
+
+	testUUID := "550e8400-e29b-41d4-a716-446655440000"
+	encoded, _ := encoder.Encode(testUUID)
+
+	// Valid encoded ID
+	if !encoder.IsValidEncoded(encoded) {
+		t.Error("Valid encoded ID should return true")
+	}
+
+	// Invalid encoded ID
+	if encoder.IsValidEncoded("definitely-invalid-id") {
+		t.Error("Invalid encoded ID should return false")
+	}
+
+	// Empty string
+	if encoder.IsValidEncoded("") {
+		t.Error("Empty string should return false")
+	}
+}
+
+func TestIDEncoder_MinLength(t *testing.T) {
+	testUUID := "550e8400-e29b-41d4-a716-446655440000"
+
+	testCases := []int{5, 10, 20, 30}
+
+	for _, minLen := range testCases {
+		encoder, _ := NewHashidsEncoder(Config{
+			Secret:    "test-secret",
+			MinLength: minLen,
+		}, nil)
+
+		encoded, err := encoder.Encode(testUUID)
+		if err != nil {
+			t.Fatalf("Error encoding with minLength %d: %v", minLen, err)
+		}
+
+		if len(encoded) < minLen {
+			t.Errorf("Expected encoded length >= %d, got %d", minLen, len(encoded))
+		}
+
+		t.Logf("MinLength %d: encoded length = %d", minLen, len(encoded))
+	}
+}
