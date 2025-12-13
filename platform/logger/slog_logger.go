@@ -8,14 +8,13 @@ import (
 	"time"
 )
 
-// SlogLogger implements the Logger interface using Go's structured logging package.
-// It supports trace ID correlation for distributed tracing in Loki.
+
 type SlogLogger struct {
 	logFile *os.File
-	traceID string // Trace ID for correlation in Loki
+	traceID string
 }
 
-// NewSlogLogger creates a new SlogLogger instance that writes to both stdout and a file.
+
 func NewSlogLogger() Logger {
 	// Create log directory if it doesn't exist
 	logDir := "/tmp/motogo-logs"

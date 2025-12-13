@@ -1,14 +1,4 @@
 package logger
-
-// ============================================
-// CENTRALIZED LOG MESSAGES
-// ============================================
-// All log messages are defined here as constants to:
-// 1. Avoid hardcoded strings across the codebase
-// 2. Enable easy maintenance and updates
-// 3. Support future internationalization
-// 4. Ensure consistency
-
 // ============================================
 // APPLICATION LIFECYCLE
 // ============================================
@@ -257,6 +247,7 @@ const (
 	LogMiddlewareSchemaError        = "Error de validación de schema"
 	LogMiddlewareResponseCacheError = "Error obteniendo mensaje de cache"
 	LogMiddlewareResponseSuccess    = "Respuesta enviada exitosamente"
+	LogMiddlewareNotFound           = "Endpoint no encontrado (404)"
 )
 
 // ============================================

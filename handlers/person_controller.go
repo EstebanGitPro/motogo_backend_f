@@ -23,7 +23,7 @@ func (h handler) RegisterPerson() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		// Create logger with trace ID for this request
 		traceID := middleware.GetRequestID(c)
-		log := h.Logger.WithTraceID(traceID)
+		log := Logger.WithTraceID(traceID)
 
 		log.Info(logger.LogRegRequestReceived,
 			"method", c.Request.Method,

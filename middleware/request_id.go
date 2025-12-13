@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	"context"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -17,6 +19,11 @@ const (
 	TraceIDKey = "traceID"
 )
 
+// contextKey is a private type for context keys to avoid collisions
+type contextKey string
+
+const traceIDContextKey contextKey = "traceID"
+
 // RequestID is a middleware that generates a unique ID for each request
 // and adds it to the context and response headers
 func RequestID() gin.HandlerFunc {
@@ -29,8 +36,12 @@ func RequestID() gin.HandlerFunc {
 			requestID = uuid.New().String()
 		}
 
-		// Store in context for use in handlers and logs
+		// Store in Gin context for use in handlers and logs
 		c.Set(RequestIDKey, requestID)
+
+		// Store in Go context for use in services/interactors
+		ctx := context.WithValue(c.Request.Context(), traceIDContextKey, requestID)
+		c.Request = c.Request.WithContext(ctx)
 
 		// Add to response headers
 		c.Header(RequestIDHeader, requestID)
@@ -45,6 +56,15 @@ func GetRequestID(c *gin.Context) string {
 		if id, ok := requestID.(string); ok {
 			return id
 		}
+	}
+	return ""
+}
+
+// GetTraceIDFromContext extracts the trace ID from Go context
+// This is used in services and interactors that receive context.Context
+func GetTraceIDFromContext(ctx context.Context) string {
+	if traceID, ok := ctx.Value(traceIDContextKey).(string); ok {
+		return traceID
 	}
 	return ""
 }
