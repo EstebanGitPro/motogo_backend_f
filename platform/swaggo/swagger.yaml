@@ -1,0 +1,381 @@
+basePath: /motogo/api/v1
+definitions:
+  github_com_EstebanGitPro_motogo-backend_core_interactor_services_domain.MessageType:
+    enum:
+    - ERROR
+    - EXITO
+    - WARNING
+    - INFO
+    - DEBUG
+    type: string
+    x-enum-varnames:
+    - TypeError
+    - TypeSuccess
+    - TypeWarning
+    - TypeInfo
+    - TypeDebug
+  handlers.Link:
+    properties:
+      href:
+        type: string
+      method:
+        type: string
+      rel:
+        type: string
+    type: object
+  handlers.MessageCreatedResponse:
+    properties:
+      _links:
+        items:
+          $ref: '#/definitions/handlers.Link'
+        type: array
+      id:
+        type: string
+    type: object
+  handlers.MessageListResponse:
+    properties:
+      _links:
+        items:
+          $ref: '#/definitions/handlers.Link'
+        type: array
+      count:
+        type: integer
+      messages:
+        items:
+          $ref: '#/definitions/handlers.MessageResponse'
+        type: array
+    type: object
+  handlers.MessageRequest:
+    properties:
+      active:
+        type: boolean
+      category:
+        type: string
+      code:
+        type: string
+      content:
+        type: string
+      module:
+        type: string
+      title:
+        type: string
+      type:
+        $ref: '#/definitions/github_com_EstebanGitPro_motogo-backend_core_interactor_services_domain.MessageType'
+    type: object
+  handlers.MessageResponse:
+    properties:
+      _links:
+        items:
+          $ref: '#/definitions/handlers.Link'
+        type: array
+      active:
+        type: boolean
+      category:
+        type: string
+      code:
+        type: string
+      content:
+        type: string
+      id:
+        type: string
+      module:
+        type: string
+      title:
+        type: string
+      type:
+        $ref: '#/definitions/github_com_EstebanGitPro_motogo-backend_core_interactor_services_domain.MessageType'
+    type: object
+  handlers.MessageUpdatedResponse:
+    properties:
+      _links:
+        items:
+          $ref: '#/definitions/handlers.Link'
+        type: array
+    type: object
+  handlers.PersonRequest:
+    properties:
+      email:
+        type: string
+      first_name:
+        type: string
+      identity_number:
+        type: string
+      last_name:
+        type: string
+      password:
+        type: string
+      phone_number:
+        type: string
+      role:
+        type: string
+      second_last_name:
+        type: string
+    type: object
+  handlers.RegistrationResponse:
+    properties:
+      _links:
+        items:
+          $ref: '#/definitions/handlers.Link'
+        type: array
+    type: object
+  middleware.APIResponse:
+    properties:
+      code:
+        description: Business message code
+        type: string
+      data: {}
+      message:
+        description: Business message content
+        type: string
+      success:
+        type: boolean
+    type: object
+externalDocs:
+  description: OpenAPI
+  url: https://swagger.io/resources/open-api/
+host: localhost:8085
+info:
+  contact:
+    email: support@motogo.com
+    name: Motogo API Support
+    url: https://motogo.com/support
+  description: API RESTful para la plataforma Motogo, implementada con arquitectura
+    hexagonal y siguiendo los principios del Richardson Maturity Model (Nivel 2-3)
+    con HATEOAS.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Motogo Backend API
+  version: "1.0"
+paths:
+  /accounts:
+    post:
+      consumes:
+      - application/json
+      description: Crea una nueva cuenta de usuario en el sistema con sincronización
+        a Keycloak
+      parameters:
+      - description: Datos de la cuenta
+        in: body
+        name: account
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.PersonRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Cuenta creada exitosamente
+          schema:
+            allOf:
+            - $ref: '#/definitions/middleware.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.RegistrationResponse'
+              type: object
+        "400":
+          description: Error de validación
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+        "409":
+          description: Email o número de identidad ya registrado
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+        "500":
+          description: Error interno del servidor
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+      summary: Registrar nueva cuenta
+      tags:
+      - accounts
+  /messages:
+    get:
+      consumes:
+      - application/json
+      description: Obtiene una lista de mensajes del sistema con filtros opcionales
+      parameters:
+      - description: 'Filtrar por módulo (ej: users, orders)'
+        in: query
+        name: module
+        type: string
+      - description: Filtrar por tipo (ERROR, SUCCESS, INFO, WARNING)
+        in: query
+        name: type
+        type: string
+      - description: 'Filtrar por categoría (ej: usuario_final, admin)'
+        in: query
+        name: category
+        type: string
+      - description: Filtrar por estado activo (true/false)
+        in: query
+        name: active
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Lista de mensajes
+          schema:
+            $ref: '#/definitions/handlers.MessageListResponse'
+        "500":
+          description: Error interno del servidor
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+      summary: Listar mensajes
+      tags:
+      - messages
+    post:
+      consumes:
+      - application/json
+      description: Crea un nuevo mensaje de sistema para manejo de notificaciones,
+        errores y mensajes informativos
+      parameters:
+      - description: Datos del mensaje
+        in: body
+        name: message
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.MessageRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Mensaje creado exitosamente
+          schema:
+            allOf:
+            - $ref: '#/definitions/middleware.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.MessageCreatedResponse'
+              type: object
+        "400":
+          description: Error de validación
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+        "409":
+          description: Mensaje con código duplicado
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+        "500":
+          description: Error interno del servidor
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+      summary: Crear nuevo mensaje del sistema
+      tags:
+      - messages
+  /messages/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Elimina un mensaje del sistema por su ID
+      parameters:
+      - description: ID del mensaje (hashid)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Mensaje eliminado exitosamente
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+        "400":
+          description: ID inválido
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+        "404":
+          description: Mensaje no encontrado
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+        "500":
+          description: Error interno del servidor
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+      summary: Eliminar mensaje
+      tags:
+      - messages
+    get:
+      consumes:
+      - application/json
+      description: Obtiene un mensaje del sistema específico por su ID
+      parameters:
+      - description: ID del mensaje (hashid)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Mensaje encontrado
+          schema:
+            $ref: '#/definitions/handlers.MessageResponse'
+        "400":
+          description: ID inválido
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+        "404":
+          description: Mensaje no encontrado
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+        "500":
+          description: Error interno del servidor
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+      summary: Obtener mensaje por ID
+      tags:
+      - messages
+    put:
+      consumes:
+      - application/json
+      description: Actualiza un mensaje del sistema por su ID
+      parameters:
+      - description: ID del mensaje (hashid)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Datos actualizados del mensaje
+        in: body
+        name: message
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.MessageRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Mensaje actualizado exitosamente
+          schema:
+            allOf:
+            - $ref: '#/definitions/middleware.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.MessageUpdatedResponse'
+              type: object
+        "400":
+          description: Error de validación
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+        "404":
+          description: Mensaje no encontrado
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+        "500":
+          description: Error interno del servidor
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+      summary: Actualizar mensaje existente
+      tags:
+      - messages
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
