@@ -15,7 +15,7 @@
     },
     "server": {
         "port": "8085",
-        "host": "localhost"
+        "host": "0.0.0.0"
     },
     "resend": {
         "api_key": "re_eefMc9Ca_BVDyzRzNKo5YCRHp1nRsAtCd",

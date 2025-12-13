@@ -112,17 +112,18 @@ docker run --rm motogo-swag --version
 
 ## 🆚 Comparación: Local vs Docker
 
-| Aspecto | swag Local | swag Docker |
-|---------|------------|-------------|
-| **Primera ejecución** | Rápida (<5s) | Lenta (~3min build) |
-| **Ejecuciones siguientes** | Muy rápida (<5s) | Rápida (~10s) |
-| **Requisitos** | Go + swag instalados | Solo Docker |
-| **Portabilidad** | Depende del sistema | Funciona en cualquier lugar |
-| **Tamaño** | ~20MB (binario swag) | ~500MB (imagen completa) |
+| Aspecto                    | swag Local           | swag Docker                 |
+| -------------------------- | -------------------- | --------------------------- |
+| **Primera ejecución**      | Rápida (<5s)         | Lenta (~3min build)         |
+| **Ejecuciones siguientes** | Muy rápida (<5s)     | Rápida (~10s)               |
+| **Requisitos**             | Go + swag instalados | Solo Docker                 |
+| **Portabilidad**           | Depende del sistema  | Funciona en cualquier lugar |
+| **Tamaño**                 | ~20MB (binario swag) | ~500MB (imagen completa)    |
 
 ## 💡 Recomendaciones
 
 ### Para Desarrollo Local
+
 ✅ Instala `swag` localmente:
 ```bash
 go install github.com/swaggo/swag/cmd/swag@latest
@@ -134,6 +135,7 @@ go install github.com/swaggo/swag/cmd/swag@latest
 - Mejor para iteraciones frecuentes
 
 ### Para CI/CD o Entornos Sin Go
+
 ✅ Usa Docker:
 ```bash
 docker build -t motogo-swag -f platform/swaggo/Dockerfile.swag .
@@ -172,6 +174,7 @@ rm -rf platform/swaggo/swagger.yaml
 open -a Docker
 
 # Linux
+
 sudo systemctl start docker
 ```
 
@@ -196,6 +199,7 @@ newgrp docker
 docker builder prune
 
 # Reconstruir sin caché
+
 docker build --no-cache -t motogo-swag -f platform/swaggo/Dockerfile.swag .
 ```
 

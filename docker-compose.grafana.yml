@@ -29,7 +29,7 @@ services:
     container_name: motogo-prometheus
     restart: unless-stopped
     ports:
-      - "9090:9090"
+      - "9091:9090"
     volumes:
       - ./platform/prometheus/prometheus-motogo.yml:/etc/prometheus/prometheus.yml
       - prometheus-data:/prometheus
@@ -67,6 +67,28 @@ services:
       - motogo-network
     depends_on:
       - loki
+
+  log-rotator:
+    build:
+      context: ./platform/log-rotator
+      dockerfile: Dockerfile
+    image: motogo-log-rotator:latest
+    container_name: motogo-log-rotator
+    restart: unless-stopped
+    volumes:
+      # Logs del backend (read-write para poder rotar)
+      - /tmp/motogo-logs:/var/log/motogo
+      # Volúmenes Docker (read-write para limpieza)
+      - prometheus-data:/prometheus
+      - loki-data:/loki
+      - grafana-data:/grafana
+      # Socket de Docker (para comandos de limpieza adicionales si necesario)
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - TZ=America/Bogota
+      - RETENTION_DAYS=7
+    networks:
+      - motogo-network
 
 volumes:
   grafana-data:
