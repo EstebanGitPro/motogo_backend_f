@@ -31,10 +31,10 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 	// Apply Prometheus metrics tracking middleware
 	app.Use(middleware.TrackMetrics())
 
-	errorHandler := middleware.NewErrorHandler(dependencies.MessagingCache, dependencies.Logger)
+	errorHandler := middleware.NewErrorHandler(dependencies.MessagingCache)
 	app.Use(errorHandler.Handle())
 
-	handler := handlers.New(dependencies.PersonService, dependencies.Interactor, dependencies.MessageInteractor, dependencies.MessagingCache, dependencies.Logger, dependencies.IDEncoder, dependencies.ResponseHandler)
+	handler := handlers.New(dependencies.PersonService, dependencies.Interactor, dependencies.MessageInteractor, dependencies.MessagingCache, dependencies.IDEncoder, dependencies.ResponseHandler)
 
 	validators, err := schema.NewValidator(&schema.DefaultFileReader{})
 	if err != nil {
@@ -42,7 +42,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		dependencies.Logger.Fatal(logger.LogRouteValidatorError, "error", err)
 	}
 	dependencies.Logger.Success(logger.LogRouteValidatorOK)
-	validator := middleware.NewMiddlewareValidator(validators, dependencies.Logger)
+	validator := middleware.NewMiddlewareValidator(validators)
 
 	// Health check endpoint (no authentication required)
 	app.GET("/health", func(c *gin.Context) {
@@ -51,6 +51,9 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 			"service": "motogo-backend",
 		})
 	})
+
+	// 404 handler - must be registered AFTER all routes
+	app.NoRoute(middleware.NotFoundHandler())
 
 	// Richardson Maturity Model Nivel 2-3: Recursos con URIs únicas + HATEOAS
 	public := app.Group("motogo/api/v1")

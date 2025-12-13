@@ -90,15 +90,16 @@ type ErrorResponse struct {
 	Message string `json:"message"`
 }
 
+var log   logger.Logger = logger.NewSlogLogger()
+
 type ErrorHandler struct {
 	cache *messagingCache.MessageCache
-	log   logger.Logger
+	
 }
 
-func NewErrorHandler(cache *messagingCache.MessageCache, log logger.Logger) *ErrorHandler {
+func NewErrorHandler(cache *messagingCache.MessageCache) *ErrorHandler {
 	return &ErrorHandler{
 		cache: cache,
-		log:   log,
 	}
 }
 
@@ -108,6 +109,10 @@ func (h *ErrorHandler) Handle() gin.HandlerFunc {
 
 		if len(c.Errors) > 0 {
 			err := c.Errors.Last().Err
+
+			// Get request ID for trace correlation
+			traceID := GetRequestID(c)
+			log := log.WithTraceID(traceID)
 
 			// Extract validation field names from context if available
 			var params []string
@@ -134,7 +139,7 @@ func (h *ErrorHandler) Handle() gin.HandlerFunc {
 				status := h.cache.GetHTTPStatus(messageCode)
 
 				if msg != nil {
-					h.log.Warn(logger.LogMiddlewareErrorCaught,
+					log.Warn(logger.LogMiddlewareErrorCaught,
 						"error", err.Error(),
 						"code", msg.Code,
 						"status", status,
@@ -153,7 +158,7 @@ func (h *ErrorHandler) Handle() gin.HandlerFunc {
 			}
 
 			// Fallback for unmapped errors
-			h.log.Error(logger.LogMiddlewareInternalErr,
+			log.Error(logger.LogMiddlewareInternalErr,
 				"error", err.Error(),
 				"path", c.Request.URL.Path,
 				"method", c.Request.Method,

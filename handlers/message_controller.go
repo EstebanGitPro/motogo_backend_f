@@ -23,7 +23,7 @@ func (h handler) CreateMessage() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		// Create logger with trace ID for this request
 		traceID := middleware.GetRequestID(c)
-		log := h.Logger.WithTraceID(traceID)
+		log := Logger.WithTraceID(traceID)
 
 		log.Info(logger.LogMessageCreate,
 			"method", c.Request.Method,
@@ -105,7 +105,7 @@ func (h handler) UpdateMessage() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		// Create logger with trace ID for this request
 		traceID := middleware.GetRequestID(c)
-		log := h.Logger.WithTraceID(traceID)
+		log := Logger.WithTraceID(traceID)
 
 		log.Info(logger.LogMessageUpdate,
 			"method", c.Request.Method,
@@ -183,7 +183,7 @@ func (h handler) DeleteMessage() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		// Create logger with trace ID for this request
 		traceID := middleware.GetRequestID(c)
-		log := h.Logger.WithTraceID(traceID)
+		log := Logger.WithTraceID(traceID)
 
 		log.Info(logger.LogMessageDelete,
 			"method", c.Request.Method,
@@ -238,7 +238,7 @@ func (h handler) GetMessageByID() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		// Create logger with trace ID for this request
 		traceID := middleware.GetRequestID(c)
-		log := h.Logger.WithTraceID(traceID)
+		log := Logger.WithTraceID(traceID)
 
 		log.Debug(logger.LogMessageGet,
 			"method", c.Request.Method,
@@ -306,7 +306,7 @@ func (h handler) ListMessages() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		// Create logger with trace ID for this request
 		traceID := middleware.GetRequestID(c)
-		log := h.Logger.WithTraceID(traceID)
+		log := Logger.WithTraceID(traceID)
 
 		log.Debug(logger.LogMessageList,
 			"method", c.Request.Method,
@@ -376,7 +376,7 @@ func (h handler) ReloadMessageCache() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		// Create logger with trace ID for this request
 		traceID := middleware.GetRequestID(c)
-		log := h.Logger.WithTraceID(traceID)
+		log := Logger.WithTraceID(traceID)
 
 		log.Info("Recargando caché de mensajes",
 			"method", c.Request.Method,
