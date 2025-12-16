@@ -55,7 +55,7 @@ fi
 
 # Verificar la estructura copiada
 echo "🔍 Verificando estructura..."
-docker exec "$CONTAINER_NAME" ls -la "$KEYCLOAK_THEMES_PATH/$THEME_NAME/email/html/" | head -5
+docker exec "$CONTAINER_NAME" ls -la "$KEYCLOAK_THEMES_PATH/$THEME_NAME/email/" | head -8
 
 # Reiniciar Keycloak para que cargue el theme
 echo ""
@@ -79,4 +79,5 @@ echo "   7. Save"
 echo "   8. Probar: Realm Settings → Email → Test connection"
 echo ""
 echo "🎉 ¡Disfruta tu nuevo theme!"
+
 

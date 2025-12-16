@@ -1,15 +1,14 @@
-¡Hola<#if user.firstName??> ${user.firstName}</#if>!
+Bienvenido a MotoGo
 
-Gracias por registrarte en MotoGo, tu plataforma de gestión tributaria para empresas de transporte.
+Hola,
 
-Para activar tu cuenta, verifica tu correo haciendo clic en este enlace:
+Gracias por registrarte en nuestra plataforma.
+
+Para completar tu registro, visita este enlace:
 ${link}
 
-⏰ Este enlace expira en 24 horas.
-
-Si no creaste esta cuenta, puedes ignorar este mensaje de forma segura.
+Este enlace expira en 15 minutos.
 
 --
-MotoGo - Gestión Tributaria Inteligente
-¿Necesitas ayuda? soporte@motogo.com
+soporte@motogo.com
 © ${.now?string('yyyy')} MotoGo

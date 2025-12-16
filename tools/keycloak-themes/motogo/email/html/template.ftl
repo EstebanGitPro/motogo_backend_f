@@ -4,201 +4,133 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>MotoGo</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-            line-height: 1.6;
-            background-color: #f3f4f6;
-            padding: 20px;
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+            margin: 0;
+            padding: 2rem;
         }
-        
-        .email-wrapper {
+        .container {
             max-width: 600px;
             margin: 0 auto;
-            background: #ffffff;
-            border-radius: 16px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            overflow: hidden;
         }
-        
-        .email-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 48px 40px;
+        .card {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .header {
             text-align: center;
-            color: #ffffff;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #007BFF;
         }
-        
-        .email-header .logo {
-            font-size: 56px;
-            margin-bottom: 12px;
-        }
-        
-        .email-header h1 {
-            font-size: 32px;
-            font-weight: 700;
-            margin: 0;
-            letter-spacing: -0.5px;
-        }
-        
-        .email-body {
-            padding: 40px;
-            color: #1f2937;
-        }
-        
-        .email-body h2 {
+        .header h1 {
+            color: #333;
             font-size: 24px;
-            font-weight: 700;
-            color: #111827;
-            margin-bottom: 16px;
+            margin: 0.5rem 0;
         }
-        
-        .email-body p {
-            font-size: 16px;
-            color: #4b5563;
-            margin-bottom: 16px;
-            line-height: 1.7;
+        .logo {
+            color: #007BFF;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
         }
-        
+        .content {
+            color: #333;
+            line-height: 1.6;
+        }
+        .content p {
+            margin: 1rem 0;
+            color: #666;
+        }
         .button {
             display: inline-block;
-            padding: 16px 32px;
-            margin: 24px 0;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #ffffff !important;
+            margin: 1.5rem 0;
+            padding: 12px 24px;
+            background-color: #007BFF;
+            color: white !important;
             text-decoration: none;
-            border-radius: 10px;
+            border-radius: 5px;
             font-weight: 600;
-            font-size: 16px;
-            text-align: center;
-            transition: transform 0.2s;
         }
-        
         .button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(102, 126, 234, 0.3);
+            background-color: #0056b3;
         }
-        
-        .alert-box {
-            background: #fef3c7;
-            border-left: 4px solid #f59e0b;
-            padding: 16px;
-            margin: 24px 0;
-            border-radius: 8px;
-        }
-        
-        .alert-box p {
-            color: #92400e;
-            margin: 0;
+        .link-text {
+            color: #666;
             font-size: 14px;
+            word-break: break-all;
         }
-        
-        .info-box {
-            background: #dbeafe;
-            border-left: 4px solid #3b82f6;
-            padding: 16px;
-            margin: 24px 0;
-            border-radius: 8px;
-        }
-        
-        .info-box p {
-            color: #1e40af;
-            margin: 0;
-            font-size: 14px;
-        }
-        
-        .success-box {
-            background: #d1fae5;
-            border-left: 4px solid #10b981;
-            padding: 16px;
-            margin: 24px 0;
-            border-radius: 8px;
-        }
-        
-        .success-box p {
-            color: #065f46;
-            margin: 0;
-            font-size: 14px;
-        }
-        
-        .email-footer {
-            background: #f9fafb;
-            padding: 32px 40px;
-            text-align: center;
+        .footer {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
             border-top: 1px solid #e5e7eb;
+            text-align: center;
+            font-size: 12px;
+            color: #999;
         }
-        
-        .email-footer p {
-            font-size: 13px;
-            color: #6b7280;
-            margin: 8px 0;
-        }
-        
-        .email-footer a {
-            color: #667eea;
+        .footer a {
+            color: #007BFF;
             text-decoration: none;
         }
-        
-        .security-tip {
-            background: #fef2f2;
-            border-left: 4px solid #ef4444;
-            padding: 16px;
-            margin: 24px 0;
-            border-radius: 8px;
+        .info-box {
+            background-color: #e7f3ff;
+            border-left: 4px solid #007BFF;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
         }
-        
-        .security-tip p {
-            color: #991b1b;
+        .info-box p {
             margin: 0;
+            color: #004085;
             font-size: 14px;
         }
-        
+        .warning-box {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+        }
+        .warning-box p {
+            margin: 0;
+            color: #856404;
+            font-size: 14px;
+        }
         @media only screen and (max-width: 600px) {
-            .email-wrapper {
-                border-radius: 0;
+            body {
+                padding: 1rem;
             }
-            
-            .email-header,
-            .email-body,
-            .email-footer {
-                padding: 24px 20px;
+            .card {
+                padding: 1.5rem;
             }
-            
-            .email-header h1 {
-                font-size: 24px;
-            }
-            
             .button {
                 display: block;
-                width: 100%;
+                text-align: center;
             }
         }
     </style>
 </head>
 <body>
-    <div class="email-wrapper">
-        <div class="email-header">
-            <div class="logo">🏍️</div>
-            <h1>MotoGo</h1>
-        </div>
-        <div class="email-body">
-            <#nested>
-        </div>
-        <div class="email-footer">
-            <p><strong>MotoGo</strong> - Gestión Tributaria Inteligente</p>
-            <p>¿Necesitas ayuda? <a href="mailto:soporte@motogo.com">soporte@motogo.com</a></p>
-            <p>© ${.now?string('yyyy')} MotoGo. Todos los derechos reservados.</p>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                <div class="logo">MotoGo</div>
+            </div>
+            <div class="content">
+                <#nested>
+            </div>
+            <div class="footer">
+                <p><a href="mailto:soporte@motogo.com">soporte@motogo.com</a></p>
+                <p>&copy; ${.now?string('yyyy')} MotoGo. Todos los derechos reservados.</p>
+            </div>
         </div>
     </div>
 </body>
 </html>
 </#macro>
+

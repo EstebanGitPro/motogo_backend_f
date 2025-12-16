@@ -1,7 +1,6 @@
-SMTP configurado correctamente para MotoGo ✅
+Test SMTP - MotoGo
 
-Si ves este mensaje, tu configuración de email funciona perfectamente.
+SMTP configurado correctamente.
 
 --
-MotoGo - Gestión Tributaria Inteligente
 © ${.now?string('yyyy')} MotoGo

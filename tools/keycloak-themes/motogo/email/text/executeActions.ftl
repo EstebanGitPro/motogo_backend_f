@@ -1,24 +1,21 @@
-Acción requerida en tu cuenta - MotoGo
+Acción requerida - MotoGo
 
 Hola<#if user.firstName??> ${user.firstName}</#if>,
 
-Necesitamos que completes algunas acciones en tu cuenta de MotoGo para continuar usando nuestros servicios.
+Necesitamos que completes algunas acciones en tu cuenta de MotoGo para continuar.
 
 <#if requiredActions??>
 Acciones pendientes:
 <#list requiredActions as action>
-- ${action}
+- <#if action == "VERIFY_EMAIL">Verificar correo electrónico<#elseif action == "UPDATE_PASSWORD">Actualizar contraseña<#elseif action == "CONFIGURE_TOTP">Configurar autenticación de dos factores<#elseif action == "UPDATE_PROFILE">Actualizar perfil<#elseif action == "TERMS_AND_CONDITIONS">Aceptar términos y condiciones<#else>${action}</#if>
 </#list>
 </#if>
 
-Para completar estas acciones, visita el siguiente enlace:
+Enlace para completar acciones:
 ${link}
 
-⏰ Este enlace expira en <#if linkExpiration??>${linkExpiration}<#else>24 horas</#if>.
-
-🛡️ Si no reconoces esta solicitud, contacta a nuestro equipo de soporte de inmediato.
+IMPORTANTE: Este enlace expira en 24 horas.
 
 --
-MotoGo - Gestión Tributaria Inteligente
-¿Necesitas ayuda? soporte@motogo.com
+soporte@motogo.com
 © ${.now?string('yyyy')} MotoGo
