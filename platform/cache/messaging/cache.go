@@ -249,6 +249,10 @@ var messageCodeToHTTPStatus = map[string]int{
 
 	"GEN_AUTH_ERR_00002":      http.StatusUnauthorized,
 	"GEN_FORBIDDEN_ERR_00003": http.StatusForbidden,
+
+	// Message errors
+	"MOD_M_UPDATE_ERR_00010":    http.StatusBadRequest,
+	"MOD_M_NOT_FOUND_ERR_00001": http.StatusNotFound,
 }
 
 // GetHTTPStatus returns the HTTP status for a message code

@@ -6,6 +6,7 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/dto"
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
+	"github.com/Nerzal/gocloak/v13"
 )
 
 // Service - Use Cases atómicos que el Interactor orquesta (Person)
@@ -27,6 +28,9 @@ type Service interface {
 	CreateUserInKeycloak(ctx context.Context, person *domain.Person) (string, error)
 	SetUserPassword(ctx context.Context, userID string, password string) error
 	AssignUserRole(ctx context.Context, userID string, role string) error
+	GetUserByEmail(ctx context.Context, email string) (*gocloak.User, error)
+	SendVerificationEmail(ctx context.Context, userID string) error
+	SendPasswordResetEmail(ctx context.Context, email string) error
 
 	// Person - Compensaciones (rollback)
 	RollbackPerson(ctx context.Context, personID string) error

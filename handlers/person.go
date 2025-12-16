@@ -2,7 +2,6 @@ package handlers
 
 import (
 	domain "github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
-	
 )
 
 type PersonRequest struct {
@@ -56,4 +55,12 @@ func (p PersonRequest) ToDomain() domain.Person {
 	}
 }
 
+// ResendVerificationEmailRequest - DTO para reenviar email de verificación
+type ResendVerificationEmailRequest struct {
+	Email string `json:"email" binding:"required,email"`
+}
 
+// PasswordResetRequest - DTO para solicitar recuperación de contraseña
+type PasswordResetRequest struct {
+	Email string `json:"email" binding:"required,email"`
+}

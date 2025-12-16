@@ -1,4 +1,5 @@
 package logger
+
 // ============================================
 // APPLICATION LIFECYCLE
 // ============================================
@@ -116,6 +117,18 @@ const (
 	LogKeycloakUserTokenRefresh    = "Refrescando token de usuario"
 	LogKeycloakUserTokenRefreshOK  = "Token de usuario refrescado exitosamente"
 	LogKeycloakUserTokenRefreshErr = "Error refrescando token de usuario"
+	// Email Verification
+	LogKeycloakSendVerificationEmail      = "Enviando email de verificación"
+	LogKeycloakSendVerificationEmailOK    = "Email de verificación enviado exitosamente"
+	LogKeycloakSendVerificationEmailError = "Error enviando email de verificación"
+	// Password Reset
+	LogKeycloakSendPasswordReset      = "Enviando email de recuperación de contraseña"
+	LogKeycloakSendPasswordResetOK    = "Email de recuperación enviado exitosamente"
+	LogKeycloakSendPasswordResetError = "Error enviando email de recuperación"
+	// User Search
+	LogKeycloakSearchUserByEmail   = "Buscando usuario en Keycloak por email"
+	LogKeycloakSearchUserByEmailOK = "Usuario encontrado en Keycloak"
+	LogKeycloakUserNotFound        = "Usuario no encontrado en Keycloak"
 )
 
 // ============================================

@@ -70,6 +70,13 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		//public.POST("/auth/login", handler.Login())
 		//public.GET("/accounts/email/:email", handler.GetPersonByEmail())
 
+		// === AUTH ENDPOINTS ===
+		// POST /auth/resend-verification - Reenviar email de verificación
+		public.POST("/auth/resend-verification", validator.WithValidateResendVerification(), handler.ResendVerificationEmail())
+
+		// POST /auth/password-reset - Solicitar recuperación de contraseña
+		public.POST("/auth/password-reset", validator.WithValidatePasswordReset(), handler.RequestPasswordReset())
+
 		// === MESSAGES ENDPOINTS (system administration) ===
 		// POST /messages - Crear nuevo mensaje del sistema
 		public.POST("/messages", validator.WithValidateMessage(), handler.CreateMessage())

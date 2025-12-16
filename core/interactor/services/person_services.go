@@ -8,6 +8,7 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/core/ports/input"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
+	"github.com/Nerzal/gocloak/v13"
 )
 
 type service struct {
@@ -354,4 +355,40 @@ func contains(s, substr string) bool {
 		}
 	}
 	return false
+}
+
+// GetUserByEmail retrieves a user from Keycloak by email
+func (s service) GetUserByEmail(ctx context.Context, email string) (*gocloak.User, error) {
+	s.logger.Debug(logger.LogKeycloakSearchUserByEmail, "email", email)
+	user, err := s.keycloak.GetUserByEmail(ctx, email)
+	if err != nil {
+		s.logger.Error(logger.LogKeycloakUserNotFound, "email", email, "error", err)
+		return nil, err
+	}
+	s.logger.Debug(logger.LogKeycloakSearchUserByEmailOK, "email", email, "user_id", *user.ID)
+	return user, nil
+}
+
+// SendVerificationEmail sends a verification email to a user
+func (s service) SendVerificationEmail(ctx context.Context, userID string) error {
+	s.logger.Debug(logger.LogKeycloakSendVerificationEmail, "user_id", userID)
+	err := s.keycloak.SendVerificationEmail(ctx, userID)
+	if err != nil {
+		s.logger.Error(logger.LogKeycloakSendVerificationEmailError, "user_id", userID, "error", err)
+		return err
+	}
+	s.logger.Success(logger.LogKeycloakSendVerificationEmailOK, "user_id", userID)
+	return nil
+}
+
+// SendPasswordResetEmail sends a password reset email to a user
+func (s service) SendPasswordResetEmail(ctx context.Context, email string) error {
+	s.logger.Debug(logger.LogKeycloakSendPasswordReset, "email", email)
+	err := s.keycloak.SendPasswordResetEmail(ctx, email)
+	if err != nil {
+		s.logger.Error(logger.LogKeycloakSendPasswordResetError, "email", email, "error", err)
+		return err
+	}
+	s.logger.Success(logger.LogKeycloakSendPasswordResetOK, "email", email)
+	return nil
 }

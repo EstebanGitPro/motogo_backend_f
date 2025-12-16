@@ -11,6 +11,8 @@ var (
 	ErrDuplicateUser             = errors.New("ERR_DUPLICATE_USER")
 	ErrUserCannotSave            = errors.New("ERR_USER_CANNOT_SAVE")
 	ErrPersonNotFound            = errors.New("ERR_PERSON_NOT_FOUND")
+	ErrUserNotFound              = errors.New("ERR_USER_NOT_FOUND")
+	ErrEmailAlreadyVerified      = errors.New("ERR_EMAIL_ALREADY_VERIFIED")
 	ErrInvalidTransaction        = errors.New("ERR_INVALID_TRANSACTION")
 	ErrGettingUserByEmail        = errors.New("ERR_GETTING_USER_BY_EMAIL")
 	ErrNotFoundUserByEmail       = errors.New("ERR_NOT_FOUND_USER_BY_EMAIL")
