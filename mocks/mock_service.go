@@ -114,3 +114,16 @@ func (m *MockService) SendPasswordResetEmail(ctx context.Context, email string) 
 	args := m.Called(ctx, email)
 	return args.Error(0)
 }
+
+func (m *MockService) Login(ctx context.Context, email, password string) (*gocloak.JWT, error) {
+	args := m.Called(ctx, email, password)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*gocloak.JWT), args.Error(1)
+}
+
+func (m *MockService) VerifyEmailByToken(ctx context.Context, token string) (string, error) {
+	args := m.Called(ctx, token)
+	return args.String(0), args.Error(1)
+}

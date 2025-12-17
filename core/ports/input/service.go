@@ -31,6 +31,10 @@ type Service interface {
 	GetUserByEmail(ctx context.Context, email string) (*gocloak.User, error)
 	SendVerificationEmail(ctx context.Context, userID string) error
 	SendPasswordResetEmail(ctx context.Context, email string) error
+	Login(ctx context.Context, email, password string) (*gocloak.JWT, error)
+	// VerifyEmailByToken receives a JWT token, extracts the email, and verifies it in Keycloak
+	// Returns the extracted email on success
+	VerifyEmailByToken(ctx context.Context, token string) (string, error)
 
 	// Person - Compensaciones (rollback)
 	RollbackPerson(ctx context.Context, personID string) error

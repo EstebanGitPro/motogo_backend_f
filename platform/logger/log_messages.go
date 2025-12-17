@@ -129,6 +129,11 @@ const (
 	LogKeycloakSearchUserByEmail   = "Buscando usuario en Keycloak por email"
 	LogKeycloakSearchUserByEmailOK = "Usuario encontrado en Keycloak"
 	LogKeycloakUserNotFound        = "Usuario no encontrado en Keycloak"
+	// Email Verification (via proxy endpoint)
+	LogKeycloakEmailVerify          = "Verificando email de usuario"
+	LogKeycloakEmailVerifyOK        = "Email verificado exitosamente"
+	LogKeycloakEmailVerifyError     = "Error verificando email"
+	LogKeycloakEmailAlreadyVerified = "Email ya estaba verificado"
 )
 
 // ============================================

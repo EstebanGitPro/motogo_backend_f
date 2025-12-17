@@ -210,49 +210,74 @@ func replaceAll(s, old, new string) string {
 }
 
 // messageCodeToHTTPStatus maps message codes to HTTP status codes
+// Organized by modules: Users (MOD_U_*), Validation (MOD_V_*), Keycloak (MOD_KC_*),
+// Infrastructure (MOD_INFRA_*), General (GEN_*), Messages (MOD_M_*)
 var messageCodeToHTTPStatus = map[string]int{
-	"MOD_U_DUP_ERR_00001": http.StatusConflict,
+	// ========================================
+	// Users Module (MOD_U_*)
+	// ========================================
+	"MOD_U_DUP_ERR_00001":        http.StatusConflict,     // 409 - Usuario duplicado
+	"MOD_U_EMAIL_NF_ERR_00005":   http.StatusNotFound,     // 404 - Email no encontrado
+	"MOD_U_GET_ERR_00003":        http.StatusNotFound,     // 404 - Usuario no encontrado
+	"MOD_U_TOKEN_NF_ERR_00007":   http.StatusNotFound,     // 404 - Token no encontrado
+	"MOD_U_EMAIL_NV_ERR_00006":   http.StatusForbidden,    // 403 - Email no verificado
+	"MOD_U_TOKEN_EXP_ERR_00008":  http.StatusUnauthorized, // 401 - Token expirado
+	"MOD_U_TOKEN_USED_ERR_00009": http.StatusUnauthorized, // 401 - Token ya usado
 
-	"MOD_U_EMAIL_NF_ERR_00005":   http.StatusNotFound,
-	"MOD_P_NOT_FOUND_ERR_00001":  http.StatusNotFound,
-	"MOD_U_GET_ERR_00003":        http.StatusNotFound,
-	"MOD_U_TOKEN_NF_ERR_00007":   http.StatusNotFound,
-	"GEN_MSG_INACTIVE_ERR_00002": http.StatusServiceUnavailable,
+	// ========================================
+	// Person Module (MOD_P_*)
+	// ========================================
+	"MOD_P_NOT_FOUND_ERR_00001": http.StatusNotFound, // 404 - Persona no encontrada
 
-	"MOD_V_VAL_ERR_00001":  http.StatusBadRequest,
-	"MOD_V_VAL_ERR_00002":  http.StatusBadRequest,
-	"MOD_V_VAL_ERR_00006":  http.StatusBadRequest,
-	"MOD_V_VAL_ERR_00008":  http.StatusBadRequest,
-	"MOD_V_VAL_ERR_00009":  http.StatusBadRequest,
-	"MOD_V_VAL_ERR_00010":  http.StatusBadRequest,
-	"MOD_V_VAL_ERR_00011":  http.StatusBadRequest,
-	"MOD_V_JSON_ERR_00012": http.StatusBadRequest,
-	"MOD_V_ID_ERR_00013":   http.StatusBadRequest,
+	// ========================================
+	// Validation Module (MOD_V_*)
+	// ========================================
+	"MOD_V_VAL_ERR_00001":  http.StatusBadRequest, // 400 - Formato inválido
+	"MOD_V_VAL_ERR_00002":  http.StatusBadRequest, // 400 - Request inválido
+	"MOD_V_VAL_ERR_00006":  http.StatusBadRequest, // 400 - Validación fallida
+	"MOD_V_VAL_ERR_00008":  http.StatusBadRequest, // 400 - Formato de campo
+	"MOD_V_VAL_ERR_00009":  http.StatusBadRequest, // 400 - Campo requerido
+	"MOD_V_VAL_ERR_00010":  http.StatusBadRequest, // 400 - Tipo de campo
+	"MOD_V_VAL_ERR_00011":  http.StatusBadRequest, // 400 - Múltiples errores
+	"MOD_V_JSON_ERR_00012": http.StatusBadRequest, // 400 - JSON inválido
+	"MOD_V_ID_ERR_00013":   http.StatusBadRequest, // 400 - ID inválido
 
-	"MOD_U_EMAIL_NV_ERR_00006": http.StatusForbidden,
+	// ========================================
+	// Keycloak Module (MOD_KC_*) - Email Verification & Auth
+	// ========================================
+	"MOD_KC_EMAIL_VERIFIED_EXI_00001":          http.StatusOK,                  // 200 - Email verificado exitosamente
+	"MOD_KC_INVALID_TOKEN_ERR_00001":           http.StatusBadRequest,          // 400 - Token inválido/malformado
+	"MOD_KC_EMAIL_VERIFY_ERROR_ERR_00001":      http.StatusInternalServerError, // 500 - Error de verificación (falla en Keycloak)
+	"MOD_KC_USER_NOT_FOUND_ERR_00001":          http.StatusNotFound,            // 404 - Usuario no encontrado
+	"MOD_KC_EMAIL_ALREADY_VERIFIED_WARN_00001": http.StatusOK,                  // 200 - Email ya verificado (warning)
+	"MOD_KC_VERIF_EMAIL_SENT_EXI_00001":        http.StatusOK,                  // 200 - Email de verificación enviado
+	"MOD_KC_VERIF_EMAIL_ERROR_ERR_00001":       http.StatusServiceUnavailable,  // 503 - Error enviando email
+	"MOD_KC_PWD_RESET_SENT_EXI_00001":          http.StatusOK,                  // 200 - Email de reset enviado
+	"MOD_KC_PWD_RESET_ERROR_ERR_00001":         http.StatusServiceUnavailable,  // 503 - Error enviando reset
 
-	"MOD_U_TOKEN_EXP_ERR_00008":  http.StatusUnauthorized,
-	"MOD_U_TOKEN_USED_ERR_00009": http.StatusUnauthorized,
+	// ========================================
+	// Infrastructure Module (MOD_INFRA_*)
+	// ========================================
+	"MOD_INFRA_KC_UNAVAIL_ERR_00004":      http.StatusLocked,              // 423 - Keycloak no disponible
+	"MOD_INFRA_DB_UNAVAIL_ERR_00005":      http.StatusLocked,              // 423 - Base de datos no disponible
+	"MOD_INFRA_DEP_FAIL_ERR_00006":        http.StatusLocked,              // 423 - Falla de dependencia
+	"MOD_INFRA_KC_CLEANUP_ERR_00003":      http.StatusLocked,              // 423 - Error limpieza Keycloak
+	"MOD_INFRA_KC_CREATE_ERR_00002":       http.StatusLocked,              // 423 - Error creación en Keycloak
+	"MOD_INFRA_INCOMPLETE_REG_ERR_00009":  http.StatusConflict,            // 409 - Registro incompleto
+	"MOD_INFRA_KC_INCONSISTENT_ERR_00001": http.StatusInternalServerError, // 500 - Estado inconsistente
 
-	// Infrastructure errors - HTTP 423 (Locked) for dependency failures
-	"MOD_INFRA_KC_UNAVAIL_ERR_00004": http.StatusLocked, // 423
-	"MOD_INFRA_DB_UNAVAIL_ERR_00005": http.StatusLocked, // 423
-	"MOD_INFRA_DEP_FAIL_ERR_00006":   http.StatusLocked, // 423
-	"MOD_INFRA_KC_CLEANUP_ERR_00003": http.StatusLocked, // 423
-	"MOD_INFRA_KC_CREATE_ERR_00002":  http.StatusLocked, // 423
+	// ========================================
+	// General Module (GEN_*)
+	// ========================================
+	"GEN_AUTH_ERR_00002":         http.StatusUnauthorized,       // 401 - No autorizado
+	"GEN_FORBIDDEN_ERR_00003":    http.StatusForbidden,          // 403 - Acceso denegado
+	"GEN_MSG_INACTIVE_ERR_00002": http.StatusServiceUnavailable, // 503 - Mensaje no disponible
 
-	// Incomplete registration error - HTTP 409 (Conflict)
-	"MOD_INFRA_INCOMPLETE_REG_ERR_00009": http.StatusConflict, // 409
-
-	// Existing infrastructure errors - HTTP 500
-	"MOD_INFRA_KC_INCONSISTENT_ERR_00001": http.StatusInternalServerError,
-
-	"GEN_AUTH_ERR_00002":      http.StatusUnauthorized,
-	"GEN_FORBIDDEN_ERR_00003": http.StatusForbidden,
-
-	// Message errors
-	"MOD_M_UPDATE_ERR_00010":    http.StatusBadRequest,
-	"MOD_M_NOT_FOUND_ERR_00001": http.StatusNotFound,
+	// ========================================
+	// Messages Module (MOD_M_*)
+	// ========================================
+	"MOD_M_UPDATE_ERR_00010":    http.StatusBadRequest, // 400 - Error actualizando mensaje
+	"MOD_M_NOT_FOUND_ERR_00001": http.StatusNotFound,   // 404 - Mensaje no encontrado
 }
 
 // GetHTTPStatus returns the HTTP status for a message code

@@ -2,7 +2,9 @@ package server
 
 import (
 	"log/slog"
+	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	swaggerFiles "github.com/swaggo/files"
@@ -18,6 +20,19 @@ import (
 
 func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 	dependencies.Logger.Info(logger.LogRouteConfiguring)
+
+	// CORS configuration - Allow requests from Keycloak (localhost:8080) and other origins
+	// This is required for the email verification flow from Keycloak's theme pages
+	corsConfig := cors.Config{
+		AllowOrigins:     []string{"http://localhost:8080", "http://localhost:8085", "http://localhost:3000"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "X-Request-ID"},
+		ExposeHeaders:    []string{"Content-Length", "Location"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}
+	app.Use(cors.New(corsConfig))
+	dependencies.Logger.Info("CORS middleware configured")
 
 	// Prometheus metrics endpoint (must be before other middleware)
 	app.GET("/metrics", gin.WrapH(promhttp.Handler()))
@@ -67,15 +82,18 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		// Este es el endpoint referenciado en el Location header del POST
 		//public.GET("/accounts/:id", handler.GetPersonByID())
 
-		//public.POST("/auth/login", handler.Login())
-		//public.GET("/accounts/email/:email", handler.GetPersonByEmail())
-
 		// === AUTH ENDPOINTS ===
+		// POST /auth/login - Autenticar usuario
+		public.POST("/auth/login", handler.Login())
+
 		// POST /auth/resend-verification - Reenviar email de verificación
 		public.POST("/auth/resend-verification", validator.WithValidateResendVerification(), handler.ResendVerificationEmail())
 
 		// POST /auth/password-reset - Solicitar recuperación de contraseña
 		public.POST("/auth/password-reset", validator.WithValidatePasswordReset(), handler.RequestPasswordReset())
+
+		// POST /auth/verify-email - Verificar email mediante token proxy (no expone Keycloak)
+		public.POST("/auth/verify-email", handler.VerifyEmailByToken())
 
 		// === MESSAGES ENDPOINTS (system administration) ===
 		// POST /messages - Crear nuevo mensaje del sistema

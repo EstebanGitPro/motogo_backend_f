@@ -216,3 +216,31 @@ func (i *Interactor) RequestPasswordReset(ctx context.Context, email string) err
 	// Siempre retornar nil por seguridad (no revelar si el usuario existe)
 	return nil
 }
+
+// VerifyEmailByToken verifica el email de un usuario extrayéndolo del token JWT
+// Este método delega al Service que maneja la lógica de negocio (parsing del token y verificación en Keycloak)
+func (i *Interactor) VerifyEmailByToken(ctx context.Context, token string) (string, error) {
+	traceID := middleware.GetTraceIDFromContext(ctx)
+	log := i.logger.WithTraceID(traceID)
+
+	log.Info(logger.LogKeycloakEmailVerify)
+
+	// Delegar toda la lógica al Service (parsing del token + verificación en Keycloak)
+	email, err := i.service.VerifyEmailByToken(ctx, token)
+	if err != nil {
+		switch err {
+		case domain.ErrInvalidToken:
+			log.Error(logger.LogKeycloakEmailVerifyError, "error", err, "reason", "invalid token")
+		case domain.ErrUserNotFound:
+			log.Warn(logger.LogKeycloakUserNotFound, "email", email)
+		case domain.ErrEmailAlreadyVerified:
+			log.Warn(logger.LogKeycloakEmailAlreadyVerified, "email", email)
+		default:
+			log.Error(logger.LogKeycloakEmailVerifyError, "email", email, "error", err)
+		}
+		return email, err
+	}
+
+	log.Success(logger.LogKeycloakEmailVerifyOK, "email", email)
+	return email, nil
+}

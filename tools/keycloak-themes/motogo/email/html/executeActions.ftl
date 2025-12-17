@@ -47,6 +47,10 @@
                 </div>
                 </#if>
                 
+                <#-- 
+                    El enlace apunta a Keycloak, pero la página de Keycloak 
+                    (login-verify-email.ftl) enviará el token a nuestro backend 
+                -->
                 <div style="text-align: center; margin: 1.5rem 0;">
                     <a href="${link}" style="display: inline-block; padding: 12px 24px; background-color: #007BFF; color: white; text-decoration: none; border-radius: 5px; font-weight: 600;">
                         Completar acciones

@@ -7,6 +7,7 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/input"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
+	"github.com/EstebanGitPro/motogo-backend/platform/jwt"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 	"github.com/Nerzal/gocloak/v13"
 )
@@ -391,4 +392,55 @@ func (s service) SendPasswordResetEmail(ctx context.Context, email string) error
 	}
 	s.logger.Success(logger.LogKeycloakSendPasswordResetOK, "email", email)
 	return nil
+}
+
+// Login authenticates a user with email and password
+func (s service) Login(ctx context.Context, email, password string) (*gocloak.JWT, error) {
+	s.logger.Debug(logger.LogKeycloakUserLogin, "email", email)
+	token, err := s.keycloak.LoginUser(ctx, email, password)
+	if err != nil {
+		s.logger.Error(logger.LogKeycloakUserLoginError, "email", email, "error", err)
+		return nil, err
+	}
+	s.logger.Success(logger.LogKeycloakUserLoginOK, "email", email)
+	return token, nil
+}
+
+// VerifyEmailByToken receives a JWT token, extracts the email, and marks it as verified in Keycloak
+// This is called when a user clicks on the verification link from the email
+// Returns the extracted email on success
+func (s service) VerifyEmailByToken(ctx context.Context, token string) (string, error) {
+	s.logger.Info(logger.LogKeycloakEmailVerify)
+
+	// Extract email from the JWT token
+	tokenParser := jwt.NewTokenParser()
+	email, err := tokenParser.ExtractEmailFromToken(token)
+	if err != nil {
+		s.logger.Error(logger.LogKeycloakEmailVerifyError, "error", err, "reason", "failed to extract email from token")
+		return "", domain.ErrInvalidToken
+	}
+
+	s.logger.Debug("Email extracted from token", "email", email)
+
+	// Get user from Keycloak by email
+	user, err := s.keycloak.GetUserByEmail(ctx, email)
+	if err != nil {
+		s.logger.Error(logger.LogKeycloakUserNotFound, "email", email, "error", err)
+		return "", domain.ErrUserNotFound
+	}
+
+	// Check if already verified
+	if user.EmailVerified != nil && *user.EmailVerified {
+		s.logger.Warn(logger.LogKeycloakEmailAlreadyVerified, "email", email, "user_id", *user.ID)
+		return email, domain.ErrEmailAlreadyVerified
+	}
+
+	// Verify the email in Keycloak
+	if err := s.keycloak.VerifyEmail(ctx, *user.ID); err != nil {
+		s.logger.Error(logger.LogKeycloakEmailVerifyError, "email", email, "user_id", *user.ID, "error", err)
+		return "", err
+	}
+
+	s.logger.Success(logger.LogKeycloakEmailVerifyOK, "email", email, "user_id", *user.ID)
+	return email, nil
 }

@@ -80,16 +80,6 @@
         }
         .error-icon.show { display: flex; }
         .error-icon svg { width: 40px; height: 40px; fill: white; }
-        .app-box {
-            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-            border: 2px solid #007BFF;
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-        .app-box h2 { color: #007BFF; font-size: 18px; margin-bottom: 0.5rem; }
-        .app-box p { color: #0369a1; font-size: 14px; margin: 0; }
-        .app-icon { font-size: 48px; margin-bottom: 0.5rem; }
         .btn {
             display: inline-block;
             padding: 14px 32px;
@@ -125,7 +115,7 @@
             <div class="spinner"></div>
             <h1>Verificando tu correo...</h1>
             <p class="message">
-                Por favor espera un momento. Estamos procesando tu verificación.
+                Por favor espera un momento. Estamos procesando tu verificación automáticamente.
             </p>
         </div>
         
@@ -136,16 +126,10 @@
             </div>
             <h1 style="color: #28a745;">¡Correo verificado!</h1>
             <p class="message">
-                Tu cuenta ha sido verificada correctamente.
+                Tu dirección de correo ha sido verificada exitosamente.<br>
+                Ya puedes abrir la aplicación MotoGo.
             </p>
-            <div class="app-box">
-                <div class="app-icon">📱</div>
-                <h2>Abre la aplicación MotoGo</h2>
-                <p>Ya puedes iniciar sesión con tu correo y contraseña.</p>
-            </div>
-            <p class="message" style="color: #10b981; font-weight: 600; margin-bottom: 0;">
-                Puedes cerrar esta ventana.
-            </p>
+            <a href="motogo://email-verified" class="btn">Abrir MotoGo</a>
         </div>
         
         <!-- Estado: Error -->
@@ -174,13 +158,13 @@
         </div>
         
         <div class="footer">
-            © ${.now?string('yyyy')} MotoGo
+            © 2025 MotoGo
         </div>
     </div>
     
     <script>
         (function() {
-            // Configuración - URL del backend
+            // Configuración - CAMBIAR POR TU URL DE PRODUCCIÓN
             const BACKEND_URL = 'http://localhost:8085/motogo/api/v1/auth/verify-email';
             
             // Elementos del DOM
@@ -208,14 +192,12 @@
                 const token = getTokenFromUrl();
                 
                 if (!token) {
-                    // Si no hay token, mostrar éxito (Keycloak ya procesó)
-                    console.log('[MotoGo] No hay token en URL, Keycloak ya procesó la acción');
-                    showState(successState);
+                    errorMessage.textContent = 'No se encontró el token de verificación en la URL.';
+                    showState(errorState);
                     return;
                 }
                 
-                console.log('[MotoGo] Token encontrado, enviando al backend...');
-                console.log('[MotoGo] URL del backend:', BACKEND_URL);
+                console.log('[MotoGo] Enviando token al backend...');
                 
                 try {
                     const response = await fetch(BACKEND_URL, {
@@ -237,15 +219,12 @@
                         // Mostrar mensaje de error específico si está disponible
                         if (data.message && data.message.contenido) {
                             errorMessage.textContent = data.message.contenido;
-                        } else if (data.message) {
-                            errorMessage.textContent = data.message;
                         }
                         showState(errorState);
                     }
                 } catch (error) {
-                    console.error('[MotoGo] Error de conexión:', error);
-                    // Mostrar error de conexión pero NO el éxito
-                    errorMessage.textContent = 'Error de conexión con el servidor. Por favor, intenta de nuevo más tarde.';
+                    console.error('[MotoGo] Error:', error);
+                    errorMessage.textContent = 'Error de conexión. Por favor, intenta de nuevo más tarde.';
                     showState(errorState);
                 }
             }
