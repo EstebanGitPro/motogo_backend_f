@@ -24,7 +24,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 	// CORS configuration - Allow requests from Keycloak (localhost:8080) and other origins
 	// This is required for the email verification flow from Keycloak's theme pages
 	corsConfig := cors.Config{
-		AllowOrigins:     []string{"http://localhost:8080", "http://localhost:8085", "http://localhost:3000"},
+		AllowOrigins:     []string{"http://localhost:8080", "http://localhost:8085", "http://localhost:3000", "http://localhost:3001"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "X-Request-ID"},
 		ExposeHeaders:    []string{"Content-Length", "Location"},
