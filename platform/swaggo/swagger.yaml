@@ -14,6 +14,17 @@ definitions:
     - TypeWarning
     - TypeInfo
     - TypeDebug
+  handlers.CacheReloadResponse:
+    properties:
+      after_count:
+        type: integer
+      before_count:
+        type: integer
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
   handlers.Link:
     properties:
       href:
@@ -21,6 +32,27 @@ definitions:
       method:
         type: string
       rel:
+        type: string
+    type: object
+  handlers.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  handlers.LoginResponse:
+    properties:
+      access_token:
+        type: string
+      expires_in:
+        type: integer
+      refresh_token:
+        type: string
+      token_type:
         type: string
     type: object
   handlers.MessageCreatedResponse:
@@ -92,6 +124,13 @@ definitions:
           $ref: '#/definitions/handlers.Link'
         type: array
     type: object
+  handlers.PasswordResetRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
   handlers.PersonRequest:
     properties:
       email:
@@ -117,6 +156,27 @@ definitions:
         items:
           $ref: '#/definitions/handlers.Link'
         type: array
+    type: object
+  handlers.ResendVerificationEmailRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
+  handlers.VerifyEmailRequest:
+    properties:
+      token:
+        type: string
+    required:
+    - token
+    type: object
+  handlers.VerifyEmailResponse:
+    properties:
+      email:
+        type: string
+      verified:
+        type: boolean
     type: object
   middleware.APIResponse:
     properties:
@@ -189,6 +249,155 @@ paths:
       summary: Registrar nueva cuenta
       tags:
       - accounts
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Autentica un usuario y retorna tokens de acceso
+      parameters:
+      - description: Credenciales de login
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login exitoso
+          schema:
+            allOf:
+            - $ref: '#/definitions/middleware.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.LoginResponse'
+              type: object
+        "400":
+          description: Credenciales inválidas
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+        "401":
+          description: Email no verificado o credenciales incorrectas
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+        "500":
+          description: Error interno del servidor
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+      summary: Login de usuario
+      tags:
+      - Autenticación
+  /auth/password-reset:
+    post:
+      consumes:
+      - application/json
+      description: Envía un email con instrucciones para restablecer la contraseña
+        del usuario
+      parameters:
+      - description: Email del usuario
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.PasswordResetRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Solicitud procesada (siempre retorna éxito por seguridad)
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+        "400":
+          description: Email inválido
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+        "500":
+          description: Error interno del servidor
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+      summary: Solicitar recuperación de contraseña
+      tags:
+      - Autenticación
+  /auth/resend-verification:
+    post:
+      consumes:
+      - application/json
+      description: Reenvía el email de verificación a un usuario registrado que aún
+        no ha verificado su correo
+      parameters:
+      - description: Email del usuario
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.ResendVerificationEmailRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Email reenviado exitosamente
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+        "400":
+          description: Email inválido o ya verificado
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+        "404":
+          description: Usuario no encontrado
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+        "500":
+          description: Error interno del servidor
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+      summary: Reenviar email de verificación
+      tags:
+      - Autenticación
+  /auth/verify-email:
+    post:
+      consumes:
+      - application/json
+      description: Verifica el email de un usuario usando un token JWT. Este endpoint
+        actúa como proxy para no exponer Keycloak directamente.
+      parameters:
+      - description: Token de verificación del email
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.VerifyEmailRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Email verificado exitosamente
+          schema:
+            allOf:
+            - $ref: '#/definitions/middleware.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.VerifyEmailResponse'
+              type: object
+        "400":
+          description: Token inválido o expirado
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+        "404":
+          description: Usuario no encontrado
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+        "409":
+          description: Email ya estaba verificado
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+        "500":
+          description: Error interno del servidor
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+      summary: Verificar email de usuario (Proxy)
+      tags:
+      - Autenticación
   /messages:
     get:
       consumes:
@@ -370,6 +579,31 @@ paths:
           schema:
             $ref: '#/definitions/middleware.APIResponse'
       summary: Actualizar mensaje existente
+      tags:
+      - messages
+  /messages/cache/reload:
+    post:
+      consumes:
+      - application/json
+      description: Fuerza la recarga del caché de mensajes desde la base de datos.
+        Útil después de actualizaciones o eliminaciones manuales.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Caché recargado exitosamente
+          schema:
+            allOf:
+            - $ref: '#/definitions/middleware.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.CacheReloadResponse'
+              type: object
+        "500":
+          description: Error al recargar el caché
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+      summary: Recargar caché de mensajes
       tags:
       - messages
 securityDefinitions:

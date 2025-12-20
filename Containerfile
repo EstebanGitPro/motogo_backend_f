@@ -6,6 +6,9 @@ ENV KC_DB=mysql
 
 WORKDIR /opt/keycloak
 
+# Copy MotoGo email theme
+COPY ./tools/keycloak-themes/motogo /opt/keycloak/themes/motogo
+
 RUN keytool -genkeypair -storepass password -storetype PKCS12 \
     -keyalg RSA -keysize 2048 -dname "CN=server" \
     -alias server -ext "SAN:c=DNS:localhost,IP:127.0.0.1" \

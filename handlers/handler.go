@@ -33,7 +33,6 @@ func New(service input.Service, personInteractor *interactor.Interactor, message
 
 var Logger logger.Logger = logger.NewSlogLogger()
 
-
 // EncodeID ofusca un UUID usando el encoder del handler
 // Retorna el ID ofuscado o un error si falla
 func (h *handler) EncodeID(uuid string) (string, error) {

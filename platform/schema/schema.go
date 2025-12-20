@@ -10,9 +10,11 @@ import (
 )
 
 type Validators struct {
-	FileReader        FileReaderInterface
-	RegisterValidator *jsonschema.Schema
-	MessageValidator  *jsonschema.Schema
+	FileReader                  FileReaderInterface
+	RegisterValidator           *jsonschema.Schema
+	MessageValidator            *jsonschema.Schema
+	ResendVerificationValidator *jsonschema.Schema
+	PasswordResetValidator      *jsonschema.Schema
 }
 
 type FileReaderInterface interface {
@@ -54,8 +56,20 @@ func NewValidator(fileReader FileReaderInterface) (*Validators, error) {
 		return nil, err
 	}
 
+	resendVerification, err := validator.createSchema("resend_verification_email.json")
+	if err != nil {
+		return nil, err
+	}
+
+	passwordReset, err := validator.createSchema("password_reset_request.json")
+	if err != nil {
+		return nil, err
+	}
+
 	validator.RegisterValidator = register
 	validator.MessageValidator = message
+	validator.ResendVerificationValidator = resendVerification
+	validator.PasswordResetValidator = passwordReset
 
 	return validator, nil
 

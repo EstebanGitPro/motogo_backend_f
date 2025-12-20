@@ -37,9 +37,9 @@ func main() {
 	app.Use(gin.Logger())
 	app.Use(gin.Recovery())
 
-	// Configurar CORS para permitir requests desde Swagger UI
+	// Configurar CORS para permitir requests desde Swagger UI y Keycloak
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3001", "http://localhost:8085"},
+		AllowOrigins:     []string{"http://localhost:3001", "http://localhost:8085", "http://localhost:8080"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
