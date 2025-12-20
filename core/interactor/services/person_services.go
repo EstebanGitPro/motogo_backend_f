@@ -7,7 +7,9 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/input"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
+	"github.com/EstebanGitPro/motogo-backend/platform/jwt"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
+	"github.com/Nerzal/gocloak/v13"
 )
 
 type service struct {
@@ -354,4 +356,91 @@ func contains(s, substr string) bool {
 		}
 	}
 	return false
+}
+
+// GetUserByEmail retrieves a user from Keycloak by email
+func (s service) GetUserByEmail(ctx context.Context, email string) (*gocloak.User, error) {
+	s.logger.Debug(logger.LogKeycloakSearchUserByEmail, "email", email)
+	user, err := s.keycloak.GetUserByEmail(ctx, email)
+	if err != nil {
+		s.logger.Error(logger.LogKeycloakUserNotFound, "email", email, "error", err)
+		return nil, err
+	}
+	s.logger.Debug(logger.LogKeycloakSearchUserByEmailOK, "email", email, "user_id", *user.ID)
+	return user, nil
+}
+
+// SendVerificationEmail sends a verification email to a user
+func (s service) SendVerificationEmail(ctx context.Context, userID string) error {
+	s.logger.Debug(logger.LogKeycloakSendVerificationEmail, "user_id", userID)
+	err := s.keycloak.SendVerificationEmail(ctx, userID)
+	if err != nil {
+		s.logger.Error(logger.LogKeycloakSendVerificationEmailError, "user_id", userID, "error", err)
+		return err
+	}
+	s.logger.Success(logger.LogKeycloakSendVerificationEmailOK, "user_id", userID)
+	return nil
+}
+
+// SendPasswordResetEmail sends a password reset email to a user
+func (s service) SendPasswordResetEmail(ctx context.Context, email string) error {
+	s.logger.Debug(logger.LogKeycloakSendPasswordReset, "email", email)
+	err := s.keycloak.SendPasswordResetEmail(ctx, email)
+	if err != nil {
+		s.logger.Error(logger.LogKeycloakSendPasswordResetError, "email", email, "error", err)
+		return err
+	}
+	s.logger.Success(logger.LogKeycloakSendPasswordResetOK, "email", email)
+	return nil
+}
+
+// Login authenticates a user with email and password
+func (s service) Login(ctx context.Context, email, password string) (*gocloak.JWT, error) {
+	s.logger.Debug(logger.LogKeycloakUserLogin, "email", email)
+	token, err := s.keycloak.LoginUser(ctx, email, password)
+	if err != nil {
+		s.logger.Error(logger.LogKeycloakUserLoginError, "email", email, "error", err)
+		return nil, err
+	}
+	s.logger.Success(logger.LogKeycloakUserLoginOK, "email", email)
+	return token, nil
+}
+
+// VerifyEmailByToken receives a JWT token, extracts the email, and marks it as verified in Keycloak
+// This is called when a user clicks on the verification link from the email
+// Returns the extracted email on success
+func (s service) VerifyEmailByToken(ctx context.Context, token string) (string, error) {
+	s.logger.Info(logger.LogKeycloakEmailVerify)
+
+	// Extract email from the JWT token
+	tokenParser := jwt.NewTokenParser()
+	email, err := tokenParser.ExtractEmailFromToken(token)
+	if err != nil {
+		s.logger.Error(logger.LogKeycloakEmailVerifyError, "error", err, "reason", "failed to extract email from token")
+		return "", domain.ErrInvalidToken
+	}
+
+	s.logger.Debug("Email extracted from token", "email", email)
+
+	// Get user from Keycloak by email
+	user, err := s.keycloak.GetUserByEmail(ctx, email)
+	if err != nil {
+		s.logger.Error(logger.LogKeycloakUserNotFound, "email", email, "error", err)
+		return "", domain.ErrUserNotFound
+	}
+
+	// Check if already verified
+	if user.EmailVerified != nil && *user.EmailVerified {
+		s.logger.Warn(logger.LogKeycloakEmailAlreadyVerified, "email", email, "user_id", *user.ID)
+		return email, domain.ErrEmailAlreadyVerified
+	}
+
+	// Verify the email in Keycloak
+	if err := s.keycloak.VerifyEmail(ctx, *user.ID); err != nil {
+		s.logger.Error(logger.LogKeycloakEmailVerifyError, "email", email, "user_id", *user.ID, "error", err)
+		return "", err
+	}
+
+	s.logger.Success(logger.LogKeycloakEmailVerifyOK, "email", email, "user_id", *user.ID)
+	return email, nil
 }

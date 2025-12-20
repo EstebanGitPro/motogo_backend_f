@@ -34,6 +34,14 @@ func (b *Builder) WithValidateMessage() gin.HandlerFunc {
 	return b.jsonValidator(b.Validators.MessageValidator)
 }
 
+func (b *Builder) WithValidateResendVerification() gin.HandlerFunc {
+	return b.jsonValidator(b.Validators.ResendVerificationValidator)
+}
+
+func (b *Builder) WithValidatePasswordReset() gin.HandlerFunc {
+	return b.jsonValidator(b.Validators.PasswordResetValidator)
+}
+
 func (b *Builder) jsonValidator(schema *jsonschema.Schema) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Get request ID for trace correlation

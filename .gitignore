@@ -13,4 +13,15 @@ keycloak-start.sh
 .env.vars
 
 
+*.tmp
+*.bak
+*.swp
+*~
+.DS_Store
+node_modules/
+dist/
+build/
+*.log
+
+
 
