@@ -16,7 +16,6 @@ type PersonRequest struct {
 }
 
 type PersonResponse struct {
-	ID             string `json:"id"`
 	IdentityNumber string `json:"identity_number"`
 	FirstName      string `json:"first_name"`
 	LastName       string `json:"last_name"`
@@ -40,6 +39,19 @@ type LoginResponse struct {
 	RefreshToken string `json:"refresh_token"`
 	ExpiresIn    int    `json:"expires_in"`
 	TokenType    string `json:"token_type"`
+	Links        []Link `json:"_links"`
+}
+
+// AuthMeResponse represents the authenticated user profile response
+type AuthMeResponse struct {
+	ID             string `json:"id"`
+	Email          string `json:"email"`
+	FirstName      string `json:"first_name"`
+	LastName       string `json:"last_name"`
+	SecondLastName string `json:"second_last_name,omitempty"`
+	PhoneNumber    string `json:"phone_number,omitempty"`
+	Role           string `json:"role"`
+	Links          []Link `json:"_links"`
 }
 
 func (p PersonRequest) ToDomain() domain.Person {

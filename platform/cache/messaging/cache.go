@@ -254,6 +254,8 @@ var messageCodeToHTTPStatus = map[string]int{
 	"MOD_KC_VERIF_EMAIL_ERROR_ERR_00001":       http.StatusServiceUnavailable,  // 503 - Error enviando email
 	"MOD_KC_PWD_RESET_SENT_EXI_00001":          http.StatusOK,                  // 200 - Email de reset enviado
 	"MOD_KC_PWD_RESET_ERROR_ERR_00001":         http.StatusServiceUnavailable,  // 503 - Error enviando reset
+	// Authentication Profile
+	"MOD_AUTH_PROFILE_EXI_00001": http.StatusOK, // 200 - Perfil obtenido exitosamente
 
 	// ========================================
 	// Infrastructure Module (MOD_INFRA_*)
@@ -271,7 +273,7 @@ var messageCodeToHTTPStatus = map[string]int{
 	// ========================================
 	"GEN_AUTH_ERR_00002":         http.StatusUnauthorized,        // 401 - No autorizado
 	"GEN_FORBIDDEN_ERR_00003":    http.StatusForbidden,           // 403 - Acceso denegado
-	"GEN_MSG_INACTIVE_ERR_00002": http.StatusServiceUnavailable,  // 503 - Mensaje no disponible
+	"GEN_MSG_INACTIVE_ERR_00002": http.StatusNotFound,            // 404 - Mensaje no disponible
 	"GEN_SRV_ERR_00001":          http.StatusInternalServerError, // 500 - Error del servidor
 	"GEN_OPE_EXI_00001":          http.StatusOK,                  // 200 - Operación exitosa
 	"GEN_INFO_00001":             http.StatusOK,                  // 200 - Información
@@ -282,20 +284,41 @@ var messageCodeToHTTPStatus = map[string]int{
 	// ========================================
 	"MOD_M_UPDATE_ERR_00010":    http.StatusBadRequest, // 400 - Error actualizando mensaje
 	"MOD_M_NOT_FOUND_ERR_00001": http.StatusNotFound,   // 404 - Mensaje no encontrado
+	"MOD_M_CREATE_EXI_00001":    http.StatusCreated,    // 201 - Mensaje creado exitosamente
+
+	// ========================================
+	// Success Messages - Resource Creation (201 Created)
+	// ========================================
+	// User Module
+	"MOD_U_REG_EXI_00001": http.StatusCreated, // 201 - Usuario registrado exitosamente
+	// Person Module
+	"MOD_P_REG_EXI_00001": http.StatusCreated, // 201 - Persona registrada exitosamente
 
 }
 
 // GetHTTPStatus returns the HTTP status for a message code
 func (c *MessageCache) GetHTTPStatus(code string) int {
+	// First try direct lookup in the map
 	if status, ok := messageCodeToHTTPStatus[code]; ok {
 		return status
 	}
 
+	// If not in map, get the message (which may return a fallback)
 	msg := c.GetMessage(code)
 	if msg == nil {
 		return http.StatusInternalServerError
 	}
 
+	// IMPORTANT: If we got a fallback message, use ITS code to lookup the status
+	// This ensures that GEN_MSG_INACTIVE_ERR_00002 returns 404, not 500
+	if msg.Code != code {
+		// We got a fallback message, try to get its status from the map
+		if status, ok := messageCodeToHTTPStatus[msg.Code]; ok {
+			return status
+		}
+	}
+
+	// Fallback to determining status by message type
 	switch msg.Type {
 	case TypeSuccess:
 		return http.StatusOK

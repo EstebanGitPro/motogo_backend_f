@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	
+
 	domain "github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/middleware"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
@@ -60,14 +62,8 @@ func (h handler) RegisterPerson() func(c *gin.Context) {
 			return
 		}
 
-		// Construir respuesta con HATEOAS
-		baseURL := GetBaseURL(c)
-		links := BuildAccountLinks(baseURL, encodedID)
-		SetLocationHeader(c, baseURL, "accounts", encodedID)
-
-		response := RegistrationResponse{
-			Links: links,
-		}
+		
+		
 
 		log.Success("Registro completado exitosamente",
 			result.Person.ToLogger(),
@@ -77,7 +73,7 @@ func (h handler) RegisterPerson() func(c *gin.Context) {
 		// Record Prometheus metric for person registration
 		middleware.RecordPersonRegistration()
 
-		h.Response.SuccessWithData(c, domain.MsgPersonRegistered, response)
+		h.Response.Success(c, "MOD_U_REG_EXI_00001")
 	}
 }
 
@@ -190,11 +186,16 @@ func (h handler) Login() gin.HandlerFunc {
 			return
 		}
 
+		// Build HATEOAS links for login response
+		baseURL := GetBaseURL(c)
+		hateoasLinks := BuildLoginLinks(baseURL)
+
 		response := LoginResponse{
 			AccessToken:  token.AccessToken,
 			RefreshToken: token.RefreshToken,
 			ExpiresIn:    token.ExpiresIn,
 			TokenType:    token.TokenType,
+			Links:        hateoasLinks,
 		}
 
 		log.Success(logger.LogKeycloakUserLoginOK, "email", req.Email, "client_ip", c.ClientIP())
@@ -252,5 +253,59 @@ func (h handler) VerifyEmailByToken() gin.HandlerFunc {
 
 		log.Success(logger.LogKeycloakEmailVerifyOK, "email", email, "client_ip", c.ClientIP())
 		h.Response.SuccessWithData(c, domain.MsgKCEmailVerified, response)
+	}
+}
+
+// @Summary      Obtener perfil del usuario autenticado
+// @Description  Retorna los datos completos del usuario autenticado usando el token JWT
+// @Tags         Autenticación
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  middleware.APIResponse{data=AuthMeResponse}  "Perfil obtenido exitosamente"
+// @Failure      401  {object}  middleware.APIResponse  "Token inválido o ausente"
+// @Failure      404  {object}  middleware.APIResponse  "Usuario no encontrado"
+// @Router       /auth/me [get]
+func (h handler) GetAuthenticatedUser() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		traceID := middleware.GetRequestID(c)
+		log := Logger.WithTraceID(traceID)
+
+		// Get authenticated user from context (injected by JWT middleware)
+		person, ok := middleware.GetAuthenticatedUser(c)
+		if !ok {
+			log.Error("authenticated user not found in context")
+			c.Error(domain.ErrUserNotFound)
+			return
+		}
+
+		log.Debug("retrieving authenticated user profile", "user_id", person.ID, "email", person.Email)
+
+		// Encode ID for response
+		encodedID, err := h.EncodeID(person.ID)
+		if err != nil {
+			log.Error("error encoding user ID", "error", err, "user_id", person.ID)
+			c.Error(err)
+			return
+		}
+
+		// Build HATEOAS links for auth/me response
+		baseURL := GetBaseURL(c)
+		hateoasLinks := BuildAuthMeLinks(baseURL)
+
+		// Build response
+		response := AuthMeResponse{
+			ID:             encodedID,
+			Email:          person.Email,
+			FirstName:      person.FirstName,
+			LastName:       person.LastName,
+			SecondLastName: person.SecondLastName,
+			PhoneNumber:    person.PhoneNumber,
+			Role:           person.Role,
+			Links:          hateoasLinks,
+		}
+
+		log.Success("user profile retrieved successfully", "user_id", encodedID, "email", person.Email)
+		h.Response.SuccessWithData(c, domain.MsgAuthProfileRetrieved, response)
 	}
 }

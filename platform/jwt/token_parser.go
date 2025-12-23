@@ -72,6 +72,30 @@ func (tp *TokenParser) ExtractEmailFromToken(token string) (string, error) {
 	return "", ErrEmailNotFound
 }
 
+// ExtractClaimsFromToken extracts all claims from a Keycloak JWT token.
+// This is used for authentication middleware to get user information like "sub" (Keycloak User ID).
+// Returns the claims map for flexible access to any claim.
+func (tp *TokenParser) ExtractClaimsFromToken(token string) (map[string]interface{}, error) {
+	parts := strings.Split(token, ".")
+	if len(parts) != 3 {
+		return nil, ErrInvalidTokenFormat
+	}
+
+	// Decode the payload (second part) using base64url
+	payload, err := base64URLDecode(parts[1])
+	if err != nil {
+		return nil, ErrPayloadDecode
+	}
+
+	// Parse as JSON
+	var claims map[string]interface{}
+	if err := json.Unmarshal(payload, &claims); err != nil {
+		return nil, ErrClaimsParse
+	}
+
+	return claims, nil
+}
+
 // base64URLDecode decodes base64url encoded string (without padding)
 func base64URLDecode(s string) ([]byte, error) {
 	// Add padding if necessary

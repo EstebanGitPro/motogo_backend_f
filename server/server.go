@@ -117,6 +117,16 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		public.POST("/messages/cache/reload", handler.ReloadMessageCache())
 	}
 
+	// ========================================
+	// Protected Routes (require JWT authentication)
+	// ========================================
+	protected := app.Group("motogo/api/v1")
+	protected.Use(middleware.RequireAuth(dependencies.PersonService, dependencies.MessagingCache))
+	{
+		// GET /auth/me - Obtener perfil del usuario autenticado
+		protected.GET("/auth/me", handler.GetAuthenticatedUser())
+	}
+
 	dependencies.Logger.Success(logger.LogRouteConfigured)
 }
 
