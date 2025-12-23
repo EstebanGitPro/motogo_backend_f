@@ -269,15 +269,20 @@ var messageCodeToHTTPStatus = map[string]int{
 	// ========================================
 	// General Module (GEN_*)
 	// ========================================
-	"GEN_AUTH_ERR_00002":         http.StatusUnauthorized,       // 401 - No autorizado
-	"GEN_FORBIDDEN_ERR_00003":    http.StatusForbidden,          // 403 - Acceso denegado
-	"GEN_MSG_INACTIVE_ERR_00002": http.StatusServiceUnavailable, // 503 - Mensaje no disponible
+	"GEN_AUTH_ERR_00002":         http.StatusUnauthorized,        // 401 - No autorizado
+	"GEN_FORBIDDEN_ERR_00003":    http.StatusForbidden,           // 403 - Acceso denegado
+	"GEN_MSG_INACTIVE_ERR_00002": http.StatusServiceUnavailable,  // 503 - Mensaje no disponible
+	"GEN_SRV_ERR_00001":          http.StatusInternalServerError, // 500 - Error del servidor
+	"GEN_OPE_EXI_00001":          http.StatusOK,                  // 200 - Operación exitosa
+	"GEN_INFO_00001":             http.StatusOK,                  // 200 - Información
+	"GEN_WARN_00001":             http.StatusOK,                  // 200 - Advertencia
 
 	// ========================================
 	// Messages Module (MOD_M_*)
 	// ========================================
 	"MOD_M_UPDATE_ERR_00010":    http.StatusBadRequest, // 400 - Error actualizando mensaje
 	"MOD_M_NOT_FOUND_ERR_00001": http.StatusNotFound,   // 404 - Mensaje no encontrado
+
 }
 
 // GetHTTPStatus returns the HTTP status for a message code

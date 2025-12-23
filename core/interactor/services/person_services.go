@@ -161,7 +161,7 @@ func (s service) CreateUserInKeycloak(ctx context.Context, person *domain.Person
 
 func (s service) SetUserPassword(ctx context.Context, userID string, password string) error {
 	s.logger.Debug(logger.LogPersonServicePasswordSet, "keycloak_user_id", userID)
-	err := s.keycloak.SetPassword(ctx, userID, password, true)
+	err := s.keycloak.SetPassword(ctx, userID, password, false)
 	if err != nil {
 		s.logger.Error(logger.LogPersonServicePasswordError, "keycloak_user_id", userID, "error", err)
 		return err
@@ -397,6 +397,31 @@ func (s service) SendPasswordResetEmail(ctx context.Context, email string) error
 // Login authenticates a user with email and password
 func (s service) Login(ctx context.Context, email, password string) (*gocloak.JWT, error) {
 	s.logger.Debug(logger.LogKeycloakUserLogin, "email", email)
+
+	// First, check if user's email is verified
+	user, err := s.keycloak.GetUserByEmail(ctx, email)
+	if err != nil {
+		s.logger.Error(logger.LogKeycloakUserNotFound, "email", email, "error", err)
+		return nil, domain.ErrUserNotFound
+	}
+
+	// Validate email is verified
+	if user.EmailVerified == nil || !*user.EmailVerified {
+		s.logger.Warn(logger.LogKeycloakEmailNotVerified, "email", email, "user_id", *user.ID)
+
+		// Auto-resend verification email to help user complete verification
+		s.logger.Info(logger.LogKeycloakResendingVerificationEmail, "email", email, "user_id", *user.ID)
+		if resendErr := s.keycloak.SendVerificationEmail(ctx, *user.ID); resendErr != nil {
+			// Log error but don't fail the login - the main error is still "email not verified"
+			s.logger.Error(logger.LogKeycloakResendVerificationEmailError, "email", email, "user_id", *user.ID, "error", resendErr)
+		} else {
+			s.logger.Success(logger.LogKeycloakResendVerificationEmailOK, "email", email, "user_id", *user.ID)
+		}
+
+		return nil, domain.ErrorEmailNotVerified
+	}
+
+	// Email is verified, proceed with login
 	token, err := s.keycloak.LoginUser(ctx, email, password)
 	if err != nil {
 		s.logger.Error(logger.LogKeycloakUserLoginError, "email", email, "error", err)

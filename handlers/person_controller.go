@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"errors"
-
 	domain "github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/middleware"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
@@ -173,10 +171,22 @@ func (h handler) Login() gin.HandlerFunc {
 		log.Info(logger.LogKeycloakUserLogin, "email", req.Email, "client_ip", c.ClientIP())
 
 		// Llamar al servicio de autenticación de Keycloak
-		token, err := h.PersonService.Login(c, req.Email, req.Password)
+		token, err := h.Interactor.Login(c, req.Email, req.Password)
 		if err != nil {
 			log.Error(logger.LogKeycloakUserLoginError, "email", req.Email, "error", err, "client_ip", c.ClientIP())
-			c.Error(errors.New(domain.MsgUnauthorized))
+
+			// Map specific errors to appropriate messages
+			switch err {
+			case domain.ErrorEmailNotVerified:
+				// Email not verified - auto-resend was triggered
+				h.Response.Error(c, domain.MsgUserEmailNotVerified)
+			case domain.ErrUserNotFound:
+				// User not found - use generic unauthorized message for security
+				h.Response.Error(c, domain.MsgUnauthorized)
+			default:
+				// All other errors (wrong password, etc) - generic message
+				h.Response.Error(c, domain.MsgUnauthorized)
+			}
 			return
 		}
 

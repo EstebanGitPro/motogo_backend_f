@@ -134,6 +134,11 @@ const (
 	LogKeycloakEmailVerifyOK        = "Email verificado exitosamente"
 	LogKeycloakEmailVerifyError     = "Error verificando email"
 	LogKeycloakEmailAlreadyVerified = "Email ya estaba verificado"
+	LogKeycloakEmailNotVerified     = "Email no verificado - login bloqueado"
+	// Resend Verification Email (during login)
+	LogKeycloakResendingVerificationEmail   = "Reenviando email de verificación automáticamente"
+	LogKeycloakResendVerificationEmailOK    = "Email de verificación reenviado exitosamente"
+	LogKeycloakResendVerificationEmailError = "Error reenviando email de verificación"
 )
 
 // ============================================
@@ -397,6 +402,10 @@ const (
 	LogPersonInteractorIncompleteDetected   = "Registro incompleto detectado"
 	LogPersonInteractorCleanup_Error        = "Error limpiando estado inconsistente"
 	LogPersonInteractorCleanup_OK           = "Estado inconsistente limpiado exitosamente"
+	LogPersonInteractorLoginStart           = "Inicio de sesión en Keycloak"
+	LogPersonInteractorLoginError           = "Error iniciando sesión en Keycloak"
+	LogPersonInteractorLoginOK              = "Sesión iniciada exitosamente"
+	LogPersonInteractorLoginComplete        = "Sesión iniciada exitosamente"
 )
 
 // ============================================
