@@ -20,7 +20,7 @@ func TestRegisterPerson_Success(t *testing.T) {
 	mockLogger := new(mocks.MockLogger)
 	mockTx := new(mocks.MockTx)
 
-	personInteractor := interactor.NewInteractor(mockService, mockLogger)
+	personInteractor := interactor.NewInteractor(mockService, mockLogger) // Corrected: Pass mockService directly
 
 	person := domain.Person{
 		Email:     "test@example.com",
@@ -92,7 +92,7 @@ func TestRegisterPerson_FailsAtKeycloakCreation_RollsBack(t *testing.T) {
 	mockLogger := new(mocks.MockLogger)
 	mockTx := new(mocks.MockTx)
 
-	personInteractor := interactor.NewInteractor(mockService, mockLogger)
+	personInteractor := interactor.NewInteractor(mockService, mockLogger) // Corrected: Pass mockService directly
 
 	person := domain.Person{
 		Email:     "test@example.com",
@@ -146,7 +146,7 @@ func TestRegisterPerson_FailsAtSaveDB_RollsBackKeycloak(t *testing.T) {
 	mockLogger := new(mocks.MockLogger)
 	mockTx := new(mocks.MockTx)
 
-	personInteractor := interactor.NewInteractor(mockService, mockLogger)
+	personInteractor := interactor.NewInteractor(mockService, mockLogger) // Corrected: Pass mockService directly
 
 	person := domain.Person{
 		Email:     "test@example.com",

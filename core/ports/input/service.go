@@ -18,6 +18,7 @@ type Service interface {
 	RegisterPerson(ctx context.Context, person domain.Person) (*dto.RegistrationResult, error)
 	GetPersonByEmail(ctx context.Context, email string) (*domain.Person, error)
 	GetPersonByID(ctx context.Context, id string) (*domain.Person, error)
+	GetPersonByKeycloakID(ctx context.Context, keycloakUserID string) (*domain.Person, error)
 	CheckAndCleanInconsistentState(ctx context.Context, email string) error
 
 	// Person - Operaciones transaccionales de BD

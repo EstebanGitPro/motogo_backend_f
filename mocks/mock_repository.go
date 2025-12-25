@@ -71,3 +71,12 @@ func (m *MockRepository) GetPersonByID(ctx context.Context, id string) (*domain.
 	}
 	return args.Get(0).(*domain.Person), args.Error(1)
 }
+
+// GetPersonByKeycloakID mocks the repository method
+func (m *MockRepository) GetPersonByKeycloakID(ctx context.Context, keycloakUserID string) (*domain.Person, error) {
+	args := m.Called(ctx, keycloakUserID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Person), args.Error(1)
+}

@@ -211,4 +211,6 @@ const (
 	// Password Reset
 	MsgKCPwdResetSent  = "MOD_KC_PWD_RESET_SENT_EXI_00001"
 	MsgKCPwdResetError = "MOD_KC_PWD_RESET_ERROR_ERR_00001"
+	// Auth Profile
+	MsgAuthProfileRetrieved = "MOD_AUTH_PROFILE_EXI_00001"
 )

@@ -244,3 +244,25 @@ func (i *Interactor) VerifyEmailByToken(ctx context.Context, token string) (stri
 	log.Success(logger.LogKeycloakEmailVerifyOK, "email", email)
 	return email, nil
 }
+
+func (i *Interactor) Login(ctx context.Context, email, password string) (*dto.TokenResponse, error) {
+    traceID := middleware.GetTraceIDFromContext(ctx)
+    log := i.logger.WithTraceID(traceID)
+    
+    log.Info(logger.LogPersonInteractorLoginStart, "email", email)
+    
+    // Delegar al servicio la autenticación en Keycloak
+    token, err := i.service.Login(ctx, email, password)
+    if err != nil {
+        log.Error(logger.LogPersonInteractorLoginError, "email", email, "error", err)
+        return nil, err
+    }
+    
+    log.Success(logger.LogPersonInteractorLoginOK, "email", email, "token", token)
+    return &dto.TokenResponse{
+        AccessToken: token.AccessToken,
+        TokenType:   token.TokenType,
+        ExpiresIn:   token.ExpiresIn,
+        RefreshToken: token.RefreshToken,
+    }, nil
+}
