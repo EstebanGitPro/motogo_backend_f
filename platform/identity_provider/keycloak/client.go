@@ -104,6 +104,7 @@ func (c *client) LoginUser(ctx context.Context, username, password string) (*goc
 
 	c.logger.Info(logger.LogKeycloakUserLogin, "username", username, "realm", c.config.Realm)
 
+	//TODO: Me dice que no he compeltado los campos y yo le he mandado todo lo necesario.
 	token, err := c.gocloak.Login(
 		ctx,
 		c.config.ClientID,
@@ -499,6 +500,7 @@ func (c *client) Logout(ctx context.Context, refreshToken string) error {
 		return fmt.Errorf("refreshToken cannot be empty")
 	}
 
+	
 	err := c.gocloak.Logout(
 		ctx,
 		c.config.ClientID,

@@ -134,6 +134,11 @@ const (
 	LogKeycloakEmailVerifyOK        = "Email verificado exitosamente"
 	LogKeycloakEmailVerifyError     = "Error verificando email"
 	LogKeycloakEmailAlreadyVerified = "Email ya estaba verificado"
+	LogKeycloakEmailNotVerified     = "Email no verificado - login bloqueado"
+	// Resend Verification Email (during login)
+	LogKeycloakResendingVerificationEmail   = "Reenviando email de verificación automáticamente"
+	LogKeycloakResendVerificationEmailOK    = "Email de verificación reenviado exitosamente"
+	LogKeycloakResendVerificationEmailError = "Error reenviando email de verificación"
 )
 
 // ============================================
@@ -329,13 +334,17 @@ const (
 // PERSON SERVICES
 // ============================================
 const (
-	LogPersonServiceSearchByEmail             = "Buscando persona por email"
-	LogPersonServiceSearchByID                = "Buscando persona por ID"
-	LogPersonServiceFoundByEmail              = "Persona encontrada por email"
-	LogPersonServiceFoundByID                 = "Persona encontrada por ID"
-	LogPersonServiceErrorByEmail              = "Error buscando persona por email"
-	LogPersonServiceErrorByID                 = "Error buscando persona por ID"
-	LogPersonServiceValidationStart           = "Iniciando validaciones de registro"
+	LogPersonServiceSearchByEmail      = "Buscando persona por email"
+	LogPersonServiceSearchByID         = "Buscando persona por ID"
+	LogPersonServiceSearchByKeycloakID = "Buscando persona por Keycloak ID"
+	LogPersonServiceFoundByEmail       = "Persona encontrada por email"
+	LogPersonServiceFoundByID          = "Persona encontrada por ID"
+	LogPersonServiceFoundByKeycloakID  = "Persona encontrada por Keycloak ID"
+	LogPersonServiceErrorByEmail       = "Error buscando persona por email"
+	LogPersonServiceErrorByID          = "Error buscando persona por ID"
+	LogPersonServiceErrorByKeycloakID  = "Error buscando persona por Keycloak ID"
+	LogPersonServiceValidationStart    = "Iniciando validaciones de registro"
+
 	LogPersonServiceValidationComplete        = "Validaciones de registro completadas"
 	LogPersonServiceDuplicateEmail            = "Intento de registro con email duplicado"
 	LogPersonServiceSavingToDB                = "Guardando persona en base de datos"
@@ -397,6 +406,10 @@ const (
 	LogPersonInteractorIncompleteDetected   = "Registro incompleto detectado"
 	LogPersonInteractorCleanup_Error        = "Error limpiando estado inconsistente"
 	LogPersonInteractorCleanup_OK           = "Estado inconsistente limpiado exitosamente"
+	LogPersonInteractorLoginStart           = "Inicio de sesión en Keycloak"
+	LogPersonInteractorLoginError           = "Error iniciando sesión en Keycloak"
+	LogPersonInteractorLoginOK              = "Sesión iniciada exitosamente"
+	LogPersonInteractorLoginComplete        = "Sesión iniciada exitosamente"
 )
 
 // ============================================

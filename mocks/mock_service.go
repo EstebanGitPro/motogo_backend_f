@@ -127,3 +127,12 @@ func (m *MockService) VerifyEmailByToken(ctx context.Context, token string) (str
 	args := m.Called(ctx, token)
 	return args.String(0), args.Error(1)
 }
+
+// GetPersonByKeycloakID mocks the service method
+func (m *MockService) GetPersonByKeycloakID(ctx context.Context, keycloakUserID string) (*domain.Person, error) {
+	args := m.Called(ctx, keycloakUserID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Person), args.Error(1)
+}
