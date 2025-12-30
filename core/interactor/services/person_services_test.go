@@ -569,7 +569,7 @@ func TestSetUserPassword_Success(t *testing.T) {
 	// Mock expectations
 	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
 	mockLogger.On("Success", mock.Anything, mock.Anything).Return()
-	mockAuthClient.On("SetPassword", ctx, userID, password, true).Return(nil)
+	mockAuthClient.On("SetPassword", ctx, userID, password, false).Return(nil)
 
 	// Act
 	err := service.SetUserPassword(ctx, userID, password)
@@ -597,7 +597,7 @@ func TestSetUserPassword_Error(t *testing.T) {
 	// Mock expectations
 	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
 	mockLogger.On("Error", mock.Anything, mock.Anything).Return()
-	mockAuthClient.On("SetPassword", ctx, userID, password, true).Return(kcError)
+	mockAuthClient.On("SetPassword", ctx, userID, password, false).Return(kcError)
 
 	// Act
 	err := service.SetUserPassword(ctx, userID, password)

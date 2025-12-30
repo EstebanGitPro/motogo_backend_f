@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	
-
 	domain "github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/middleware"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
@@ -61,9 +59,6 @@ func (h handler) RegisterPerson() func(c *gin.Context) {
 			h.HandleIDEncodingError(c, result.Person.ID, err)
 			return
 		}
-
-		
-		
 
 		log.Success("Registro completado exitosamente",
 			result.Person.ToLogger(),
@@ -256,6 +251,56 @@ func (h handler) VerifyEmailByToken() gin.HandlerFunc {
 	}
 }
 
+// @Summary Actualizar contraseña con token
+// @Description Actualiza la contraseña de un usuario usando un token JWT del email de recuperación
+// @Tags Autenticación
+// @Accept json
+// @Produce json
+// @Param request body ResetPasswordWithTokenRequest true "Token y nueva contraseña"
+// @Success 200 {object} middleware.APIResponse "Contraseña actualizada exitosamente"
+// @Failure 400 {object} middleware.APIResponse "Token inválido o contraseña no cumple requisitos"
+// @Failure 404 {object} middleware.APIResponse "Usuario no encontrado"
+// @Failure 500 {object} middleware.APIResponse "Error interno del servidor"
+// @Router /auth/password/reset [post]
+func (h handler) ResetPasswordWithToken() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		traceID := middleware.GetRequestID(c)
+		log := Logger.WithTraceID(traceID)
+
+		var req ResetPasswordWithTokenRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			log.Error(logger.LogRegJSONParseError, "error", err)
+			h.Response.Error(c, domain.MsgValBadFormat)
+			return
+		}
+
+		log.Info(logger.LogPasswordResetStart, "client_ip", c.ClientIP())
+
+		// Llamar al servicio para reset de contraseña
+		err := h.Interactor.ResetPasswordWithToken(c, req.Token, req.NewPassword)
+		if err != nil {
+			switch err {
+			case domain.ErrInvalidToken:
+				log.Error(logger.LogPasswordResetTokenError, "error", err, "client_ip", c.ClientIP())
+				h.Response.Error(c, "MOD_P_RESET_ERR_00001")
+			case domain.ErrUserNotFound:
+				log.Error(logger.LogPasswordResetUserNotFound, "error", err, "client_ip", c.ClientIP())
+				h.Response.Error(c, "MOD_P_RESET_ERR_00002")
+			case domain.ErrPasswordUpdateFailed:
+				log.Error(logger.LogPasswordResetUpdateError, "error", err, "client_ip", c.ClientIP())
+				h.Response.Error(c, "MOD_P_RESET_ERR_00003")
+			default:
+				log.Error(logger.LogPasswordResetUpdateError, "error", err, "client_ip", c.ClientIP())
+				h.Response.Error(c, "MOD_P_RESET_ERR_00003")
+			}
+			return
+		}
+
+		log.Success(logger.LogPasswordResetSuccess, "client_ip", c.ClientIP())
+		h.Response.Success(c, "MOD_P_RESET_EXI_00001")
+	}
+}
+
 // @Summary      Obtener perfil del usuario autenticado
 // @Description  Retorna los datos completos del usuario autenticado usando el token JWT
 // @Tags         Autenticación
@@ -296,6 +341,7 @@ func (h handler) GetAuthenticatedUser() gin.HandlerFunc {
 		// Build response
 		response := AuthMeResponse{
 			ID:             encodedID,
+			IdentityNumber: person.IdentityNumber,
 			Email:          person.Email,
 			FirstName:      person.FirstName,
 			LastName:       person.LastName,

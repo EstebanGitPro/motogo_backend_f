@@ -128,6 +128,12 @@ func (m *MockService) VerifyEmailByToken(ctx context.Context, token string) (str
 	return args.String(0), args.Error(1)
 }
 
+// ResetPasswordWithToken mocks the service method
+func (m *MockService) ResetPasswordWithToken(ctx context.Context, token string, newPassword string) error {
+	args := m.Called(ctx, token, newPassword)
+	return args.Error(0)
+}
+
 // GetPersonByKeycloakID mocks the service method
 func (m *MockService) GetPersonByKeycloakID(ctx context.Context, keycloakUserID string) (*domain.Person, error) {
 	args := m.Called(ctx, keycloakUserID)
