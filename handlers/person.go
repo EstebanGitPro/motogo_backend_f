@@ -45,6 +45,7 @@ type LoginResponse struct {
 // AuthMeResponse represents the authenticated user profile response
 type AuthMeResponse struct {
 	ID             string `json:"id"`
+	IdentityNumber string `json:"identity_number"`
 	Email          string `json:"email"`
 	FirstName      string `json:"first_name"`
 	LastName       string `json:"last_name"`
@@ -87,4 +88,11 @@ type VerifyEmailRequest struct {
 type VerifyEmailResponse struct {
 	Verified bool   `json:"verified"`
 	Email    string `json:"email"`
+}
+
+// ResetPasswordWithTokenRequest - DTO para actualizar contraseña con token
+// El token es un JWT que viene del enlace del email de recuperación de contraseña
+type ResetPasswordWithTokenRequest struct {
+	Token       string `json:"token" binding:"required"`
+	NewPassword string `json:"new_password" binding:"required,min=8"`
 }

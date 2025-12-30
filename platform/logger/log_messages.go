@@ -139,6 +139,14 @@ const (
 	LogKeycloakResendingVerificationEmail   = "Reenviando email de verificación automáticamente"
 	LogKeycloakResendVerificationEmailOK    = "Email de verificación reenviado exitosamente"
 	LogKeycloakResendVerificationEmailError = "Error reenviando email de verificación"
+	// Password Reset Flow
+	LogPasswordResetStart          = "Iniciando proceso de recuperación de contraseña"
+	LogPasswordResetTokenError     = "Error extrayendo email del token de reset"
+	LogPasswordResetEmailExtracted = "Email extraído exitosamente del token"
+	LogPasswordResetUserNotFound   = "Usuario no encontrado para reset de contraseña"
+	LogPasswordResetUserFound      = "Usuario encontrado para reset de contraseña"
+	LogPasswordResetUpdateError    = "Error actualizando contraseña en Keycloak"
+	LogPasswordResetSuccess        = "Contraseña actualizada exitosamente"
 )
 
 // ============================================

@@ -36,6 +36,9 @@ type Service interface {
 	// VerifyEmailByToken receives a JWT token, extracts the email, and verifies it in Keycloak
 	// Returns the extracted email on success
 	VerifyEmailByToken(ctx context.Context, token string) (string, error)
+	// ResetPasswordWithToken receives a JWT token, extracts the email, and updates the password in Keycloak
+	// Returns nil on success
+	ResetPasswordWithToken(ctx context.Context, token string, newPassword string) error
 
 	// Person - Compensaciones (rollback)
 	RollbackPerson(ctx context.Context, personID string) error

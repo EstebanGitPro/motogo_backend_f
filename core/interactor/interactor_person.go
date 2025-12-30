@@ -245,24 +245,52 @@ func (i *Interactor) VerifyEmailByToken(ctx context.Context, token string) (stri
 	return email, nil
 }
 
+// ResetPasswordWithToken actualiza la contraseña de un usuario extrayendo el email del token JWT
+// Este método delega al Service que maneja la lógica de negocio (parsing del token y actualización en Keycloak)
+func (i *Interactor) ResetPasswordWithToken(ctx context.Context, token string, newPassword string) error {
+	traceID := middleware.GetTraceIDFromContext(ctx)
+	log := i.logger.WithTraceID(traceID)
+
+	log.Info(logger.LogPasswordResetStart)
+
+	// Delegar toda la lógica al Service (parsing del token + actualización de contraseña en Keycloak)
+	err := i.service.ResetPasswordWithToken(ctx, token, newPassword)
+	if err != nil {
+		switch err {
+		case domain.ErrInvalidToken:
+			log.Error(logger.LogPasswordResetTokenError, "error", err)
+		case domain.ErrUserNotFound:
+			log.Error(logger.LogPasswordResetUserNotFound, "error", err)
+		case domain.ErrPasswordUpdateFailed:
+			log.Error(logger.LogPasswordResetUpdateError, "error", err)
+		default:
+			log.Error(logger.LogPasswordResetUpdateError, "error", err)
+		}
+		return err
+	}
+
+	log.Success(logger.LogPasswordResetSuccess)
+	return nil
+}
+
 func (i *Interactor) Login(ctx context.Context, email, password string) (*dto.TokenResponse, error) {
-    traceID := middleware.GetTraceIDFromContext(ctx)
-    log := i.logger.WithTraceID(traceID)
-    
-    log.Info(logger.LogPersonInteractorLoginStart, "email", email)
-    
-    // Delegar al servicio la autenticación en Keycloak
-    token, err := i.service.Login(ctx, email, password)
-    if err != nil {
-        log.Error(logger.LogPersonInteractorLoginError, "email", email, "error", err)
-        return nil, err
-    }
-    
-    log.Success(logger.LogPersonInteractorLoginOK, "email", email, "token", token)
-    return &dto.TokenResponse{
-        AccessToken: token.AccessToken,
-        TokenType:   token.TokenType,
-        ExpiresIn:   token.ExpiresIn,
-        RefreshToken: token.RefreshToken,
-    }, nil
+	traceID := middleware.GetTraceIDFromContext(ctx)
+	log := i.logger.WithTraceID(traceID)
+
+	log.Info(logger.LogPersonInteractorLoginStart, "email", email)
+
+	// Delegar al servicio la autenticación en Keycloak
+	token, err := i.service.Login(ctx, email, password)
+	if err != nil {
+		log.Error(logger.LogPersonInteractorLoginError, "email", email, "error", err)
+		return nil, err
+	}
+
+	log.Success(logger.LogPersonInteractorLoginOK, "email", email, "token", token)
+	return &dto.TokenResponse{
+		AccessToken:  token.AccessToken,
+		TokenType:    token.TokenType,
+		ExpiresIn:    token.ExpiresIn,
+		RefreshToken: token.RefreshToken,
+	}, nil
 }

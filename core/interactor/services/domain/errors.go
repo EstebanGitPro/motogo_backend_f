@@ -26,6 +26,7 @@ var (
 	ErrRegistrationFailed        = errors.New("ERR_REGISTRATION_FAILED")
 	ErrRoleRequired              = errors.New("ERR_ROLE_REQUIRED")
 	ErrUserCannotDelete          = errors.New("ERR_USER_CANNOT_DELETE")
+	ErrPasswordUpdateFailed      = errors.New("ERR_PASSWORD_UPDATE_FAILED")
 )
 
 // Infrastructure Errors (MOD_INFRA_*)
