@@ -48,11 +48,18 @@
                 </#if>
                 
                 <#-- 
-                    El enlace apunta a Keycloak, pero la página de Keycloak 
-                    (login-verify-email.ftl) enviará el token a nuestro backend 
+                    CUSTOM LOGIC FOR PASSWORD RESET:
+                    If action is UPDATE_PASSWORD, redirect to our custom page instead of Keycloak
+                    Extract the token from the Keycloak link and pass it to our page
                 -->
+                <#assign customLink = link>
+                <#if requiredActions?? && requiredActions?seq_contains("UPDATE_PASSWORD")>
+                    <#-- Extract token from Keycloak link: http://keycloak/realms/realm/login-actions/action-token?key=TOKEN -->
+                    <#assign customLink = "http://localhost:8085/reset-password.html?token=" + link?replace(".*key=", "", "r")>
+                </#if>
+                
                 <div style="text-align: center; margin: 1.5rem 0;">
-                    <a href="${link}" style="display: inline-block; padding: 12px 24px; background-color: #007BFF; color: white; text-decoration: none; border-radius: 5px; font-weight: 600;">
+                    <a href="${customLink}" style="display: inline-block; padding: 12px 24px; background-color: #007BFF; color: white; text-decoration: none; border-radius: 5px; font-weight: 600;">
                         Completar acciones
                     </a>
                 </div>

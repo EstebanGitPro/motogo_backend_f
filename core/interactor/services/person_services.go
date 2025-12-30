@@ -480,3 +480,38 @@ func (s service) VerifyEmailByToken(ctx context.Context, token string) (string, 
 	s.logger.Success(logger.LogKeycloakEmailVerifyOK, "email", email, "user_id", *user.ID)
 	return email, nil
 }
+
+// ResetPasswordWithToken receives a JWT token, extracts the email, and updates the password in Keycloak
+// This is called when a user submits the password reset form from the email link
+// Returns nil on success, error otherwise
+func (s service) ResetPasswordWithToken(ctx context.Context, token string, newPassword string) error {
+	s.logger.Info(logger.LogPasswordResetStart)
+
+	// Extract email from the JWT token
+	tokenParser := jwt.NewTokenParser()
+	email, err := tokenParser.ExtractEmailFromToken(token)
+	if err != nil {
+		s.logger.Error(logger.LogPasswordResetTokenError, "error", err, "reason", "failed to extract email from token")
+		return domain.ErrInvalidToken
+	}
+
+	s.logger.Debug(logger.LogPasswordResetEmailExtracted, "email", email)
+
+	// Get user from Keycloak by email
+	user, err := s.keycloak.GetUserByEmail(ctx, email)
+	if err != nil {
+		s.logger.Error(logger.LogPasswordResetUserNotFound, "email", email, "error", err)
+		return domain.ErrUserNotFound
+	}
+
+	s.logger.Debug(logger.LogPasswordResetUserFound, "email", email, "user_id", *user.ID)
+
+	// Update password in Keycloak using existing method (reuses SetUserPassword)
+	if err := s.SetUserPassword(ctx, *user.ID, newPassword); err != nil {
+		s.logger.Error(logger.LogPasswordResetUpdateError, "email", email, "user_id", *user.ID, "error", err)
+		return domain.ErrPasswordUpdateFailed
+	}
+
+	s.logger.Success(logger.LogPasswordResetSuccess, "email", email, "user_id", *user.ID)
+	return nil
+}
