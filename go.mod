@@ -3,6 +3,7 @@ module github.com/EstebanGitPro/motogo-backend
 go 1.25.2
 
 require (
+	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/Nerzal/gocloak/v13 v13.9.0
 	github.com/gin-contrib/cors v1.7.6
 	github.com/go-sql-driver/mysql v1.9.3
