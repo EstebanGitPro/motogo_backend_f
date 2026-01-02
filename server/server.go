@@ -132,7 +132,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 	protected := app.Group("motogo/api/v1")
 	protected.Use(middleware.RequireAuth(dependencies.PersonService, dependencies.MessagingCache))
 	{
-		// GET /persons/me - Obtener perfil del usuario autenticado (alias contextual)
+		// GET /persons/me - Obtener perfil del usuario autenticado 
 		protected.GET("/persons/me", handler.GetAuthenticatedUser())
 	}
 

@@ -18,7 +18,7 @@ import (
 // @Failure      400  {object}  middleware.APIResponse  "Error de validación"
 // @Failure      409  {object}  middleware.APIResponse  "Email o número de identidad ya registrado"
 // @Failure      500  {object}  middleware.APIResponse  "Error interno del servidor"
-// @Router       /accounts [post]
+// @Router       /persons [post]
 func (h handler) RegisterPerson() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		// Create logger with trace ID for this request
@@ -310,7 +310,7 @@ func (h handler) ResetPasswordWithToken() gin.HandlerFunc {
 // @Success      200  {object}  middleware.APIResponse{data=AuthMeResponse}  "Perfil obtenido exitosamente"
 // @Failure      401  {object}  middleware.APIResponse  "Token inválido o ausente"
 // @Failure      404  {object}  middleware.APIResponse  "Usuario no encontrado"
-// @Router       /auth/me [get]
+// @Router       /persons/me [get]
 func (h handler) GetAuthenticatedUser() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		traceID := middleware.GetRequestID(c)
@@ -334,7 +334,7 @@ func (h handler) GetAuthenticatedUser() gin.HandlerFunc {
 			return
 		}
 
-		// Build HATEOAS links for auth/me response
+		// Build HATEOAS links for persons/me response
 		baseURL := GetBaseURL(c)
 		hateoasLinks := BuildAuthMeLinks(baseURL)
 
