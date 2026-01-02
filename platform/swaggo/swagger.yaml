@@ -1,6 +1,5 @@
-basePath: /motogo/api/v1
 definitions:
-  github_com_EstebanGitPro_motogo-backend_core_interactor_services_domain.MessageType:
+  domain.MessageType:
     enum:
     - ERROR
     - EXITO
@@ -69,13 +68,10 @@ definitions:
     type: object
   handlers.LoginResponse:
     properties:
-<<<<<<< HEAD
-=======
       _links:
         items:
           $ref: '#/definitions/handlers.Link'
         type: array
->>>>>>> main
       access_token:
         type: string
       expires_in:
@@ -122,7 +118,7 @@ definitions:
       title:
         type: string
       type:
-        $ref: '#/definitions/github_com_EstebanGitPro_motogo-backend_core_interactor_services_domain.MessageType'
+        $ref: '#/definitions/domain.MessageType'
     type: object
   handlers.MessageResponse:
     properties:
@@ -145,7 +141,7 @@ definitions:
       title:
         type: string
       type:
-        $ref: '#/definitions/github_com_EstebanGitPro_motogo-backend_core_interactor_services_domain.MessageType'
+        $ref: '#/definitions/domain.MessageType'
     type: object
   handlers.MessageUpdatedResponse:
     properties:
@@ -194,8 +190,6 @@ definitions:
     required:
     - email
     type: object
-<<<<<<< HEAD
-=======
   handlers.ResetPasswordWithTokenRequest:
     properties:
       new_password:
@@ -207,7 +201,6 @@ definitions:
     - new_password
     - token
     type: object
->>>>>>> main
   handlers.VerifyEmailRequest:
     properties:
       token:
@@ -234,68 +227,9 @@ definitions:
       success:
         type: boolean
     type: object
-externalDocs:
-  description: OpenAPI
-  url: https://swagger.io/resources/open-api/
-host: localhost:8085
 info:
-  contact:
-    email: support@motogo.com
-    name: Motogo API Support
-    url: https://motogo.com/support
-  description: API RESTful para la plataforma Motogo, implementada con arquitectura
-    hexagonal y siguiendo los principios del Richardson Maturity Model (Nivel 2-3)
-    con HATEOAS.
-  license:
-    name: Apache 2.0
-    url: http://www.apache.org/licenses/LICENSE-2.0.html
-  termsOfService: http://swagger.io/terms/
-  title: Motogo Backend API
-  version: "1.0"
+  contact: {}
 paths:
-<<<<<<< HEAD
-  /accounts:
-    post:
-      consumes:
-      - application/json
-      description: Crea una nueva cuenta de usuario en el sistema con sincronización
-        a Keycloak
-      parameters:
-      - description: Datos de la cuenta
-        in: body
-        name: account
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.PersonRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Cuenta creada exitosamente
-          schema:
-            allOf:
-            - $ref: '#/definitions/middleware.APIResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/handlers.RegistrationResponse'
-              type: object
-        "400":
-          description: Error de validación
-          schema:
-            $ref: '#/definitions/middleware.APIResponse'
-        "409":
-          description: Email o número de identidad ya registrado
-          schema:
-            $ref: '#/definitions/middleware.APIResponse'
-        "500":
-          description: Error interno del servidor
-          schema:
-            $ref: '#/definitions/middleware.APIResponse'
-      summary: Registrar nueva cuenta
-      tags:
-      - accounts
-=======
->>>>>>> main
   /auth/login:
     post:
       consumes:
@@ -366,8 +300,6 @@ paths:
       summary: Solicitar recuperación de contraseña
       tags:
       - Autenticación
-<<<<<<< HEAD
-=======
   /auth/password/reset:
     post:
       consumes:
@@ -403,7 +335,6 @@ paths:
       summary: Actualizar contraseña con token
       tags:
       - Autenticación
->>>>>>> main
   /auth/resend-verification:
     post:
       consumes:
@@ -691,8 +622,6 @@ paths:
       summary: Recargar caché de mensajes
       tags:
       - messages
-<<<<<<< HEAD
-=======
   /persons:
     post:
       consumes:
@@ -764,11 +693,4 @@ paths:
       summary: Obtener perfil del usuario autenticado
       tags:
       - Autenticación
->>>>>>> main
-securityDefinitions:
-  BearerAuth:
-    description: Type "Bearer" followed by a space and JWT token.
-    in: header
-    name: Authorization
-    type: apiKey
 swagger: "2.0"
