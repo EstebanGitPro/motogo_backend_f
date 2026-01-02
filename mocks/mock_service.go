@@ -6,6 +6,7 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/dto"
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
+	"github.com/Nerzal/gocloak/v13"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -94,4 +95,50 @@ func (m *MockService) RollbackPerson(ctx context.Context, personID string) error
 func (m *MockService) RollbackKeycloakUser(ctx context.Context, keycloakUserID string) error {
 	args := m.Called(ctx, keycloakUserID)
 	return args.Error(0)
+}
+
+func (m *MockService) GetUserByEmail(ctx context.Context, email string) (*gocloak.User, error) {
+	args := m.Called(ctx, email)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*gocloak.User), args.Error(1)
+}
+
+func (m *MockService) SendVerificationEmail(ctx context.Context, userID string) error {
+	args := m.Called(ctx, userID)
+	return args.Error(0)
+}
+
+func (m *MockService) SendPasswordResetEmail(ctx context.Context, email string) error {
+	args := m.Called(ctx, email)
+	return args.Error(0)
+}
+
+func (m *MockService) Login(ctx context.Context, email, password string) (*gocloak.JWT, error) {
+	args := m.Called(ctx, email, password)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*gocloak.JWT), args.Error(1)
+}
+
+func (m *MockService) VerifyEmailByToken(ctx context.Context, token string) (string, error) {
+	args := m.Called(ctx, token)
+	return args.String(0), args.Error(1)
+}
+
+// ResetPasswordWithToken mocks the service method
+func (m *MockService) ResetPasswordWithToken(ctx context.Context, token string, newPassword string) error {
+	args := m.Called(ctx, token, newPassword)
+	return args.Error(0)
+}
+
+// GetPersonByKeycloakID mocks the service method
+func (m *MockService) GetPersonByKeycloakID(ctx context.Context, keycloakUserID string) (*domain.Person, error) {
+	args := m.Called(ctx, keycloakUserID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Person), args.Error(1)
 }

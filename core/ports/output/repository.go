@@ -25,6 +25,7 @@ type Repository interface {
 	// Person operations - read
 	GetPersonByEmail(ctx context.Context, email string) (*domain.Person, error)
 	GetPersonByID(ctx context.Context, id string) (*domain.Person, error)
+	GetPersonByKeycloakID(ctx context.Context, keycloakUserID string) (*domain.Person, error)
 }
 
 // MessageRepository interface for Message operations
@@ -42,5 +43,4 @@ type MessageRepository interface {
 	GetByCode(ctx context.Context, code string) (*domain.Message, error)
 	GetByType(ctx context.Context, msgType string) ([]domain.Message, error)
 	GetByModule(ctx context.Context, module string) ([]domain.Message, error)
-
 }

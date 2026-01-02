@@ -88,6 +88,11 @@ func (m *MockAuthClient) SendVerificationEmail(ctx context.Context, userID strin
 	return args.Error(0)
 }
 
+func (m *MockAuthClient) SendPasswordResetEmail(ctx context.Context, email string) error {
+	args := m.Called(ctx, email)
+	return args.Error(0)
+}
+
 func (m *MockAuthClient) VerifyEmail(ctx context.Context, userID string) error {
 	args := m.Called(ctx, userID)
 	return args.Error(0)

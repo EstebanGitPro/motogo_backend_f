@@ -95,6 +95,7 @@ func TestCreateMessage_Success(t *testing.T) {
 	}
 
 	// Mock expectations
+	mockLogger.On("WithTraceID", mock.Anything).Return(mockLogger)
 	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
 	mockLogger.On("Success", mock.Anything, mock.Anything).Return()
 
@@ -133,6 +134,7 @@ func TestCreateMessage_ValidationError(t *testing.T) {
 	validationError := domain.ErrMessageCodeRequired
 
 	// Mock expectations
+	mockLogger.On("WithTraceID", mock.Anything).Return(mockLogger)
 	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
 	mockLogger.On("Error", mock.Anything, mock.Anything).Return()
 
@@ -165,6 +167,7 @@ func TestGetMessageByID_Success(t *testing.T) {
 	}
 
 	// Mock expectations
+	mockLogger.On("WithTraceID", mock.Anything).Return(mockLogger)
 	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
 	mockService.On("GetMessageByID", ctx, "msg-123").Return(expectedMessage, nil)
 
@@ -194,6 +197,7 @@ func TestListActiveMessages_Success(t *testing.T) {
 	}
 
 	// Mock expectations
+	mockLogger.On("WithTraceID", mock.Anything).Return(mockLogger)
 	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
 	mockService.On("ListActiveMessages", ctx).Return(expectedMessages, nil)
 
@@ -223,6 +227,7 @@ func TestDeleteMessage_Success(t *testing.T) {
 	}
 
 	// Mock expectations
+	mockLogger.On("WithTraceID", mock.Anything).Return(mockLogger)
 	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
 	mockLogger.On("Success", mock.Anything, mock.Anything).Return()
 
@@ -253,6 +258,7 @@ func TestDeleteMessage_NotFound(t *testing.T) {
 	notFoundError := domain.ErrMessageNotFound
 
 	// Mock expectations
+	mockLogger.On("WithTraceID", mock.Anything).Return(mockLogger)
 	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
 	mockLogger.On("Error", mock.Anything, mock.Anything).Return()
 
@@ -291,6 +297,7 @@ func TestUpdateMessage_Success(t *testing.T) {
 	}
 
 	// Mock expectations
+	mockLogger.On("WithTraceID", mock.Anything).Return(mockLogger)
 	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
 	mockLogger.On("Success", mock.Anything, mock.Anything).Return()
 

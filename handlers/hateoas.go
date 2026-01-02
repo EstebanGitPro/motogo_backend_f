@@ -154,3 +154,66 @@ func BuildMessageListLinks(baseURL string) []Link {
 		},
 	}
 }
+
+// ========================================
+// Personalized HATEOAS Functions
+// These functions return only relevant, implemented links for each endpoint context
+// ========================================
+
+// BuildLoginLinks constructs HATEOAS links for successful login response
+// Only returns links that are actually implemented and relevant after login
+func BuildLoginLinks(baseURL string) []Link {
+	return []Link{
+		{
+			Href:   fmt.Sprintf("%s/motogo/api/v1/auth/me", baseURL),
+			Rel:    "profile",
+			Method: "GET",
+		},
+		{
+			Href:   fmt.Sprintf("%s/motogo/api/v1/auth/password-reset", baseURL),
+			Rel:    "password-reset",
+			Method: "POST",
+		},
+	}
+}
+
+// BuildAuthMeLinks constructs HATEOAS links for authenticated user profile (/auth/me)
+// Returns links specific to the authenticated user context
+func BuildAuthMeLinks(baseURL string) []Link {
+	return []Link{
+		{
+			Href:   fmt.Sprintf("%s/motogo/api/v1/auth/me", baseURL),
+			Rel:    "self",
+			Method: "GET",
+		},
+		{
+			Href:   fmt.Sprintf("%s/motogo/api/v1/auth/login", baseURL),
+			Rel:    "login",
+			Method: "POST",
+		},
+	}
+}
+
+// BuildAccountCreatedLinks constructs HATEOAS links for newly created account
+// Replaces the generic BuildAccountLinks with context-specific links for registration
+func BuildAccountCreatedLinks(baseURL string, accountID string) []Link {
+	resourceURL := BuildResourceURL(baseURL, "accounts", accountID)
+
+	return []Link{
+		{
+			Href:   resourceURL,
+			Rel:    "self",
+			Method: "GET",
+		},
+		{
+			Href:   fmt.Sprintf("%s/motogo/api/v1/auth/login", baseURL),
+			Rel:    "login",
+			Method: "POST",
+		},
+		{
+			Href:   fmt.Sprintf("%s/motogo/api/v1/auth/verify-email", baseURL),
+			Rel:    "verify-email",
+			Method: "POST",
+		},
+	}
+}

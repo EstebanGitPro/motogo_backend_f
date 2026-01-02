@@ -11,7 +11,7 @@
     "type": {
       "type": "string",
       "description": "Message type",
-      "enum": ["ERROR", "SUCCESS", "WARNING", "INFO", "DEBUG"]
+      "enum": ["ERROR", "EXITO", "WARNING", "INFO", "DEBUG"]
     },
     "category": {
       "type": "string",

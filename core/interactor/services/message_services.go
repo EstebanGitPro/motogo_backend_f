@@ -129,7 +129,17 @@ func (s *MessageService) SaveMessageToDB(ctx context.Context, tx output.Tx, mess
 func (s *MessageService) UpdateMessageInDB(ctx context.Context, tx output.Tx, message domain.Message) error {
 	s.logger.Info(logger.LogMessageUpdate, message.ToLogger())
 
-	err := s.repository.UpdateMessage(ctx, tx, message)
+	// First, verify the message exists with the given ID and Code
+	existingMsg, err := s.repository.GetByID(ctx, message.ID)
+	if err != nil {
+		return domain.ErrMessageCannotUpdate
+	}
+
+	if existingMsg == nil || existingMsg.Code != message.Code {
+		return domain.ErrMessageNotFound
+	}
+
+	err = s.repository.UpdateMessage(ctx, tx, message)
 	if err != nil {
 		s.logger.Error(logger.LogMessageUpdateError, message.ToLogger(), "error", err)
 		return err

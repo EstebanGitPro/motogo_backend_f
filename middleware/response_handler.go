@@ -85,8 +85,11 @@ func (h *ResponseHandler) Success(c *gin.Context, code string, params ...string)
 		return
 	}
 
+	// Determine success flag based on message type
+	isSuccess := msg.Type != "ERROR"
+
 	c.JSON(status, APIResponse{
-		Success: true,
+		Success: isSuccess,
 		Code:    msg.Code,
 		Message: msg.Content,
 	})
@@ -107,8 +110,13 @@ func (h *ResponseHandler) SuccessWithData(c *gin.Context, code string, data inte
 		return
 	}
 
+	// Determine success flag based on message type
+	// If message type is ERROR, success should be false even if called from SuccessWithData
+	// This handles the case when a requested message doesn't exist and fallback error message is used
+	isSuccess := msg.Type != "ERROR"
+
 	c.JSON(status, APIResponse{
-		Success: true,
+		Success: isSuccess,
 		Code:    msg.Code,
 		Message: msg.Content,
 		Data:    data,

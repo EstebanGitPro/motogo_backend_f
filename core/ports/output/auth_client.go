@@ -13,12 +13,12 @@ type AuthClient interface {
 	LoginUser(ctx context.Context, username, password string) (*gocloak.JWT, error) // Login de usuario normal
 
 	// Gestión de usuarios
-	CreateUser(ctx context.Context,person *domain.Person) (string, error)
+	CreateUser(ctx context.Context, person *domain.Person) (string, error)
 	GetUserByEmail(ctx context.Context, email string) (*gocloak.User, error)
 	GetUserByID(ctx context.Context, userID string) (*gocloak.User, error)
 	UpdateUser(ctx context.Context, user *gocloak.User) error
 	DeleteUser(ctx context.Context, userID string) error
-	SetPassword(ctx context.Context,userID string, password string, temporary bool) error
+	SetPassword(ctx context.Context, userID string, password string, temporary bool) error
 
 	// Roles
 	AssignRole(ctx context.Context, userID string, roleName string) error
@@ -27,6 +27,7 @@ type AuthClient interface {
 
 	// Verificación
 	SendVerificationEmail(ctx context.Context, userID string) error
+	SendPasswordResetEmail(ctx context.Context, email string) error
 	VerifyEmail(ctx context.Context, userID string) error
 
 	// Sesiones

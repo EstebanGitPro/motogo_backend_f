@@ -38,15 +38,16 @@ func (r *repository) UpdateMessage(ctx context.Context, tx output.Tx, message do
 	}
 
 	// Add ID to args
-	args = append(args, message.ID)
+	args = append(args, message.ID, message.Code)
 
 	// Build final query
-	query := fmt.Sprintf("UPDATE system_messages SET %s WHERE id = ?", strings.Join(setClauses, ", "))
+	query := fmt.Sprintf("UPDATE system_messages SET %s WHERE id = ? AND message_code = ?", strings.Join(setClauses, ", "))
 
-	_, err := dbTx.ExecContext(ctx, query, args...)
+	result, err := dbTx.ExecContext(ctx, query, args...)
 	if err != nil {
 		return domain.ErrMessageCannotUpdate
 	}
+	_ = result 
 
 	return nil
 }

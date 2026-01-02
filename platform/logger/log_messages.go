@@ -1,4 +1,5 @@
 package logger
+
 // ============================================
 // APPLICATION LIFECYCLE
 // ============================================
@@ -116,6 +117,36 @@ const (
 	LogKeycloakUserTokenRefresh    = "Refrescando token de usuario"
 	LogKeycloakUserTokenRefreshOK  = "Token de usuario refrescado exitosamente"
 	LogKeycloakUserTokenRefreshErr = "Error refrescando token de usuario"
+	// Email Verification
+	LogKeycloakSendVerificationEmail      = "Enviando email de verificación"
+	LogKeycloakSendVerificationEmailOK    = "Email de verificación enviado exitosamente"
+	LogKeycloakSendVerificationEmailError = "Error enviando email de verificación"
+	// Password Reset
+	LogKeycloakSendPasswordReset      = "Enviando email de recuperación de contraseña"
+	LogKeycloakSendPasswordResetOK    = "Email de recuperación enviado exitosamente"
+	LogKeycloakSendPasswordResetError = "Error enviando email de recuperación"
+	// User Search
+	LogKeycloakSearchUserByEmail   = "Buscando usuario en Keycloak por email"
+	LogKeycloakSearchUserByEmailOK = "Usuario encontrado en Keycloak"
+	LogKeycloakUserNotFound        = "Usuario no encontrado en Keycloak"
+	// Email Verification (via proxy endpoint)
+	LogKeycloakEmailVerify          = "Verificando email de usuario"
+	LogKeycloakEmailVerifyOK        = "Email verificado exitosamente"
+	LogKeycloakEmailVerifyError     = "Error verificando email"
+	LogKeycloakEmailAlreadyVerified = "Email ya estaba verificado"
+	LogKeycloakEmailNotVerified     = "Email no verificado - login bloqueado"
+	// Resend Verification Email (during login)
+	LogKeycloakResendingVerificationEmail   = "Reenviando email de verificación automáticamente"
+	LogKeycloakResendVerificationEmailOK    = "Email de verificación reenviado exitosamente"
+	LogKeycloakResendVerificationEmailError = "Error reenviando email de verificación"
+	// Password Reset Flow
+	LogPasswordResetStart          = "Iniciando proceso de recuperación de contraseña"
+	LogPasswordResetTokenError     = "Error extrayendo email del token de reset"
+	LogPasswordResetEmailExtracted = "Email extraído exitosamente del token"
+	LogPasswordResetUserNotFound   = "Usuario no encontrado para reset de contraseña"
+	LogPasswordResetUserFound      = "Usuario encontrado para reset de contraseña"
+	LogPasswordResetUpdateError    = "Error actualizando contraseña en Keycloak"
+	LogPasswordResetSuccess        = "Contraseña actualizada exitosamente"
 )
 
 // ============================================
@@ -311,13 +342,17 @@ const (
 // PERSON SERVICES
 // ============================================
 const (
-	LogPersonServiceSearchByEmail             = "Buscando persona por email"
-	LogPersonServiceSearchByID                = "Buscando persona por ID"
-	LogPersonServiceFoundByEmail              = "Persona encontrada por email"
-	LogPersonServiceFoundByID                 = "Persona encontrada por ID"
-	LogPersonServiceErrorByEmail              = "Error buscando persona por email"
-	LogPersonServiceErrorByID                 = "Error buscando persona por ID"
-	LogPersonServiceValidationStart           = "Iniciando validaciones de registro"
+	LogPersonServiceSearchByEmail      = "Buscando persona por email"
+	LogPersonServiceSearchByID         = "Buscando persona por ID"
+	LogPersonServiceSearchByKeycloakID = "Buscando persona por Keycloak ID"
+	LogPersonServiceFoundByEmail       = "Persona encontrada por email"
+	LogPersonServiceFoundByID          = "Persona encontrada por ID"
+	LogPersonServiceFoundByKeycloakID  = "Persona encontrada por Keycloak ID"
+	LogPersonServiceErrorByEmail       = "Error buscando persona por email"
+	LogPersonServiceErrorByID          = "Error buscando persona por ID"
+	LogPersonServiceErrorByKeycloakID  = "Error buscando persona por Keycloak ID"
+	LogPersonServiceValidationStart    = "Iniciando validaciones de registro"
+
 	LogPersonServiceValidationComplete        = "Validaciones de registro completadas"
 	LogPersonServiceDuplicateEmail            = "Intento de registro con email duplicado"
 	LogPersonServiceSavingToDB                = "Guardando persona en base de datos"
@@ -379,6 +414,10 @@ const (
 	LogPersonInteractorIncompleteDetected   = "Registro incompleto detectado"
 	LogPersonInteractorCleanup_Error        = "Error limpiando estado inconsistente"
 	LogPersonInteractorCleanup_OK           = "Estado inconsistente limpiado exitosamente"
+	LogPersonInteractorLoginStart           = "Inicio de sesión en Keycloak"
+	LogPersonInteractorLoginError           = "Error iniciando sesión en Keycloak"
+	LogPersonInteractorLoginOK              = "Sesión iniciada exitosamente"
+	LogPersonInteractorLoginComplete        = "Sesión iniciada exitosamente"
 )
 
 // ============================================

@@ -104,6 +104,7 @@ func (c *client) LoginUser(ctx context.Context, username, password string) (*goc
 
 	c.logger.Info(logger.LogKeycloakUserLogin, "username", username, "realm", c.config.Realm)
 
+	//TODO: Me dice que no he compeltado los campos y yo le he mandado todo lo necesario.
 	token, err := c.gocloak.Login(
 		ctx,
 		c.config.ClientID,
@@ -386,6 +387,8 @@ func (c *client) SendVerificationEmail(ctx context.Context, userID string) error
 		return err
 	}
 
+	c.logger.Info(logger.LogKeycloakSendVerificationEmail, "user_id", userID, "realm", c.config.Realm)
+
 	params := gocloak.ExecuteActionsEmail{
 		UserID:   &userID,
 		Actions:  &[]string{"VERIFY_EMAIL"},
@@ -399,9 +402,70 @@ func (c *client) SendVerificationEmail(ctx context.Context, userID string) error
 		params,
 	)
 	if err != nil {
+		c.logger.Error(logger.LogKeycloakSendVerificationEmailError, "user_id", userID, "error", err)
 		return fmt.Errorf("failed to send verification email: %w", err)
 	}
 
+	c.logger.Success(logger.LogKeycloakSendVerificationEmailOK, "user_id", userID)
+	return nil
+}
+
+// SendPasswordResetEmail sends a password reset email to the user
+// It searches for the user by email first, then sends the reset email
+func (c *client) SendPasswordResetEmail(ctx context.Context, email string) error {
+	if email == "" {
+		return fmt.Errorf("email cannot be empty")
+	}
+
+	if err := c.ensureValidToken(ctx); err != nil {
+		return err
+	}
+
+	c.logger.Info(logger.LogKeycloakSendPasswordReset, "email", email, "realm", c.config.Realm)
+
+	// Buscar usuario por email
+	c.logger.Debug(logger.LogKeycloakSearchUserByEmail, "email", email)
+
+	users, err := c.gocloak.GetUsers(
+		ctx,
+		c.token.AccessToken,
+		c.config.Realm,
+		gocloak.GetUsersParams{
+			Email: &email,
+			Exact: gocloak.BoolP(true),
+		},
+	)
+	if err != nil {
+		c.logger.Error(logger.LogKeycloakSendPasswordResetError, "email", email, "error", err)
+		return fmt.Errorf("failed to search user: %w", err)
+	}
+
+	if len(users) == 0 {
+		c.logger.Warn(logger.LogKeycloakUserNotFound, "email", email)
+		return fmt.Errorf("user with email %s not found", email)
+	}
+
+	c.logger.Debug(logger.LogKeycloakSearchUserByEmailOK, "email", email, "user_id", *users[0].ID)
+
+	// Enviar email de reset de contraseña
+	params := gocloak.ExecuteActionsEmail{
+		UserID:   users[0].ID,
+		Actions:  &[]string{"UPDATE_PASSWORD"},
+		Lifespan: gocloak.IntP(43200), // 12 horas
+	}
+
+	err = c.gocloak.ExecuteActionsEmail(
+		ctx,
+		c.token.AccessToken,
+		c.config.Realm,
+		params,
+	)
+	if err != nil {
+		c.logger.Error(logger.LogKeycloakSendPasswordResetError, "email", email, "error", err)
+		return fmt.Errorf("failed to send password reset email: %w", err)
+	}
+
+	c.logger.Success(logger.LogKeycloakSendPasswordResetOK, "email", email, "user_id", *users[0].ID)
 	return nil
 }
 
@@ -436,6 +500,7 @@ func (c *client) Logout(ctx context.Context, refreshToken string) error {
 		return fmt.Errorf("refreshToken cannot be empty")
 	}
 
+	
 	err := c.gocloak.Logout(
 		ctx,
 		c.config.ClientID,

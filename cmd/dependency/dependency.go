@@ -35,7 +35,6 @@ type Dependencies struct {
 }
 
 func Init() (*Dependencies, error) {
-	// Inicializar logger
 	log := logger.NewSlogLogger()
 	log.Info(logger.LogAppStarting)
 
@@ -46,7 +45,6 @@ func Init() (*Dependencies, error) {
 	}
 	log.Info(logger.LogAppConfigLoaded)
 
-	// Inicializar métricas de Prometheus
 	middleware.PrometheusInit()
 	log.Success(logger.LogPrometheusInitOK)
 
@@ -74,7 +72,6 @@ func Init() (*Dependencies, error) {
 
 	interactorFacade := interactor.NewInteractor(personService, log)
 
-	// Inicializar IDEncoder
 	encoder, err := idencoder.NewHashidsEncoder(idencoder.Config{
 		Secret:    cfg.IDEncoder.Secret,
 		MinLength: cfg.IDEncoder.MinLength,
@@ -85,7 +82,6 @@ func Init() (*Dependencies, error) {
 	}
 	log.Success(logger.LogIDEncodeOK)
 
-	// Inicializar repositorio de mensajes (implementa ambas interfaces)
 	msgRepo, err := messageRepo.NewMessageRepository(db)
 	if err != nil {
 		log.Error(logger.LogRepoMsgInitError, "error", err)
@@ -98,16 +94,13 @@ func Init() (*Dependencies, error) {
 
 	if err := messagingCache.LoadMessages(context.Background()); err != nil {
 		log.Warn(logger.LogMsgCacheLoadError, "error", err)
-		// Don't return error, continue with fallback
 	}
 	log.Success(logger.LogMsgCacheInit, "messages_loaded", messagingCache.MessageCount())
 
-	// Iniciar auto-refresh en background
 	messagingCache.StartAutoRefresh(context.Background())
 
 	responseHandler := middleware.NewResponseHandler(messagingCache)
 
-	// Inicializar servicio de mensajes (msgRepo también implementa output.MessageRepository)
 	messageService := services.NewMessageService(msgRepo, log)
 	messageInteractor := interactor.NewMessageInteractor(messageService, log)
 	log.Success(logger.LogDependencyMessageIntInit)
