@@ -38,7 +38,8 @@ func TestRegisterPerson_Success(t *testing.T) {
 
 	// Mock expectations
 
-	// Logging - usamos mock.Anything para args variádicos
+	// WithTraceID and Logging
+	mockLogger.On("WithTraceID", mock.Anything).Return(mockLogger)
 	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
 	mockLogger.On("Success", mock.Anything, mock.Anything).Return()
 	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
@@ -69,6 +70,9 @@ func TestRegisterPerson_Success(t *testing.T) {
 
 	// Step 8: Commit
 	mockTx.On("Commit").Return(nil)
+
+	// Step 9: SendVerificationEmail (non-blocking)
+	mockService.On("SendVerificationEmail", ctx, keycloakUserID).Return(nil)
 
 	// Act
 	result, err := personInteractor.RegisterPerson(ctx, person)
@@ -109,6 +113,7 @@ func TestRegisterPerson_FailsAtKeycloakCreation_RollsBack(t *testing.T) {
 	keycloakError := errors.New("keycloak service unavailable")
 
 	// Mock expectations
+	mockLogger.On("WithTraceID", mock.Anything).Return(mockLogger)
 	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
 	mockLogger.On("Success", mock.Anything, mock.Anything).Return()
 	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
@@ -164,6 +169,7 @@ func TestRegisterPerson_FailsAtSaveDB_RollsBackKeycloak(t *testing.T) {
 	dbError := errors.New("update keycloak ID failed")
 
 	// Mock expectations
+	mockLogger.On("WithTraceID", mock.Anything).Return(mockLogger)
 	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
 	mockLogger.On("Success", mock.Anything, mock.Anything).Return()
 	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()

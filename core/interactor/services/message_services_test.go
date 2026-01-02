@@ -307,9 +307,15 @@ func TestUpdateMessageInDB_Success(t *testing.T) {
 		Content: "Updated content",
 	}
 
+	existingMessage := &domain.Message{
+		ID:   "msg-123",
+		Code: "TEST_CODE_001",
+	}
+
 	// Mock expectations
 	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
 	mockLogger.On("Success", mock.Anything, mock.Anything).Return()
+	mockRepo.On("GetByID", ctx, "msg-123").Return(existingMessage, nil)
 	mockRepo.On("UpdateMessage", ctx, mockTx, message).Return(nil)
 
 	// Act

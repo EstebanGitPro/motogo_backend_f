@@ -25,3 +25,8 @@ build/
 
 
 
+
+# Test coverage
+*.out
+coverage.out
+coverage.*
