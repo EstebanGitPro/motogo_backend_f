@@ -9,16 +9,7 @@ const docTemplate = `{
     "info": {
         "description": "{{escape .Description}}",
         "title": "{{.Title}}",
-        "termsOfService": "http://swagger.io/terms/",
-        "contact": {
-            "name": "Motogo API Support",
-            "url": "https://motogo.com/support",
-            "email": "support@motogo.com"
-        },
-        "license": {
-            "name": "Apache 2.0",
-            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
-        },
+        "contact": {},
         "version": "{{.Version}}"
     },
     "host": "{{.Host}}",
@@ -751,7 +742,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "github_com_EstebanGitPro_motogo-backend_core_interactor_services_domain.MessageType": {
+        "domain.MessageType": {
             "type": "string",
             "enum": [
                 "ERROR",
@@ -928,7 +919,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "type": {
-                    "$ref": "#/definitions/github_com_EstebanGitPro_motogo-backend_core_interactor_services_domain.MessageType"
+                    "$ref": "#/definitions/domain.MessageType"
                 }
             }
         },
@@ -963,7 +954,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "type": {
-                    "$ref": "#/definitions/github_com_EstebanGitPro_motogo-backend_core_interactor_services_domain.MessageType"
+                    "$ref": "#/definitions/domain.MessageType"
                 }
             }
         },
@@ -1095,29 +1086,17 @@ const docTemplate = `{
                 }
             }
         }
-    },
-    "securityDefinitions": {
-        "BearerAuth": {
-            "description": "Type \"Bearer\" followed by a space and JWT token.",
-            "type": "apiKey",
-            "name": "Authorization",
-            "in": "header"
-        }
-    },
-    "externalDocs": {
-        "description": "OpenAPI",
-        "url": "https://swagger.io/resources/open-api/"
     }
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.0",
-	Host:             "localhost:8085",
-	BasePath:         "/motogo/api/v1",
+	Version:          "",
+	Host:             "",
+	BasePath:         "",
 	Schemes:          []string{},
-	Title:            "Motogo Backend API",
-	Description:      "API RESTful para la plataforma Motogo, implementada con arquitectura hexagonal y siguiendo los principios del Richardson Maturity Model (Nivel 2-3) con HATEOAS.",
+	Title:            "",
+	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

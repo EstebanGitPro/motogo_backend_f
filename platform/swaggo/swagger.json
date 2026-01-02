@@ -1,22 +1,8 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "API RESTful para la plataforma Motogo, implementada con arquitectura hexagonal y siguiendo los principios del Richardson Maturity Model (Nivel 2-3) con HATEOAS.",
-        "title": "Motogo Backend API",
-        "termsOfService": "http://swagger.io/terms/",
-        "contact": {
-            "name": "Motogo API Support",
-            "url": "https://motogo.com/support",
-            "email": "support@motogo.com"
-        },
-        "license": {
-            "name": "Apache 2.0",
-            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
-        },
-        "version": "1.0"
+        "contact": {}
     },
-    "host": "localhost:8085",
-    "basePath": "/motogo/api/v1",
     "paths": {
         "/auth/login": {
             "post": {
@@ -128,8 +114,6 @@
                 }
             }
         },
-<<<<<<< HEAD
-=======
         "/auth/password/reset": {
             "post": {
                 "description": "Actualiza la contraseña de un usuario usando un token JWT del email de recuperación",
@@ -182,7 +166,6 @@
                 }
             }
         },
->>>>>>> main
         "/auth/resend-verification": {
             "post": {
                 "description": "Reenvía el email de verificación a un usuario registrado que aún no ha verificado su correo",
@@ -629,8 +612,6 @@
                     }
                 }
             }
-<<<<<<< HEAD
-=======
         },
         "/persons": {
             "post": {
@@ -747,11 +728,10 @@
                     }
                 }
             }
->>>>>>> main
         }
     },
     "definitions": {
-        "github_com_EstebanGitPro_motogo-backend_core_interactor_services_domain.MessageType": {
+        "domain.MessageType": {
             "type": "string",
             "enum": [
                 "ERROR",
@@ -768,8 +748,6 @@
                 "TypeDebug"
             ]
         },
-<<<<<<< HEAD
-=======
         "handlers.AuthMeResponse": {
             "type": "object",
             "properties": {
@@ -805,7 +783,6 @@
                 }
             }
         },
->>>>>>> main
         "handlers.CacheReloadResponse": {
             "type": "object",
             "properties": {
@@ -855,15 +832,12 @@
         "handlers.LoginResponse": {
             "type": "object",
             "properties": {
-<<<<<<< HEAD
-=======
                 "_links": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/handlers.Link"
                     }
                 },
->>>>>>> main
                 "access_token": {
                     "type": "string"
                 },
@@ -934,7 +908,7 @@
                     "type": "string"
                 },
                 "type": {
-                    "$ref": "#/definitions/github_com_EstebanGitPro_motogo-backend_core_interactor_services_domain.MessageType"
+                    "$ref": "#/definitions/domain.MessageType"
                 }
             }
         },
@@ -969,7 +943,7 @@
                     "type": "string"
                 },
                 "type": {
-                    "$ref": "#/definitions/github_com_EstebanGitPro_motogo-backend_core_interactor_services_domain.MessageType"
+                    "$ref": "#/definitions/domain.MessageType"
                 }
             }
         },
@@ -1046,8 +1020,6 @@
                 }
             }
         },
-<<<<<<< HEAD
-=======
         "handlers.ResetPasswordWithTokenRequest": {
             "type": "object",
             "required": [
@@ -1064,7 +1036,6 @@
                 }
             }
         },
->>>>>>> main
         "handlers.VerifyEmailRequest": {
             "type": "object",
             "required": [
@@ -1104,17 +1075,5 @@
                 }
             }
         }
-    },
-    "securityDefinitions": {
-        "BearerAuth": {
-            "description": "Type \"Bearer\" followed by a space and JWT token.",
-            "type": "apiKey",
-            "name": "Authorization",
-            "in": "header"
-        }
-    },
-    "externalDocs": {
-        "description": "OpenAPI",
-        "url": "https://swagger.io/resources/open-api/"
     }
 }
