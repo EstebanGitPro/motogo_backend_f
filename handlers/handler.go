@@ -3,7 +3,6 @@ package handlers
 import (
 	"github.com/EstebanGitPro/motogo-backend/core/interactor"
 	domain "github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
-	"github.com/EstebanGitPro/motogo-backend/core/ports/input"
 	"github.com/EstebanGitPro/motogo-backend/middleware"
 	messagingCache "github.com/EstebanGitPro/motogo-backend/platform/cache/messaging"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
@@ -12,7 +11,6 @@ import (
 )
 
 type handler struct {
-	PersonService     input.Service
 	Interactor        *interactor.Interactor
 	MessageInteractor *interactor.MessageInteractor
 	MessagingCache    *messagingCache.MessageCache
@@ -20,9 +18,8 @@ type handler struct {
 	Response          *middleware.ResponseHandler
 }
 
-func New(service input.Service, personInteractor *interactor.Interactor, messageInteractor *interactor.MessageInteractor, messageCache *messagingCache.MessageCache, encoder *idencoder.HashidsEncoder, responseHandler *middleware.ResponseHandler) *handler {
+func New(personInteractor *interactor.Interactor, messageInteractor *interactor.MessageInteractor, messageCache *messagingCache.MessageCache, encoder *idencoder.HashidsEncoder, responseHandler *middleware.ResponseHandler) *handler {
 	return &handler{
-		PersonService:     service,
 		Interactor:        personInteractor,
 		MessageInteractor: messageInteractor,
 		MessagingCache:    messageCache,

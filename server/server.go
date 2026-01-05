@@ -56,7 +56,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 	errorHandler := middleware.NewErrorHandler(dependencies.MessagingCache)
 	app.Use(errorHandler.Handle())
 
-	handler := handlers.New(dependencies.PersonService, dependencies.Interactor, dependencies.MessageInteractor, dependencies.MessagingCache, dependencies.IDEncoder, dependencies.ResponseHandler)
+	handler := handlers.New(dependencies.Interactor, dependencies.MessageInteractor, dependencies.MessagingCache, dependencies.IDEncoder, dependencies.ResponseHandler)
 
 	validators, err := schema.NewValidator(&schema.DefaultFileReader{})
 	if err != nil {
@@ -124,6 +124,9 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		// POST /messages/cache/reload - Recargar caché de mensajes desde BD
 		// Endpoint administrativo para forzar recarga después de cambios manuales
 		public.POST("/messages/cache/reload", handler.ReloadMessageCache())
+
+		// GET /persons/:id/contact - Obtener info de contacto pública (HU55)
+		public.GET("/persons/:id/contact", handler.GetPublicContact())
 	}
 
 	// ========================================
@@ -132,8 +135,14 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 	protected := app.Group("motogo/api/v1")
 	protected.Use(middleware.RequireAuth(dependencies.PersonService, dependencies.MessagingCache))
 	{
-		// GET /persons/me - Obtener perfil del usuario autenticado 
+		// GET /persons/me - Obtener perfil del usuario autenticado
 		protected.GET("/persons/me", handler.GetAuthenticatedUser())
+
+		// PUT /persons/me - Actualizar perfil del usuario autenticado (HU52)
+		protected.PUT("/persons/me", handler.UpdateProfile())
+
+		// PUT /persons/me/password - Cambiar contraseña del usuario autenticado (HU57)
+		protected.PUT("/persons/me/password", handler.ChangePassword())
 	}
 
 	dependencies.Logger.Success(logger.LogRouteConfigured)

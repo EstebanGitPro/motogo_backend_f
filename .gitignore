@@ -30,3 +30,4 @@ build/
 *.out
 coverage.out
 coverage.*
+cmd/__debug_bin*

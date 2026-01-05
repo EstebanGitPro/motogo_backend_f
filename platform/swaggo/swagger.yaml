@@ -1,6 +1,5 @@
-basePath: /motogo/api/v1
 definitions:
-  github_com_EstebanGitPro_motogo-backend_core_interactor_services_domain.MessageType:
+  domain.MessageType:
     enum:
     - ERROR
     - EXITO
@@ -119,7 +118,7 @@ definitions:
       title:
         type: string
       type:
-        $ref: '#/definitions/github_com_EstebanGitPro_motogo-backend_core_interactor_services_domain.MessageType'
+        $ref: '#/definitions/domain.MessageType'
     type: object
   handlers.MessageResponse:
     properties:
@@ -142,7 +141,7 @@ definitions:
       title:
         type: string
       type:
-        $ref: '#/definitions/github_com_EstebanGitPro_motogo-backend_core_interactor_services_domain.MessageType'
+        $ref: '#/definitions/domain.MessageType'
     type: object
   handlers.MessageUpdatedResponse:
     properties:
@@ -228,24 +227,8 @@ definitions:
       success:
         type: boolean
     type: object
-externalDocs:
-  description: OpenAPI
-  url: https://swagger.io/resources/open-api/
-host: localhost:8085
 info:
-  contact:
-    email: support@motogo.com
-    name: Motogo API Support
-    url: https://motogo.com/support
-  description: API RESTful para la plataforma Motogo, implementada con arquitectura
-    hexagonal y siguiendo los principios del Richardson Maturity Model (Nivel 2-3)
-    con HATEOAS.
-  license:
-    name: Apache 2.0
-    url: http://www.apache.org/licenses/LICENSE-2.0.html
-  termsOfService: http://swagger.io/terms/
-  title: Motogo Backend API
-  version: "1.0"
+  contact: {}
 paths:
   /auth/login:
     post:
@@ -710,10 +693,4 @@ paths:
       summary: Obtener perfil del usuario autenticado
       tags:
       - Autenticación
-securityDefinitions:
-  BearerAuth:
-    description: Type "Bearer" followed by a space and JWT token.
-    in: header
-    name: Authorization
-    type: apiKey
 swagger: "2.0"

@@ -22,7 +22,6 @@ func createTestEncoder() *idencoder.HashidsEncoder {
 
 func TestNew_CreatesHandler(t *testing.T) {
 	// Arrange
-	mockService := new(mocks.MockService)
 	mockCache := new(mocks.MockMessageCache)
 	encoder := createTestEncoder()
 	responseHandler := middleware.NewResponseHandler(nil)
@@ -31,7 +30,7 @@ func TestNew_CreatesHandler(t *testing.T) {
 	// For now, we're testing that handler creation works with nil interactors
 
 	// Act
-	handler := handlers.New(mockService, nil, nil, nil, encoder, responseHandler)
+	handler := handlers.New(nil, nil, nil, encoder, responseHandler)
 
 	// Assert
 	assert.NotNil(t, handler)
@@ -40,9 +39,8 @@ func TestNew_CreatesHandler(t *testing.T) {
 
 func TestEncodeID_Success(t *testing.T) {
 	// Arrange
-	mockService := new(mocks.MockService)
 	encoder := createTestEncoder()
-	handler := handlers.New(mockService, nil, nil, nil, encoder, nil)
+	handler := handlers.New(nil, nil, nil, encoder, nil)
 
 	testUUID := "a1234567-89ab-cdef-0123-456789abcdef"
 
@@ -57,9 +55,8 @@ func TestEncodeID_Success(t *testing.T) {
 
 func TestEncodeID_InvalidUUID(t *testing.T) {
 	// Arrange
-	mockService := new(mocks.MockService)
 	encoder := createTestEncoder()
-	handler := handlers.New(mockService, nil, nil, nil, encoder, nil)
+	handler := handlers.New(nil, nil, nil, encoder, nil)
 
 	// Act
 	encoded, err := handler.EncodeID("not-a-valid-uuid")
@@ -71,9 +68,8 @@ func TestEncodeID_InvalidUUID(t *testing.T) {
 
 func TestDecodeID_Success(t *testing.T) {
 	// Arrange
-	mockService := new(mocks.MockService)
 	encoder := createTestEncoder()
-	handler := handlers.New(mockService, nil, nil, nil, encoder, nil)
+	handler := handlers.New(nil, nil, nil, encoder, nil)
 
 	testUUID := "a1234567-89ab-cdef-0123-456789abcdef"
 	encoded, _ := handler.EncodeID(testUUID)
@@ -88,9 +84,8 @@ func TestDecodeID_Success(t *testing.T) {
 
 func TestDecodeID_InvalidEncoded(t *testing.T) {
 	// Arrange
-	mockService := new(mocks.MockService)
 	encoder := createTestEncoder()
-	handler := handlers.New(mockService, nil, nil, nil, encoder, nil)
+	handler := handlers.New(nil, nil, nil, encoder, nil)
 
 	// Act
 	decoded, err := handler.DecodeID("invalid-encoded-id")
@@ -102,9 +97,8 @@ func TestDecodeID_InvalidEncoded(t *testing.T) {
 
 func TestDecodeID_EmptyString(t *testing.T) {
 	// Arrange
-	mockService := new(mocks.MockService)
 	encoder := createTestEncoder()
-	handler := handlers.New(mockService, nil, nil, nil, encoder, nil)
+	handler := handlers.New(nil, nil, nil, encoder, nil)
 
 	// Act
 	decoded, err := handler.DecodeID("")
@@ -121,9 +115,8 @@ func TestHandleIDDecodingError_SetsError(t *testing.T) {
 	c, _ := gin.CreateTestContext(w)
 	c.Request = httptest.NewRequest("GET", "/test", nil)
 
-	mockService := new(mocks.MockService)
 	encoder := createTestEncoder()
-	handler := handlers.New(mockService, nil, nil, nil, encoder, nil)
+	handler := handlers.New(nil, nil, nil, encoder, nil)
 
 	// Act
 	handler.HandleIDDecodingError(c, "bad-id", assert.AnError)
@@ -139,9 +132,8 @@ func TestHandleIDEncodingError_SetsError(t *testing.T) {
 	c, _ := gin.CreateTestContext(w)
 	c.Request = httptest.NewRequest("GET", "/test", nil)
 
-	mockService := new(mocks.MockService)
 	encoder := createTestEncoder()
-	handler := handlers.New(mockService, nil, nil, nil, encoder, nil)
+	handler := handlers.New(nil, nil, nil, encoder, nil)
 
 	// Act
 	handler.HandleIDEncodingError(c, "some-uuid", assert.AnError)

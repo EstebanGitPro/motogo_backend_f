@@ -192,7 +192,7 @@ func TestBuildLoginLinks(t *testing.T) {
 
 	profileLink := findLinkByRel(links, "profile")
 	assert.NotNil(t, profileLink)
-	assert.Contains(t, profileLink.Href, "/auth/me")
+	assert.Contains(t, profileLink.Href, "/auth/me") // Login still points to /auth/me as it's a public reference
 
 	resetLink := findLinkByRel(links, "password-reset")
 	assert.NotNil(t, resetLink)
@@ -203,12 +203,16 @@ func TestBuildAuthMeLinks(t *testing.T) {
 	// Act
 	links := handlers.BuildAuthMeLinks("http://localhost:8080")
 
-	// Assert
-	assert.Len(t, links, 2)
+	// Assert - now returns 3 links: self, change-password, login
+	assert.Len(t, links, 3)
 
 	selfLink := findLinkByRel(links, "self")
 	assert.NotNil(t, selfLink)
-	assert.Contains(t, selfLink.Href, "/auth/me")
+	assert.Contains(t, selfLink.Href, "/persons/me")
+
+	changePasswordLink := findLinkByRel(links, "change-password")
+	assert.NotNil(t, changePasswordLink)
+	assert.Contains(t, changePasswordLink.Href, "/persons/me/password")
 
 	loginLink := findLinkByRel(links, "login")
 	assert.NotNil(t, loginLink)
