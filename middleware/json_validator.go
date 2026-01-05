@@ -42,6 +42,18 @@ func (b *Builder) WithValidatePasswordReset() gin.HandlerFunc {
 	return b.jsonValidator(b.Validators.PasswordResetValidator)
 }
 
+func (b *Builder) WithValidateUpdateProfile() gin.HandlerFunc {
+	return b.jsonValidator(b.Validators.UpdateProfileValidator)
+}
+
+func (b *Builder) WithValidateResetPasswordWithToken() gin.HandlerFunc {
+	return b.jsonValidator(b.Validators.ResetPasswordWithTokenValidator)
+}
+
+func (b *Builder) WithValidateChangePassword() gin.HandlerFunc {
+	return b.jsonValidator(b.Validators.ChangePasswordValidator)
+}
+
 func (b *Builder) jsonValidator(schema *jsonschema.Schema) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Get request ID for trace correlation

@@ -228,6 +228,16 @@ var messageCodeToHTTPStatus = map[string]int{
 	// Person Module (MOD_P_*)
 	// ========================================
 	"MOD_P_NOT_FOUND_ERR_00001": http.StatusNotFound, // 404 - Persona no encontrada
+	// Password Reset (HU56)
+	"MOD_P_RESET_EXI_00001": http.StatusOK,                  // 200 - Password reset exitoso
+	"MOD_P_RESET_ERR_00001": http.StatusBadRequest,          // 400 - Token inválido
+	"MOD_P_RESET_ERR_00002": http.StatusNotFound,            // 404 - Usuario no encontrado
+	"MOD_P_RESET_ERR_00003": http.StatusInternalServerError, // 500 - Error actualizando password
+	// Change Password (HU57)
+	"MOD_P_CHANGE_EXI_00001": http.StatusOK,                  // 200 - Password cambiado exitosamente
+	"MOD_P_CHANGE_ERR_00001": http.StatusUnauthorized,        // 401 - Contraseña actual incorrecta
+	"MOD_P_CHANGE_ERR_00002": http.StatusUnprocessableEntity, // 422 - Error procesando cambio de contraseña
+	"MOD_P_CHANGE_ERR_00003": http.StatusBadRequest,          // 400 - Contraseña no cumple requisitos
 
 	// ========================================
 	// Validation Module (MOD_V_*)

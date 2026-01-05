@@ -27,6 +27,8 @@ var (
 	ErrRoleRequired              = errors.New("ERR_ROLE_REQUIRED")
 	ErrUserCannotDelete          = errors.New("ERR_USER_CANNOT_DELETE")
 	ErrPasswordUpdateFailed      = errors.New("ERR_PASSWORD_UPDATE_FAILED")
+	ErrPasswordPolicyViolation   = errors.New("ERR_PASSWORD_POLICY_VIOLATION")
+	ErrInvalidCredentials        = errors.New("ERR_INVALID_CREDENTIALS")
 )
 
 // Infrastructure Errors (MOD_INFRA_*)
@@ -116,11 +118,12 @@ const (
 
 // Person Module (MOD_P_*)
 const (
-	MsgPersonNotFound     = "MOD_P_NOT_FOUND_ERR_00001"
-	MsgPersonInvalidTx    = "MOD_P_TRANS_ERR_00002"
-	MsgPersonRegistered   = "MOD_P_REG_EXI_00001"
-	MsgPersonUpdated      = "MOD_P_UPD_EXI_00002"
-	MsgPersonCannotDelete = "MOD_P_DEL_ERR_00003"
+	MsgPersonNotFound         = "MOD_P_NOT_FOUND_ERR_00001"
+	MsgPersonInvalidTx        = "MOD_P_TRANS_ERR_00002"
+	MsgPersonRegistered       = "MOD_P_REG_EXI_00001"
+	MsgPersonUpdated          = "MOD_P_UPD_EXI_00002"
+	MsgPersonCannotDelete     = "MOD_P_DEL_ERR_00003"
+	MsgPersonContactRetrieved = "MOD_P_CONTACT_EXI_00001" // HU55: Public contact retrieved
 )
 
 // Validation Module (MOD_V_*)
@@ -214,4 +217,9 @@ const (
 	MsgKCPwdResetError = "MOD_KC_PWD_RESET_ERROR_ERR_00001"
 	// Auth Profile
 	MsgAuthProfileRetrieved = "MOD_AUTH_PROFILE_EXI_00001"
+	// Change Password (HU57)
+	MsgChangePasswordSuccess        = "MOD_P_CHANGE_EXI_00001"
+	MsgChangePasswordInvalidCurrent = "MOD_P_CHANGE_ERR_00001"
+	MsgChangePasswordUpdateError    = "MOD_P_CHANGE_ERR_00002"
+	MsgChangePasswordPolicyError    = "MOD_P_CHANGE_ERR_00003"
 )
