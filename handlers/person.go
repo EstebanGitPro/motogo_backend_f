@@ -96,3 +96,46 @@ type ResetPasswordWithTokenRequest struct {
 	Token       string `json:"token" binding:"required"`
 	NewPassword string `json:"new_password" binding:"required,min=8"`
 }
+
+// ChangePasswordRequest - DTO para cambiar contraseña estando autenticado (HU57)
+// El usuario debe proporcionar su contraseña actual para verificar identidad
+type ChangePasswordRequest struct {
+	CurrentPassword string `json:"current_password" binding:"required,min=8"`
+	NewPassword     string `json:"new_password" binding:"required,min=8"`
+}
+
+// ChangePasswordResponse - Respuesta del cambio de contraseña (HU57)
+type ChangePasswordResponse struct {
+	Message string `json:"message"`
+	Links   []Link `json:"_links"`
+}
+
+// UpdateProfileRequest - DTO for updating profile (HU52)
+// All fields are optional (PATCH-like behavior)
+type UpdateProfileRequest struct {
+	IdentityNumber string `json:"identity_number,omitempty"`
+	FirstName      string `json:"first_name,omitempty"`
+	LastName       string `json:"last_name,omitempty"`
+	SecondLastName string `json:"second_last_name,omitempty"`
+	PhoneNumber    string `json:"phone_number,omitempty"`
+}
+
+// UpdateProfileResponse - Response for profile update (HU52)
+type UpdateProfileResponse struct {
+	ID             string `json:"id"`
+	IdentityNumber string `json:"identity_number"`
+	Email          string `json:"email"`
+	FirstName      string `json:"first_name"`
+	LastName       string `json:"last_name"`
+	SecondLastName string `json:"second_last_name,omitempty"`
+	PhoneNumber    string `json:"phone_number,omitempty"`
+	Role           string `json:"role"`
+	Links          []Link `json:"_links"`
+}
+
+// PublicContactResponse - Solo info de contacto para motociclistas (HU55)
+// Endpoint público para que puedan contactar al representante de sede
+type PublicContactResponse struct {
+	PhoneNumber string `json:"phone_number"`
+	Links       []Link `json:"_links"`
+}

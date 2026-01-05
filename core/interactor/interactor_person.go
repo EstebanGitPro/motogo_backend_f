@@ -294,3 +294,98 @@ func (i *Interactor) Login(ctx context.Context, email, password string) (*dto.To
 		RefreshToken: token.RefreshToken,
 	}, nil
 }
+
+// ChangePassword allows an authenticated user to change their password (HU57)
+// Requires the current password for verification before setting a new one
+func (i *Interactor) ChangePassword(ctx context.Context, keycloakUserID, currentPassword, newPassword string) error {
+	traceID := middleware.GetTraceIDFromContext(ctx)
+	log := i.logger.WithTraceID(traceID)
+
+	log.Info(logger.LogChangePasswordStart, "keycloak_user_id", keycloakUserID)
+
+	// Delegate to service
+	err := i.service.ChangePassword(ctx, keycloakUserID, currentPassword, newPassword)
+	if err != nil {
+		switch err {
+		case domain.ErrUserNotFound:
+			log.Error(logger.LogChangePasswordUserNotFound, "error", err)
+		case domain.ErrInvalidCredentials:
+			log.Warn(logger.LogChangePasswordInvalidCurrent, "error", err)
+		case domain.ErrPasswordUpdateFailed:
+			log.Error(logger.LogChangePasswordUpdateError, "error", err)
+		case domain.ErrKeycloakUnavailable:
+			log.Error(logger.LogKeycloakUnavailable, "error", err)
+		default:
+			log.Error(logger.LogChangePasswordUpdateError, "error", err)
+		}
+		return err
+	}
+
+	log.Success(logger.LogChangePasswordSuccess, "keycloak_user_id", keycloakUserID)
+	return nil
+}
+
+// UpdateProfile updates the authenticated user's profile (HU52)
+// This method orchestrates the profile update with proper transaction management
+func (i *Interactor) UpdateProfile(ctx context.Context, person domain.Person) (*domain.Person, error) {
+	// Extract traceID from context and create logger with it
+	traceID := middleware.GetTraceIDFromContext(ctx)
+	log := i.logger.WithTraceID(traceID)
+
+	log.Info(logger.LogUpdateProfileStart, person.ToLogger())
+
+	// STEP 1: Begin transaction
+	tx, err := i.service.BeginTx(ctx)
+	if err != nil {
+		log.Error(logger.LogPersonInteractorStep2_Error, "error", err)
+		return nil, err
+	}
+
+	var profileUpdated bool
+
+	defer func() {
+		if err != nil && !profileUpdated {
+			if rbErr := tx.Rollback(); rbErr != nil {
+				log.Error(logger.LogPersonInteractorRollbackDB_Error,
+					"rollback_error", rbErr,
+					"original_error", err)
+			} else {
+				log.Warn(logger.LogPersonInteractorRollbackDB_OK)
+			}
+		}
+	}()
+
+	// STEP 2: Update profile via service
+	if err = i.service.UpdatePersonProfile(ctx, tx, person); err != nil {
+		log.Error(logger.LogUpdateProfileError, "error", err, "person_id", person.ID)
+		return nil, err
+	}
+
+	// STEP 3: Commit transaction
+	if err = tx.Commit(); err != nil {
+		log.Error(logger.LogPersonInteractorCommit_Error, "error", err)
+		return nil, err
+	}
+	profileUpdated = true
+
+	log.Success(logger.LogUpdateProfileSuccess, person.ToLogger())
+	return &person, nil
+}
+
+// GetPublicContact retrieves public contact info for a person (HU55)
+// Only returns phone_number for motorcyclists to contact representatives
+func (i *Interactor) GetPublicContact(ctx context.Context, personID string) (*domain.Person, error) {
+	traceID := middleware.GetTraceIDFromContext(ctx)
+	log := i.logger.WithTraceID(traceID)
+
+	log.Info("GetPublicContact started", "person_id", personID)
+
+	person, err := i.service.GetPersonByID(ctx, personID)
+	if err != nil {
+		log.Error("error getting person for public contact", "person_id", personID, "error", err)
+		return nil, err
+	}
+
+	log.Success("GetPublicContact completed", "person_id", personID)
+	return person, nil
+}

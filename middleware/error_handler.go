@@ -80,6 +80,11 @@ var errorToMessageCode = map[error]string{
 	// Incomplete registration (cleanup in progress)
 	domain.ErrIncompleteRegistration: domain.MsgIncompleteRegistration,
 
+	// Authentication errors (401 Unauthorized)
+	domain.ErrInvalidToken:       domain.MsgUnauthorized,
+	domain.ErrInvalidCredentials: domain.MsgUnauthorized,
+	domain.ErrTokenExpired:       domain.MsgUserTokenExpired,
+
 	// General errors
 	domain.ErrInternalServer: domain.MsgServerError,
 }
@@ -90,11 +95,10 @@ type ErrorResponse struct {
 	Message string `json:"message"`
 }
 
-var log   logger.Logger = logger.NewSlogLogger()
+var log logger.Logger = logger.NewSlogLogger()
 
 type ErrorHandler struct {
 	cache *messagingCache.MessageCache
-	
 }
 
 func NewErrorHandler(cache *messagingCache.MessageCache) *ErrorHandler {

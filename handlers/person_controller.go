@@ -288,6 +288,8 @@ func (h handler) ResetPasswordWithToken() gin.HandlerFunc {
 				h.Response.Error(c, "MOD_P_RESET_ERR_00002")
 			case domain.ErrPasswordUpdateFailed:
 				log.Error(logger.LogPasswordResetUpdateError, "error", err, "client_ip", c.ClientIP())
+                case domain.ErrPasswordPolicyViolation:
+                        h.Response.Error(c, domain.MsgChangePasswordPolicyError)
 				h.Response.Error(c, "MOD_P_RESET_ERR_00003")
 			default:
 				log.Error(logger.LogPasswordResetUpdateError, "error", err, "client_ip", c.ClientIP())
@@ -353,5 +355,225 @@ func (h handler) GetAuthenticatedUser() gin.HandlerFunc {
 
 		log.Success("user profile retrieved successfully", "user_id", encodedID, "email", person.Email)
 		h.Response.SuccessWithData(c, domain.MsgAuthProfileRetrieved, response)
+	}
+}
+
+// @Summary Cambiar contraseña del usuario autenticado
+// @Description Permite al usuario autenticado cambiar su contraseña proporcionando la contraseña actual
+// @Tags Autenticación
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body ChangePasswordRequest true "Contraseña actual y nueva"
+// @Success 200 {object} middleware.APIResponse{data=ChangePasswordResponse} "Contraseña actualizada exitosamente"
+// @Failure 400 {object} middleware.APIResponse "Formato inválido o contraseña no cumple requisitos"
+// @Failure 401 {object} middleware.APIResponse "Token inválido o contraseña actual incorrecta"
+// @Failure 500 {object} middleware.APIResponse "Error interno del servidor"
+// @Router /persons/me/password [put]
+func (h handler) ChangePassword() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		traceID := middleware.GetRequestID(c)
+		log := Logger.WithTraceID(traceID)
+
+		// Get authenticated user from context (injected by JWT middleware)
+		person, ok := middleware.GetAuthenticatedUser(c)
+		if !ok {
+			log.Error("authenticated user not found in context")
+			c.Error(domain.ErrUserNotFound)
+			return
+		}
+
+		var req ChangePasswordRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			log.Error(logger.LogRegJSONParseError, "error", err)
+			h.Response.Error(c, domain.MsgValBadFormat)
+			return
+		}
+
+		log.Info(logger.LogChangePasswordStart, "user_id", person.KeycloakUserID, "client_ip", c.ClientIP())
+
+		// Call interactor to change password
+		err := h.Interactor.ChangePassword(c, person.KeycloakUserID, req.CurrentPassword, req.NewPassword)
+		if err != nil {
+			log.Error(logger.LogChangePasswordUpdateError, "user_id", person.KeycloakUserID, "error", err, "client_ip", c.ClientIP())
+
+			switch err {
+			case domain.ErrInvalidCredentials:
+				h.Response.Error(c, domain.MsgChangePasswordInvalidCurrent)
+			case domain.ErrUserNotFound:
+				h.Response.Error(c, domain.MsgKCUserNotFound)
+			case domain.ErrPasswordUpdateFailed:
+				h.Response.Error(c, domain.MsgChangePasswordUpdateError)
+                case domain.ErrPasswordPolicyViolation:
+                        h.Response.Error(c, domain.MsgChangePasswordPolicyError)
+			case domain.ErrKeycloakUnavailable:
+				h.Response.Error(c, domain.MsgKeycloakUnavailable)
+			default:
+				h.Response.Error(c, domain.MsgChangePasswordUpdateError)
+			}
+			return
+		}
+
+		// Build HATEOAS links for change password response
+		baseURL := GetBaseURL(c)
+		hateoasLinks := BuildChangePasswordLinks(baseURL)
+
+		response := ChangePasswordResponse{
+			Message: "Password changed successfully",
+			Links:   hateoasLinks,
+		}
+
+		log.Success(logger.LogChangePasswordSuccess, "user_id", person.KeycloakUserID, "client_ip", c.ClientIP())
+		h.Response.SuccessWithData(c, domain.MsgChangePasswordSuccess, response)
+	}
+}
+
+// @Summary Actualizar perfil del usuario autenticado
+// @Description Permite al usuario autenticado actualizar su información de perfil (excepto email y contraseña)
+// @Tags Autenticación
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body UpdateProfileRequest true "Datos del perfil a actualizar"
+// @Success 200 {object} middleware.APIResponse{data=UpdateProfileResponse} "Perfil actualizado exitosamente"
+// @Failure 400 {object} middleware.APIResponse "Formato inválido"
+// @Failure 401 {object} middleware.APIResponse "Token inválido o ausente"
+// @Failure 409 {object} middleware.APIResponse "Datos duplicados (teléfono o número de identidad)"
+// @Failure 500 {object} middleware.APIResponse "Error interno del servidor"
+// @Router /persons/me [put]
+func (h handler) UpdateProfile() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		traceID := middleware.GetRequestID(c)
+		log := Logger.WithTraceID(traceID)
+
+		// Get authenticated user from context (injected by JWT middleware)
+		person, ok := middleware.GetAuthenticatedUser(c)
+		if !ok {
+			log.Error("authenticated user not found in context")
+			c.Error(domain.ErrUserNotFound)
+			return
+		}
+
+		var req UpdateProfileRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			log.Error(logger.LogRegJSONParseError, "error", err)
+			h.Response.Error(c, domain.MsgValBadFormat)
+			return
+		}
+
+		log.Info(logger.LogUpdateProfileStart, "user_id", person.ID, "client_ip", c.ClientIP())
+
+		// Merge request with existing person data (only update provided fields)
+		updatedPerson := *person
+		if req.IdentityNumber != "" {
+			updatedPerson.IdentityNumber = req.IdentityNumber
+		}
+		if req.FirstName != "" {
+			updatedPerson.FirstName = req.FirstName
+		}
+		if req.LastName != "" {
+			updatedPerson.LastName = req.LastName
+		}
+		if req.SecondLastName != "" {
+			updatedPerson.SecondLastName = req.SecondLastName
+		}
+		if req.PhoneNumber != "" {
+			updatedPerson.PhoneNumber = req.PhoneNumber
+		}
+
+		// Call interactor to update profile
+		result, err := h.Interactor.UpdateProfile(c, updatedPerson)
+		if err != nil {
+			log.Error(logger.LogUpdateProfileError, "user_id", person.ID, "error", err, "client_ip", c.ClientIP())
+
+			switch err {
+			case domain.ErrDuplicateUser:
+				h.Response.Error(c, domain.MsgUserDuplicate)
+			default:
+				h.Response.Error(c, domain.MsgPersonUpdated)
+			}
+			return
+		}
+
+		// Encode ID for response
+		encodedID, err := h.EncodeID(result.ID)
+		if err != nil {
+			log.Error("error encoding user ID", "error", err, "user_id", result.ID)
+			c.Error(err)
+			return
+		}
+
+		// Build HATEOAS links for profile update response
+		baseURL := GetBaseURL(c)
+		hateoasLinks := BuildUpdateProfileLinks(baseURL)
+
+		response := UpdateProfileResponse{
+			ID:             encodedID,
+			IdentityNumber: result.IdentityNumber,
+			Email:          result.Email,
+			FirstName:      result.FirstName,
+			LastName:       result.LastName,
+			SecondLastName: result.SecondLastName,
+			PhoneNumber:    result.PhoneNumber,
+			Role:           result.Role,
+			Links:          hateoasLinks,
+		}
+
+		log.Success(logger.LogUpdateProfileSuccess, "user_id", encodedID, "client_ip", c.ClientIP())
+		h.Response.SuccessWithData(c, domain.MsgPersonUpdated, response)
+	}
+}
+
+// @Summary Obtener información de contacto pública de un representante
+// @Description Permite a motociclistas obtener el número de contacto de un representante de sede
+// @Tags Personas
+// @Produce json
+// @Param id path string true "ID ofuscado del representante"
+// @Success 200 {object} middleware.APIResponse{data=PublicContactResponse} "Info de contacto obtenida"
+// @Failure 400 {object} middleware.APIResponse "ID inválido"
+// @Failure 404 {object} middleware.APIResponse "Representante no encontrado"
+// @Router /persons/{id}/contact [get]
+func (h handler) GetPublicContact() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		traceID := middleware.GetRequestID(c)
+		log := Logger.WithTraceID(traceID)
+
+		// Get and decode person ID from URL param
+		encodedID := c.Param("id")
+		if encodedID == "" {
+			log.Error("missing person ID in URL")
+			h.Response.Error(c, domain.MsgValBadFormat)
+			return
+		}
+
+		personID, err := h.DecodeID(encodedID)
+		if err != nil {
+			log.Error("error decoding person ID", "encoded_id", encodedID, "error", err)
+			h.Response.Error(c, domain.MsgValBadFormat)
+			return
+		}
+
+		log.Info("getting public contact info", "person_id", personID, "client_ip", c.ClientIP())
+
+		// Get person from interactor (Clean Architecture - HU55)
+		person, err := h.Interactor.GetPublicContact(c, personID)
+		if err != nil {
+			log.Error("error getting person", "person_id", personID, "error", err)
+			c.Error(domain.ErrPersonNotFound)
+			return
+		}
+
+		// Build HATEOAS links
+		baseURL := GetBaseURL(c)
+		hateoasLinks := BuildPublicContactLinks(baseURL, encodedID)
+
+		// Return only phone number (non-sensitive contact info)
+		response := PublicContactResponse{
+			PhoneNumber: person.PhoneNumber,
+			Links:       hateoasLinks,
+		}
+
+		log.Success("public contact info retrieved", "person_id", personID, "client_ip", c.ClientIP())
+		h.Response.SuccessWithData(c, domain.MsgPersonContactRetrieved, response)
 	}
 }

@@ -182,9 +182,14 @@ func BuildLoginLinks(baseURL string) []Link {
 func BuildAuthMeLinks(baseURL string) []Link {
 	return []Link{
 		{
-			Href:   fmt.Sprintf("%s/motogo/api/v1/auth/me", baseURL),
+			Href:   fmt.Sprintf("%s/motogo/api/v1/persons/me", baseURL),
 			Rel:    "self",
 			Method: "GET",
+		},
+		{
+			Href:   fmt.Sprintf("%s/motogo/api/v1/persons/me/password", baseURL),
+			Rel:    "change-password",
+			Method: "PUT",
 		},
 		{
 			Href:   fmt.Sprintf("%s/motogo/api/v1/auth/login", baseURL),
@@ -214,6 +219,62 @@ func BuildAccountCreatedLinks(baseURL string, accountID string) []Link {
 			Href:   fmt.Sprintf("%s/motogo/api/v1/auth/verify-email", baseURL),
 			Rel:    "verify-email",
 			Method: "POST",
+		},
+	}
+}
+
+// BuildChangePasswordLinks constructs HATEOAS links for password change response (HU57)
+// Returns links to profile and login after successful password change
+func BuildChangePasswordLinks(baseURL string) []Link {
+	return []Link{
+		{
+			Href:   fmt.Sprintf("%s/motogo/api/v1/persons/me", baseURL),
+			Rel:    "profile",
+			Method: "GET",
+		},
+		{
+			Href:   fmt.Sprintf("%s/motogo/api/v1/auth/login", baseURL),
+			Rel:    "login",
+			Method: "POST",
+		},
+	}
+}
+
+// BuildUpdateProfileLinks constructs HATEOAS links for profile update response (HU52)
+// Richardson Maturity Model Level 3: Provides discoverable next actions
+func BuildUpdateProfileLinks(baseURL string) []Link {
+	return []Link{
+		{
+			Href:   fmt.Sprintf("%s/motogo/api/v1/persons/me", baseURL),
+			Rel:    "self",
+			Method: "GET",
+		},
+		{
+			Href:   fmt.Sprintf("%s/motogo/api/v1/persons/me", baseURL),
+			Rel:    "update",
+			Method: "PUT",
+		},
+		{
+			Href:   fmt.Sprintf("%s/motogo/api/v1/persons/me/password", baseURL),
+			Rel:    "change-password",
+			Method: "PUT",
+		},
+		{
+			Href:   fmt.Sprintf("%s/motogo/api/v1/auth/login", baseURL),
+			Rel:    "login",
+			Method: "POST",
+		},
+	}
+}
+
+// BuildPublicContactLinks constructs HATEOAS links for public contact response (HU55)
+// Para motociclistas viendo info de contacto del representante
+func BuildPublicContactLinks(baseURL string, personID string) []Link {
+	return []Link{
+		{
+			Href:   fmt.Sprintf("%s/motogo/api/v1/persons/%s/contact", baseURL, personID),
+			Rel:    "self",
+			Method: "GET",
 		},
 	}
 }

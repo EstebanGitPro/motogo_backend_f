@@ -147,6 +147,20 @@ const (
 	LogPasswordResetUserFound      = "Usuario encontrado para reset de contraseña"
 	LogPasswordResetUpdateError    = "Error actualizando contraseña en Keycloak"
 	LogPasswordResetSuccess        = "Contraseña actualizada exitosamente"
+	// Change Password Flow (HU57)
+	LogChangePasswordStart          = "Iniciando proceso de cambio de contraseña"
+	LogChangePasswordUserNotFound   = "Usuario no encontrado para cambio de contraseña"
+	LogChangePasswordInvalidCurrent = "Contraseña actual incorrecta"
+	LogChangePasswordUpdateError    = "Error actualizando contraseña"
+	LogChangePasswordSuccess        = "Contraseña cambiada exitosamente"
+	// Update Profile Flow (HU52)
+	LogUpdateProfileStart            = "Iniciando proceso de actualización de perfil"
+	LogUpdateProfileValidation       = "Validando datos del perfil"
+	LogUpdateProfileDBSuccess        = "Perfil actualizado en base de datos"
+	LogUpdateProfileKeycloakSyncWarn = "Advertencia sincronizando perfil con Keycloak"
+	LogUpdateProfileKeycloakSyncOK   = "Perfil sincronizado con Keycloak"
+	LogUpdateProfileSuccess          = "Perfil actualizado exitosamente"
+	LogUpdateProfileError            = "Error actualizando perfil"
 )
 
 // ============================================
