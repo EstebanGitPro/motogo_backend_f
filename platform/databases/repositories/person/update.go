@@ -17,7 +17,6 @@ func (r *repository) UpdatePerson(ctx context.Context, tx output.Tx, person doma
 		return domain.ErrInvalidTransaction
 	}
 
-	// Solo ejecutar el query - NO manejar commit/rollback
 	_, err := dbTx.ExecContext(ctx, queryUpdate,
 		personToUpdate.IdentityNumber,
 		personToUpdate.FirstName,
@@ -27,7 +26,7 @@ func (r *repository) UpdatePerson(ctx context.Context, tx output.Tx, person doma
 		personToUpdate.PhoneNumber,
 		personToUpdate.Role,
 		personToUpdate.KeycloakUserID,
-		personToUpdate.ID, // WHERE clause
+		personToUpdate.ID,
 	)
 
 	if err != nil {

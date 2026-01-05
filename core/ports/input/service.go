@@ -39,6 +39,12 @@ type Service interface {
 	// ResetPasswordWithToken receives a JWT token, extracts the email, and updates the password in Keycloak
 	// Returns nil on success
 	ResetPasswordWithToken(ctx context.Context, token string, newPassword string) error
+	// ChangePassword verifies the current password and updates to the new password (HU57)
+	// Returns nil on success, ErrInvalidCredentials if current password is wrong
+	ChangePassword(ctx context.Context, keycloakUserID, currentPassword, newPassword string) error
+	// UpdatePersonProfile updates person data in DB and optionally syncs to Keycloak (HU52)
+	// Returns updated person on success
+	UpdatePersonProfile(ctx context.Context, tx output.Tx, person domain.Person) error
 
 	// Person - Compensaciones (rollback)
 	RollbackPerson(ctx context.Context, personID string) error

@@ -142,3 +142,15 @@ func (m *MockService) GetPersonByKeycloakID(ctx context.Context, keycloakUserID 
 	}
 	return args.Get(0).(*domain.Person), args.Error(1)
 }
+
+// ChangePassword mocks the service method (HU57)
+func (m *MockService) ChangePassword(ctx context.Context, keycloakUserID, currentPassword, newPassword string) error {
+	args := m.Called(ctx, keycloakUserID, currentPassword, newPassword)
+	return args.Error(0)
+}
+
+// UpdatePersonProfile mocks the service method (HU52)
+func (m *MockService) UpdatePersonProfile(ctx context.Context, tx output.Tx, person domain.Person) error {
+	args := m.Called(ctx, tx, person)
+	return args.Error(0)
+}

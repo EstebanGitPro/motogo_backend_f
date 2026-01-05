@@ -369,6 +369,27 @@ func contains(s, substr string) bool {
 	return false
 }
 
+// isPasswordPolicyError checks if an error is related to Keycloak password policy violation
+// Keycloak returns 400 Bad Request with specific messages when password doesn't meet policy requirements
+func isPasswordPolicyError(err error) bool {
+	if err == nil {
+		return false
+	}
+	errStr := err.Error()
+	// Common Keycloak password policy error patterns
+	return contains(errStr, "invalidPasswordMinLength") ||
+		contains(errStr, "invalidPasswordMinUpperCase") ||
+		contains(errStr, "invalidPasswordMinLowerCase") ||
+		contains(errStr, "invalidPasswordMinDigits") ||
+		contains(errStr, "invalidPasswordMinSpecialChars") ||
+		contains(errStr, "invalidPasswordNotUsername") ||
+		contains(errStr, "invalidPasswordRegex") ||
+		contains(errStr, "passwordHistory") ||
+		contains(errStr, "Password policy not met") ||
+		contains(errStr, "password policy") ||
+		contains(errStr, "400 Bad Request") // Keycloak typically returns 400 for policy violations
+}
+
 // GetUserByEmail retrieves a user from Keycloak by email
 func (s service) GetUserByEmail(ctx context.Context, email string) (*gocloak.User, error) {
 	s.logger.Debug(logger.LogKeycloakSearchUserByEmail, "email", email)
@@ -513,5 +534,100 @@ func (s service) ResetPasswordWithToken(ctx context.Context, token string, newPa
 	}
 
 	s.logger.Success(logger.LogPasswordResetSuccess, "email", email, "user_id", *user.ID)
+	return nil
+}
+
+// ChangePassword verifies the current password by attempting a login
+// If successful, updates the password in Keycloak (HU57)
+func (s service) ChangePassword(ctx context.Context, keycloakUserID, currentPassword, newPassword string) error {
+	s.logger.Info(logger.LogChangePasswordStart, "keycloak_user_id", keycloakUserID)
+
+	// Get user to retrieve email for password verification
+	user, err := s.keycloak.GetUserByID(ctx, keycloakUserID)
+	if err != nil {
+		// Check if Keycloak is unavailable
+		if isConnectionError(err) || isTimeoutError(err) {
+			s.logger.Error(logger.LogKeycloakUnavailable,
+				"keycloak_user_id", keycloakUserID,
+				"error", err,
+				"error_type", "connection")
+			return domain.ErrKeycloakUnavailable
+		}
+		s.logger.Error(logger.LogChangePasswordUserNotFound, "keycloak_user_id", keycloakUserID, "error", err)
+		return domain.ErrUserNotFound
+	}
+
+	// Verify current password by attempting login
+	_, err = s.keycloak.LoginUser(ctx, *user.Email, currentPassword)
+	if err != nil {
+		// Check if Keycloak is unavailable during login attempt
+		if isConnectionError(err) || isTimeoutError(err) {
+			s.logger.Error(logger.LogKeycloakUnavailable,
+				"keycloak_user_id", keycloakUserID,
+				"error", err,
+				"error_type", "connection")
+			return domain.ErrKeycloakUnavailable
+		}
+		s.logger.Warn(logger.LogChangePasswordInvalidCurrent, "keycloak_user_id", keycloakUserID)
+		return domain.ErrInvalidCredentials
+	}
+
+	// Current password verified, set new password
+	if err := s.keycloak.SetPassword(ctx, keycloakUserID, newPassword, false); err != nil {
+		// Check if Keycloak is unavailable during password update
+		if isConnectionError(err) || isTimeoutError(err) {
+			s.logger.Error(logger.LogKeycloakUnavailable,
+				"keycloak_user_id", keycloakUserID,
+				"error", err,
+				"error_type", "connection")
+			return domain.ErrKeycloakUnavailable
+		}
+		// Check if error is due to password policy violation
+		if isPasswordPolicyError(err) {
+			s.logger.Warn("Password policy violation", "keycloak_user_id", keycloakUserID, "error", err)
+			return domain.ErrPasswordPolicyViolation
+		}
+		s.logger.Error(logger.LogChangePasswordUpdateError, "keycloak_user_id", keycloakUserID, "error", err)
+		return domain.ErrPasswordUpdateFailed
+	}
+
+	s.logger.Success(logger.LogChangePasswordSuccess, "keycloak_user_id", keycloakUserID)
+	return nil
+}
+
+// UpdatePersonProfile updates person data in DB and optionally syncs to Keycloak (HU52)
+// This method updates the person's profile information excluding email and password
+func (s service) UpdatePersonProfile(ctx context.Context, tx output.Tx, person domain.Person) error {
+	s.logger.Info(logger.LogUpdateProfileStart, "person_id", person.ID, "email", person.Email)
+
+	// Update person in database
+	if err := s.repository.UpdatePerson(ctx, tx, person); err != nil {
+		s.logger.Error(logger.LogUpdateProfileError, "person_id", person.ID, "error", err)
+		return err
+	}
+	s.logger.Success(logger.LogUpdateProfileDBSuccess, "person_id", person.ID)
+
+	// Optionally sync first_name and last_name to Keycloak for consistency
+	if person.KeycloakUserID != "" {
+		// Build gocloak.User structure for update
+		keycloakUser := &gocloak.User{
+			ID:        gocloak.StringP(person.KeycloakUserID),
+			FirstName: gocloak.StringP(person.FirstName),
+			LastName:  gocloak.StringP(person.LastName),
+		}
+		if err := s.keycloak.UpdateUser(ctx, keycloakUser); err != nil {
+			// Log warning but don't fail - DB update is the primary source of truth
+			s.logger.Warn(logger.LogUpdateProfileKeycloakSyncWarn,
+				"person_id", person.ID,
+				"keycloak_user_id", person.KeycloakUserID,
+				"error", err)
+		} else {
+			s.logger.Success(logger.LogUpdateProfileKeycloakSyncOK,
+				"person_id", person.ID,
+				"keycloak_user_id", person.KeycloakUserID)
+		}
+	}
+
+	s.logger.Success(logger.LogUpdateProfileSuccess, "person_id", person.ID)
 	return nil
 }
