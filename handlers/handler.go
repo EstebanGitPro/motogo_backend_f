@@ -5,6 +5,7 @@ import (
 	domain "github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/middleware"
 	messagingCache "github.com/EstebanGitPro/motogo-backend/platform/cache/messaging"
+	"github.com/EstebanGitPro/motogo-backend/platform/firebase"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 	"github.com/EstebanGitPro/motogo-backend/tools/idencoder"
 	"github.com/gin-gonic/gin"
@@ -13,15 +14,21 @@ import (
 type handler struct {
 	Interactor        *interactor.Interactor
 	MessageInteractor *interactor.MessageInteractor
+	BranchInteractor  *interactor.BranchInteractor // HU59
+	BrandInteractor   *interactor.BrandInteractor  // Brands catalog
+	FirebaseClient    *firebase.Client             // Firebase Auth
 	MessagingCache    *messagingCache.MessageCache
 	IDEncoder         *idencoder.HashidsEncoder
 	Response          *middleware.ResponseHandler
 }
 
-func New(personInteractor *interactor.Interactor, messageInteractor *interactor.MessageInteractor, messageCache *messagingCache.MessageCache, encoder *idencoder.HashidsEncoder, responseHandler *middleware.ResponseHandler) *handler {
+func New(personInteractor *interactor.Interactor, messageInteractor *interactor.MessageInteractor, branchInteractor *interactor.BranchInteractor, brandInteractor *interactor.BrandInteractor, firebaseClient *firebase.Client, messageCache *messagingCache.MessageCache, encoder *idencoder.HashidsEncoder, responseHandler *middleware.ResponseHandler) *handler {
 	return &handler{
 		Interactor:        personInteractor,
 		MessageInteractor: messageInteractor,
+		BranchInteractor:  branchInteractor,
+		BrandInteractor:   brandInteractor,
+		FirebaseClient:    firebaseClient,
 		MessagingCache:    messageCache,
 		IDEncoder:         encoder,
 		Response:          responseHandler,

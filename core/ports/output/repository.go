@@ -44,3 +44,38 @@ type MessageRepository interface {
 	GetByType(ctx context.Context, msgType string) ([]domain.Message, error)
 	GetByModule(ctx context.Context, module string) ([]domain.Message, error)
 }
+
+// BranchRepository interface for Branch operations (HU59)
+type BranchRepository interface {
+	BeginTx(ctx context.Context) (Tx, error)
+
+	// Branch operations - transactional
+	SaveBranch(ctx context.Context, tx Tx, branch domain.Branch) error
+	UpdateBranch(ctx context.Context, tx Tx, branch domain.Branch) error
+	DeleteBranch(ctx context.Context, tx Tx, branchID string) error
+
+	// Location operations - transactional
+	SaveLocation(ctx context.Context, tx Tx, location domain.Location) error
+	UpdateLocation(ctx context.Context, tx Tx, location domain.Location) error
+
+	// Branch brands operations - transactional
+	SaveBranchBrands(ctx context.Context, tx Tx, branchID string, brands []string) error
+	DeleteBranchBrands(ctx context.Context, tx Tx, branchID string) error
+
+	// Branch operations - read
+	GetBranchByID(ctx context.Context, branchID string) (*domain.Branch, error)
+	GetBranchByFranchiseAndName(ctx context.Context, franchiseID, name string) (*domain.Branch, error)
+	GetBranchesByRepresentative(ctx context.Context, representativeID string) ([]domain.Branch, error)
+
+	// Brand validation - read
+	ValidateBrands(ctx context.Context, brands []string) error
+}
+
+// BrandRepository interface for Brand catalog operations
+type BrandRepository interface {
+	// GetAllBrands retrieves all brands from the catalog ordered by name
+	GetAllBrands(ctx context.Context) ([]domain.Brand, error)
+
+	// ValidateBrandIDs checks if all provided brand IDs exist in the brands table
+	ValidateBrandIDs(ctx context.Context, brandIDs []string) error
+}

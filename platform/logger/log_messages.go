@@ -498,3 +498,92 @@ const (
 	LogMessageInteractorRollbackError = "ROLLBACK BD FALLÓ - ALERTA CRÍTICA"
 	LogMessageInteractorRollbackOK    = "Rollback BD ejecutado correctamente"
 )
+
+// ============================================
+// BRANCH INTERACTOR (HU59)
+// ============================================
+const (
+	LogBranchInteractorRegStart        = "Iniciando proceso de registro de sede"
+	LogBranchInteractorValidationError = "Error de validación de sede"
+	LogBranchInteractorBrandsValidated = "Marcas validadas correctamente"
+	LogBranchInteractorIDGenerated     = "ID generado para sede"
+	LogBranchInteractorTxError         = "Error iniciando transacción"
+	LogBranchInteractorTxStarted       = "Transacción iniciada"
+	LogBranchInteractorRegError        = "Error registrando sede"
+	LogBranchInteractorRegSaved        = "Sede guardada en BD"
+	LogBranchInteractorCommitError     = "COMMIT FALLÓ - ALERTA CRÍTICA"
+	LogBranchInteractorRegComplete     = "Sede registrada exitosamente"
+	LogBranchInteractorRollbackError   = "ROLLBACK BD FALLÓ - ALERTA CRÍTICA"
+	LogBranchInteractorRollbackOK      = "Rollback BD ejecutado correctamente"
+	LogBranchInteractorGetByID         = "Obteniendo sede por ID"
+	LogBranchInteractorGetByIDError    = "Error obteniendo sede por ID"
+	LogBranchInteractorGetByIDOK       = "Sede obtenida exitosamente"
+)
+
+// ============================================
+// BRANCH REPOSITORY (HU59)
+// ============================================
+const (
+	LogBranchRepoSaveError        = "Error guardando sede en BD"
+	LogBranchRepoUpdateError      = "Error actualizando sede en BD"
+	LogBranchRepoDeleteError      = "Error eliminando sede de BD"
+	LogBranchRepoGetByIDError     = "Error obteniendo sede por ID"
+	LogBranchRepoGetByNameError   = "Error obteniendo sede por nombre"
+	LogBranchRepoGetByRepError    = "Error obteniendo sedes por representante"
+	LogBranchRepoScanError        = "Error escaneando fila de sede"
+	LogBranchRepoLocationSaveErr  = "Error guardando ubicación"
+	LogBranchRepoLocationUpdErr   = "Error actualizando ubicación"
+	LogBranchRepoBrandSaveError   = "Error guardando marca de sede"
+	LogBranchRepoBrandDelError    = "Error eliminando marcas de sede"
+	LogBranchRepoBrandGetError    = "Error obteniendo marcas de sede"
+	LogBranchRepoBrandValidateErr = "Error validando marcas"
+)
+
+// ============================================
+// BRANCH SERVICE (HU59)
+// ============================================
+const (
+	LogBranchServiceInvalidType  = "Tipo de establecimiento inválido"
+	LogBranchServiceDupNameCheck = "Error verificando nombre duplicado"
+	LogBranchServiceDupName      = "Nombre de sede duplicado en franquicia"
+	LogBranchServiceSaveError    = "Error guardando sede"
+	LogBranchServiceLocSaveError = "Error guardando ubicación"
+	LogBranchServiceBrandSaveErr = "Error guardando marcas"
+	LogBranchServiceRegComplete  = "Sede registrada exitosamente"
+	LogBranchServiceGetError     = "Error obteniendo sede por ID"
+)
+
+// ============================================
+// BRANCH CONTROLLER (HU59)
+// ============================================
+const (
+	LogBranchControllerRegRequest    = "Solicitud de registro de sede recibida"
+	LogBranchControllerUserAuth      = "Usuario autenticado"
+	LogBranchControllerUserUnauth    = "Usuario no autenticado intentando registrar sede"
+	LogBranchControllerRoleForbidden = "Usuario sin rol de representante intentando registrar sede"
+	LogBranchControllerBindError     = "Error parseando JSON de solicitud"
+	LogBranchControllerProcessing    = "Procesando registro de sede"
+	LogBranchControllerRegError      = "Error registrando sede"
+	LogBranchControllerRegSuccess    = "Sede registrada exitosamente en controller"
+)
+
+// ============================================
+// BRAND INTERACTOR
+// ============================================
+const (
+	LogBrandInteractorGetAll      = "Obteniendo lista de marcas"
+	LogBrandInteractorGetAllOK    = "Lista de marcas obtenida exitosamente"
+	LogBrandInteractorGetAllError = "Error obteniendo lista de marcas"
+)
+
+// ============================================
+// GEOCODING SERVICE (OpenCage)
+// ============================================
+const (
+	LogGeocodingRequest   = "geocoding_request_initiated"
+	LogGeocodingSuccess   = "geocoding_completed_successfully"
+	LogGeocodingNoResults = "geocoding_no_results_found"
+	LogGeocodingError     = "geocoding_request_failed"
+	LogGeocodingSkipped   = "geocoding_skipped_coordinates_present"
+	LogGeocodingCityError = "geocoding_city_lookup_failed"
+)

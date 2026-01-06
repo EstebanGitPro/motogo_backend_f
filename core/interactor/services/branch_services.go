@@ -1,0 +1,182 @@
+package services
+
+import (
+	"context"
+
+	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
+	"github.com/EstebanGitPro/motogo-backend/core/ports/input"
+	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
+	"github.com/EstebanGitPro/motogo-backend/platform/geocoding"
+	"github.com/EstebanGitPro/motogo-backend/platform/logger"
+)
+
+// branchService implements input.BranchService
+type branchService struct {
+	repository      output.BranchRepository
+	geocodingClient geocoding.Client
+	logger          logger.Logger
+}
+
+// NewBranchService creates a new BranchService instance
+func NewBranchService(repo output.BranchRepository, geocodingClient geocoding.Client, log logger.Logger) input.BranchService {
+	return &branchService{
+		repository:      repo,
+		geocodingClient: geocodingClient,
+		logger:          log,
+	}
+}
+
+// BeginTx starts a new database transaction
+func (s *branchService) BeginTx(ctx context.Context) (output.Tx, error) {
+	return s.repository.BeginTx(ctx)
+}
+
+// GeocodeLocation attempts to geocode a location if coordinates are not provided
+// Returns: (coordsWereGenerated bool, error)
+// - true if coordinates were successfully generated
+// - false if coordinates already existed, geocoding failed, or no location
+// This method modifies the location in-place
+func (s *branchService) GeocodeLocation(ctx context.Context, location *domain.Location) (bool, error) {
+	// No location to geocode
+	if location == nil {
+		return false, nil
+	}
+
+	// User already provided coordinates - skip geocoding
+	if location.Latitude != nil && location.Longitude != nil {
+		s.logger.Debug(logger.LogGeocodingSkipped,
+			"address", location.Address,
+			"lat", *location.Latitude,
+			"lng", *location.Longitude)
+		return false, nil
+	}
+
+	// Validate we have the required data for geocoding
+	if location.CityName == "" || location.DepartmentName == "" {
+		s.logger.Warn(logger.LogGeocodingCityError,
+			"city_name", location.CityName,
+			"department_name", location.DepartmentName,
+			"reason", "missing city or department name for geocoding")
+		return false, nil
+	}
+
+	// Attempt geocoding
+	coords, err := s.geocodingClient.Geocode(ctx, location.Address, location.CityName, location.DepartmentName)
+	if err != nil {
+		s.logger.Warn(logger.LogGeocodingError,
+			"address", location.Address,
+			"city", location.CityName,
+			"department", location.DepartmentName,
+			"error", err)
+		return false, nil // Don't fail the registration, just log
+	}
+
+	// No results from geocoding
+	if coords == nil {
+		s.logger.Warn(logger.LogGeocodingNoResults,
+			"address", location.Address,
+			"city", location.CityName,
+			"department", location.DepartmentName)
+		return false, nil
+	}
+
+	// Success! Update location with coordinates
+	location.Latitude = &coords.Latitude
+	location.Longitude = &coords.Longitude
+
+	s.logger.Info(logger.LogGeocodingSuccess,
+		"address", location.Address,
+		"city", location.CityName,
+		"lat", coords.Latitude,
+		"lng", coords.Longitude,
+		"confidence", coords.Confidence)
+
+	return true, nil
+}
+
+// RegisterBranch registers a new branch with validation
+// Returns the branch with generated ID and default values
+func (s *branchService) RegisterBranch(ctx context.Context, tx output.Tx, branch domain.Branch) (*domain.Branch, error) {
+	// 1. Validate establishment type
+	if !branch.IsValidEstablishmentType() {
+		s.logger.Warn(logger.LogBranchServiceInvalidType, "type", branch.EstablishmentType)
+		return nil, domain.ErrInvalidBranchType
+	}
+
+	// 2. Check for duplicate name within franchise (only if franchise is set)
+	if branch.FranchiseID != nil && *branch.FranchiseID != "" {
+		existingBranch, err := s.repository.GetBranchByFranchiseAndName(ctx, *branch.FranchiseID, branch.Name)
+		if err != nil && err != domain.ErrBranchNotFound {
+			s.logger.Error(logger.LogBranchServiceDupNameCheck, "error", err)
+			return nil, err
+		}
+		if existingBranch != nil {
+			s.logger.Warn(logger.LogBranchServiceDupName, "name", branch.Name, "franchise_id", *branch.FranchiseID)
+			return nil, domain.ErrDuplicateBranchName
+		}
+	}
+
+	// 3. Generate UUID if not set
+	if branch.ID == "" {
+		branch.SetID()
+	}
+
+	// 4. Set default status if not set
+	if branch.Status == "" {
+		branch.Status = domain.BranchStatusActive
+	}
+
+	// 5. Save branch
+	if err := s.repository.SaveBranch(ctx, tx, branch); err != nil {
+		s.logger.Error(logger.LogBranchServiceSaveError, "error", err, "branch_id", branch.ID)
+		return nil, err
+	}
+
+	// 6. Save location if provided
+	if branch.Location != nil {
+		branch.Location.BranchID = branch.ID
+		if err := s.repository.SaveLocation(ctx, tx, *branch.Location); err != nil {
+			s.logger.Error(logger.LogBranchServiceLocSaveError, "error", err, "branch_id", branch.ID)
+			return nil, err
+		}
+	}
+
+	// 7. Save brands if provided
+	if len(branch.Brands) > 0 {
+		if err := s.repository.SaveBranchBrands(ctx, tx, branch.ID, branch.Brands); err != nil {
+			s.logger.Error(logger.LogBranchServiceBrandSaveErr, "error", err, "branch_id", branch.ID)
+			return nil, err
+		}
+	}
+
+	s.logger.Info(logger.LogBranchServiceRegComplete, "branch_id", branch.ID, "name", branch.Name)
+	return &branch, nil
+}
+
+// GetBranchByID retrieves a branch by its ID
+func (s *branchService) GetBranchByID(ctx context.Context, branchID string) (*domain.Branch, error) {
+	branch, err := s.repository.GetBranchByID(ctx, branchID)
+	if err != nil {
+		s.logger.Error(logger.LogBranchServiceGetError, "error", err, "branch_id", branchID)
+		return nil, err
+	}
+	return branch, nil
+}
+
+// ValidateBrands validates that all brands exist in motorcycle_references table
+func (s *branchService) ValidateBrands(ctx context.Context, brands []string) error {
+	if len(brands) == 0 {
+		return nil
+	}
+	return s.repository.ValidateBrands(ctx, brands)
+}
+
+// SaveLocation saves a location for a branch
+func (s *branchService) SaveLocation(ctx context.Context, tx output.Tx, location domain.Location) error {
+	return s.repository.SaveLocation(ctx, tx, location)
+}
+
+// SaveBranchBrands saves brands for a branch
+func (s *branchService) SaveBranchBrands(ctx context.Context, tx output.Tx, branchID string, brands []string) error {
+	return s.repository.SaveBranchBrands(ctx, tx, branchID, brands)
+}
