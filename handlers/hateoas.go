@@ -329,3 +329,30 @@ func BuildBrandListLinks(baseURL string) []Link {
 		},
 	}
 }
+
+// BuildDepartmentListLinks constructs HATEOAS links for the departments catalog
+func BuildDepartmentListLinks() []Link {
+	return []Link{
+		{
+			Href:   "/motogo/api/v1/departments",
+			Rel:    "self",
+			Method: "GET",
+		},
+	}
+}
+
+// BuildCityListLinks constructs HATEOAS links for cities of a department
+func BuildCityListLinks(departmentID string) []Link {
+	return []Link{
+		{
+			Href:   fmt.Sprintf("/motogo/api/v1/departments/%s/cities", departmentID),
+			Rel:    "self",
+			Method: "GET",
+		},
+		{
+			Href:   "/motogo/api/v1/departments",
+			Rel:    "departments",
+			Method: "GET",
+		},
+	}
+}

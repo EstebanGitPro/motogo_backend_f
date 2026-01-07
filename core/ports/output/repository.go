@@ -79,3 +79,18 @@ type BrandRepository interface {
 	// ValidateBrandIDs checks if all provided brand IDs exist in the brands table
 	ValidateBrandIDs(ctx context.Context, brandIDs []string) error
 }
+
+// LocationRepository interface for geographic catalog operations
+type LocationRepository interface {
+	// GetAllDepartments retrieves all departments ordered by name
+	GetAllDepartments(ctx context.Context) ([]domain.Department, error)
+
+	// GetCitiesByDepartment retrieves all cities for a specific department
+	GetCitiesByDepartment(ctx context.Context, departmentID string) ([]domain.City, error)
+
+	// ValidateCityInDepartment checks if the city belongs to the specified department
+	ValidateCityInDepartment(ctx context.Context, cityID, departmentID string) error
+
+	// GetDepartmentByID retrieves a department by its ID
+	GetDepartmentByID(ctx context.Context, departmentID string) (*domain.Department, error)
+}

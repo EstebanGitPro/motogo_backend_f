@@ -57,7 +57,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 	errorHandler := middleware.NewErrorHandler(dependencies.MessagingCache)
 	app.Use(errorHandler.Handle())
 
-	handler := handlers.New(dependencies.Interactor, dependencies.MessageInteractor, dependencies.BranchInteractor, dependencies.BrandInteractor, dependencies.FirebaseClient, dependencies.MessagingCache, dependencies.IDEncoder, dependencies.ResponseHandler)
+	handler := handlers.New(dependencies.Interactor, dependencies.MessageInteractor, dependencies.BranchInteractor, dependencies.BrandInteractor, dependencies.LocationInteractor, dependencies.FirebaseClient, dependencies.MessagingCache, dependencies.IDEncoder, dependencies.ResponseHandler)
 
 	validators, err := schema.NewValidator(&schema.DefaultFileReader{})
 	if err != nil {
@@ -132,6 +132,16 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		// === BRANDS ENDPOINTS (catalog) ===
 		// GET /brands - Listar todas las marcas disponibles
 		public.GET("/brands", handler.GetBrands())
+
+		// === GEOGRAPHIC CATALOGS (departments/cities) ===
+		// GET /departments - Listar todos los departamentos
+		public.GET("/departments", handler.GetDepartments())
+		// GET /departments/:id/cities - Listar ciudades de un departamento
+		public.GET("/departments/:id/cities", handler.GetCitiesByDepartment())
+
+		// === DEV TOOLS (solo desarrollo) ===
+		// POST /geocoding/test - Probar geocodificación sin crear sede
+		public.POST("/geocoding/test", handler.TestGeocoding())
 	}
 
 	// ========================================

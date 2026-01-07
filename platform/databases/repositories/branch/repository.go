@@ -61,9 +61,9 @@ const (
 	queryDeleteBranchBrands = "DELETE FROM branch_brands WHERE branch_id = ?"
 	queryGetBranchBrands    = "SELECT brand_id FROM branch_brands WHERE branch_id = ? AND active = TRUE"
 
-	// Brand validation query - checks against motorcycle_references table
+	// Brand validation query - checks against brands table (normalized catalog)
 	queryValidateBrands = `
-		SELECT DISTINCT brand_id FROM motorcycle_references WHERE brand_id IN (%s)
+		SELECT id FROM brands WHERE id IN (%s)
 	`
 )
 
@@ -180,23 +180,3 @@ func (r *repository) BeginTx(ctx context.Context) (output.Tx, error) {
 	}
 	return common.NewSQLTx(tx), nil
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

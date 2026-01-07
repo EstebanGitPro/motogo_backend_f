@@ -45,7 +45,7 @@ func (r *repository) ValidateBrands(ctx context.Context, brands []string) error 
 	// Check if all brands were found
 	for _, brand := range brands {
 		if !foundBrands[brand] {
-			log.Warn("brand not found in motorcycle_references", "brand", brand)
+			log.Warn("brand not found in brands catalog", "brand_id", brand)
 			return domain.ErrBrandNotFound
 		}
 	}

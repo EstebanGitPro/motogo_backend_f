@@ -587,3 +587,15 @@ const (
 	LogGeocodingSkipped   = "geocoding_skipped_coordinates_present"
 	LogGeocodingCityError = "geocoding_city_lookup_failed"
 )
+
+// ============================================
+// LOCATION INTERACTOR
+// ============================================
+const (
+	LogLocationInteractorGetDepartments      = "Obteniendo lista de departamentos"
+	LogLocationInteractorGetDepartmentsOK    = "Lista de departamentos obtenida exitosamente"
+	LogLocationInteractorGetDepartmentsError = "Error obteniendo departamentos"
+	LogLocationInteractorGetCities           = "Obteniendo ciudades del departamento"
+	LogLocationInteractorGetCitiesOK         = "Lista de ciudades obtenida exitosamente"
+	LogLocationInteractorGetCitiesError      = "Error obteniendo ciudades"
+)

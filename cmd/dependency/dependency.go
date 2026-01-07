@@ -2,6 +2,7 @@ package dependency
 
 import (
 	"context"
+	"path/filepath"
 	"time"
 
 	"github.com/EstebanGitPro/motogo-backend/config"
@@ -16,29 +17,32 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/identity_provider/keycloak"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 	"github.com/EstebanGitPro/motogo-backend/tools/idencoder"
+	"github.com/EstebanGitPro/motogo-backend/tools/utils"
 
 	mysql "github.com/EstebanGitPro/motogo-backend/platform/databases/mysql"
 
 	branchRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/branch"
 	brandRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/brand"
+	locationRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/location"
 	messageRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/message"
 	repo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/person"
 )
 
 type Dependencies struct {
-	PersonService     input.Service
-	PersonRepo        output.Repository
-	KeycloakClient    output.AuthClient
-	Interactor        *interactor.Interactor
-	MessageInteractor *interactor.MessageInteractor
-	BranchInteractor  *interactor.BranchInteractor // HU59
-	BrandInteractor   *interactor.BrandInteractor  // Brands catalog
-	FirebaseClient    *firebase.Client             // Firebase Auth
-	Config            *config.Config
-	Logger            logger.Logger
-	IDEncoder         *idencoder.HashidsEncoder
-	MessagingCache    *messagingCache.MessageCache
-	ResponseHandler   *middleware.ResponseHandler
+	PersonService      input.Service
+	PersonRepo         output.Repository
+	KeycloakClient     output.AuthClient
+	Interactor         *interactor.Interactor
+	MessageInteractor  *interactor.MessageInteractor
+	BranchInteractor   *interactor.BranchInteractor   // HU59
+	BrandInteractor    *interactor.BrandInteractor    // Brands catalog
+	LocationInteractor *interactor.LocationInteractor // Geographic catalogs
+	FirebaseClient     *firebase.Client               // Firebase Auth
+	Config             *config.Config
+	Logger             logger.Logger
+	IDEncoder          *idencoder.HashidsEncoder
+	MessagingCache     *messagingCache.MessageCache
+	ResponseHandler    *middleware.ResponseHandler
 }
 
 func Init() (*Dependencies, error) {
@@ -146,10 +150,31 @@ func Init() (*Dependencies, error) {
 	brandInteractor := interactor.NewBrandInteractor(brandService, log)
 	log.Success("brand interactor initialized")
 
+	// Location dependencies (geographic catalogs)
+	locationRepository, err := locationRepo.NewRepository(db)
+	if err != nil {
+		log.Error("error initializing location repository", "error", err)
+		return nil, err
+	}
+	log.Success("location repository initialized")
+
+	locationService := services.NewLocationService(locationRepository)
+	locationInteractor := interactor.NewLocationInteractor(locationService, log)
+	log.Success("location interactor initialized")
+
 	// Firebase dependencies (optional - only if credentials configured)
 	var firebaseClient *firebase.Client
 	if cfg.Firebase.CredentialsPath != "" {
-		firebaseClient, err = firebase.NewClient(cfg.Firebase.CredentialsPath)
+		// Resolve relative path from module root
+		firebaseCredPath := cfg.Firebase.CredentialsPath
+		if !filepath.IsAbs(firebaseCredPath) {
+			root, rootErr := utils.FindModuleRoot()
+			if rootErr == nil {
+				firebaseCredPath = filepath.Join(root, firebaseCredPath)
+			}
+		}
+		log.Debug("Firebase credentials path resolved", "path", firebaseCredPath)
+		firebaseClient, err = firebase.NewClient(firebaseCredPath)
 		if err != nil {
 			log.Warn("Firebase initialization skipped", "error", err)
 			// Don't fail startup if Firebase is not configured
@@ -161,18 +186,19 @@ func Init() (*Dependencies, error) {
 	}
 
 	return &Dependencies{
-		PersonService:     personService,
-		PersonRepo:        personRepo,
-		KeycloakClient:    keycloakClient,
-		Interactor:        interactorFacade,
-		MessageInteractor: messageInteractor,
-		BranchInteractor:  branchInteractor,
-		BrandInteractor:   brandInteractor,
-		FirebaseClient:    firebaseClient,
-		Config:            cfg,
-		Logger:            log,
-		IDEncoder:         encoder,
-		MessagingCache:    messagingCache,
-		ResponseHandler:   responseHandler,
+		PersonService:      personService,
+		PersonRepo:         personRepo,
+		KeycloakClient:     keycloakClient,
+		Interactor:         interactorFacade,
+		MessageInteractor:  messageInteractor,
+		BranchInteractor:   branchInteractor,
+		BrandInteractor:    brandInteractor,
+		LocationInteractor: locationInteractor,
+		FirebaseClient:     firebaseClient,
+		Config:             cfg,
+		Logger:             log,
+		IDEncoder:          encoder,
+		MessagingCache:     messagingCache,
+		ResponseHandler:    responseHandler,
 	}, nil
 }

@@ -104,6 +104,13 @@ var (
 	ErrInvalidImageURL     = errors.New("ERR_INVALID_IMAGE_URL")
 )
 
+// Location/Geographic Errors (MOD_L_*)
+var (
+	ErrDepartmentNotFound  = errors.New("ERR_DEPARTMENT_NOT_FOUND")
+	ErrCityNotFound        = errors.New("ERR_CITY_NOT_FOUND")
+	ErrCityNotInDepartment = errors.New("ERR_CITY_NOT_IN_DEPARTMENT")
+)
+
 // ============================================
 // MESSAGE CODES - Constants for use in code
 // ============================================

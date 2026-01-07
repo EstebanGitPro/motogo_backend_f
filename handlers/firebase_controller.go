@@ -48,6 +48,13 @@ func (h *handler) GetFirebaseToken() gin.HandlerFunc {
 			return
 		}
 
+		// Verify Firebase client is available
+		if h.FirebaseClient == nil {
+			log.Error("Firebase client not configured", "keycloak_uid", keycloakUID)
+			h.Response.Error(c, domain.MsgServerError)
+			return
+		}
+
 		// Generate Firebase custom token
 		token, err := h.FirebaseClient.CreateCustomToken(c.Request.Context(), keycloakUID)
 		if err != nil {

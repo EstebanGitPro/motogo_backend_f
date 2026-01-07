@@ -98,3 +98,15 @@ type BrandService interface {
 	// ValidateBrandIDs checks if all provided brand IDs exist
 	ValidateBrandIDs(ctx context.Context, brandIDs []string) error
 }
+
+// LocationService - Use Cases for geographic catalog operations
+type LocationService interface {
+	// GetAllDepartments retrieves all departments
+	GetAllDepartments(ctx context.Context) ([]domain.Department, error)
+
+	// GetCitiesByDepartment retrieves all cities for a specific department
+	GetCitiesByDepartment(ctx context.Context, departmentID string) ([]domain.City, error)
+
+	// ValidateCityInDepartment checks if the city belongs to the specified department
+	ValidateCityInDepartment(ctx context.Context, cityID, departmentID string) error
+}

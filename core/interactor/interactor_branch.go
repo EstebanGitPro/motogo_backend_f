@@ -124,3 +124,8 @@ func (i *BranchInteractor) GetBranchByID(ctx context.Context, branchID string) (
 	log.Success(logger.LogBranchInteractorGetByIDOK, "branch_id", branchID)
 	return branch, nil
 }
+
+// GeocodeLocation wraps the service method for testing purposes
+func (i *BranchInteractor) GeocodeLocation(ctx context.Context, location *domain.Location) (bool, error) {
+	return i.branchService.GeocodeLocation(ctx, location)
+}
