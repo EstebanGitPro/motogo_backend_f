@@ -77,6 +77,8 @@ func (h *handler) RegisterBranch() gin.HandlerFunc {
 			switch err {
 			case domain.ErrInvalidBranchType:
 				h.Response.Error(c, domain.MsgBranchInvalidType)
+			case domain.ErrDuplicateBranchName:
+				h.Response.Error(c, domain.MsgBranchDuplicateName)
 			case domain.ErrBrandNotFound:
 				h.Response.Error(c, domain.MsgBrandNotFound)
 			case domain.ErrDuplicateAddress:

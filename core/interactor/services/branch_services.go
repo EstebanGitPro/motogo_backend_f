@@ -105,26 +105,36 @@ func (s *branchService) RegisterBranch(ctx context.Context, tx output.Tx, branch
 		return nil, domain.ErrInvalidBranchType
 	}
 
-	// NOTE: Duplicate name check removed - it's normal for franchise branches
-	// to share the same name (e.g., "Sucursal Norte" in different cities)
+	// 2. Check for duplicate name within franchise (only if franchise is set)
+	if branch.FranchiseID != nil && *branch.FranchiseID != "" {
+		existingBranch, err := s.repository.GetBranchByFranchiseAndName(ctx, *branch.FranchiseID, branch.Name)
+		if err != nil && err != domain.ErrBranchNotFound {
+			s.logger.Error(logger.LogBranchServiceDupNameCheck, "error", err)
+			return nil, err
+		}
+		if existingBranch != nil {
+			s.logger.Warn(logger.LogBranchServiceDupName, "name", branch.Name, "franchise_id", *branch.FranchiseID)
+			return nil, domain.ErrDuplicateBranchName
+		}
+	}
 
-	// 2. Generate UUID if not set
+	// 3. Generate UUID if not set
 	if branch.ID == "" {
 		branch.SetID()
 	}
 
-	// 3. Set default status if not set
+	// 4. Set default status if not set
 	if branch.Status == "" {
 		branch.Status = domain.BranchStatusActive
 	}
 
-	// 4. Save branch
+	// 5. Save branch
 	if err := s.repository.SaveBranch(ctx, tx, branch); err != nil {
 		s.logger.Error(logger.LogBranchServiceSaveError, "error", err, "branch_id", branch.ID)
 		return nil, err
 	}
 
-	// 5. Save location if provided
+	// 6. Save location if provided
 	if branch.Location != nil {
 		// 6.1 Check for duplicate address
 		addressExists, err := s.locationRepo.CheckAddressExists(ctx, branch.Location.Address)
