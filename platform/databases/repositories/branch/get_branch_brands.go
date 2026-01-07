@@ -1,0 +1,25 @@
+package branch
+
+import (
+	"context"
+)
+
+// getBranchBrands retrieves all active brands for a branch
+func (r *repository) getBranchBrands(ctx context.Context, branchID string) ([]string, error) {
+	rows, err := r.stmtGetBranchBrands.QueryContext(ctx, branchID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var brands []string
+	for rows.Next() {
+		var brand string
+		if err := rows.Scan(&brand); err != nil {
+			continue
+		}
+		brands = append(brands, brand)
+	}
+
+	return brands, nil
+}

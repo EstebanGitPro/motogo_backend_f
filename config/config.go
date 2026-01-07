@@ -13,15 +13,28 @@ import (
 
 var log = logger.SlogLogger{}
 
-
 type Config struct {
-	Environment  string         `json:"environment"`
-	Database     Database       `json:"database"`
-	Server       Server         `json:"server"`
-	Resend       Resend         `json:"resend"`
-	Verification Verification   `json:"verification"`
-	Keycloak     KeycloakConfig `json:"keycloak"`
-	IDEncoder    IDEncoder      `json:"id_encoder"`
+	Environment  string          `json:"environment"`
+	Database     Database        `json:"database"`
+	Server       Server          `json:"server"`
+	Resend       Resend          `json:"resend"`
+	Verification Verification    `json:"verification"`
+	Keycloak     KeycloakConfig  `json:"keycloak"`
+	IDEncoder    IDEncoder       `json:"id_encoder"`
+	Firebase     FirebaseConfig  `json:"firebase"`
+	Geocoding    GeocodingConfig `json:"geocoding"`
+}
+
+type FirebaseConfig struct {
+	CredentialsPath string `json:"credentials_path"`
+}
+
+type GeocodingConfig struct {
+	Provider       string `json:"provider"` // e.g., "opencage"
+	APIKey         string `json:"api_key"`
+	BaseURL        string `json:"base_url"`
+	TimeoutSeconds int    `json:"timeout_seconds"`
+	CountryCode    string `json:"country_code"` // e.g., "co" for Colombia
 }
 
 type IDEncoder struct {
