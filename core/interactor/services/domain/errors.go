@@ -91,6 +91,27 @@ var (
 	ErrMessageListFailed       = errors.New("ERR_MESSAGE_LIST_FAILED")
 )
 
+// Branch Management Errors (MOD_B_*) - HU59
+var (
+	ErrBranchNotFound      = errors.New("ERR_BRANCH_NOT_FOUND")
+	ErrBranchCannotSave    = errors.New("ERR_BRANCH_CANNOT_SAVE")
+	ErrDuplicateBranchName = errors.New("ERR_DUPLICATE_BRANCH_NAME")
+	ErrInvalidBranchType   = errors.New("ERR_INVALID_BRANCH_TYPE")
+	ErrBranchCannotUpdate  = errors.New("ERR_BRANCH_CANNOT_UPDATE")
+	ErrBranchCannotDelete  = errors.New("ERR_BRANCH_CANNOT_DELETE")
+	ErrLocationCannotSave  = errors.New("ERR_LOCATION_CANNOT_SAVE")
+	ErrDuplicateAddress    = errors.New("ERR_DUPLICATE_ADDRESS")
+	ErrBrandNotFound       = errors.New("ERR_BRAND_NOT_FOUND")
+	ErrInvalidImageURL     = errors.New("ERR_INVALID_IMAGE_URL")
+)
+
+// Location/Geographic Errors (MOD_L_*)
+var (
+	ErrDepartmentNotFound  = errors.New("ERR_DEPARTMENT_NOT_FOUND")
+	ErrCityNotFound        = errors.New("ERR_CITY_NOT_FOUND")
+	ErrCityNotInDepartment = errors.New("ERR_CITY_NOT_IN_DEPARTMENT")
+)
+
 // ============================================
 // MESSAGE CODES - Constants for use in code
 // ============================================
@@ -222,4 +243,17 @@ const (
 	MsgChangePasswordInvalidCurrent = "MOD_P_CHANGE_ERR_00001"
 	MsgChangePasswordUpdateError    = "MOD_P_CHANGE_ERR_00002"
 	MsgChangePasswordPolicyError    = "MOD_P_CHANGE_ERR_00003"
+)
+
+// Branch Module (MOD_B_*) - HU59
+const (
+	MsgBranchRegistered    = "MOD_B_REG_EXI_00001"
+	MsgBranchCannotSave    = "MOD_B_REG_ERR_00001"
+	MsgBranchDuplicateName = "MOD_B_DUP_NAME_ERR_00001"
+	MsgBranchInvalidType   = "MOD_B_INVALID_TYPE_ERR_00001"
+	MsgBranchNotFound      = "MOD_B_NOT_FOUND_ERR_00001"
+	MsgBranchUpdated       = "MOD_B_UPD_EXI_00001"
+	MsgBranchDeleted       = "MOD_B_DEL_EXI_00001"
+	MsgBrandNotFound       = "MOD_B_BRAND_NOT_FOUND_ERR_00001"
+	MsgDuplicateAddress    = "MOD_B_DUP_ADDR_ERR_00001"
 )

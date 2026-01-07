@@ -12,6 +12,7 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 
 	"github.com/EstebanGitPro/motogo-backend/cmd/dependency"
+	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/handlers"
 	"github.com/EstebanGitPro/motogo-backend/middleware"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
@@ -56,7 +57,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 	errorHandler := middleware.NewErrorHandler(dependencies.MessagingCache)
 	app.Use(errorHandler.Handle())
 
-	handler := handlers.New(dependencies.Interactor, dependencies.MessageInteractor, dependencies.MessagingCache, dependencies.IDEncoder, dependencies.ResponseHandler)
+	handler := handlers.New(dependencies.Interactor, dependencies.MessageInteractor, dependencies.BranchInteractor, dependencies.BrandInteractor, dependencies.LocationInteractor, dependencies.FirebaseClient, dependencies.MessagingCache, dependencies.IDEncoder, dependencies.ResponseHandler)
 
 	validators, err := schema.NewValidator(&schema.DefaultFileReader{})
 	if err != nil {
@@ -127,6 +128,20 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 
 		// GET /persons/:id/contact - Obtener info de contacto pública (HU55)
 		public.GET("/persons/:id/contact", handler.GetPublicContact())
+
+		// === BRANDS ENDPOINTS (catalog) ===
+		// GET /brands - Listar todas las marcas disponibles
+		public.GET("/brands", handler.GetBrands())
+
+		// === GEOGRAPHIC CATALOGS (departments/cities) ===
+		// GET /departments - Listar todos los departamentos
+		public.GET("/departments", handler.GetDepartments())
+		// GET /departments/:id/cities - Listar ciudades de un departamento
+		public.GET("/departments/:id/cities", handler.GetCitiesByDepartment())
+
+		// === DEV TOOLS (solo desarrollo) ===
+		// POST /geocoding/test - Probar geocodificación sin crear sede
+		public.POST("/geocoding/test", handler.TestGeocoding())
 	}
 
 	// ========================================
@@ -143,6 +158,17 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 
 		// PUT /persons/me/password - Cambiar contraseña del usuario autenticado (HU57)
 		protected.PUT("/persons/me/password", handler.ChangePassword())
+
+		// GET /auth/firebase-token - Obtener token de Firebase para Storage
+		protected.GET("/auth/firebase-token", handler.GetFirebaseToken())
+
+		// === BRANCHES ENDPOINTS (HU59) ===
+		// POST /branches - Registrar nueva sede (solo REPRESENTANTE)
+		protected.POST("/branches",
+			validator.WithValidateRegisterBranch(),
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.RegisterBranch(),
+		)
 	}
 
 	dependencies.Logger.Success(logger.LogRouteConfigured)

@@ -35,5 +35,15 @@
     "id_encoder": {
         "secret": "motogo-secure-salt-change-in-production-2024",
         "min_length": 36
+    },
+    "firebase": {
+        "credentials_path": "config/serviceAccountKey.json"
+    },
+    "geocoding": {
+        "provider": "opencage",
+        "api_key": "6d5f9b419ba44c7283b692c628c8c529",
+        "base_url": "https://api.opencagedata.com/geocode/v1",
+        "timeout_seconds": 5,
+        "country_code": "co"
     }
 }

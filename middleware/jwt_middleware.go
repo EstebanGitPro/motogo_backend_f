@@ -77,3 +77,29 @@ func GetAuthenticatedUser(c *gin.Context) (*domain.Person, bool) {
 	person, ok := user.(*domain.Person)
 	return person, ok
 }
+
+// RequireRole creates a middleware that validates the user has the required role
+// Must be used AFTER RequireAuth middleware
+// Example usage: router.POST("/branches", RequireRole(domain.RoleRepresentative), handler.RegisterBranch())
+func RequireRole(allowedRoles ...string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		person, exists := GetAuthenticatedUser(c)
+		if !exists {
+			c.Error(domain.ErrUserNotFound)
+			c.Abort()
+			return
+		}
+
+		// Check if user's role is in the allowed roles
+		for _, role := range allowedRoles {
+			if person.Role == role {
+				c.Next()
+				return
+			}
+		}
+
+		// Role not allowed
+		c.Error(domain.ErrRoleRequired)
+		c.Abort()
+	}
+}

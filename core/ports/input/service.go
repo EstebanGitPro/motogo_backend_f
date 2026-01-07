@@ -68,3 +68,45 @@ type MessageService interface {
 	UpdateMessageInDB(ctx context.Context, tx output.Tx, message domain.Message) error
 	DeleteMessageFromDB(ctx context.Context, tx output.Tx, id string) error
 }
+
+// BranchService - Use Cases for Branch operations (HU59)
+type BranchService interface {
+	// Transactions
+	BeginTx(ctx context.Context) (output.Tx, error)
+
+	// Branch - Validations and queries
+	RegisterBranch(ctx context.Context, tx output.Tx, branch domain.Branch) (*domain.Branch, error)
+	GetBranchByID(ctx context.Context, branchID string) (*domain.Branch, error)
+	ValidateBrands(ctx context.Context, brands []string) error
+
+	// Geocoding - Attempts to geocode location if coordinates not provided
+	// Returns (coordsGenerated, error) - true if coordinates were generated
+	GeocodeLocation(ctx context.Context, location *domain.Location) (bool, error)
+
+	// Branch - Location operations
+	SaveLocation(ctx context.Context, tx output.Tx, location domain.Location) error
+
+	// Branch - Brands operations
+	SaveBranchBrands(ctx context.Context, tx output.Tx, branchID string, brands []string) error
+}
+
+// BrandService - Use Cases for Brand catalog operations
+type BrandService interface {
+	// GetAllBrands retrieves all brands from the catalog
+	GetAllBrands(ctx context.Context) ([]domain.Brand, error)
+
+	// ValidateBrandIDs checks if all provided brand IDs exist
+	ValidateBrandIDs(ctx context.Context, brandIDs []string) error
+}
+
+// LocationService - Use Cases for geographic catalog operations
+type LocationService interface {
+	// GetAllDepartments retrieves all departments
+	GetAllDepartments(ctx context.Context) ([]domain.Department, error)
+
+	// GetCitiesByDepartment retrieves all cities for a specific department
+	GetCitiesByDepartment(ctx context.Context, departmentID string) ([]domain.City, error)
+
+	// ValidateCityInDepartment checks if the city belongs to the specified department
+	ValidateCityInDepartment(ctx context.Context, cityID, departmentID string) error
+}

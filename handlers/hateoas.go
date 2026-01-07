@@ -278,3 +278,81 @@ func BuildPublicContactLinks(baseURL string, personID string) []Link {
 		},
 	}
 }
+
+// BuildBranchCreatedLinks constructs HATEOAS links for newly created branch (HU59)
+// Richardson Maturity Model Level 3: Provides discoverable next actions
+func BuildBranchCreatedLinks(baseURL string, branchID string) []Link {
+	resourceURL := BuildResourceURL(baseURL, "branches", branchID)
+	collectionURL := BuildCollectionURL(baseURL, "branches")
+
+	return []Link{
+		{
+			Href:   resourceURL,
+			Rel:    "self",
+			Method: "GET",
+		},
+		{
+			Href:   resourceURL,
+			Rel:    "update",
+			Method: "PUT",
+		},
+		{
+			Href:   resourceURL,
+			Rel:    "delete",
+			Method: "DELETE",
+		},
+		{
+			Href:   collectionURL,
+			Rel:    "list",
+			Method: "GET",
+		},
+		{
+			Href:   BuildCollectionURL(baseURL, "brands"),
+			Rel:    "brands",
+			Method: "GET",
+		},
+	}
+}
+
+// BuildBrandListLinks constructs HATEOAS links for the brands catalog
+func BuildBrandListLinks(baseURL string) []Link {
+	return []Link{
+		{
+			Href:   BuildCollectionURL(baseURL, "brands"),
+			Rel:    "self",
+			Method: "GET",
+		},
+		{
+			Href:   BuildCollectionURL(baseURL, "branches"),
+			Rel:    "create-branch",
+			Method: "POST",
+		},
+	}
+}
+
+// BuildDepartmentListLinks constructs HATEOAS links for the departments catalog
+func BuildDepartmentListLinks() []Link {
+	return []Link{
+		{
+			Href:   "/motogo/api/v1/departments",
+			Rel:    "self",
+			Method: "GET",
+		},
+	}
+}
+
+// BuildCityListLinks constructs HATEOAS links for cities of a department
+func BuildCityListLinks(departmentID string) []Link {
+	return []Link{
+		{
+			Href:   fmt.Sprintf("/motogo/api/v1/departments/%s/cities", departmentID),
+			Rel:    "self",
+			Method: "GET",
+		},
+		{
+			Href:   "/motogo/api/v1/departments",
+			Rel:    "departments",
+			Method: "GET",
+		},
+	}
+}

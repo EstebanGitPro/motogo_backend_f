@@ -4,6 +4,13 @@ import (
 	uuid "github.com/EstebanGitPro/motogo-backend/tools/utils"
 )
 
+// Role constants - matches database CHECK constraint
+const (
+	RoleUser           = "user"
+	RoleRepresentative = "representative"
+	RoleAdmin          = "admin"
+)
+
 type Person struct {
 	ID             string `json:"id"`
 	IdentityNumber string `json:"identity_number"`
