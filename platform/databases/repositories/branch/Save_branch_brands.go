@@ -6,6 +6,7 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
 	"github.com/EstebanGitPro/motogo-backend/platform/databases/common"
+	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 	uuid "github.com/EstebanGitPro/motogo-backend/tools/utils"
 )
 
@@ -17,7 +18,7 @@ func (r *repository) SaveBranchBrands(ctx context.Context, tx output.Tx, branchI
 		brandID := uuid.Generate()
 		_, err := sqlTx.StmtContext(ctx, r.stmtSaveBranchBrand).ExecContext(ctx, brandID, branchID, brand)
 		if err != nil {
-			log.Error("error saving branch brand", "error", err, "branch_id", branchID, "brand", brand)
+			log.Error(logger.LogBranchRepoBrandSaveError, "error", err, "branch_id", branchID, "brand", brand)
 			return domain.ErrBranchCannotSave
 		}
 	}

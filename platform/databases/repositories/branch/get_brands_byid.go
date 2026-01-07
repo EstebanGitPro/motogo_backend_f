@@ -5,6 +5,7 @@ import (
 	"database/sql"
 
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
+	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
 // GetBranchByID retrieves a branch by its ID including location and brands
@@ -33,7 +34,7 @@ func (r *repository) GetBranchByID(ctx context.Context, branchID string) (*domai
 		if err == sql.ErrNoRows {
 			return nil, domain.ErrBranchNotFound
 		}
-		log.Error("error getting branch by ID", "error", err, "branch_id", branchID)
+		log.Error(logger.LogBranchRepoGetByIDError, "error", err, "branch_id", branchID)
 		return nil, err
 	}
 
@@ -63,7 +64,7 @@ func (r *repository) GetBranchByID(ctx context.Context, branchID string) (*domai
 	// Get brands
 	brands, err := r.getBranchBrands(ctx, branchID)
 	if err != nil {
-		log.Error("error getting branch brands", "error", err, "branch_id", branchID)
+		log.Error(logger.LogBranchRepoBrandGetError, "error", err, "branch_id", branchID)
 	}
 	branch.Brands = brands
 

@@ -5,13 +5,14 @@ import (
 	"database/sql"
 
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
+	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
 // GetBranchesByRepresentative retrieves all branches for a representative
 func (r *repository) GetBranchesByRepresentative(ctx context.Context, representativeID string) ([]domain.Branch, error) {
 	rows, err := r.stmtGetBranchesByRepresentative.QueryContext(ctx, representativeID)
 	if err != nil {
-		log.Error("error getting branches by representative", "error", err, "representative_id", representativeID)
+		log.Error(logger.LogBranchRepoGetByRepError, "error", err, "representative_id", representativeID)
 		return nil, err
 	}
 	defer rows.Close()
@@ -31,7 +32,7 @@ func (r *repository) GetBranchesByRepresentative(ctx context.Context, representa
 			&branch.Status,
 		)
 		if err != nil {
-			log.Error("error scanning branch row", "error", err)
+			log.Error(logger.LogBranchRepoScanError, "error", err)
 			continue
 		}
 

@@ -39,6 +39,9 @@ func (h handler) RegisterPerson() func(c *gin.Context) {
 			return
 		}
 
+		// Sanitize input (trim whitespace)
+		personRequest.Sanitize()
+
 		log.Info(logger.LogRegProcessing,
 			"email", personRequest.Email,
 			"role", personRequest.Role)
@@ -91,6 +94,9 @@ func (h handler) ResendVerificationEmail() gin.HandlerFunc {
 			return
 		}
 
+		// Sanitize input
+		req.Sanitize()
+
 		err := h.Interactor.ResendVerificationEmail(c, req.Email)
 		if err != nil {
 			// Manejar diferentes tipos de errores
@@ -127,6 +133,9 @@ func (h handler) RequestPasswordReset() gin.HandlerFunc {
 			return
 		}
 
+		// Sanitize input
+		req.Sanitize()
+
 		// Este método SIEMPRE retorna nil por seguridad (no revela si el email existe)
 		// El logging interno sí registra el resultado real
 		_ = h.Interactor.RequestPasswordReset(c, req.Email)
@@ -158,6 +167,9 @@ func (h handler) Login() gin.HandlerFunc {
 			h.Response.Error(c, domain.MsgValBadFormat)
 			return
 		}
+
+		// Sanitize input
+		req.Sanitize()
 
 		log.Info(logger.LogKeycloakUserLogin, "email", req.Email, "client_ip", c.ClientIP())
 
@@ -288,8 +300,8 @@ func (h handler) ResetPasswordWithToken() gin.HandlerFunc {
 				h.Response.Error(c, "MOD_P_RESET_ERR_00002")
 			case domain.ErrPasswordUpdateFailed:
 				log.Error(logger.LogPasswordResetUpdateError, "error", err, "client_ip", c.ClientIP())
-                case domain.ErrPasswordPolicyViolation:
-                        h.Response.Error(c, domain.MsgChangePasswordPolicyError)
+			case domain.ErrPasswordPolicyViolation:
+				h.Response.Error(c, domain.MsgChangePasswordPolicyError)
 				h.Response.Error(c, "MOD_P_RESET_ERR_00003")
 			default:
 				log.Error(logger.LogPasswordResetUpdateError, "error", err, "client_ip", c.ClientIP())
@@ -404,8 +416,8 @@ func (h handler) ChangePassword() gin.HandlerFunc {
 				h.Response.Error(c, domain.MsgKCUserNotFound)
 			case domain.ErrPasswordUpdateFailed:
 				h.Response.Error(c, domain.MsgChangePasswordUpdateError)
-                case domain.ErrPasswordPolicyViolation:
-                        h.Response.Error(c, domain.MsgChangePasswordPolicyError)
+			case domain.ErrPasswordPolicyViolation:
+				h.Response.Error(c, domain.MsgChangePasswordPolicyError)
 			case domain.ErrKeycloakUnavailable:
 				h.Response.Error(c, domain.MsgKeycloakUnavailable)
 			default:
@@ -460,6 +472,9 @@ func (h handler) UpdateProfile() gin.HandlerFunc {
 			h.Response.Error(c, domain.MsgValBadFormat)
 			return
 		}
+
+		// Sanitize input
+		req.Sanitize()
 
 		log.Info(logger.LogUpdateProfileStart, "user_id", person.ID, "client_ip", c.ClientIP())
 

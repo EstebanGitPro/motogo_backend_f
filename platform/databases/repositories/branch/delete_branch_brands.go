@@ -6,6 +6,7 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
 	"github.com/EstebanGitPro/motogo-backend/platform/databases/common"
+	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
 // DeleteBranchBrands removes all brands for a branch
@@ -14,7 +15,7 @@ func (r *repository) DeleteBranchBrands(ctx context.Context, tx output.Tx, branc
 
 	_, err := sqlTx.StmtContext(ctx, r.stmtDeleteBranchBrands).ExecContext(ctx, branchID)
 	if err != nil {
-		log.Error("error deleting branch brands", "error", err, "branch_id", branchID)
+		log.Error(logger.LogBranchRepoBrandDelError, "error", err, "branch_id", branchID)
 		return domain.ErrBranchCannotDelete
 	}
 

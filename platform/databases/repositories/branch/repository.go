@@ -42,17 +42,6 @@ const (
 		WHERE representative_id = ?
 	`
 
-	// Location queries
-	querySaveLocation = `
-		INSERT INTO locations (id, branch_id, city_id, address, latitude, longitude, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
-	`
-	queryUpdateLocation = `
-		UPDATE locations 
-		SET city_id = ?, address = ?, latitude = ?, longitude = ?, updated_at = NOW()
-		WHERE branch_id = ?
-	`
-
 	// Branch brands queries
 	querySaveBranchBrand = `
 		INSERT INTO branch_brands (id, branch_id, brand_id, active, created_at, updated_at)
@@ -77,8 +66,6 @@ type repository struct {
 	stmtGetBranchByID               *sql.Stmt
 	stmtGetBranchByFranchiseAndName *sql.Stmt
 	stmtGetBranchesByRepresentative *sql.Stmt
-	stmtSaveLocation                *sql.Stmt
-	stmtUpdateLocation              *sql.Stmt
 	stmtSaveBranchBrand             *sql.Stmt
 	stmtDeleteBranchBrands          *sql.Stmt
 	stmtGetBranchBrands             *sql.Stmt
@@ -126,18 +113,6 @@ func NewRepository(db *sql.DB) (output.BranchRepository, error) {
 		return nil, fmt.Errorf("error preparing stmtGetBranchesByRepresentative: %w", err)
 	}
 
-	stmtSaveLocation, err := db.Prepare(querySaveLocation)
-	if err != nil {
-		log.Error(logger.LogDatabaseUnavailable, "error preparing stmtSaveLocation", err)
-		return nil, fmt.Errorf("error preparing stmtSaveLocation: %w", err)
-	}
-
-	stmtUpdateLocation, err := db.Prepare(queryUpdateLocation)
-	if err != nil {
-		log.Error(logger.LogDatabaseUnavailable, "error preparing stmtUpdateLocation", err)
-		return nil, fmt.Errorf("error preparing stmtUpdateLocation: %w", err)
-	}
-
 	stmtSaveBranchBrand, err := db.Prepare(querySaveBranchBrand)
 	if err != nil {
 		log.Error(logger.LogDatabaseUnavailable, "error preparing stmtSaveBranchBrand", err)
@@ -164,8 +139,6 @@ func NewRepository(db *sql.DB) (output.BranchRepository, error) {
 		stmtGetBranchByID:               stmtGetBranchByID,
 		stmtGetBranchByFranchiseAndName: stmtGetBranchByFranchiseAndName,
 		stmtGetBranchesByRepresentative: stmtGetBranchesByRepresentative,
-		stmtSaveLocation:                stmtSaveLocation,
-		stmtUpdateLocation:              stmtUpdateLocation,
 		stmtSaveBranchBrand:             stmtSaveBranchBrand,
 		stmtDeleteBranchBrands:          stmtDeleteBranchBrands,
 		stmtGetBranchBrands:             stmtGetBranchBrands,

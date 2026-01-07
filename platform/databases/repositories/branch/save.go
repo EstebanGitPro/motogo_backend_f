@@ -7,6 +7,7 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
 	"github.com/EstebanGitPro/motogo-backend/platform/databases/common"
+	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
 // SaveBranch saves a new branch to the database
@@ -27,7 +28,7 @@ func (r *repository) SaveBranch(ctx context.Context, tx output.Tx, branch domain
 		if strings.Contains(err.Error(), "Duplicate entry") {
 			return domain.ErrDuplicateBranchName
 		}
-		log.Error("error saving branch", "error", err, "branch_id", branch.ID)
+		log.Error(logger.LogBranchRepoSaveError, "error", err, "branch_id", branch.ID)
 		return domain.ErrBranchCannotSave
 	}
 

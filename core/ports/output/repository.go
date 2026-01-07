@@ -54,10 +54,6 @@ type BranchRepository interface {
 	UpdateBranch(ctx context.Context, tx Tx, branch domain.Branch) error
 	DeleteBranch(ctx context.Context, tx Tx, branchID string) error
 
-	// Location operations - transactional
-	SaveLocation(ctx context.Context, tx Tx, location domain.Location) error
-	UpdateLocation(ctx context.Context, tx Tx, location domain.Location) error
-
 	// Branch brands operations - transactional
 	SaveBranchBrands(ctx context.Context, tx Tx, branchID string, brands []string) error
 	DeleteBranchBrands(ctx context.Context, tx Tx, branchID string) error
@@ -80,17 +76,20 @@ type BrandRepository interface {
 	ValidateBrandIDs(ctx context.Context, brandIDs []string) error
 }
 
-// LocationRepository interface for geographic catalog operations
+// LocationRepository interface for geographic catalog and branch location operations
 type LocationRepository interface {
-	// GetAllDepartments retrieves all departments ordered by name
+	BeginTx(ctx context.Context) (Tx, error)
+
+	// Location operations - transactional
+	SaveLocation(ctx context.Context, tx Tx, location domain.Location) error
+	UpdateLocation(ctx context.Context, tx Tx, location domain.Location) error
+
+	// Location validation - read
+	CheckAddressExists(ctx context.Context, address string) (bool, error)
+
+	// Geographic catalog - read
 	GetAllDepartments(ctx context.Context) ([]domain.Department, error)
-
-	// GetCitiesByDepartment retrieves all cities for a specific department
 	GetCitiesByDepartment(ctx context.Context, departmentID string) ([]domain.City, error)
-
-	// ValidateCityInDepartment checks if the city belongs to the specified department
 	ValidateCityInDepartment(ctx context.Context, cityID, departmentID string) error
-
-	// GetDepartmentByID retrieves a department by its ID
 	GetDepartmentByID(ctx context.Context, departmentID string) (*domain.Department, error)
 }

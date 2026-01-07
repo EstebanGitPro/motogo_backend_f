@@ -4,12 +4,25 @@ import "github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 
 // RegisterBranchRequest is the DTO for branch registration (HU59)
 type RegisterBranchRequest struct {
-	Name              string       `json:"name" binding:"required"`
-	EstablishmentType string       `json:"establishment_type" binding:"required"` // WORKSHOP or STORE
-	FranchiseID       *string      `json:"franchise_id,omitempty"`
-	ProfileImageURL   *string      `json:"profile_image_url,omitempty"`
-	Location          *LocationDTO `json:"location,omitempty"`
-	Brands            []string     `json:"brands,omitempty"`
+	Name              string      `json:"name" binding:"required"`
+	EstablishmentType string      `json:"establishment_type" binding:"required"` // WORKSHOP or STORE
+	FranchiseID       *string     `json:"franchise_id,omitempty"`
+	ProfileImageURL   *string     `json:"profile_image_url,omitempty"`
+	Location          LocationDTO `json:"location" binding:"required"`
+	Brands            []string    `json:"brands,omitempty"`
+}
+
+// Sanitize trims whitespace from all string fields
+func (r *RegisterBranchRequest) Sanitize() {
+	r.Name = TrimString(r.Name)
+	r.EstablishmentType = TrimString(r.EstablishmentType)
+	r.FranchiseID = TrimStringPtr(r.FranchiseID)
+	// ProfileImageURL is intentionally NOT trimmed - it's a URL
+	r.Location.Sanitize()
+	// Brands are trimmed individually
+	for i := range r.Brands {
+		r.Brands[i] = TrimString(r.Brands[i])
+	}
 }
 
 // ToDomain maps RegisterBranchRequest to domain.Branch
@@ -23,15 +36,15 @@ func (r *RegisterBranchRequest) ToDomain(representativeID string) domain.Branch 
 		Brands:            r.Brands,
 	}
 
-	if r.Location != nil {
-		branch.Location = &domain.Location{
-			CityID:         r.Location.CityID,
-			CityName:       r.Location.CityName,       // For geocoding
-			DepartmentName: r.Location.DepartmentName, // For geocoding
-			Address:        r.Location.Address,
-			Latitude:       r.Location.Latitude,
-			Longitude:      r.Location.Longitude,
-		}
+	// Location is now required, always map it
+	branch.Location = &domain.Location{
+		DepartmentID:   r.Location.DepartmentID,
+		CityID:         r.Location.CityID,
+		CityName:       r.Location.CityName,       // For geocoding
+		DepartmentName: r.Location.DepartmentName, // For geocoding
+		Address:        r.Location.Address,
+		Latitude:       r.Location.Latitude,
+		Longitude:      r.Location.Longitude,
 	}
 
 	return branch
@@ -39,12 +52,23 @@ func (r *RegisterBranchRequest) ToDomain(representativeID string) domain.Branch 
 
 // LocationDTO represents location data in request/response (HU59)
 type LocationDTO struct {
+	DepartmentID   string   `json:"department_id" binding:"required"`
 	CityID         string   `json:"city_id" binding:"required"`
 	CityName       string   `json:"city_name,omitempty"`       // For geocoding (not persisted)
 	DepartmentName string   `json:"department_name,omitempty"` // For geocoding (not persisted)
 	Address        string   `json:"address" binding:"required"`
 	Latitude       *float64 `json:"latitude,omitempty"`
 	Longitude      *float64 `json:"longitude,omitempty"`
+}
+
+// Sanitize trims whitespace from all string fields
+func (l *LocationDTO) Sanitize() {
+	l.DepartmentID = TrimString(l.DepartmentID)
+	l.CityID = TrimString(l.CityID)
+	l.CityName = TrimString(l.CityName)
+	l.DepartmentName = TrimString(l.DepartmentName)
+	l.Address = TrimString(l.Address)
+	// Latitude/Longitude are floats, no trimming needed
 }
 
 // GeocodingStatus indicates the result of automatic geocoding

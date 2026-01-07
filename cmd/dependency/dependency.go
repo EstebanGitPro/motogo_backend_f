@@ -134,7 +134,15 @@ func Init() (*Dependencies, error) {
 	)
 	log.Success("geocoding client initialized", "provider", cfg.Geocoding.Provider)
 
-	branchService := services.NewBranchService(branchRepository, geocodingClient, log)
+	// Location dependencies (geographic catalogs) - must be initialized before branch service
+	locationRepository, err := locationRepo.NewRepository(db)
+	if err != nil {
+		log.Error("error initializing location repository", "error", err)
+		return nil, err
+	}
+	log.Success("location repository initialized")
+
+	branchService := services.NewBranchService(branchRepository, locationRepository, geocodingClient, log)
 	branchInteractor := interactor.NewBranchInteractor(branchService, log)
 	log.Success("branch interactor initialized")
 
@@ -149,14 +157,6 @@ func Init() (*Dependencies, error) {
 	brandService := services.NewBrandService(brandRepository)
 	brandInteractor := interactor.NewBrandInteractor(brandService, log)
 	log.Success("brand interactor initialized")
-
-	// Location dependencies (geographic catalogs)
-	locationRepository, err := locationRepo.NewRepository(db)
-	if err != nil {
-		log.Error("error initializing location repository", "error", err)
-		return nil, err
-	}
-	log.Success("location repository initialized")
 
 	locationService := services.NewLocationService(locationRepository)
 	locationInteractor := interactor.NewLocationInteractor(locationService, log)

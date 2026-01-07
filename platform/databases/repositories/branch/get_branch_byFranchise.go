@@ -5,6 +5,7 @@ import (
 	"database/sql"
 
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
+	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
 // GetBranchByFranchiseAndName retrieves a branch by franchise and name (for duplicate validation)
@@ -26,7 +27,7 @@ func (r *repository) GetBranchByFranchiseAndName(ctx context.Context, franchiseI
 		if err == sql.ErrNoRows {
 			return nil, domain.ErrBranchNotFound
 		}
-		log.Error("error getting branch by franchise and name", "error", err, "franchise_id", franchiseID, "name", name)
+		log.Error(logger.LogBranchRepoGetByNameError, "error", err, "franchise_id", franchiseID, "name", name)
 		return nil, err
 	}
 

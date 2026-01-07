@@ -88,7 +88,7 @@ func (r *repository) ValidateBrandIDs(ctx context.Context, brandIDs []string) er
 	query := fmt.Sprintf(queryValidateBrandIDs, placeholders)
 	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
-		log.Error("error validating brand IDs", "error", err)
+		log.Error(logger.LogBranchRepoBrandValidateErr, "error", err)
 		return err
 	}
 	defer rows.Close()
@@ -106,7 +106,7 @@ func (r *repository) ValidateBrandIDs(ctx context.Context, brandIDs []string) er
 	// Check if all brand IDs were found
 	for _, id := range brandIDs {
 		if !foundBrands[id] {
-			log.Warn("brand ID not found", "brand_id", id)
+			log.Warn(logger.LogBranchRepoBrandValidateErr, "brand_id", id)
 			return domain.ErrBrandNotFound
 		}
 	}

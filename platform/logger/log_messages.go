@@ -599,3 +599,20 @@ const (
 	LogLocationInteractorGetCitiesOK         = "Lista de ciudades obtenida exitosamente"
 	LogLocationInteractorGetCitiesError      = "Error obteniendo ciudades"
 )
+
+// ============================================
+// LOCATION REPOSITORY
+// ============================================
+const (
+	LogLocationRepoGetDepartmentsError     = "Error obteniendo departamentos"
+	LogLocationRepoGetDepartmentsScanError = "Error escaneando departamento"
+	LogLocationRepoGetDepartmentsIterError = "Error iterando departamentos"
+	LogLocationRepoGetCitiesError          = "Error obteniendo ciudades"
+	LogLocationRepoGetCitiesScanError      = "Error escaneando ciudad"
+	LogLocationRepoGetCitiesIterError      = "Error iterando ciudades"
+	LogLocationRepoValidateCityError       = "Error validando ciudad en departamento"
+	LogLocationRepoGetDeptByIDError        = "Error obteniendo departamento por ID"
+	LogLocationRepoSaveError               = "Error guardando ubicación"
+	LogLocationRepoUpdateError             = "Error actualizando ubicación"
+	LogLocationRepoPrepareError            = "Error preparando statement de ubicación"
+)

@@ -6,8 +6,9 @@ import (
 
 // EstablishmentType defines valid types for branches
 const (
-	EstablishmentTypeWorkshop = "WORKSHOP"
-	EstablishmentTypeStore    = "STORE"
+	EstablishmentTypeWorkshop      = "WORKSHOP"
+	EstablishmentTypeStore         = "STORE"
+	EstablishmentTypeWorkshopStore = "WORKSHOP_STORE"
 )
 
 // BranchStatus defines valid statuses for branches
@@ -31,15 +32,15 @@ type Branch struct {
 
 // Location represents the physical location of a branch
 type Location struct {
-	ID        string   `json:"id,omitempty"`
-	BranchID  string   `json:"branch_id,omitempty"`
-	CityID    string   `json:"city_id"`
-	Address   string   `json:"address"`
-	Latitude  *float64 `json:"latitude,omitempty"`
-	Longitude *float64 `json:"longitude,omitempty"`
-	// Transient fields for geocoding (not persisted to DB)
-	CityName       string `json:"-"` // Used for geocoding query
-	DepartmentName string `json:"-"` // Used for geocoding query
+	ID             string   `json:"id,omitempty"`
+	BranchID       string   `json:"branch_id,omitempty"`
+	DepartmentID   string   `json:"department_id"`
+	CityID         string   `json:"city_id"`
+	Address        string   `json:"address"`
+	Latitude       *float64 `json:"latitude,omitempty"`
+	Longitude      *float64 `json:"longitude,omitempty"`
+	CityName       string   `json:"-"` // Used for geocoding query
+	DepartmentName string   `json:"-"` // Used for geocoding query
 }
 
 // SetID generates a new UUID for the branch
@@ -50,7 +51,8 @@ func (b *Branch) SetID() {
 // IsValidEstablishmentType checks if the establishment type is valid
 func (b *Branch) IsValidEstablishmentType() bool {
 	return b.EstablishmentType == EstablishmentTypeWorkshop ||
-		b.EstablishmentType == EstablishmentTypeStore
+		b.EstablishmentType == EstablishmentTypeStore ||
+		b.EstablishmentType == EstablishmentTypeWorkshopStore
 }
 
 // ToLogger returns a slice of strings for structured logging

@@ -39,6 +39,9 @@ func (h handler) CreateMessage() func(c *gin.Context) {
 			return
 		}
 
+		// Sanitize input
+		messageRequest.Sanitize()
+
 		log.Info(logger.LogMessageCreateProcessing,
 			"code", messageRequest.Code,
 			"type", messageRequest.Type)
@@ -132,6 +135,9 @@ func (h handler) UpdateMessage() func(c *gin.Context) {
 			c.Error(domain.ErrInvalidJSONFormat)
 			return
 		}
+
+		// Sanitize input
+		messageRequest.Sanitize()
 
 		log.Info(logger.LogMessageUpdateProcessing,
 			"id", uuid,

@@ -1,4 +1,4 @@
-package branch
+package location
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
 	"github.com/EstebanGitPro/motogo-backend/platform/databases/common"
+	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 	uuid "github.com/EstebanGitPro/motogo-backend/tools/utils"
 )
 
@@ -25,7 +26,7 @@ func (r *repository) SaveLocation(ctx context.Context, tx output.Tx, location do
 	)
 
 	if err != nil {
-		log.Error("error saving location", "error", err, "branch_id", location.BranchID)
+		log.Error(logger.LogLocationRepoSaveError, "error", err, "branch_id", location.BranchID)
 		return domain.ErrLocationCannotSave
 	}
 

@@ -100,6 +100,7 @@ var (
 	ErrBranchCannotUpdate  = errors.New("ERR_BRANCH_CANNOT_UPDATE")
 	ErrBranchCannotDelete  = errors.New("ERR_BRANCH_CANNOT_DELETE")
 	ErrLocationCannotSave  = errors.New("ERR_LOCATION_CANNOT_SAVE")
+	ErrDuplicateAddress    = errors.New("ERR_DUPLICATE_ADDRESS")
 	ErrBrandNotFound       = errors.New("ERR_BRAND_NOT_FOUND")
 	ErrInvalidImageURL     = errors.New("ERR_INVALID_IMAGE_URL")
 )
@@ -254,4 +255,5 @@ const (
 	MsgBranchUpdated       = "MOD_B_UPD_EXI_00001"
 	MsgBranchDeleted       = "MOD_B_DEL_EXI_00001"
 	MsgBrandNotFound       = "MOD_B_BRAND_NOT_FOUND_ERR_00001"
+	MsgDuplicateAddress    = "MOD_B_DUP_ADDR_ERR_00001"
 )

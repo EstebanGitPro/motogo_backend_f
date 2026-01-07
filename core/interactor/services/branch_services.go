@@ -13,14 +13,16 @@ import (
 // branchService implements input.BranchService
 type branchService struct {
 	repository      output.BranchRepository
+	locationRepo    output.LocationRepository
 	geocodingClient geocoding.Client
 	logger          logger.Logger
 }
 
 // NewBranchService creates a new BranchService instance
-func NewBranchService(repo output.BranchRepository, geocodingClient geocoding.Client, log logger.Logger) input.BranchService {
+func NewBranchService(repo output.BranchRepository, locationRepo output.LocationRepository, geocodingClient geocoding.Client, log logger.Logger) input.BranchService {
 	return &branchService{
 		repository:      repo,
+		locationRepo:    locationRepo,
 		geocodingClient: geocodingClient,
 		logger:          log,
 	}
@@ -134,8 +136,19 @@ func (s *branchService) RegisterBranch(ctx context.Context, tx output.Tx, branch
 
 	// 6. Save location if provided
 	if branch.Location != nil {
+		// 6.1 Check for duplicate address
+		addressExists, err := s.locationRepo.CheckAddressExists(ctx, branch.Location.Address)
+		if err != nil {
+			s.logger.Error(logger.LogBranchServiceLocSaveError, "error", err, "address", branch.Location.Address)
+			return nil, err
+		}
+		if addressExists {
+			s.logger.Warn(logger.LogBranchServiceLocSaveError, "duplicate_address", branch.Location.Address)
+			return nil, domain.ErrDuplicateAddress
+		}
+
 		branch.Location.BranchID = branch.ID
-		if err := s.repository.SaveLocation(ctx, tx, *branch.Location); err != nil {
+		if err := s.locationRepo.SaveLocation(ctx, tx, *branch.Location); err != nil {
 			s.logger.Error(logger.LogBranchServiceLocSaveError, "error", err, "branch_id", branch.ID)
 			return nil, err
 		}
@@ -173,7 +186,7 @@ func (s *branchService) ValidateBrands(ctx context.Context, brands []string) err
 
 // SaveLocation saves a location for a branch
 func (s *branchService) SaveLocation(ctx context.Context, tx output.Tx, location domain.Location) error {
-	return s.repository.SaveLocation(ctx, tx, location)
+	return s.locationRepo.SaveLocation(ctx, tx, location)
 }
 
 // SaveBranchBrands saves brands for a branch

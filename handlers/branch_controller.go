@@ -51,6 +51,9 @@ func (h *handler) RegisterBranch() gin.HandlerFunc {
 			return
 		}
 
+		// 2.1 Sanitize input (trim whitespace)
+		req.Sanitize()
+
 		log.Info(logger.LogBranchControllerProcessing,
 			"branch_name", req.Name,
 			"establishment_type", req.EstablishmentType,
@@ -78,6 +81,8 @@ func (h *handler) RegisterBranch() gin.HandlerFunc {
 				h.Response.Error(c, domain.MsgBranchDuplicateName)
 			case domain.ErrBrandNotFound:
 				h.Response.Error(c, domain.MsgBrandNotFound)
+			case domain.ErrDuplicateAddress:
+				h.Response.Error(c, domain.MsgDuplicateAddress)
 			default:
 				h.Response.Error(c, domain.MsgBranchCannotSave)
 			}
