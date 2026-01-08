@@ -142,6 +142,10 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		// === DEV TOOLS (solo desarrollo) ===
 		// POST /geocoding/test - Probar geocodificación sin crear sede
 		public.POST("/geocoding/test", handler.TestGeocoding())
+
+		// === BRANCH TYPES CATALOG (HU76) ===
+		// GET /branch-types - Listar todos los tipos de establecimiento
+		public.GET("/branch-types", handler.GetBranchTypes())
 	}
 
 	// ========================================
@@ -162,7 +166,17 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		// GET /auth/firebase-token - Obtener token de Firebase para Storage
 		protected.GET("/auth/firebase-token", handler.GetFirebaseToken())
 
-		// === BRANCHES ENDPOINTS (HU59) ===
+		// === BRANCHES ENDPOINTS (HU59, HU62) ===
+		// GET /branches - Listar mis sedes (solo REPRESENTANTE)
+		protected.GET("/branches",
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.ListBranches(),
+		)
+
+		// GET /branches/:id - Consultar info de sede (HU62)
+		// Accessible by all authenticated users, HATEOAS links vary by ownership
+		protected.GET("/branches/:id", handler.GetBranch())
+
 		// POST /branches - Registrar nueva sede (solo REPRESENTANTE)
 		protected.POST("/branches",
 			validator.WithValidateRegisterBranch(),

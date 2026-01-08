@@ -119,3 +119,40 @@ func NewBranchResponse(branch *domain.Branch, encodedID string, geocodingStatus 
 
 	return response
 }
+
+// BranchListItemResponse represents a branch in the list view (HU62)
+// Includes location and brands for rich display
+type BranchListItemResponse struct {
+	ID                string       `json:"id"`
+	Name              string       `json:"name"`
+	EstablishmentType string       `json:"establishment_type"`
+	Status            string       `json:"status"`
+	ProfileImageURL   *string      `json:"profile_image_url,omitempty"`
+	Location          *LocationDTO `json:"location,omitempty"`
+	Brands            []string     `json:"brands,omitempty"`
+	Links             []Link       `json:"_links"`
+}
+
+// NewBranchListItemResponse creates a BranchListItemResponse from domain.Branch
+func NewBranchListItemResponse(branch domain.Branch, encodedID string, links []Link) BranchListItemResponse {
+	item := BranchListItemResponse{
+		ID:                encodedID,
+		Name:              branch.Name,
+		EstablishmentType: branch.EstablishmentType,
+		Status:            branch.Status,
+		ProfileImageURL:   branch.ProfileImageURL,
+		Brands:            branch.Brands,
+		Links:             links,
+	}
+
+	if branch.Location != nil {
+		item.Location = &LocationDTO{
+			CityID:    branch.Location.CityID,
+			Address:   branch.Location.Address,
+			Latitude:  branch.Location.Latitude,
+			Longitude: branch.Location.Longitude,
+		}
+	}
+
+	return item
+}

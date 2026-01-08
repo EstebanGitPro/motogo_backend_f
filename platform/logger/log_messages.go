@@ -518,6 +518,10 @@ const (
 	LogBranchInteractorGetByID         = "Obteniendo sede por ID"
 	LogBranchInteractorGetByIDError    = "Error obteniendo sede por ID"
 	LogBranchInteractorGetByIDOK       = "Sede obtenida exitosamente"
+	// HU62: List branches by representative
+	LogBranchInteractorListByRep    = "Listando sedes por representante"
+	LogBranchInteractorListByRepErr = "Error listando sedes por representante"
+	LogBranchInteractorListByRepOK  = "Sedes listadas por representante exitosamente"
 )
 
 // ============================================
@@ -554,7 +558,7 @@ const (
 )
 
 // ============================================
-// BRANCH CONTROLLER (HU59)
+// BRANCH CONTROLLER (HU59, HU62)
 // ============================================
 const (
 	LogBranchControllerRegRequest    = "Solicitud de registro de sede recibida"
@@ -565,6 +569,19 @@ const (
 	LogBranchControllerProcessing    = "Procesando registro de sede"
 	LogBranchControllerRegError      = "Error registrando sede"
 	LogBranchControllerRegSuccess    = "Sede registrada exitosamente en controller"
+	// HU62: Get Branch
+	LogBranchControllerGetRequest    = "Solicitud de consulta de sede recibida"
+	LogBranchControllerIDDecodeError = "Error decodificando ID de sede"
+	LogBranchControllerGetByID       = "Buscando sede por ID"
+	LogBranchControllerGetError      = "Error obteniendo sede"
+	LogBranchControllerGetSuccess    = "Sede obtenida exitosamente"
+	// HU76: Get Branch Types
+	LogBranchControllerGetTypes   = "Solicitud de tipos de sede recibida"
+	LogBranchControllerGetTypesOK = "Tipos de sede obtenidos exitosamente"
+	// HU62: List my branches
+	LogBranchControllerListRequest = "Solicitud de listado de sedes recibida"
+	LogBranchControllerListError   = "Error listando sedes"
+	LogBranchControllerListSuccess = "Sedes listadas exitosamente"
 )
 
 // ============================================
@@ -586,6 +603,7 @@ const (
 	LogGeocodingError     = "geocoding_request_failed"
 	LogGeocodingSkipped   = "geocoding_skipped_coordinates_present"
 	LogGeocodingCityError = "geocoding_city_lookup_failed"
+	LogGeocodingRateLimit = "geocoding_rate_limit_info"
 )
 
 // ============================================
@@ -615,4 +633,27 @@ const (
 	LogLocationRepoSaveError               = "Error guardando ubicación"
 	LogLocationRepoUpdateError             = "Error actualizando ubicación"
 	LogLocationRepoPrepareError            = "Error preparando statement de ubicación"
+)
+
+// ============================================
+// FIREBASE CLIENT
+// ============================================
+const (
+	LogFirebaseInitApp          = "Inicializando aplicación Firebase"
+	LogFirebaseInitAppError     = "Error inicializando aplicación Firebase"
+	LogFirebaseAuthClientError  = "Error obteniendo cliente de autenticación Firebase"
+	LogFirebaseInitOK           = "Firebase Admin SDK inicializado exitosamente"
+	LogFirebaseTokenCreate      = "Creando token personalizado Firebase"
+	LogFirebaseTokenCreateOK    = "Token personalizado Firebase creado"
+	LogFirebaseTokenCreateError = "Error creando token personalizado Firebase"
+	LogFirebaseTokenClaimsOK    = "Token con claims personalizado creado"
+	LogFirebaseTokenClaimsError = "Error creando token con claims"
+)
+
+// ============================================
+// BRAND REPOSITORY
+// ============================================
+const (
+	LogBrandRepoValidateError = "Error validando marcas"
+	LogBrandRepoNotFound      = "Marca no encontrada en catálogo"
 )

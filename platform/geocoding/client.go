@@ -109,7 +109,7 @@ func (c *openCageClient) Geocode(ctx context.Context, address, city, department 
 	}
 
 	// Log rate limit info for monitoring
-	c.logger.Debug("geocoding_rate_limit",
+	c.logger.Debug(logger.LogGeocodingRateLimit,
 		"remaining", result.Rate.Remaining,
 		"limit", result.Rate.Limit)
 

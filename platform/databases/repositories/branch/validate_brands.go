@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
+	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
 // ValidateBrands checks if all provided brands exist in motorcycle_references table
@@ -27,7 +28,7 @@ func (r *repository) ValidateBrands(ctx context.Context, brands []string) error 
 	query := fmt.Sprintf(queryValidateBrands, placeholders)
 	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
-		log.Error("error validating brands", "error", err)
+		log.Error(logger.LogBrandRepoValidateError, "error", err)
 		return err
 	}
 	defer rows.Close()
@@ -45,7 +46,7 @@ func (r *repository) ValidateBrands(ctx context.Context, brands []string) error 
 	// Check if all brands were found
 	for _, brand := range brands {
 		if !foundBrands[brand] {
-			log.Warn("brand not found in brands catalog", "brand_id", brand)
+			log.Warn(logger.LogBrandRepoNotFound, "brand_id", brand)
 			return domain.ErrBrandNotFound
 		}
 	}

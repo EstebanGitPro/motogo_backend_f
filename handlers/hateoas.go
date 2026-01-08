@@ -356,3 +356,69 @@ func BuildCityListLinks(departmentID string) []Link {
 		},
 	}
 }
+
+// BuildBranchDetailLinks constructs HATEOAS links for branch query response (HU62)
+// Richardson Maturity Model Level 3: Provides discoverable next actions
+// isOwner: true if the authenticated user is the branch owner (shows edit/delete links)
+func BuildBranchDetailLinks(baseURL string, branchID string, isOwner bool) []Link {
+	resourceURL := BuildResourceURL(baseURL, "branches", branchID)
+	collectionURL := BuildCollectionURL(baseURL, "branches")
+
+	links := []Link{
+		{
+			Href:   resourceURL,
+			Rel:    "self",
+			Method: "GET",
+		},
+	}
+
+	// Only show edit/delete links if user is the owner
+	if isOwner {
+		links = append(links,
+			Link{
+				Href:   resourceURL,
+				Rel:    "update",
+				Method: "PUT",
+			},
+			Link{
+				Href:   resourceURL,
+				Rel:    "delete",
+				Method: "DELETE",
+			},
+			Link{
+				Href:   collectionURL,
+				Rel:    "list",
+				Method: "GET",
+			},
+		)
+	}
+
+	return links
+}
+
+// BuildBranchTypesLinks constructs HATEOAS links for branch types catalog (HU76)
+func BuildBranchTypesLinks(baseURL string) []Link {
+	return []Link{
+		{
+			Href:   fmt.Sprintf("%s/motogo/api/v1/branch-types", baseURL),
+			Rel:    "self",
+			Method: "GET",
+		},
+		{
+			Href:   BuildCollectionURL(baseURL, "branches"),
+			Rel:    "create-branch",
+			Method: "POST",
+		},
+	}
+}
+
+// BuildBranchListLinks constructs HATEOAS links for branch list response (HU62)
+func BuildBranchListLinks(baseURL string) []Link {
+	collectionURL := BuildCollectionURL(baseURL, "branches")
+	return []Link{
+		{Href: collectionURL, Rel: "self", Method: "GET"},
+		{Href: collectionURL, Rel: "create", Method: "POST"},
+		{Href: BuildCollectionURL(baseURL, "brands"), Rel: "brands", Method: "GET"},
+		{Href: BuildCollectionURL(baseURL, "branch-types"), Rel: "branch-types", Method: "GET"},
+	}
+}

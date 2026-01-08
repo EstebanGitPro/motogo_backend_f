@@ -11,6 +11,21 @@ const (
 	EstablishmentTypeWorkshopStore = "WORKSHOP_STORE"
 )
 
+// EstablishmentTypeInfo represents an establishment type with its label (HU76)
+type EstablishmentTypeInfo struct {
+	Code  string `json:"code"`
+	Label string `json:"label"`
+}
+
+// GetAllEstablishmentTypes returns all valid establishment types (HU76)
+func GetAllEstablishmentTypes() []EstablishmentTypeInfo {
+	return []EstablishmentTypeInfo{
+		{Code: EstablishmentTypeWorkshop, Label: "Taller"},
+		{Code: EstablishmentTypeStore, Label: "Tienda"},
+		{Code: EstablishmentTypeWorkshopStore, Label: "Taller y Tienda"},
+	}
+}
+
 // BranchStatus defines valid statuses for branches
 const (
 	BranchStatusActive   = "ACTIVE"
