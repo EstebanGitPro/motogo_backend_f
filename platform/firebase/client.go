@@ -24,17 +24,17 @@ func NewClient(credentialsPath string) (*Client, error) {
 	opt := option.WithCredentialsFile(credentialsPath)
 	app, err := firebase.NewApp(ctx, nil, opt)
 	if err != nil {
-		log.Error("error initializing Firebase app", "error", err)
+		log.Error(logger.LogFirebaseInitAppError, "error", err)
 		return nil, fmt.Errorf("error initializing Firebase app: %w", err)
 	}
 
 	authClient, err := app.Auth(ctx)
 	if err != nil {
-		log.Error("error getting Firebase Auth client", "error", err)
+		log.Error(logger.LogFirebaseAuthClientError, "error", err)
 		return nil, fmt.Errorf("error getting Firebase Auth client: %w", err)
 	}
 
-	log.Success("Firebase Admin SDK initialized successfully")
+	log.Success(logger.LogFirebaseInitOK)
 	return &Client{authClient: authClient}, nil
 }
 
@@ -43,11 +43,11 @@ func NewClient(credentialsPath string) (*Client, error) {
 func (c *Client) CreateCustomToken(ctx context.Context, uid string) (string, error) {
 	token, err := c.authClient.CustomToken(ctx, uid)
 	if err != nil {
-		log.Error("error creating Firebase custom token", "uid", uid, "error", err)
+		log.Error(logger.LogFirebaseTokenCreateError, "uid", uid, "error", err)
 		return "", fmt.Errorf("error creating custom token: %w", err)
 	}
 
-	log.Info("Firebase custom token created", "uid", uid)
+	log.Info(logger.LogFirebaseTokenCreateOK, "uid", uid)
 	return token, nil
 }
 
@@ -56,10 +56,10 @@ func (c *Client) CreateCustomToken(ctx context.Context, uid string) (string, err
 func (c *Client) CreateCustomTokenWithClaims(ctx context.Context, uid string, claims map[string]interface{}) (string, error) {
 	token, err := c.authClient.CustomTokenWithClaims(ctx, uid, claims)
 	if err != nil {
-		log.Error("error creating Firebase custom token with claims", "uid", uid, "error", err)
+		log.Error(logger.LogFirebaseTokenClaimsError, "uid", uid, "error", err)
 		return "", fmt.Errorf("error creating custom token with claims: %w", err)
 	}
 
-	log.Info("Firebase custom token with claims created", "uid", uid)
+	log.Info(logger.LogFirebaseTokenClaimsOK, "uid", uid)
 	return token, nil
 }

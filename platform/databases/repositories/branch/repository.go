@@ -37,9 +37,11 @@ const (
 		LIMIT 1
 	`
 	queryGetBranchesByRepresentative = `
-		SELECT id, representative_id, franchise_id, name, establishment_type, profile_image_url, status
-		FROM branches 
-		WHERE representative_id = ?
+		SELECT b.id, b.representative_id, b.franchise_id, b.name, b.establishment_type, b.profile_image_url, b.status,
+		       l.id, l.city_id, l.address, l.latitude, l.longitude
+		FROM branches b
+		LEFT JOIN locations l ON b.id = l.branch_id
+		WHERE b.representative_id = ?
 	`
 
 	// Branch brands queries

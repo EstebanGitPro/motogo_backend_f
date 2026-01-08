@@ -88,6 +88,9 @@ type BranchService interface {
 
 	// Branch - Brands operations
 	SaveBranchBrands(ctx context.Context, tx output.Tx, branchID string, brands []string) error
+
+	// GetBranchesByRepresentative retrieves all branches for a representative (HU62)
+	GetBranchesByRepresentative(ctx context.Context, representativeID string) ([]domain.Branch, error)
 }
 
 // BrandService - Use Cases for Brand catalog operations

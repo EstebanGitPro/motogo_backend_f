@@ -8,7 +8,7 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// GetBranchesByRepresentative retrieves all branches for a representative
+// GetBranchesByRepresentative retrieves all branches for a representative including location and brands
 func (r *repository) GetBranchesByRepresentative(ctx context.Context, representativeID string) ([]domain.Branch, error) {
 	rows, err := r.stmtGetBranchesByRepresentative.QueryContext(ctx, representativeID)
 	if err != nil {
@@ -21,6 +21,8 @@ func (r *repository) GetBranchesByRepresentative(ctx context.Context, representa
 	for rows.Next() {
 		var branch domain.Branch
 		var franchiseID, profileImageURL sql.NullString
+		var locationID, cityID, address sql.NullString
+		var latitude, longitude sql.NullFloat64
 
 		err := rows.Scan(
 			&branch.ID,
@@ -30,6 +32,11 @@ func (r *repository) GetBranchesByRepresentative(ctx context.Context, representa
 			&branch.EstablishmentType,
 			&profileImageURL,
 			&branch.Status,
+			&locationID,
+			&cityID,
+			&address,
+			&latitude,
+			&longitude,
 		)
 		if err != nil {
 			log.Error(logger.LogBranchRepoScanError, "error", err)
@@ -42,6 +49,29 @@ func (r *repository) GetBranchesByRepresentative(ctx context.Context, representa
 		if profileImageURL.Valid {
 			branch.ProfileImageURL = &profileImageURL.String
 		}
+
+		// Parse location if exists
+		if locationID.Valid {
+			branch.Location = &domain.Location{
+				ID:       locationID.String,
+				BranchID: branch.ID,
+				CityID:   cityID.String,
+				Address:  address.String,
+			}
+			if latitude.Valid {
+				branch.Location.Latitude = &latitude.Float64
+			}
+			if longitude.Valid {
+				branch.Location.Longitude = &longitude.Float64
+			}
+		}
+
+		// Get brands for this branch
+		brands, err := r.getBranchBrands(ctx, branch.ID)
+		if err != nil {
+			log.Error(logger.LogBranchRepoBrandGetError, "error", err, "branch_id", branch.ID)
+		}
+		branch.Brands = brands
 
 		branches = append(branches, branch)
 	}

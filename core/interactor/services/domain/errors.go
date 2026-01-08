@@ -245,15 +245,18 @@ const (
 	MsgChangePasswordPolicyError    = "MOD_P_CHANGE_ERR_00003"
 )
 
-// Branch Module (MOD_B_*) - HU59
+// Branch Module (MOD_B_*) - HU59, HU62, HU76
 const (
 	MsgBranchRegistered    = "MOD_B_REG_EXI_00001"
 	MsgBranchCannotSave    = "MOD_B_REG_ERR_00001"
 	MsgBranchDuplicateName = "MOD_B_DUP_NAME_ERR_00001"
 	MsgBranchInvalidType   = "MOD_B_INVALID_TYPE_ERR_00001"
 	MsgBranchNotFound      = "MOD_B_NOT_FOUND_ERR_00001"
+	MsgBranchFound         = "MOD_B_GET_EXI_00001"   // HU62: Branch found
+	MsgBranchTypesFound    = "MOD_B_TYPES_EXI_00001" // HU76: Branch types catalog
 	MsgBranchUpdated       = "MOD_B_UPD_EXI_00001"
 	MsgBranchDeleted       = "MOD_B_DEL_EXI_00001"
 	MsgBrandNotFound       = "MOD_B_BRAND_NOT_FOUND_ERR_00001"
 	MsgDuplicateAddress    = "MOD_B_DUP_ADDR_ERR_00001"
+	MsgBranchListFound     = "MOD_B_LIST_EXI_00001" // HU62: Branch list found
 )
