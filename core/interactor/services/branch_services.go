@@ -193,3 +193,8 @@ func (s *branchService) SaveLocation(ctx context.Context, tx output.Tx, location
 func (s *branchService) SaveBranchBrands(ctx context.Context, tx output.Tx, branchID string, brands []string) error {
 	return s.repository.SaveBranchBrands(ctx, tx, branchID, brands)
 }
+
+// GetBranchesByRepresentative retrieves all branches for a representative (HU62)
+func (s *branchService) GetBranchesByRepresentative(ctx context.Context, representativeID string) ([]domain.Branch, error) {
+	return s.repository.GetBranchesByRepresentative(ctx, representativeID)
+}

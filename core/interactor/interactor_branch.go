@@ -129,3 +129,20 @@ func (i *BranchInteractor) GetBranchByID(ctx context.Context, branchID string) (
 func (i *BranchInteractor) GeocodeLocation(ctx context.Context, location *domain.Location) (bool, error) {
 	return i.branchService.GeocodeLocation(ctx, location)
 }
+
+// GetBranchesByRepresentative retrieves all branches for a representative (HU62 - List my branches)
+func (i *BranchInteractor) GetBranchesByRepresentative(ctx context.Context, representativeID string) ([]domain.Branch, error) {
+	traceID := middleware.GetTraceIDFromContext(ctx)
+	log := i.logger.WithTraceID(traceID)
+
+	log.Info(logger.LogBranchInteractorListByRep, "representative_id", representativeID)
+
+	branches, err := i.branchService.GetBranchesByRepresentative(ctx, representativeID)
+	if err != nil {
+		log.Error(logger.LogBranchInteractorListByRepErr, "error", err, "representative_id", representativeID)
+		return nil, err
+	}
+
+	log.Success(logger.LogBranchInteractorListByRepOK, "representative_id", representativeID, "count", len(branches))
+	return branches, nil
+}
