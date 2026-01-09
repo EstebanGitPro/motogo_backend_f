@@ -29,6 +29,7 @@ var (
 	ErrPasswordUpdateFailed      = errors.New("ERR_PASSWORD_UPDATE_FAILED")
 	ErrPasswordPolicyViolation   = errors.New("ERR_PASSWORD_POLICY_VIOLATION")
 	ErrInvalidCredentials        = errors.New("ERR_INVALID_CREDENTIALS")
+	ErrForbidden                 = errors.New("ERR_FORBIDDEN")
 )
 
 // Infrastructure Errors (MOD_INFRA_*)
@@ -255,6 +256,7 @@ const (
 	MsgBranchFound         = "MOD_B_GET_EXI_00001"   // HU62: Branch found
 	MsgBranchTypesFound    = "MOD_B_TYPES_EXI_00001" // HU76: Branch types catalog
 	MsgBranchUpdated       = "MOD_B_UPD_EXI_00001"
+	MsgBranchCannotUpdate  = "MOD_B_UPD_ERR_00001" // HU60: Update error
 	MsgBranchDeleted       = "MOD_B_DEL_EXI_00001"
 	MsgBrandNotFound       = "MOD_B_BRAND_NOT_FOUND_ERR_00001"
 	MsgDuplicateAddress    = "MOD_B_DUP_ADDR_ERR_00001"

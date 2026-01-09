@@ -463,6 +463,22 @@ func (s service) Login(ctx context.Context, email, password string) (*gocloak.JW
 	return token, nil
 }
 
+// RefreshToken obtains a new access token using the refresh token
+// This is called by the frontend when the access token expires
+func (s service) RefreshToken(ctx context.Context, refreshToken string) (*gocloak.JWT, error) {
+	s.logger.Debug("RefreshToken called")
+
+	// Delegate to Keycloak client
+	token, err := s.keycloak.RefreshToken(ctx, refreshToken)
+	if err != nil {
+		s.logger.Error("RefreshToken failed", "error", err)
+		return nil, err
+	}
+
+	s.logger.Success("RefreshToken completed successfully")
+	return token, nil
+}
+
 // VerifyEmailByToken receives a JWT token, extracts the email, and marks it as verified in Keycloak
 // This is called when a user clicks on the verification link from the email
 // Returns the extracted email on success
