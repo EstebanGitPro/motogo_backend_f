@@ -48,6 +48,11 @@ type LoginResponse struct {
 	Links        []Link `json:"_links"`
 }
 
+// RefreshTokenRequest - DTO para refrescar access token
+type RefreshTokenRequest struct {
+	RefreshToken string `json:"refresh_token" binding:"required"`
+}
+
 // AuthMeResponse represents the authenticated user profile response
 type AuthMeResponse struct {
 	ID             string `json:"id"`

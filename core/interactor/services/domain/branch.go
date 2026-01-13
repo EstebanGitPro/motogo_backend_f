@@ -26,6 +26,19 @@ func GetAllEstablishmentTypes() []EstablishmentTypeInfo {
 	}
 }
 
+// GetEstablishmentTypeLabel returns the Spanish label for an establishment type code
+func GetEstablishmentTypeLabel(code string) string {
+	labels := map[string]string{
+		EstablishmentTypeWorkshop:      "Taller",
+		EstablishmentTypeStore:         "Tienda",
+		EstablishmentTypeWorkshopStore: "Taller y Tienda",
+	}
+	if label, ok := labels[code]; ok {
+		return label
+	}
+	return code // Fallback to code if not found
+}
+
 // BranchStatus defines valid statuses for branches
 const (
 	BranchStatusActive   = "ACTIVE"

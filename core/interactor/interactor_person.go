@@ -295,6 +295,30 @@ func (i *Interactor) Login(ctx context.Context, email, password string) (*dto.To
 	}, nil
 }
 
+// RefreshToken obtains a new access token using the refresh token
+// This is called by the frontend when the access token expires
+func (i *Interactor) RefreshToken(ctx context.Context, refreshToken string) (*dto.TokenResponse, error) {
+	traceID := middleware.GetTraceIDFromContext(ctx)
+	log := i.logger.WithTraceID(traceID)
+
+	log.Info("RefreshToken started")
+
+	// Delegate to service to refresh token via Keycloak
+	token, err := i.service.RefreshToken(ctx, refreshToken)
+	if err != nil {
+		log.Error("RefreshToken failed", "error", err)
+		return nil, err
+	}
+
+	log.Success("RefreshToken completed successfully")
+	return &dto.TokenResponse{
+		AccessToken:  token.AccessToken,
+		TokenType:    token.TokenType,
+		ExpiresIn:    token.ExpiresIn,
+		RefreshToken: token.RefreshToken,
+	}, nil
+}
+
 // ChangePassword allows an authenticated user to change their password (HU57)
 // Requires the current password for verification before setting a new one
 func (i *Interactor) ChangePassword(ctx context.Context, keycloakUserID, currentPassword, newPassword string) error {

@@ -211,6 +211,56 @@ func (h handler) Login() gin.HandlerFunc {
 	}
 }
 
+// @Summary Refrescar access token
+// @Description Obtiene un nuevo access token usando el refresh token. El frontend debe llamar este endpoint cuando reciba 401 por token expirado.
+// @Tags Autenticación
+// @Accept json
+// @Produce json
+// @Param request body RefreshTokenRequest true "Refresh token actual"
+// @Success 200 {object} middleware.APIResponse{data=LoginResponse} "Token refrescado exitosamente"
+// @Failure 400 {object} middleware.APIResponse "Formato inválido"
+// @Failure 401 {object} middleware.APIResponse "Refresh token inválido o expirado"
+// @Router /auth/refresh [post]
+func (h handler) RefreshToken() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		traceID := middleware.GetRequestID(c)
+		log := Logger.WithTraceID(traceID)
+
+		var req RefreshTokenRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			log.Error(logger.LogRegJSONParseError, "error", err)
+			h.Response.Error(c, domain.MsgValBadFormat)
+			return
+		}
+
+		log.Info("Refresh token requested", "client_ip", c.ClientIP())
+
+		// Call Keycloak to refresh the token
+		token, err := h.Interactor.RefreshToken(c, req.RefreshToken)
+		if err != nil {
+			log.Error("Refresh token failed", "error", err, "client_ip", c.ClientIP())
+			// All refresh errors return 401 - user needs to login again
+			h.Response.Error(c, domain.MsgUnauthorized)
+			return
+		}
+
+		// Build HATEOAS links for refresh response (same as login)
+		baseURL := GetBaseURL(c)
+		hateoasLinks := BuildLoginLinks(baseURL)
+
+		response := LoginResponse{
+			AccessToken:  token.AccessToken,
+			RefreshToken: token.RefreshToken,
+			ExpiresIn:    token.ExpiresIn,
+			TokenType:    token.TokenType,
+			Links:        hateoasLinks,
+		}
+
+		log.Success("Token refreshed successfully", "client_ip", c.ClientIP())
+		h.Response.SuccessWithData(c, "MOD_AUTH_REFRESH_SUCCESS_EXI_00001", response)
+	}
+}
+
 // @Summary Verificar email de usuario (Proxy)
 // @Description Verifica el email de un usuario usando un token JWT. Este endpoint actúa como proxy para no exponer Keycloak directamente.
 // @Tags Autenticación

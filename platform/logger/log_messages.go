@@ -522,6 +522,11 @@ const (
 	LogBranchInteractorListByRep    = "Listando sedes por representante"
 	LogBranchInteractorListByRepErr = "Error listando sedes por representante"
 	LogBranchInteractorListByRepOK  = "Sedes listadas por representante exitosamente"
+	// HU60: Update branch
+	LogBranchInteractorUpdateStart    = "Starting branch update process"
+	LogBranchInteractorOwnershipError = "User is not the owner of this branch"
+	LogBranchInteractorUpdateError    = "Error updating branch"
+	LogBranchInteractorUpdateComplete = "Branch updated successfully"
 )
 
 // ============================================
@@ -582,6 +587,10 @@ const (
 	LogBranchControllerListRequest = "Solicitud de listado de sedes recibida"
 	LogBranchControllerListError   = "Error listando sedes"
 	LogBranchControllerListSuccess = "Sedes listadas exitosamente"
+	// HU60: Update branch
+	LogBranchControllerUpdateRequest = "Branch update request received"
+	LogBranchControllerUpdateError   = "Error updating branch"
+	LogBranchControllerUpdateSuccess = "Branch updated successfully"
 )
 
 // ============================================

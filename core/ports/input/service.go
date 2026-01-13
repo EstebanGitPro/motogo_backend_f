@@ -33,6 +33,8 @@ type Service interface {
 	SendVerificationEmail(ctx context.Context, userID string) error
 	SendPasswordResetEmail(ctx context.Context, email string) error
 	Login(ctx context.Context, email, password string) (*gocloak.JWT, error)
+	// RefreshToken obtains a new access token using the refresh token
+	RefreshToken(ctx context.Context, refreshToken string) (*gocloak.JWT, error)
 	// VerifyEmailByToken receives a JWT token, extracts the email, and verifies it in Keycloak
 	// Returns the extracted email on success
 	VerifyEmailByToken(ctx context.Context, token string) (string, error)
@@ -91,6 +93,9 @@ type BranchService interface {
 
 	// GetBranchesByRepresentative retrieves all branches for a representative (HU62)
 	GetBranchesByRepresentative(ctx context.Context, representativeID string) ([]domain.Branch, error)
+
+	// UpdateBranch updates an existing branch (HU60)
+	UpdateBranch(ctx context.Context, tx output.Tx, branch domain.Branch) error
 }
 
 // BrandService - Use Cases for Brand catalog operations

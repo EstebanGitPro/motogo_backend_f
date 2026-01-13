@@ -146,3 +146,86 @@ func (i *BranchInteractor) GetBranchesByRepresentative(ctx context.Context, repr
 	log.Success(logger.LogBranchInteractorListByRepOK, "representative_id", representativeID, "count", len(branches))
 	return branches, nil
 }
+
+// UpdateBranch updates an existing branch with ownership validation (HU60)
+// Returns: (updatedBranch, geocodingSucceeded, error)
+func (i *BranchInteractor) UpdateBranch(ctx context.Context, branchID string, branch domain.Branch, personID string) (*domain.Branch, bool, error) {
+	traceID := middleware.GetTraceIDFromContext(ctx)
+	log := i.logger.WithTraceID(traceID)
+
+	log.Info(logger.LogBranchInteractorUpdateStart, "branch_id", branchID, "person_id", personID)
+
+	// 1. Get existing branch to validate ownership
+	existingBranch, err := i.branchService.GetBranchByID(ctx, branchID)
+	if err != nil {
+		log.Error(logger.LogBranchInteractorGetByIDError, "error", err, "branch_id", branchID)
+		return nil, false, err
+	}
+
+	// 2. Validate ownership
+	if existingBranch.RepresentativeID != personID {
+		log.Warn(logger.LogBranchInteractorOwnershipError, "branch_id", branchID, "owner_id", existingBranch.RepresentativeID, "person_id", personID)
+		return nil, false, domain.ErrForbidden
+	}
+
+	// 3. Validate brands if provided
+	if len(branch.Brands) > 0 {
+		if err := i.branchService.ValidateBrands(ctx, branch.Brands); err != nil {
+			log.Warn(logger.LogBranchInteractorValidationError, "error", err, "brands", branch.Brands)
+			return nil, false, err
+		}
+	}
+
+	// 4. Geocode location if address changed and no coordinates provided
+	var geocodingSucceeded bool
+	if branch.Location != nil {
+		geocodingSucceeded, err = i.branchService.GeocodeLocation(ctx, branch.Location)
+		if err != nil {
+			log.Warn("geocoding_step_failed", "error", err)
+		}
+	}
+
+	// 5. Begin transaction
+	tx, err := i.branchService.BeginTx(ctx)
+	if err != nil {
+		log.Error(logger.LogBranchInteractorTxError, "error", err)
+		return nil, false, err
+	}
+
+	defer func() {
+		if err != nil {
+			if rbErr := tx.Rollback(); rbErr != nil {
+				log.Error(logger.LogBranchInteractorRollbackError, "rollback_error", rbErr, "original_error", err)
+			}
+		}
+	}()
+
+	// 6. Set branch ID, representative ID, and status (preserve from existing)
+	branch.ID = branchID
+	branch.RepresentativeID = existingBranch.RepresentativeID
+	branch.Status = existingBranch.Status // Preserve existing status
+
+	// 7. Update branch via service
+	if err = i.branchService.UpdateBranch(ctx, tx, branch); err != nil {
+		log.Error(logger.LogBranchInteractorUpdateError, "error", err, "branch_id", branchID)
+		return nil, false, err
+	}
+
+	// 8. Commit transaction
+	if err = tx.Commit(); err != nil {
+		log.Error(logger.LogBranchInteractorCommitError, "error", err)
+		return nil, false, err
+	}
+
+	// 9. Fetch updated branch for response
+	updatedBranch, err := i.branchService.GetBranchByID(ctx, branchID)
+	if err != nil {
+		log.Warn("branch_refetch_failed", "error", err, "branch_id", branchID)
+		// Return original data, update was successful
+		return &branch, geocodingSucceeded, nil
+	}
+
+	log.Success(logger.LogBranchInteractorUpdateComplete, "branch_id", branchID, "geocoding_succeeded", geocodingSucceeded)
+	err = nil
+	return updatedBranch, geocodingSucceeded, nil
+}

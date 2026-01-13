@@ -15,6 +15,7 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/firebase"
 	"github.com/EstebanGitPro/motogo-backend/platform/geocoding"
 	"github.com/EstebanGitPro/motogo-backend/platform/identity_provider/keycloak"
+	"github.com/EstebanGitPro/motogo-backend/platform/jwt"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 	"github.com/EstebanGitPro/motogo-backend/tools/idencoder"
 	"github.com/EstebanGitPro/motogo-backend/tools/utils"
@@ -38,6 +39,7 @@ type Dependencies struct {
 	BrandInteractor    *interactor.BrandInteractor    // Brands catalog
 	LocationInteractor *interactor.LocationInteractor // Geographic catalogs
 	FirebaseClient     *firebase.Client               // Firebase Auth
+	JWTValidator       *jwt.JWKSValidator             // JWT validation with JWKS
 	Config             *config.Config
 	Logger             logger.Logger
 	IDEncoder          *idencoder.HashidsEncoder
@@ -185,6 +187,24 @@ func Init() (*Dependencies, error) {
 		log.Warn("Firebase credentials not configured, skipping initialization")
 	}
 
+	// JWKS Validator (JWT signature and expiration validation)
+	// This fetches Keycloak's public keys for local token validation
+	var jwtValidator *jwt.JWKSValidator
+	jwtConfig := jwt.JWKSConfig{
+		JWKSURL:         cfg.GetKeycloakJWKSURL(),
+		Issuer:          cfg.GetKeycloakIssuerURL(),
+		RefreshInterval: 15 * time.Minute, // Refresh keys every 15 minutes
+	}
+	jwtValidator, err = jwt.NewJWKSValidator(context.Background(), jwtConfig)
+	if err != nil {
+		log.Warn("JWKS validator initialization failed, using fallback validation", "error", err)
+		// Don't fail startup - middleware will fall back to simple parsing
+		// This allows the app to start even if Keycloak is temporarily unavailable
+		jwtValidator = nil
+	} else {
+		log.Success("JWKS validator initialized", "jwks_url", jwtConfig.JWKSURL)
+	}
+
 	return &Dependencies{
 		PersonService:      personService,
 		PersonRepo:         personRepo,
@@ -195,6 +215,7 @@ func Init() (*Dependencies, error) {
 		BrandInteractor:    brandInteractor,
 		LocationInteractor: locationInteractor,
 		FirebaseClient:     firebaseClient,
+		JWTValidator:       jwtValidator,
 		Config:             cfg,
 		Logger:             log,
 		IDEncoder:          encoder,
