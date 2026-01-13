@@ -186,3 +186,17 @@ func (c *Config) GetKeycloakAdminURL() string {
 		c.Keycloak.ServerURL,
 		c.Keycloak.Realm)
 }
+
+// Helper para obtener la URL del endpoint JWKS de Keycloak (para validación JWT)
+func (c *Config) GetKeycloakJWKSURL() string {
+	return fmt.Sprintf("%s/realms/%s/protocol/openid-connect/certs",
+		c.Keycloak.ServerURL,
+		c.Keycloak.Realm)
+}
+
+// Helper para obtener la URL del issuer de Keycloak (para validación JWT)
+func (c *Config) GetKeycloakIssuerURL() string {
+	return fmt.Sprintf("%s/realms/%s",
+		c.Keycloak.ServerURL,
+		c.Keycloak.Realm)
+}

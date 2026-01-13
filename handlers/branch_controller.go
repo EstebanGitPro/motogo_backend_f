@@ -312,3 +312,117 @@ func (h *handler) ListBranches() gin.HandlerFunc {
 		h.Response.SuccessWithData(c, domain.MsgBranchListFound, response)
 	}
 }
+
+// UpdateBranch handles PUT /branches/:id - updates branch information (HU60)
+// @Summary Update a branch
+// @Description Updates an existing branch. Only the owner can update.
+// @Tags Branch
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Branch ID (encoded)"
+// @Param request body RegisterBranchRequest true "Branch update data"
+// @Success 200 {object} StandardResponse{data=BranchResponse}
+// @Failure 400 {object} StandardResponse
+// @Failure 401 {object} StandardResponse
+// @Failure 403 {object} StandardResponse
+// @Failure 404 {object} StandardResponse
+// @Router /branches/{id} [put]
+func (h *handler) UpdateBranch() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		traceID := middleware.GetRequestID(c)
+		log := Logger.WithTraceID(traceID)
+
+		log.Info(logger.LogBranchControllerUpdateRequest,
+			"method", c.Request.Method,
+			"path", c.Request.URL.Path,
+			"client_ip", c.ClientIP())
+
+		// 1. Get authenticated person from context
+		person, _ := middleware.GetAuthenticatedUser(c)
+
+		// 2. Decode branch ID from URL
+		encodedID := c.Param("id")
+		branchID, err := h.DecodeID(encodedID)
+		if err != nil {
+			log.Warn(logger.LogBranchControllerIDDecodeError, "encoded_id", encodedID, "error", err)
+			h.Response.Error(c, domain.MsgBranchNotFound)
+			return
+		}
+
+		// 3. Bind request body
+		var req RegisterBranchRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			log.Error(logger.LogBranchControllerBindError, "error", err)
+			h.Response.Error(c, domain.MsgValJSONInvalid)
+			return
+		}
+
+		// 3.1 Sanitize input
+		req.Sanitize()
+
+		log.Info(logger.LogBranchControllerProcessing,
+			"branch_id", branchID,
+			"branch_name", req.Name,
+			"establishment_type", req.EstablishmentType)
+
+		// 4. Map DTO to domain model
+		branch := req.ToDomain(person.ID)
+
+		// 5. Check if user provided coordinates
+		userProvidedCoords := branch.Location != nil &&
+			branch.Location.Latitude != nil &&
+			branch.Location.Longitude != nil
+
+		// 6. Call interactor with ownership validation
+		updatedBranch, geocodingSucceeded, err := h.BranchInteractor.UpdateBranch(c.Request.Context(), branchID, branch, person.ID)
+		if err != nil {
+			log.Error(logger.LogBranchControllerUpdateError, "error", err, "branch_id", branchID)
+			switch err {
+			case domain.ErrBranchNotFound:
+				h.Response.Error(c, domain.MsgBranchNotFound)
+			case domain.ErrForbidden:
+				h.Response.Error(c, domain.MsgForbidden)
+			case domain.ErrInvalidBranchType:
+				h.Response.Error(c, domain.MsgBranchInvalidType)
+			case domain.ErrBrandNotFound:
+				h.Response.Error(c, domain.MsgBrandNotFound)
+			default:
+				h.Response.Error(c, domain.MsgBranchCannotUpdate)
+			}
+			return
+		}
+
+		// 7. Encode ID for response
+		responseEncodedID, err := h.EncodeID(updatedBranch.ID)
+		if err != nil {
+			h.HandleIDEncodingError(c, updatedBranch.ID, err)
+			return
+		}
+
+		// 8. Build HATEOAS links
+		baseURL := GetBaseURL(c)
+		links := BuildBranchDetailLinks(baseURL, responseEncodedID, true)
+
+		// 9. Determine geocoding status
+		var geocodingStatus GeocodingStatus
+		if userProvidedCoords {
+			geocodingStatus = GeocodingStatusSkipped
+		} else if geocodingSucceeded {
+			geocodingStatus = GeocodingStatusSuccess
+		} else {
+			geocodingStatus = GeocodingStatusFailed
+		}
+
+		// 10. Build response DTO
+		response := NewBranchResponse(updatedBranch, responseEncodedID, geocodingStatus, links)
+
+		log.Success(logger.LogBranchControllerUpdateSuccess,
+			"branch_id", updatedBranch.ID,
+			"branch_name", updatedBranch.Name,
+			"geocoding_status", geocodingStatus)
+
+		// 11. Send success response (200 OK)
+		h.Response.SuccessWithData(c, domain.MsgBranchUpdated, response)
+	}
+}

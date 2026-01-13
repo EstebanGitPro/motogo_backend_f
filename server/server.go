@@ -93,6 +93,9 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		// POST /auth/login - Autenticar usuario
 		public.POST("/auth/login", handler.Login())
 
+		// POST /auth/refresh - Refrescar access token
+		public.POST("/auth/refresh", handler.RefreshToken())
+
 		// POST /auth/resend-verification - Reenviar email de verificación
 		public.POST("/auth/resend-verification", validator.WithValidateResendVerification(), handler.ResendVerificationEmail())
 
@@ -152,7 +155,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 	// Protected Routes (require JWT authentication)
 	// ========================================
 	protected := app.Group("motogo/api/v1")
-	protected.Use(middleware.RequireAuth(dependencies.PersonService, dependencies.MessagingCache))
+	protected.Use(middleware.RequireAuth(dependencies.PersonService, dependencies.MessagingCache, dependencies.JWTValidator))
 	{
 		// GET /persons/me - Obtener perfil del usuario autenticado
 		protected.GET("/persons/me", handler.GetAuthenticatedUser())
@@ -182,6 +185,13 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 			validator.WithValidateRegisterBranch(),
 			middleware.RequireRole(domain.RoleRepresentative),
 			handler.RegisterBranch(),
+		)
+
+		// PUT /branches/:id - Modificar sede (solo REPRESENTANTE dueño) (HU60)
+		protected.PUT("/branches/:id",
+			validator.WithValidateRegisterBranch(),
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.UpdateBranch(),
 		)
 	}
 

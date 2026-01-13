@@ -198,3 +198,43 @@ func (s *branchService) SaveBranchBrands(ctx context.Context, tx output.Tx, bran
 func (s *branchService) GetBranchesByRepresentative(ctx context.Context, representativeID string) ([]domain.Branch, error) {
 	return s.repository.GetBranchesByRepresentative(ctx, representativeID)
 }
+
+// UpdateBranch updates an existing branch (HU60)
+func (s *branchService) UpdateBranch(ctx context.Context, tx output.Tx, branch domain.Branch) error {
+	// 1. Validate establishment type
+	if !branch.IsValidEstablishmentType() {
+		s.logger.Warn(logger.LogBranchServiceInvalidType, "type", branch.EstablishmentType)
+		return domain.ErrInvalidBranchType
+	}
+
+	// 2. Update branch core fields
+	if err := s.repository.UpdateBranch(ctx, tx, branch); err != nil {
+		s.logger.Error(logger.LogBranchServiceSaveError, "error", err, "branch_id", branch.ID)
+		return err
+	}
+
+	// 3. Update location if provided
+	if branch.Location != nil {
+		branch.Location.BranchID = branch.ID
+		if err := s.locationRepo.UpdateLocation(ctx, tx, *branch.Location); err != nil {
+			s.logger.Error(logger.LogBranchServiceLocSaveError, "error", err, "branch_id", branch.ID)
+			return err
+		}
+	}
+
+	// 4. Update brands: delete existing and save new
+	if err := s.repository.DeleteBranchBrands(ctx, tx, branch.ID); err != nil {
+		s.logger.Error(logger.LogBranchServiceBrandSaveErr, "error", err, "branch_id", branch.ID)
+		return err
+	}
+
+	if len(branch.Brands) > 0 {
+		if err := s.repository.SaveBranchBrands(ctx, tx, branch.ID, branch.Brands); err != nil {
+			s.logger.Error(logger.LogBranchServiceBrandSaveErr, "error", err, "branch_id", branch.ID)
+			return err
+		}
+	}
+
+	s.logger.Info(logger.LogBranchServiceRegComplete, "branch_id", branch.ID, "name", branch.Name)
+	return nil
+}

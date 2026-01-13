@@ -25,9 +25,10 @@ const (
 
 	queryGetBranchByID = `
 		SELECT b.id, b.representative_id, b.franchise_id, b.name, b.establishment_type, b.profile_image_url, b.status,
-			   l.id, l.city_id, l.address, l.latitude, l.longitude
+			   l.id, l.city_id, l.address, l.latitude, l.longitude, c.department_id
 		FROM branches b
 		LEFT JOIN locations l ON b.id = l.branch_id
+		LEFT JOIN cities c ON l.city_id = c.id
 		WHERE b.id = ?
 	`
 	queryGetBranchByFranchiseAndName = `
