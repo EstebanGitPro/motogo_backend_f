@@ -106,6 +106,11 @@ var (
 	ErrInvalidImageURL     = errors.New("ERR_INVALID_IMAGE_URL")
 )
 
+// Person Deletion Errors (HU53)
+var (
+	ErrPersonHasBranches = errors.New("ERR_PERSON_HAS_BRANCHES")
+)
+
 // Location/Geographic Errors (MOD_L_*)
 var (
 	ErrDepartmentNotFound  = errors.New("ERR_DEPARTMENT_NOT_FOUND")
@@ -144,8 +149,10 @@ const (
 	MsgPersonInvalidTx        = "MOD_P_TRANS_ERR_00002"
 	MsgPersonRegistered       = "MOD_P_REG_EXI_00001"
 	MsgPersonUpdated          = "MOD_P_UPD_EXI_00002"
-	MsgPersonCannotDelete     = "MOD_P_DEL_ERR_00003"
-	MsgPersonContactRetrieved = "MOD_P_CONTACT_EXI_00001" // HU55: Public contact retrieved
+	MsgPersonCannotDelete     = "MOD_P_DEL_ERR_00001"          // HU53: Generic delete error
+	MsgPersonContactRetrieved = "MOD_P_CONTACT_EXI_00001"      // HU55: Public contact retrieved
+	MsgPersonDeleted          = "MOD_P_DEL_EXI_00001"          // HU53: Person deleted success
+	MsgPersonHasBranches      = "MOD_P_HAS_BRANCHES_ERR_00001" // HU53: Has branches
 )
 
 // Validation Module (MOD_V_*)
@@ -260,5 +267,7 @@ const (
 	MsgBranchDeleted       = "MOD_B_DEL_EXI_00001"
 	MsgBrandNotFound       = "MOD_B_BRAND_NOT_FOUND_ERR_00001"
 	MsgDuplicateAddress    = "MOD_B_DUP_ADDR_ERR_00001"
-	MsgBranchListFound     = "MOD_B_LIST_EXI_00001" // HU62: Branch list found
+	MsgBranchListFound     = "MOD_B_LIST_EXI_00001"      // HU62: Branch list found
+	MsgBranchCannotDelete  = "MOD_B_DEL_ERR_00001"       // HU61: Delete error
+	MsgBranchHasAssoc      = "MOD_B_HAS_ASSOC_ERR_00001" // HU61: Has associations
 )

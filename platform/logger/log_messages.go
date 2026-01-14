@@ -527,6 +527,11 @@ const (
 	LogBranchInteractorOwnershipError = "User is not the owner of this branch"
 	LogBranchInteractorUpdateError    = "Error updating branch"
 	LogBranchInteractorUpdateComplete = "Branch updated successfully"
+	// HU61: Delete branch
+	LogBranchInteractorDeleteStart    = "Starting branch delete process"
+	LogBranchInteractorDeleteError    = "Error deleting branch"
+	LogBranchInteractorDeleteComplete = "Branch deleted successfully"
+	LogBranchInteractorHasAssocError  = "Branch has associations that prevent deletion"
 )
 
 // ============================================
@@ -560,6 +565,9 @@ const (
 	LogBranchServiceBrandSaveErr = "Error guardando marcas"
 	LogBranchServiceRegComplete  = "Sede registrada exitosamente"
 	LogBranchServiceGetError     = "Error obteniendo sede por ID"
+	// HU61: Delete branch
+	LogBranchServiceDelError    = "Error eliminando sede"
+	LogBranchServiceDelComplete = "Sede eliminada exitosamente"
 )
 
 // ============================================
@@ -591,6 +599,10 @@ const (
 	LogBranchControllerUpdateRequest = "Branch update request received"
 	LogBranchControllerUpdateError   = "Error updating branch"
 	LogBranchControllerUpdateSuccess = "Branch updated successfully"
+	// HU61: Delete branch
+	LogBranchControllerDeleteRequest = "Branch delete request received"
+	LogBranchControllerDeleteError   = "Error deleting branch"
+	LogBranchControllerDeleteSuccess = "Branch deleted successfully"
 )
 
 // ============================================
