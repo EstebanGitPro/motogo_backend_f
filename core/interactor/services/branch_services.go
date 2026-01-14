@@ -238,3 +238,16 @@ func (s *branchService) UpdateBranch(ctx context.Context, tx output.Tx, branch d
 	s.logger.Info(logger.LogBranchServiceRegComplete, "branch_id", branch.ID, "name", branch.Name)
 	return nil
 }
+
+// DeleteBranch deletes a branch by ID (HU61)
+// Related data (brands, location, schedules, services) is handled by CASCADE
+// diagnostics and completed_services have RESTRICT - will error if exist
+func (s *branchService) DeleteBranch(ctx context.Context, tx output.Tx, branchID string) error {
+	if err := s.repository.DeleteBranch(ctx, tx, branchID); err != nil {
+		s.logger.Error(logger.LogBranchServiceDelError, "error", err, "branch_id", branchID)
+		return err
+	}
+
+	s.logger.Info(logger.LogBranchServiceDelComplete, "branch_id", branchID)
+	return nil
+}

@@ -426,3 +426,78 @@ func (h *handler) UpdateBranch() gin.HandlerFunc {
 		h.Response.SuccessWithData(c, domain.MsgBranchUpdated, response)
 	}
 }
+
+// DeleteBranch handles DELETE /branches/:id - deletes a branch (HU61)
+// @Summary Delete a branch
+// @Description Deletes an existing branch. Only the owner can delete. Cannot delete if has diagnostics or completed services.
+// @Tags Branch
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Branch ID (encoded)"
+// @Success 200 {object} StandardResponse
+// @Failure 401 {object} StandardResponse
+// @Failure 403 {object} StandardResponse
+// @Failure 404 {object} StandardResponse
+// @Failure 409 {object} StandardResponse
+// @Router /branches/{id} [delete]
+func (h *handler) DeleteBranch() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		traceID := middleware.GetRequestID(c)
+		log := Logger.WithTraceID(traceID)
+
+		log.Info(logger.LogBranchControllerDeleteRequest,
+			"method", c.Request.Method,
+			"path", c.Request.URL.Path,
+			"client_ip", c.ClientIP())
+
+		// 1. Get authenticated person from context
+		person, _ := middleware.GetAuthenticatedUser(c)
+
+		// 2. Decode branch ID from URL
+		encodedID := c.Param("id")
+		branchID, err := h.DecodeID(encodedID)
+		if err != nil {
+			log.Warn(logger.LogBranchControllerIDDecodeError, "encoded_id", encodedID, "error", err)
+			h.Response.Error(c, domain.MsgBranchNotFound)
+			return
+		}
+
+		log.Debug("branch_delete_processing", "branch_id", branchID, "person_id", person.ID)
+
+		// 3. Call interactor with ownership validation
+		err = h.BranchInteractor.DeleteBranch(c.Request.Context(), branchID, person.ID)
+		if err != nil {
+			log.Error(logger.LogBranchControllerDeleteError, "error", err, "branch_id", branchID)
+			switch err {
+			case domain.ErrBranchNotFound:
+				h.Response.Error(c, domain.MsgBranchNotFound)
+			case domain.ErrForbidden:
+				h.Response.Error(c, domain.MsgForbidden)
+			case domain.ErrBranchCannotDelete:
+				h.Response.Error(c, domain.MsgBranchHasAssoc)
+			default:
+				h.Response.Error(c, domain.MsgBranchCannotDelete)
+			}
+			return
+		}
+
+		// 4. Build HATEOAS links for after-delete actions
+		baseURL := GetBaseURL(c)
+		links := BuildBranchDeletedLinks(baseURL)
+
+		// 5. Build minimal response
+		response := struct {
+			Links []Link `json:"_links"`
+		}{
+			Links: links,
+		}
+
+		log.Success(logger.LogBranchControllerDeleteSuccess,
+			"branch_id", branchID,
+			"person_id", person.ID,
+			"client_ip", c.ClientIP())
+
+		// 6. Send success response (200 OK)
+		h.Response.SuccessWithData(c, domain.MsgBranchDeleted, response)
+	}
+}

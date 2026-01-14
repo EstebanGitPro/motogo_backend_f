@@ -584,15 +584,24 @@ func TestDeletePerson_Error(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
-func TestDeletePerson_InvalidTransaction(t *testing.T) {
-	// Arrange
-	repo := &repository{}
+func TestDeletePerson_NilTransaction_UsesDirectConnection(t *testing.T) {
+	// Arrange - DeletePerson now accepts nil tx and uses direct DB connection (HU53 self-delete)
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
 
-	// Act
-	err := repo.DeletePerson(context.Background(), nil, "person-123")
+	mock.ExpectExec("DELETE FROM persons WHERE id").
+		WithArgs("person-123").
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	repo := &repository{db: db}
+
+	// Act - pass nil as transaction, should use direct connection
+	err = repo.DeletePerson(context.Background(), nil, "person-123")
 
 	// Assert
-	assert.Equal(t, domain.ErrInvalidTransaction, err)
+	assert.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
 // ============================================

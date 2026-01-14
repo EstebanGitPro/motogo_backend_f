@@ -35,3 +35,7 @@ cmd/__debug_bin*
 # Firebase credentials (NEVER commit)
 serviceAccountKey.json
 *-firebase-adminsdk-*.json
+
+# Agent Skills & Workflows (local AI tools)
+.github/skills/
+.agent/

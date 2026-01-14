@@ -49,8 +49,7 @@
       "type": "string",
       "description": "Access password - minimum 8 characters, at least 1 uppercase (A-Z), 1 lowercase (a-z), and 1 number (0-9)",
       "minLength": 8,
-      "maxLength": 50,
-      "pattern": "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{8,}$"
+      "maxLength": 50
     },
     "role": {
       "type": "string",

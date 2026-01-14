@@ -642,3 +642,54 @@ func (h handler) GetPublicContact() gin.HandlerFunc {
 		h.Response.SuccessWithData(c, domain.MsgPersonContactRetrieved, response)
 	}
 }
+
+// DeleteSelf handles DELETE /persons/me - deletes authenticated user's account (HU53)
+// This is a self-delete only - users can only delete their own account
+func (h handler) DeleteSelf() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		traceID := middleware.GetRequestID(c)
+		log := Logger.WithTraceID(traceID)
+
+		// Get authenticated user from context
+		person, ok := middleware.GetAuthenticatedUser(c)
+		if !ok {
+			log.Error("DeleteSelf: authenticated user not found in context")
+			c.Error(domain.ErrUserNotFound)
+			return
+		}
+
+		log.Info("DeleteSelf request received", "user_id", person.ID, "email", person.Email)
+
+		// STEP 1: Check if user has active branches
+		branches, err := h.BranchInteractor.GetBranchesByRepresentative(c, person.ID)
+		if err != nil {
+			log.Error("error checking branches", "error", err, "user_id", person.ID)
+			h.Response.Error(c, domain.MsgPersonCannotDelete)
+			return
+		}
+
+		if len(branches) > 0 {
+			log.Warn("user has active branches, cannot delete", "user_id", person.ID, "branch_count", len(branches))
+			h.Response.Error(c, domain.MsgPersonHasBranches)
+			return
+		}
+
+		// STEP 2: Delete from Keycloak first
+		if err := h.Interactor.DeleteKeycloakUser(c, person.KeycloakUserID); err != nil {
+			log.Error("error deleting from Keycloak", "error", err, "keycloak_id", person.KeycloakUserID)
+			h.Response.Error(c, domain.MsgPersonCannotDelete)
+			return
+		}
+
+		// STEP 3: Delete from database
+		if err := h.Interactor.DeletePersonFromDB(c, person.ID); err != nil {
+			log.Error("error deleting from database", "error", err, "user_id", person.ID)
+			// Note: User already deleted from Keycloak - inconsistent state
+			h.Response.Error(c, domain.MsgPersonCannotDelete)
+			return
+		}
+
+		log.Success("Account deleted successfully", "user_id", person.ID, "email", person.Email)
+		h.Response.Success(c, domain.MsgPersonDeleted)
+	}
+}

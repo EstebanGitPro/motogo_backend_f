@@ -166,6 +166,9 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		// PUT /persons/me/password - Cambiar contraseña del usuario autenticado (HU57)
 		protected.PUT("/persons/me/password", handler.ChangePassword())
 
+		// DELETE /persons/me - Eliminar cuenta del usuario autenticado (HU53)
+		protected.DELETE("/persons/me", handler.DeleteSelf())
+
 		// GET /auth/firebase-token - Obtener token de Firebase para Storage
 		protected.GET("/auth/firebase-token", handler.GetFirebaseToken())
 
@@ -192,6 +195,12 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 			validator.WithValidateRegisterBranch(),
 			middleware.RequireRole(domain.RoleRepresentative),
 			handler.UpdateBranch(),
+		)
+
+		// DELETE /branches/:id - Eliminar sede (solo REPRESENTANTE dueño) (HU61)
+		protected.DELETE("/branches/:id",
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.DeleteBranch(),
 		)
 	}
 

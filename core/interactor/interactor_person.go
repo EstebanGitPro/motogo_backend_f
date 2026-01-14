@@ -413,3 +413,39 @@ func (i *Interactor) GetPublicContact(ctx context.Context, personID string) (*do
 	log.Success("GetPublicContact completed", "person_id", personID)
 	return person, nil
 }
+
+// DeleteKeycloakUser deletes a user from Keycloak (HU53)
+// This is used as part of account deletion flow
+func (i *Interactor) DeleteKeycloakUser(ctx context.Context, keycloakUserID string) error {
+	traceID := middleware.GetTraceIDFromContext(ctx)
+	log := i.logger.WithTraceID(traceID)
+
+	log.Info("Deleting user from Keycloak", "keycloak_user_id", keycloakUserID)
+
+	// Use existing RollbackKeycloakUser which internally calls DeleteUser
+	if err := i.service.RollbackKeycloakUser(ctx, keycloakUserID); err != nil {
+		log.Error("Failed to delete user from Keycloak", "error", err, "keycloak_user_id", keycloakUserID)
+		return err
+	}
+
+	log.Success("User deleted from Keycloak", "keycloak_user_id", keycloakUserID)
+	return nil
+}
+
+// DeletePersonFromDB deletes a person from the database (HU53)
+// This is used as part of account deletion flow
+func (i *Interactor) DeletePersonFromDB(ctx context.Context, personID string) error {
+	traceID := middleware.GetTraceIDFromContext(ctx)
+	log := i.logger.WithTraceID(traceID)
+
+	log.Info("Deleting person from database", "person_id", personID)
+
+	// Use existing RollbackPerson which internally calls DeletePerson
+	if err := i.service.RollbackPerson(ctx, personID); err != nil {
+		log.Error("Failed to delete person from database", "error", err, "person_id", personID)
+		return err
+	}
+
+	log.Success("Person deleted from database", "person_id", personID)
+	return nil
+}
