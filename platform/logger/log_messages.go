@@ -599,6 +599,10 @@ const (
 	LogBranchControllerUpdateRequest = "Branch update request received"
 	LogBranchControllerUpdateError   = "Error updating branch"
 	LogBranchControllerUpdateSuccess = "Branch updated successfully"
+	// HU61: Delete branch
+	LogBranchControllerDeleteRequest = "Branch delete request received"
+	LogBranchControllerDeleteError   = "Error deleting branch"
+	LogBranchControllerDeleteSuccess = "Branch deleted successfully"
 )
 
 // ============================================

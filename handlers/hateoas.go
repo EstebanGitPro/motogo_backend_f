@@ -422,3 +422,13 @@ func BuildBranchListLinks(baseURL string) []Link {
 		{Href: BuildCollectionURL(baseURL, "branch-types"), Rel: "branch-types", Method: "GET"},
 	}
 }
+
+// BuildBranchDeletedLinks constructs HATEOAS links after branch deletion (HU61)
+// Shows next possible actions: list branches or create new branch
+func BuildBranchDeletedLinks(baseURL string) []Link {
+	collectionURL := BuildCollectionURL(baseURL, "branches")
+	return []Link{
+		{Href: collectionURL, Rel: "list", Method: "GET"},
+		{Href: collectionURL, Rel: "create", Method: "POST"},
+	}
+}
