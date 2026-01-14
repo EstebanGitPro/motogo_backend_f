@@ -62,6 +62,7 @@ type BranchRepository interface {
 	GetBranchByID(ctx context.Context, branchID string) (*domain.Branch, error)
 	GetBranchByFranchiseAndName(ctx context.Context, franchiseID, name string) (*domain.Branch, error)
 	GetBranchesByRepresentative(ctx context.Context, representativeID string) ([]domain.Branch, error)
+	HasBranchesByRepresentative(ctx context.Context, representativeID string) (bool, error) // HU53
 
 	// Brand validation - read
 	ValidateBrands(ctx context.Context, brands []string) error
