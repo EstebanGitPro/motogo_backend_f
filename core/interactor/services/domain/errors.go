@@ -267,5 +267,7 @@ const (
 	MsgBranchDeleted       = "MOD_B_DEL_EXI_00001"
 	MsgBrandNotFound       = "MOD_B_BRAND_NOT_FOUND_ERR_00001"
 	MsgDuplicateAddress    = "MOD_B_DUP_ADDR_ERR_00001"
-	MsgBranchListFound     = "MOD_B_LIST_EXI_00001" // HU62: Branch list found
+	MsgBranchListFound     = "MOD_B_LIST_EXI_00001"      // HU62: Branch list found
+	MsgBranchCannotDelete  = "MOD_B_DEL_ERR_00001"       // HU61: Delete error
+	MsgBranchHasAssoc      = "MOD_B_HAS_ASSOC_ERR_00001" // HU61: Has associations
 )

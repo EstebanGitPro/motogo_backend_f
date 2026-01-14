@@ -96,6 +96,9 @@ type BranchService interface {
 
 	// UpdateBranch updates an existing branch (HU60)
 	UpdateBranch(ctx context.Context, tx output.Tx, branch domain.Branch) error
+
+	// DeleteBranch deletes a branch by ID (HU61)
+	DeleteBranch(ctx context.Context, tx output.Tx, branchID string) error
 }
 
 // BrandService - Use Cases for Brand catalog operations
