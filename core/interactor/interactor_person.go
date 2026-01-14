@@ -295,6 +295,30 @@ func (i *Interactor) Login(ctx context.Context, email, password string) (*dto.To
 	}, nil
 }
 
+// RefreshToken obtains a new access token using the refresh token
+// This is called by the frontend when the access token expires
+func (i *Interactor) RefreshToken(ctx context.Context, refreshToken string) (*dto.TokenResponse, error) {
+	traceID := middleware.GetTraceIDFromContext(ctx)
+	log := i.logger.WithTraceID(traceID)
+
+	log.Info("RefreshToken started")
+
+	// Delegate to service to refresh token via Keycloak
+	token, err := i.service.RefreshToken(ctx, refreshToken)
+	if err != nil {
+		log.Error("RefreshToken failed", "error", err)
+		return nil, err
+	}
+
+	log.Success("RefreshToken completed successfully")
+	return &dto.TokenResponse{
+		AccessToken:  token.AccessToken,
+		TokenType:    token.TokenType,
+		ExpiresIn:    token.ExpiresIn,
+		RefreshToken: token.RefreshToken,
+	}, nil
+}
+
 // ChangePassword allows an authenticated user to change their password (HU57)
 // Requires the current password for verification before setting a new one
 func (i *Interactor) ChangePassword(ctx context.Context, keycloakUserID, currentPassword, newPassword string) error {
@@ -388,4 +412,40 @@ func (i *Interactor) GetPublicContact(ctx context.Context, personID string) (*do
 
 	log.Success("GetPublicContact completed", "person_id", personID)
 	return person, nil
+}
+
+// DeleteKeycloakUser deletes a user from Keycloak (HU53)
+// This is used as part of account deletion flow
+func (i *Interactor) DeleteKeycloakUser(ctx context.Context, keycloakUserID string) error {
+	traceID := middleware.GetTraceIDFromContext(ctx)
+	log := i.logger.WithTraceID(traceID)
+
+	log.Info("Deleting user from Keycloak", "keycloak_user_id", keycloakUserID)
+
+	// Use existing RollbackKeycloakUser which internally calls DeleteUser
+	if err := i.service.RollbackKeycloakUser(ctx, keycloakUserID); err != nil {
+		log.Error("Failed to delete user from Keycloak", "error", err, "keycloak_user_id", keycloakUserID)
+		return err
+	}
+
+	log.Success("User deleted from Keycloak", "keycloak_user_id", keycloakUserID)
+	return nil
+}
+
+// DeletePersonFromDB deletes a person from the database (HU53)
+// This is used as part of account deletion flow
+func (i *Interactor) DeletePersonFromDB(ctx context.Context, personID string) error {
+	traceID := middleware.GetTraceIDFromContext(ctx)
+	log := i.logger.WithTraceID(traceID)
+
+	log.Info("Deleting person from database", "person_id", personID)
+
+	// Use existing RollbackPerson which internally calls DeletePerson
+	if err := i.service.RollbackPerson(ctx, personID); err != nil {
+		log.Error("Failed to delete person from database", "error", err, "person_id", personID)
+		return err
+	}
+
+	log.Success("Person deleted from database", "person_id", personID)
+	return nil
 }

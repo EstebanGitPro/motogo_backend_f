@@ -1,0 +1,71 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["name", "establishment_type", "location"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 200
+    },
+    "establishment_type": {
+      "type": "string",
+      "enum": ["WORKSHOP", "STORE", "WORKSHOP_STORE"]
+    },
+    "franchise_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "profile_image_url": {
+      "type": "string",
+      "format": "uri",
+      "maxLength": 255
+    },
+    "location": {
+      "type": "object",
+      "required": ["department_id", "city_id", "address"],
+      "properties": {
+        "department_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "city_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "city_name": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "department_name": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "address": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 150
+        },
+        "latitude": {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90
+        },
+        "longitude": {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180
+        }
+      }
+    },
+    "brands": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 50
+      },
+      "minItems": 0,
+      "maxItems": 20
+    }
+  }
+}

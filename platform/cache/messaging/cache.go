@@ -297,6 +297,27 @@ var messageCodeToHTTPStatus = map[string]int{
 	"MOD_M_CREATE_EXI_00001":    http.StatusCreated,    // 201 - Mensaje creado exitosamente
 
 	// ========================================
+	// Branch Module (MOD_B_*) - HU59
+	// ========================================
+	"MOD_B_REG_EXI_00001":             http.StatusCreated,    // 201 - Sede registrada exitosamente
+	"MOD_B_REG_ERR_00001":             http.StatusBadRequest, // 400 - Error al registrar (datos inválidos)
+	"MOD_B_DUP_NAME_ERR_00001":        http.StatusConflict,   // 409 - Nombre duplicado en franquicia
+	"MOD_B_INVALID_TYPE_ERR_00001":    http.StatusBadRequest, // 400 - Tipo de establecimiento inválido
+	"MOD_B_NOT_FOUND_ERR_00001":       http.StatusNotFound,   // 404 - Sede no encontrada
+	"MOD_B_UPD_EXI_00001":             http.StatusOK,         // 200 - Sede actualizada
+	"MOD_B_DEL_EXI_00001":             http.StatusOK,         // 200 - Sede eliminada
+	"MOD_B_BRAND_NOT_FOUND_ERR_00001": http.StatusBadRequest, // 400 - Marca no encontrada
+	"MOD_B_DEL_ERR_00001":             http.StatusBadRequest, // 400 - Error al eliminar sede
+	"MOD_B_HAS_ASSOC_ERR_00001":       http.StatusConflict,   // 409 - Sede con asociaciones
+
+	// ========================================
+	// Person Module - Delete (HU53)
+	// ========================================
+	"MOD_P_DEL_EXI_00001":          http.StatusOK,         // 200 - Persona eliminada exitosamente
+	"MOD_P_DEL_ERR_00001":          http.StatusBadRequest, // 400 - Error al eliminar persona
+	"MOD_P_HAS_BRANCHES_ERR_00001": http.StatusConflict,   // 409 - Persona tiene sedes activas
+
+	// ========================================
 	// Success Messages - Resource Creation (201 Created)
 	// ========================================
 	// User Module

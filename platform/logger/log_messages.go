@@ -498,3 +498,183 @@ const (
 	LogMessageInteractorRollbackError = "ROLLBACK BD FALLÓ - ALERTA CRÍTICA"
 	LogMessageInteractorRollbackOK    = "Rollback BD ejecutado correctamente"
 )
+
+// ============================================
+// BRANCH INTERACTOR (HU59)
+// ============================================
+const (
+	LogBranchInteractorRegStart        = "Iniciando proceso de registro de sede"
+	LogBranchInteractorValidationError = "Error de validación de sede"
+	LogBranchInteractorBrandsValidated = "Marcas validadas correctamente"
+	LogBranchInteractorIDGenerated     = "ID generado para sede"
+	LogBranchInteractorTxError         = "Error iniciando transacción"
+	LogBranchInteractorTxStarted       = "Transacción iniciada"
+	LogBranchInteractorRegError        = "Error registrando sede"
+	LogBranchInteractorRegSaved        = "Sede guardada en BD"
+	LogBranchInteractorCommitError     = "COMMIT FALLÓ - ALERTA CRÍTICA"
+	LogBranchInteractorRegComplete     = "Sede registrada exitosamente"
+	LogBranchInteractorRollbackError   = "ROLLBACK BD FALLÓ - ALERTA CRÍTICA"
+	LogBranchInteractorRollbackOK      = "Rollback BD ejecutado correctamente"
+	LogBranchInteractorGetByID         = "Obteniendo sede por ID"
+	LogBranchInteractorGetByIDError    = "Error obteniendo sede por ID"
+	LogBranchInteractorGetByIDOK       = "Sede obtenida exitosamente"
+	// HU62: List branches by representative
+	LogBranchInteractorListByRep    = "Listando sedes por representante"
+	LogBranchInteractorListByRepErr = "Error listando sedes por representante"
+	LogBranchInteractorListByRepOK  = "Sedes listadas por representante exitosamente"
+	// HU60: Update branch
+	LogBranchInteractorUpdateStart    = "Starting branch update process"
+	LogBranchInteractorOwnershipError = "User is not the owner of this branch"
+	LogBranchInteractorUpdateError    = "Error updating branch"
+	LogBranchInteractorUpdateComplete = "Branch updated successfully"
+	// HU61: Delete branch
+	LogBranchInteractorDeleteStart    = "Starting branch delete process"
+	LogBranchInteractorDeleteError    = "Error deleting branch"
+	LogBranchInteractorDeleteComplete = "Branch deleted successfully"
+	LogBranchInteractorHasAssocError  = "Branch has associations that prevent deletion"
+)
+
+// ============================================
+// BRANCH REPOSITORY (HU59)
+// ============================================
+const (
+	LogBranchRepoSaveError        = "Error guardando sede en BD"
+	LogBranchRepoUpdateError      = "Error actualizando sede en BD"
+	LogBranchRepoDeleteError      = "Error eliminando sede de BD"
+	LogBranchRepoGetByIDError     = "Error obteniendo sede por ID"
+	LogBranchRepoGetByNameError   = "Error obteniendo sede por nombre"
+	LogBranchRepoGetByRepError    = "Error obteniendo sedes por representante"
+	LogBranchRepoScanError        = "Error escaneando fila de sede"
+	LogBranchRepoLocationSaveErr  = "Error guardando ubicación"
+	LogBranchRepoLocationUpdErr   = "Error actualizando ubicación"
+	LogBranchRepoBrandSaveError   = "Error guardando marca de sede"
+	LogBranchRepoBrandDelError    = "Error eliminando marcas de sede"
+	LogBranchRepoBrandGetError    = "Error obteniendo marcas de sede"
+	LogBranchRepoBrandValidateErr = "Error validando marcas"
+)
+
+// ============================================
+// BRANCH SERVICE (HU59)
+// ============================================
+const (
+	LogBranchServiceInvalidType  = "Tipo de establecimiento inválido"
+	LogBranchServiceDupNameCheck = "Error verificando nombre duplicado"
+	LogBranchServiceDupName      = "Nombre de sede duplicado en franquicia"
+	LogBranchServiceSaveError    = "Error guardando sede"
+	LogBranchServiceLocSaveError = "Error guardando ubicación"
+	LogBranchServiceBrandSaveErr = "Error guardando marcas"
+	LogBranchServiceRegComplete  = "Sede registrada exitosamente"
+	LogBranchServiceGetError     = "Error obteniendo sede por ID"
+	// HU61: Delete branch
+	LogBranchServiceDelError    = "Error eliminando sede"
+	LogBranchServiceDelComplete = "Sede eliminada exitosamente"
+)
+
+// ============================================
+// BRANCH CONTROLLER (HU59, HU62)
+// ============================================
+const (
+	LogBranchControllerRegRequest    = "Solicitud de registro de sede recibida"
+	LogBranchControllerUserAuth      = "Usuario autenticado"
+	LogBranchControllerUserUnauth    = "Usuario no autenticado intentando registrar sede"
+	LogBranchControllerRoleForbidden = "Usuario sin rol de representante intentando registrar sede"
+	LogBranchControllerBindError     = "Error parseando JSON de solicitud"
+	LogBranchControllerProcessing    = "Procesando registro de sede"
+	LogBranchControllerRegError      = "Error registrando sede"
+	LogBranchControllerRegSuccess    = "Sede registrada exitosamente en controller"
+	// HU62: Get Branch
+	LogBranchControllerGetRequest    = "Solicitud de consulta de sede recibida"
+	LogBranchControllerIDDecodeError = "Error decodificando ID de sede"
+	LogBranchControllerGetByID       = "Buscando sede por ID"
+	LogBranchControllerGetError      = "Error obteniendo sede"
+	LogBranchControllerGetSuccess    = "Sede obtenida exitosamente"
+	// HU76: Get Branch Types
+	LogBranchControllerGetTypes   = "Solicitud de tipos de sede recibida"
+	LogBranchControllerGetTypesOK = "Tipos de sede obtenidos exitosamente"
+	// HU62: List my branches
+	LogBranchControllerListRequest = "Solicitud de listado de sedes recibida"
+	LogBranchControllerListError   = "Error listando sedes"
+	LogBranchControllerListSuccess = "Sedes listadas exitosamente"
+	// HU60: Update branch
+	LogBranchControllerUpdateRequest = "Branch update request received"
+	LogBranchControllerUpdateError   = "Error updating branch"
+	LogBranchControllerUpdateSuccess = "Branch updated successfully"
+	// HU61: Delete branch
+	LogBranchControllerDeleteRequest = "Branch delete request received"
+	LogBranchControllerDeleteError   = "Error deleting branch"
+	LogBranchControllerDeleteSuccess = "Branch deleted successfully"
+)
+
+// ============================================
+// BRAND INTERACTOR
+// ============================================
+const (
+	LogBrandInteractorGetAll      = "Obteniendo lista de marcas"
+	LogBrandInteractorGetAllOK    = "Lista de marcas obtenida exitosamente"
+	LogBrandInteractorGetAllError = "Error obteniendo lista de marcas"
+)
+
+// ============================================
+// GEOCODING SERVICE (OpenCage)
+// ============================================
+const (
+	LogGeocodingRequest   = "geocoding_request_initiated"
+	LogGeocodingSuccess   = "geocoding_completed_successfully"
+	LogGeocodingNoResults = "geocoding_no_results_found"
+	LogGeocodingError     = "geocoding_request_failed"
+	LogGeocodingSkipped   = "geocoding_skipped_coordinates_present"
+	LogGeocodingCityError = "geocoding_city_lookup_failed"
+	LogGeocodingRateLimit = "geocoding_rate_limit_info"
+)
+
+// ============================================
+// LOCATION INTERACTOR
+// ============================================
+const (
+	LogLocationInteractorGetDepartments      = "Obteniendo lista de departamentos"
+	LogLocationInteractorGetDepartmentsOK    = "Lista de departamentos obtenida exitosamente"
+	LogLocationInteractorGetDepartmentsError = "Error obteniendo departamentos"
+	LogLocationInteractorGetCities           = "Obteniendo ciudades del departamento"
+	LogLocationInteractorGetCitiesOK         = "Lista de ciudades obtenida exitosamente"
+	LogLocationInteractorGetCitiesError      = "Error obteniendo ciudades"
+)
+
+// ============================================
+// LOCATION REPOSITORY
+// ============================================
+const (
+	LogLocationRepoGetDepartmentsError     = "Error obteniendo departamentos"
+	LogLocationRepoGetDepartmentsScanError = "Error escaneando departamento"
+	LogLocationRepoGetDepartmentsIterError = "Error iterando departamentos"
+	LogLocationRepoGetCitiesError          = "Error obteniendo ciudades"
+	LogLocationRepoGetCitiesScanError      = "Error escaneando ciudad"
+	LogLocationRepoGetCitiesIterError      = "Error iterando ciudades"
+	LogLocationRepoValidateCityError       = "Error validando ciudad en departamento"
+	LogLocationRepoGetDeptByIDError        = "Error obteniendo departamento por ID"
+	LogLocationRepoSaveError               = "Error guardando ubicación"
+	LogLocationRepoUpdateError             = "Error actualizando ubicación"
+	LogLocationRepoPrepareError            = "Error preparando statement de ubicación"
+)
+
+// ============================================
+// FIREBASE CLIENT
+// ============================================
+const (
+	LogFirebaseInitApp          = "Inicializando aplicación Firebase"
+	LogFirebaseInitAppError     = "Error inicializando aplicación Firebase"
+	LogFirebaseAuthClientError  = "Error obteniendo cliente de autenticación Firebase"
+	LogFirebaseInitOK           = "Firebase Admin SDK inicializado exitosamente"
+	LogFirebaseTokenCreate      = "Creando token personalizado Firebase"
+	LogFirebaseTokenCreateOK    = "Token personalizado Firebase creado"
+	LogFirebaseTokenCreateError = "Error creando token personalizado Firebase"
+	LogFirebaseTokenClaimsOK    = "Token con claims personalizado creado"
+	LogFirebaseTokenClaimsError = "Error creando token con claims"
+)
+
+// ============================================
+// BRAND REPOSITORY
+// ============================================
+const (
+	LogBrandRepoValidateError = "Error validando marcas"
+	LogBrandRepoNotFound      = "Marca no encontrada en catálogo"
+)

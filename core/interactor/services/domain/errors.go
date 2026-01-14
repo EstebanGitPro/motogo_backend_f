@@ -29,6 +29,7 @@ var (
 	ErrPasswordUpdateFailed      = errors.New("ERR_PASSWORD_UPDATE_FAILED")
 	ErrPasswordPolicyViolation   = errors.New("ERR_PASSWORD_POLICY_VIOLATION")
 	ErrInvalidCredentials        = errors.New("ERR_INVALID_CREDENTIALS")
+	ErrForbidden                 = errors.New("ERR_FORBIDDEN")
 )
 
 // Infrastructure Errors (MOD_INFRA_*)
@@ -91,6 +92,32 @@ var (
 	ErrMessageListFailed       = errors.New("ERR_MESSAGE_LIST_FAILED")
 )
 
+// Branch Management Errors (MOD_B_*) - HU59
+var (
+	ErrBranchNotFound      = errors.New("ERR_BRANCH_NOT_FOUND")
+	ErrBranchCannotSave    = errors.New("ERR_BRANCH_CANNOT_SAVE")
+	ErrDuplicateBranchName = errors.New("ERR_DUPLICATE_BRANCH_NAME")
+	ErrInvalidBranchType   = errors.New("ERR_INVALID_BRANCH_TYPE")
+	ErrBranchCannotUpdate  = errors.New("ERR_BRANCH_CANNOT_UPDATE")
+	ErrBranchCannotDelete  = errors.New("ERR_BRANCH_CANNOT_DELETE")
+	ErrLocationCannotSave  = errors.New("ERR_LOCATION_CANNOT_SAVE")
+	ErrDuplicateAddress    = errors.New("ERR_DUPLICATE_ADDRESS")
+	ErrBrandNotFound       = errors.New("ERR_BRAND_NOT_FOUND")
+	ErrInvalidImageURL     = errors.New("ERR_INVALID_IMAGE_URL")
+)
+
+// Person Deletion Errors (HU53)
+var (
+	ErrPersonHasBranches = errors.New("ERR_PERSON_HAS_BRANCHES")
+)
+
+// Location/Geographic Errors (MOD_L_*)
+var (
+	ErrDepartmentNotFound  = errors.New("ERR_DEPARTMENT_NOT_FOUND")
+	ErrCityNotFound        = errors.New("ERR_CITY_NOT_FOUND")
+	ErrCityNotInDepartment = errors.New("ERR_CITY_NOT_IN_DEPARTMENT")
+)
+
 // ============================================
 // MESSAGE CODES - Constants for use in code
 // ============================================
@@ -122,8 +149,10 @@ const (
 	MsgPersonInvalidTx        = "MOD_P_TRANS_ERR_00002"
 	MsgPersonRegistered       = "MOD_P_REG_EXI_00001"
 	MsgPersonUpdated          = "MOD_P_UPD_EXI_00002"
-	MsgPersonCannotDelete     = "MOD_P_DEL_ERR_00003"
-	MsgPersonContactRetrieved = "MOD_P_CONTACT_EXI_00001" // HU55: Public contact retrieved
+	MsgPersonCannotDelete     = "MOD_P_DEL_ERR_00001"          // HU53: Generic delete error
+	MsgPersonContactRetrieved = "MOD_P_CONTACT_EXI_00001"      // HU55: Public contact retrieved
+	MsgPersonDeleted          = "MOD_P_DEL_EXI_00001"          // HU53: Person deleted success
+	MsgPersonHasBranches      = "MOD_P_HAS_BRANCHES_ERR_00001" // HU53: Has branches
 )
 
 // Validation Module (MOD_V_*)
@@ -222,4 +251,23 @@ const (
 	MsgChangePasswordInvalidCurrent = "MOD_P_CHANGE_ERR_00001"
 	MsgChangePasswordUpdateError    = "MOD_P_CHANGE_ERR_00002"
 	MsgChangePasswordPolicyError    = "MOD_P_CHANGE_ERR_00003"
+)
+
+// Branch Module (MOD_B_*) - HU59, HU62, HU76
+const (
+	MsgBranchRegistered    = "MOD_B_REG_EXI_00001"
+	MsgBranchCannotSave    = "MOD_B_REG_ERR_00001"
+	MsgBranchDuplicateName = "MOD_B_DUP_NAME_ERR_00001"
+	MsgBranchInvalidType   = "MOD_B_INVALID_TYPE_ERR_00001"
+	MsgBranchNotFound      = "MOD_B_NOT_FOUND_ERR_00001"
+	MsgBranchFound         = "MOD_B_GET_EXI_00001"   // HU62: Branch found
+	MsgBranchTypesFound    = "MOD_B_TYPES_EXI_00001" // HU76: Branch types catalog
+	MsgBranchUpdated       = "MOD_B_UPD_EXI_00001"
+	MsgBranchCannotUpdate  = "MOD_B_UPD_ERR_00001" // HU60: Update error
+	MsgBranchDeleted       = "MOD_B_DEL_EXI_00001"
+	MsgBrandNotFound       = "MOD_B_BRAND_NOT_FOUND_ERR_00001"
+	MsgDuplicateAddress    = "MOD_B_DUP_ADDR_ERR_00001"
+	MsgBranchListFound     = "MOD_B_LIST_EXI_00001"      // HU62: Branch list found
+	MsgBranchCannotDelete  = "MOD_B_DEL_ERR_00001"       // HU61: Delete error
+	MsgBranchHasAssoc      = "MOD_B_HAS_ASSOC_ERR_00001" // HU61: Has associations
 )

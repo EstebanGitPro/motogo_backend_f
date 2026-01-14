@@ -39,6 +39,9 @@ func (h handler) RegisterPerson() func(c *gin.Context) {
 			return
 		}
 
+		// Sanitize input (trim whitespace)
+		personRequest.Sanitize()
+
 		log.Info(logger.LogRegProcessing,
 			"email", personRequest.Email,
 			"role", personRequest.Role)
@@ -91,6 +94,9 @@ func (h handler) ResendVerificationEmail() gin.HandlerFunc {
 			return
 		}
 
+		// Sanitize input
+		req.Sanitize()
+
 		err := h.Interactor.ResendVerificationEmail(c, req.Email)
 		if err != nil {
 			// Manejar diferentes tipos de errores
@@ -127,6 +133,9 @@ func (h handler) RequestPasswordReset() gin.HandlerFunc {
 			return
 		}
 
+		// Sanitize input
+		req.Sanitize()
+
 		// Este método SIEMPRE retorna nil por seguridad (no revela si el email existe)
 		// El logging interno sí registra el resultado real
 		_ = h.Interactor.RequestPasswordReset(c, req.Email)
@@ -158,6 +167,9 @@ func (h handler) Login() gin.HandlerFunc {
 			h.Response.Error(c, domain.MsgValBadFormat)
 			return
 		}
+
+		// Sanitize input
+		req.Sanitize()
 
 		log.Info(logger.LogKeycloakUserLogin, "email", req.Email, "client_ip", c.ClientIP())
 
@@ -196,6 +208,56 @@ func (h handler) Login() gin.HandlerFunc {
 		log.Success(logger.LogKeycloakUserLoginOK, "email", req.Email, "client_ip", c.ClientIP())
 		middleware.RecordPersonRegistration() // Por ahora usamos el mismo metric
 		h.Response.SuccessWithData(c, "MOD_AUTH_LOGIN_SUCCESS_EXI_00001", response)
+	}
+}
+
+// @Summary Refrescar access token
+// @Description Obtiene un nuevo access token usando el refresh token. El frontend debe llamar este endpoint cuando reciba 401 por token expirado.
+// @Tags Autenticación
+// @Accept json
+// @Produce json
+// @Param request body RefreshTokenRequest true "Refresh token actual"
+// @Success 200 {object} middleware.APIResponse{data=LoginResponse} "Token refrescado exitosamente"
+// @Failure 400 {object} middleware.APIResponse "Formato inválido"
+// @Failure 401 {object} middleware.APIResponse "Refresh token inválido o expirado"
+// @Router /auth/refresh [post]
+func (h handler) RefreshToken() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		traceID := middleware.GetRequestID(c)
+		log := Logger.WithTraceID(traceID)
+
+		var req RefreshTokenRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			log.Error(logger.LogRegJSONParseError, "error", err)
+			h.Response.Error(c, domain.MsgValBadFormat)
+			return
+		}
+
+		log.Info("Refresh token requested", "client_ip", c.ClientIP())
+
+		// Call Keycloak to refresh the token
+		token, err := h.Interactor.RefreshToken(c, req.RefreshToken)
+		if err != nil {
+			log.Error("Refresh token failed", "error", err, "client_ip", c.ClientIP())
+			// All refresh errors return 401 - user needs to login again
+			h.Response.Error(c, domain.MsgUnauthorized)
+			return
+		}
+
+		// Build HATEOAS links for refresh response (same as login)
+		baseURL := GetBaseURL(c)
+		hateoasLinks := BuildLoginLinks(baseURL)
+
+		response := LoginResponse{
+			AccessToken:  token.AccessToken,
+			RefreshToken: token.RefreshToken,
+			ExpiresIn:    token.ExpiresIn,
+			TokenType:    token.TokenType,
+			Links:        hateoasLinks,
+		}
+
+		log.Success("Token refreshed successfully", "client_ip", c.ClientIP())
+		h.Response.SuccessWithData(c, "MOD_AUTH_REFRESH_SUCCESS_EXI_00001", response)
 	}
 }
 
@@ -288,8 +350,8 @@ func (h handler) ResetPasswordWithToken() gin.HandlerFunc {
 				h.Response.Error(c, "MOD_P_RESET_ERR_00002")
 			case domain.ErrPasswordUpdateFailed:
 				log.Error(logger.LogPasswordResetUpdateError, "error", err, "client_ip", c.ClientIP())
-                case domain.ErrPasswordPolicyViolation:
-                        h.Response.Error(c, domain.MsgChangePasswordPolicyError)
+			case domain.ErrPasswordPolicyViolation:
+				h.Response.Error(c, domain.MsgChangePasswordPolicyError)
 				h.Response.Error(c, "MOD_P_RESET_ERR_00003")
 			default:
 				log.Error(logger.LogPasswordResetUpdateError, "error", err, "client_ip", c.ClientIP())
@@ -404,8 +466,8 @@ func (h handler) ChangePassword() gin.HandlerFunc {
 				h.Response.Error(c, domain.MsgKCUserNotFound)
 			case domain.ErrPasswordUpdateFailed:
 				h.Response.Error(c, domain.MsgChangePasswordUpdateError)
-                case domain.ErrPasswordPolicyViolation:
-                        h.Response.Error(c, domain.MsgChangePasswordPolicyError)
+			case domain.ErrPasswordPolicyViolation:
+				h.Response.Error(c, domain.MsgChangePasswordPolicyError)
 			case domain.ErrKeycloakUnavailable:
 				h.Response.Error(c, domain.MsgKeycloakUnavailable)
 			default:
@@ -460,6 +522,9 @@ func (h handler) UpdateProfile() gin.HandlerFunc {
 			h.Response.Error(c, domain.MsgValBadFormat)
 			return
 		}
+
+		// Sanitize input
+		req.Sanitize()
 
 		log.Info(logger.LogUpdateProfileStart, "user_id", person.ID, "client_ip", c.ClientIP())
 
@@ -575,5 +640,56 @@ func (h handler) GetPublicContact() gin.HandlerFunc {
 
 		log.Success("public contact info retrieved", "person_id", personID, "client_ip", c.ClientIP())
 		h.Response.SuccessWithData(c, domain.MsgPersonContactRetrieved, response)
+	}
+}
+
+// DeleteSelf handles DELETE /persons/me - deletes authenticated user's account (HU53)
+// This is a self-delete only - users can only delete their own account
+func (h handler) DeleteSelf() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		traceID := middleware.GetRequestID(c)
+		log := Logger.WithTraceID(traceID)
+
+		// Get authenticated user from context
+		person, ok := middleware.GetAuthenticatedUser(c)
+		if !ok {
+			log.Error("DeleteSelf: authenticated user not found in context")
+			c.Error(domain.ErrUserNotFound)
+			return
+		}
+
+		log.Info("DeleteSelf request received", "user_id", person.ID, "email", person.Email)
+
+		// STEP 1: Check if user has active branches
+		branches, err := h.BranchInteractor.GetBranchesByRepresentative(c, person.ID)
+		if err != nil {
+			log.Error("error checking branches", "error", err, "user_id", person.ID)
+			h.Response.Error(c, domain.MsgPersonCannotDelete)
+			return
+		}
+
+		if len(branches) > 0 {
+			log.Warn("user has active branches, cannot delete", "user_id", person.ID, "branch_count", len(branches))
+			h.Response.Error(c, domain.MsgPersonHasBranches)
+			return
+		}
+
+		// STEP 2: Delete from Keycloak first
+		if err := h.Interactor.DeleteKeycloakUser(c, person.KeycloakUserID); err != nil {
+			log.Error("error deleting from Keycloak", "error", err, "keycloak_id", person.KeycloakUserID)
+			h.Response.Error(c, domain.MsgPersonCannotDelete)
+			return
+		}
+
+		// STEP 3: Delete from database
+		if err := h.Interactor.DeletePersonFromDB(c, person.ID); err != nil {
+			log.Error("error deleting from database", "error", err, "user_id", person.ID)
+			// Note: User already deleted from Keycloak - inconsistent state
+			h.Response.Error(c, domain.MsgPersonCannotDelete)
+			return
+		}
+
+		log.Success("Account deleted successfully", "user_id", person.ID, "email", person.Email)
+		h.Response.Success(c, domain.MsgPersonDeleted)
 	}
 }

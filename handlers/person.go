@@ -34,12 +34,23 @@ type LoginRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
+// Sanitize trims whitespace from email (password intentionally not trimmed)
+func (r *LoginRequest) Sanitize() {
+	r.Email = TrimString(r.Email)
+	// Password is intentionally NOT trimmed - spaces may be valid
+}
+
 type LoginResponse struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
 	ExpiresIn    int    `json:"expires_in"`
 	TokenType    string `json:"token_type"`
 	Links        []Link `json:"_links"`
+}
+
+// RefreshTokenRequest - DTO para refrescar access token
+type RefreshTokenRequest struct {
+	RefreshToken string `json:"refresh_token" binding:"required"`
 }
 
 // AuthMeResponse represents the authenticated user profile response
@@ -53,6 +64,18 @@ type AuthMeResponse struct {
 	PhoneNumber    string `json:"phone_number,omitempty"`
 	Role           string `json:"role"`
 	Links          []Link `json:"_links"`
+}
+
+// Sanitize trims whitespace from all string fields except Password
+func (p *PersonRequest) Sanitize() {
+	p.IdentityNumber = TrimString(p.IdentityNumber)
+	p.FirstName = TrimString(p.FirstName)
+	p.LastName = TrimString(p.LastName)
+	p.SecondLastName = TrimString(p.SecondLastName)
+	p.Email = TrimString(p.Email)
+	p.PhoneNumber = TrimString(p.PhoneNumber)
+	p.Role = TrimString(p.Role)
+	// Password is intentionally NOT trimmed - spaces may be valid
 }
 
 func (p PersonRequest) ToDomain() domain.Person {
@@ -73,9 +96,19 @@ type ResendVerificationEmailRequest struct {
 	Email string `json:"email" binding:"required,email"`
 }
 
+// Sanitize trims whitespace from email
+func (r *ResendVerificationEmailRequest) Sanitize() {
+	r.Email = TrimString(r.Email)
+}
+
 // PasswordResetRequest - DTO para solicitar recuperación de contraseña
 type PasswordResetRequest struct {
 	Email string `json:"email" binding:"required,email"`
+}
+
+// Sanitize trims whitespace from email
+func (r *PasswordResetRequest) Sanitize() {
+	r.Email = TrimString(r.Email)
 }
 
 // VerifyEmailRequest - DTO para verificar email mediante token proxy
@@ -118,6 +151,15 @@ type UpdateProfileRequest struct {
 	LastName       string `json:"last_name,omitempty"`
 	SecondLastName string `json:"second_last_name,omitempty"`
 	PhoneNumber    string `json:"phone_number,omitempty"`
+}
+
+// Sanitize trims whitespace from all string fields
+func (u *UpdateProfileRequest) Sanitize() {
+	u.IdentityNumber = TrimString(u.IdentityNumber)
+	u.FirstName = TrimString(u.FirstName)
+	u.LastName = TrimString(u.LastName)
+	u.SecondLastName = TrimString(u.SecondLastName)
+	u.PhoneNumber = TrimString(u.PhoneNumber)
 }
 
 // UpdateProfileResponse - Response for profile update (HU52)

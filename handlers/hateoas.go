@@ -278,3 +278,157 @@ func BuildPublicContactLinks(baseURL string, personID string) []Link {
 		},
 	}
 }
+
+// BuildBranchCreatedLinks constructs HATEOAS links for newly created branch (HU59)
+// Richardson Maturity Model Level 3: Provides discoverable next actions
+func BuildBranchCreatedLinks(baseURL string, branchID string) []Link {
+	resourceURL := BuildResourceURL(baseURL, "branches", branchID)
+	collectionURL := BuildCollectionURL(baseURL, "branches")
+
+	return []Link{
+		{
+			Href:   resourceURL,
+			Rel:    "self",
+			Method: "GET",
+		},
+		{
+			Href:   resourceURL,
+			Rel:    "update",
+			Method: "PUT",
+		},
+		{
+			Href:   resourceURL,
+			Rel:    "delete",
+			Method: "DELETE",
+		},
+		{
+			Href:   collectionURL,
+			Rel:    "list",
+			Method: "GET",
+		},
+		{
+			Href:   BuildCollectionURL(baseURL, "brands"),
+			Rel:    "brands",
+			Method: "GET",
+		},
+	}
+}
+
+// BuildBrandListLinks constructs HATEOAS links for the brands catalog
+func BuildBrandListLinks(baseURL string) []Link {
+	return []Link{
+		{
+			Href:   BuildCollectionURL(baseURL, "brands"),
+			Rel:    "self",
+			Method: "GET",
+		},
+		{
+			Href:   BuildCollectionURL(baseURL, "branches"),
+			Rel:    "create-branch",
+			Method: "POST",
+		},
+	}
+}
+
+// BuildDepartmentListLinks constructs HATEOAS links for the departments catalog
+func BuildDepartmentListLinks() []Link {
+	return []Link{
+		{
+			Href:   "/motogo/api/v1/departments",
+			Rel:    "self",
+			Method: "GET",
+		},
+	}
+}
+
+// BuildCityListLinks constructs HATEOAS links for cities of a department
+func BuildCityListLinks(departmentID string) []Link {
+	return []Link{
+		{
+			Href:   fmt.Sprintf("/motogo/api/v1/departments/%s/cities", departmentID),
+			Rel:    "self",
+			Method: "GET",
+		},
+		{
+			Href:   "/motogo/api/v1/departments",
+			Rel:    "departments",
+			Method: "GET",
+		},
+	}
+}
+
+// BuildBranchDetailLinks constructs HATEOAS links for branch query response (HU62)
+// Richardson Maturity Model Level 3: Provides discoverable next actions
+// isOwner: true if the authenticated user is the branch owner (shows edit/delete links)
+func BuildBranchDetailLinks(baseURL string, branchID string, isOwner bool) []Link {
+	resourceURL := BuildResourceURL(baseURL, "branches", branchID)
+	collectionURL := BuildCollectionURL(baseURL, "branches")
+
+	links := []Link{
+		{
+			Href:   resourceURL,
+			Rel:    "self",
+			Method: "GET",
+		},
+	}
+
+	// Only show edit/delete links if user is the owner
+	if isOwner {
+		links = append(links,
+			Link{
+				Href:   resourceURL,
+				Rel:    "update",
+				Method: "PUT",
+			},
+			Link{
+				Href:   resourceURL,
+				Rel:    "delete",
+				Method: "DELETE",
+			},
+			Link{
+				Href:   collectionURL,
+				Rel:    "list",
+				Method: "GET",
+			},
+		)
+	}
+
+	return links
+}
+
+// BuildBranchTypesLinks constructs HATEOAS links for branch types catalog (HU76)
+func BuildBranchTypesLinks(baseURL string) []Link {
+	return []Link{
+		{
+			Href:   fmt.Sprintf("%s/motogo/api/v1/branch-types", baseURL),
+			Rel:    "self",
+			Method: "GET",
+		},
+		{
+			Href:   BuildCollectionURL(baseURL, "branches"),
+			Rel:    "create-branch",
+			Method: "POST",
+		},
+	}
+}
+
+// BuildBranchListLinks constructs HATEOAS links for branch list response (HU62)
+func BuildBranchListLinks(baseURL string) []Link {
+	collectionURL := BuildCollectionURL(baseURL, "branches")
+	return []Link{
+		{Href: collectionURL, Rel: "self", Method: "GET"},
+		{Href: collectionURL, Rel: "create", Method: "POST"},
+		{Href: BuildCollectionURL(baseURL, "brands"), Rel: "brands", Method: "GET"},
+		{Href: BuildCollectionURL(baseURL, "branch-types"), Rel: "branch-types", Method: "GET"},
+	}
+}
+
+// BuildBranchDeletedLinks constructs HATEOAS links after branch deletion (HU61)
+// Shows next possible actions: list branches or create new branch
+func BuildBranchDeletedLinks(baseURL string) []Link {
+	collectionURL := BuildCollectionURL(baseURL, "branches")
+	return []Link{
+		{Href: collectionURL, Rel: "list", Method: "GET"},
+		{Href: collectionURL, Rel: "create", Method: "POST"},
+	}
+}

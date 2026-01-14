@@ -12,6 +12,7 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 
 	"github.com/EstebanGitPro/motogo-backend/cmd/dependency"
+	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/handlers"
 	"github.com/EstebanGitPro/motogo-backend/middleware"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
@@ -56,7 +57,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 	errorHandler := middleware.NewErrorHandler(dependencies.MessagingCache)
 	app.Use(errorHandler.Handle())
 
-	handler := handlers.New(dependencies.Interactor, dependencies.MessageInteractor, dependencies.MessagingCache, dependencies.IDEncoder, dependencies.ResponseHandler)
+	handler := handlers.New(dependencies.Interactor, dependencies.MessageInteractor, dependencies.BranchInteractor, dependencies.BrandInteractor, dependencies.LocationInteractor, dependencies.FirebaseClient, dependencies.MessagingCache, dependencies.IDEncoder, dependencies.ResponseHandler)
 
 	validators, err := schema.NewValidator(&schema.DefaultFileReader{})
 	if err != nil {
@@ -91,6 +92,9 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		// === AUTH ENDPOINTS ===
 		// POST /auth/login - Autenticar usuario
 		public.POST("/auth/login", handler.Login())
+
+		// POST /auth/refresh - Refrescar access token
+		public.POST("/auth/refresh", handler.RefreshToken())
 
 		// POST /auth/resend-verification - Reenviar email de verificación
 		public.POST("/auth/resend-verification", validator.WithValidateResendVerification(), handler.ResendVerificationEmail())
@@ -127,13 +131,31 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 
 		// GET /persons/:id/contact - Obtener info de contacto pública (HU55)
 		public.GET("/persons/:id/contact", handler.GetPublicContact())
+
+		// === BRANDS ENDPOINTS (catalog) ===
+		// GET /brands - Listar todas las marcas disponibles
+		public.GET("/brands", handler.GetBrands())
+
+		// === GEOGRAPHIC CATALOGS (departments/cities) ===
+		// GET /departments - Listar todos los departamentos
+		public.GET("/departments", handler.GetDepartments())
+		// GET /departments/:id/cities - Listar ciudades de un departamento
+		public.GET("/departments/:id/cities", handler.GetCitiesByDepartment())
+
+		// === DEV TOOLS (solo desarrollo) ===
+		// POST /geocoding/test - Probar geocodificación sin crear sede
+		public.POST("/geocoding/test", handler.TestGeocoding())
+
+		// === BRANCH TYPES CATALOG (HU76) ===
+		// GET /branch-types - Listar todos los tipos de establecimiento
+		public.GET("/branch-types", handler.GetBranchTypes())
 	}
 
 	// ========================================
 	// Protected Routes (require JWT authentication)
 	// ========================================
 	protected := app.Group("motogo/api/v1")
-	protected.Use(middleware.RequireAuth(dependencies.PersonService, dependencies.MessagingCache))
+	protected.Use(middleware.RequireAuth(dependencies.PersonService, dependencies.MessagingCache, dependencies.JWTValidator))
 	{
 		// GET /persons/me - Obtener perfil del usuario autenticado
 		protected.GET("/persons/me", handler.GetAuthenticatedUser())
@@ -143,6 +165,43 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 
 		// PUT /persons/me/password - Cambiar contraseña del usuario autenticado (HU57)
 		protected.PUT("/persons/me/password", handler.ChangePassword())
+
+		// DELETE /persons/me - Eliminar cuenta del usuario autenticado (HU53)
+		protected.DELETE("/persons/me", handler.DeleteSelf())
+
+		// GET /auth/firebase-token - Obtener token de Firebase para Storage
+		protected.GET("/auth/firebase-token", handler.GetFirebaseToken())
+
+		// === BRANCHES ENDPOINTS (HU59, HU62) ===
+		// GET /branches - Listar mis sedes (solo REPRESENTANTE)
+		protected.GET("/branches",
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.ListBranches(),
+		)
+
+		// GET /branches/:id - Consultar info de sede (HU62)
+		// Accessible by all authenticated users, HATEOAS links vary by ownership
+		protected.GET("/branches/:id", handler.GetBranch())
+
+		// POST /branches - Registrar nueva sede (solo REPRESENTANTE)
+		protected.POST("/branches",
+			validator.WithValidateRegisterBranch(),
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.RegisterBranch(),
+		)
+
+		// PUT /branches/:id - Modificar sede (solo REPRESENTANTE dueño) (HU60)
+		protected.PUT("/branches/:id",
+			validator.WithValidateRegisterBranch(),
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.UpdateBranch(),
+		)
+
+		// DELETE /branches/:id - Eliminar sede (solo REPRESENTANTE dueño) (HU61)
+		protected.DELETE("/branches/:id",
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.DeleteBranch(),
+		)
 	}
 
 	dependencies.Logger.Success(logger.LogRouteConfigured)

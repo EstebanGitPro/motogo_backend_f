@@ -54,6 +54,11 @@ func (b *Builder) WithValidateChangePassword() gin.HandlerFunc {
 	return b.jsonValidator(b.Validators.ChangePasswordValidator)
 }
 
+// WithValidateRegisterBranch validates register branch request (HU59)
+func (b *Builder) WithValidateRegisterBranch() gin.HandlerFunc {
+	return b.jsonValidator(b.Validators.RegisterBranchValidator)
+}
+
 func (b *Builder) jsonValidator(schema *jsonschema.Schema) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Get request ID for trace correlation

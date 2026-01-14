@@ -46,3 +46,8 @@ func (t *SQLTx) ExecContext(ctx context.Context, query string, args ...interface
 func (t *SQLTx) QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row {
 	return t.tx.QueryRowContext(ctx, query, args...)
 }
+
+// StmtContext wraps a prepared statement for use within a transaction (for fail-fast pattern)
+func (t *SQLTx) StmtContext(ctx context.Context, stmt *sql.Stmt) *sql.Stmt {
+	return t.tx.StmtContext(ctx, stmt)
+}

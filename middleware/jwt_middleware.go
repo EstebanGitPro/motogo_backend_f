@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
@@ -11,9 +12,12 @@ import (
 )
 
 // RequireAuth creates a middleware that validates JWT tokens from Keycloak
-// and injects the authenticated user into the Gin context
-func RequireAuth(personService input.Service, msgCache *messaging.MessageCache) gin.HandlerFunc {
+// and injects the authenticated user into the Gin context.
+// It validates token signature, expiration, and issuer using JWKS.
+func RequireAuth(personService input.Service, msgCache *messaging.MessageCache, jwtValidator *jwt.JWKSValidator) gin.HandlerFunc {
+	// Keep tokenParser for fallback/legacy support if needed
 	tokenParser := jwt.NewTokenParser()
+	_ = tokenParser // Suppress unused warning, kept for potential fallback
 
 	return func(c *gin.Context) {
 		// Extract Authorization header
@@ -34,13 +38,37 @@ func RequireAuth(personService input.Service, msgCache *messaging.MessageCache) 
 
 		token := parts[1]
 
-		// Decode JWT and extract claims
-		// Note: We extract the "sub" claim which contains the Keycloak User ID
-		claims, err := tokenParser.ExtractClaimsFromToken(token)
-		if err != nil {
-			c.Error(domain.ErrInvalidToken)
-			c.Abort()
-			return
+		// Validate JWT using JWKS (signature, expiration, issuer)
+		var claims map[string]interface{}
+		var err error
+
+		if jwtValidator != nil {
+			// Use JWKS validation (secure path)
+			claims, err = jwtValidator.ValidateToken(token)
+			if err != nil {
+				// Map specific JWT errors to domain errors
+				switch {
+				case errors.Is(err, jwt.ErrTokenExpired):
+					c.Error(domain.ErrTokenExpired)
+				case errors.Is(err, jwt.ErrInvalidSignature):
+					c.Error(domain.ErrInvalidToken)
+				case errors.Is(err, jwt.ErrInvalidIssuer):
+					c.Error(domain.ErrInvalidToken)
+				default:
+					c.Error(domain.ErrInvalidToken)
+				}
+				c.Abort()
+				return
+			}
+		} else {
+			// Fallback to simple parsing (NOT RECOMMENDED - no validation)
+			// This path should only be used if JWKS initialization fails
+			claims, err = tokenParser.ExtractClaimsFromToken(token)
+			if err != nil {
+				c.Error(domain.ErrInvalidToken)
+				c.Abort()
+				return
+			}
 		}
 
 		// Extract Keycloak User ID from "sub" claim
@@ -76,4 +104,30 @@ func GetAuthenticatedUser(c *gin.Context) (*domain.Person, bool) {
 
 	person, ok := user.(*domain.Person)
 	return person, ok
+}
+
+// RequireRole creates a middleware that validates the user has the required role
+// Must be used AFTER RequireAuth middleware
+// Example usage: router.POST("/branches", RequireRole(domain.RoleRepresentative), handler.RegisterBranch())
+func RequireRole(allowedRoles ...string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		person, exists := GetAuthenticatedUser(c)
+		if !exists {
+			c.Error(domain.ErrUserNotFound)
+			c.Abort()
+			return
+		}
+
+		// Check if user's role is in the allowed roles
+		for _, role := range allowedRoles {
+			if person.Role == role {
+				c.Next()
+				return
+			}
+		}
+
+		// Role not allowed
+		c.Error(domain.ErrRoleRequired)
+		c.Abort()
+	}
 }

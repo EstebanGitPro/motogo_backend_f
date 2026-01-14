@@ -13,15 +13,28 @@ import (
 
 var log = logger.SlogLogger{}
 
-
 type Config struct {
-	Environment  string         `json:"environment"`
-	Database     Database       `json:"database"`
-	Server       Server         `json:"server"`
-	Resend       Resend         `json:"resend"`
-	Verification Verification   `json:"verification"`
-	Keycloak     KeycloakConfig `json:"keycloak"`
-	IDEncoder    IDEncoder      `json:"id_encoder"`
+	Environment  string          `json:"environment"`
+	Database     Database        `json:"database"`
+	Server       Server          `json:"server"`
+	Resend       Resend          `json:"resend"`
+	Verification Verification    `json:"verification"`
+	Keycloak     KeycloakConfig  `json:"keycloak"`
+	IDEncoder    IDEncoder       `json:"id_encoder"`
+	Firebase     FirebaseConfig  `json:"firebase"`
+	Geocoding    GeocodingConfig `json:"geocoding"`
+}
+
+type FirebaseConfig struct {
+	CredentialsPath string `json:"credentials_path"`
+}
+
+type GeocodingConfig struct {
+	Provider       string `json:"provider"` // e.g., "opencage"
+	APIKey         string `json:"api_key"`
+	BaseURL        string `json:"base_url"`
+	TimeoutSeconds int    `json:"timeout_seconds"`
+	CountryCode    string `json:"country_code"` // e.g., "co" for Colombia
 }
 
 type IDEncoder struct {
@@ -170,6 +183,20 @@ func (c *Config) GetKeycloakAuthURL() string {
 // Helper para obtener la URL del admin API
 func (c *Config) GetKeycloakAdminURL() string {
 	return fmt.Sprintf("%s/admin/realms/%s",
+		c.Keycloak.ServerURL,
+		c.Keycloak.Realm)
+}
+
+// Helper para obtener la URL del endpoint JWKS de Keycloak (para validación JWT)
+func (c *Config) GetKeycloakJWKSURL() string {
+	return fmt.Sprintf("%s/realms/%s/protocol/openid-connect/certs",
+		c.Keycloak.ServerURL,
+		c.Keycloak.Realm)
+}
+
+// Helper para obtener la URL del issuer de Keycloak (para validación JWT)
+func (c *Config) GetKeycloakIssuerURL() string {
+	return fmt.Sprintf("%s/realms/%s",
 		c.Keycloak.ServerURL,
 		c.Keycloak.Realm)
 }

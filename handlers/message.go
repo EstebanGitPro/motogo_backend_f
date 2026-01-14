@@ -59,6 +59,15 @@ type CacheReloadResponse struct {
 	Message     string `json:"message"`
 }
 
+// Sanitize trims whitespace from all string fields
+func (m *MessageRequest) Sanitize() {
+	m.Code = TrimString(m.Code)
+	m.Category = TrimString(m.Category)
+	m.Module = TrimString(m.Module)
+	m.Title = TrimString(m.Title)
+	m.Content = TrimString(m.Content)
+}
+
 // ToDomain converts MessageRequest to domain.Message
 func (m MessageRequest) ToDomain() domain.Message {
 	return domain.Message{
