@@ -94,3 +94,24 @@ type LocationRepository interface {
 	ValidateCityInDepartment(ctx context.Context, cityID, departmentID string) error
 	GetDepartmentByID(ctx context.Context, departmentID string) (*domain.Department, error)
 }
+
+// FranchiseRepository interface for Franchise operations (HU26-29)
+type FranchiseRepository interface {
+	BeginTx(ctx context.Context) (Tx, error)
+
+	// Franchise operations - transactional
+	SaveFranchise(ctx context.Context, tx Tx, franchise domain.Franchise) error
+	UpdateFranchise(ctx context.Context, tx Tx, franchise domain.Franchise) error
+	DeleteFranchise(ctx context.Context, tx Tx, franchiseID string) error
+
+	// Franchise operations - read
+	GetFranchiseByID(ctx context.Context, franchiseID string) (*domain.Franchise, error)
+	GetFranchisesByRepresentative(ctx context.Context, representativeID string) ([]domain.Franchise, error)
+	GetFranchiseByName(ctx context.Context, name string) (*domain.Franchise, error)
+
+	// Branch association
+	AssociateBranchesToFranchise(ctx context.Context, tx Tx, franchiseID string, branchIDs []string) error
+	DissociateBranchesFromFranchise(ctx context.Context, tx Tx, franchiseID string) error
+	DissociateSingleBranch(ctx context.Context, tx Tx, branchID string) error
+	CountBranchesByFranchise(ctx context.Context, franchiseID string) (int, error)
+}

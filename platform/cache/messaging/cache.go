@@ -325,6 +325,23 @@ var messageCodeToHTTPStatus = map[string]int{
 	// Person Module
 	"MOD_P_REG_EXI_00001": http.StatusCreated, // 201 - Persona registrada exitosamente
 
+	// ========================================
+	// Franchise Module (MOD_F_*) - HU26-29
+	// ========================================
+	"MOD_F_REG_EXI_00001":              http.StatusCreated,    // 201 - Franquicia registrada
+	"MOD_F_GET_EXI_00001":              http.StatusOK,         // 200 - Franquicia encontrada
+	"MOD_F_LIST_EXI_00001":             http.StatusOK,         // 200 - Franquicias listadas
+	"MOD_F_UPD_EXI_00001":              http.StatusOK,         // 200 - Franquicia actualizada
+	"MOD_F_DEL_EXI_00001":              http.StatusOK,         // 200 - Franquicia eliminada
+	"MOD_F_NOT_FOUND_ERR_00001":        http.StatusNotFound,   // 404 - Franquicia no encontrada
+	"MOD_F_DUP_NAME_ERR_00001":         http.StatusConflict,   // 409 - Nombre duplicado
+	"MOD_F_NO_BRANCHES_ERR_00001":      http.StatusBadRequest, // 400 - Debe asociar al menos una sede
+	"MOD_F_BRANCH_NOT_OWNED_ERR_00001": http.StatusForbidden,  // 403 - Sede no pertenece al representante
+	"MOD_F_HAS_BRANCHES_ERR_00001":     http.StatusConflict,   // 409 - Franquicia tiene sedes
+	"MOD_F_BRANCH_ADD_EXI_00001":       http.StatusOK,         // 200 - Sede vinculada
+	"MOD_F_BRANCH_REM_EXI_00001":       http.StatusOK,         // 200 - Sede desvinculada
+	"MOD_F_MIN_BRANCHES_ERR_00001":     http.StatusBadRequest, // 400 - Mínimo una sede
+
 }
 
 // GetHTTPStatus returns the HTTP status for a message code

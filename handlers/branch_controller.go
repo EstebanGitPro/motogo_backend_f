@@ -287,9 +287,22 @@ func (h *handler) ListBranches() gin.HandlerFunc {
 				log.Warn(logger.LogIDEncodeError, "branch_id", branch.ID, "error", err)
 				continue // Skip branches with encoding errors
 			}
+
+			// Encode franchise_id if present
+			var encodedFranchiseID *string
+			if branch.FranchiseID != nil && *branch.FranchiseID != "" {
+				encoded, err := h.EncodeID(*branch.FranchiseID)
+				if err != nil {
+					log.Warn(logger.LogIDEncodeError, "franchise_id", *branch.FranchiseID, "error", err)
+					// Continue without franchise_id - don't skip the whole branch
+				} else {
+					encodedFranchiseID = &encoded
+				}
+			}
+
 			// Owner always sees full links since this is "my branches"
 			itemLinks := BuildBranchDetailLinks(baseURL, encodedID, true)
-			items = append(items, NewBranchListItemResponse(branch, encodedID, itemLinks))
+			items = append(items, NewBranchListItemResponse(branch, encodedID, encodedFranchiseID, itemLinks))
 		}
 
 		// 4. Build collection response with HATEOAS

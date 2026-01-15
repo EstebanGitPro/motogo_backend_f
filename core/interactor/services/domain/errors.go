@@ -118,6 +118,19 @@ var (
 	ErrCityNotInDepartment = errors.New("ERR_CITY_NOT_IN_DEPARTMENT")
 )
 
+// Franchise Errors (MOD_F_*) - HU26-29
+var (
+	ErrFranchiseNotFound       = errors.New("ERR_FRANCHISE_NOT_FOUND")
+	ErrFranchiseDuplicateName  = errors.New("ERR_FRANCHISE_DUPLICATE_NAME")
+	ErrFranchiseNoBranches     = errors.New("ERR_FRANCHISE_NO_BRANCHES")
+	ErrFranchiseBranchNotOwned = errors.New("ERR_FRANCHISE_BRANCH_NOT_OWNED")
+	ErrFranchiseHasBranches    = errors.New("ERR_FRANCHISE_HAS_BRANCHES")
+	ErrFranchiseCannotSave     = errors.New("ERR_FRANCHISE_CANNOT_SAVE")
+	ErrFranchiseCannotUpdate   = errors.New("ERR_FRANCHISE_CANNOT_UPDATE")
+	ErrFranchiseCannotDelete   = errors.New("ERR_FRANCHISE_CANNOT_DELETE")
+	ErrFranchiseMinBranches    = errors.New("ERR_FRANCHISE_MIN_BRANCHES")
+)
+
 // ============================================
 // MESSAGE CODES - Constants for use in code
 // ============================================
@@ -270,4 +283,24 @@ const (
 	MsgBranchListFound     = "MOD_B_LIST_EXI_00001"      // HU62: Branch list found
 	MsgBranchCannotDelete  = "MOD_B_DEL_ERR_00001"       // HU61: Delete error
 	MsgBranchHasAssoc      = "MOD_B_HAS_ASSOC_ERR_00001" // HU61: Has associations
+)
+
+// Franchise Module (MOD_F_*) - HU26-29
+const (
+	// Success messages
+	MsgFranchiseCreated       = "MOD_F_REG_EXI_00001"
+	MsgFranchiseFound         = "MOD_F_GET_EXI_00001"
+	MsgFranchisesListed       = "MOD_F_LIST_EXI_00001"
+	MsgFranchiseUpdated       = "MOD_F_UPD_EXI_00001"
+	MsgFranchiseDeleted       = "MOD_F_DEL_EXI_00001"
+	MsgFranchiseBranchAdded   = "MOD_F_BRANCH_ADD_EXI_00001"
+	MsgFranchiseBranchRemoved = "MOD_F_BRANCH_REM_EXI_00001"
+
+	// Error messages
+	MsgFranchiseNotFound       = "MOD_F_NOT_FOUND_ERR_00001"
+	MsgFranchiseDuplicateName  = "MOD_F_DUP_NAME_ERR_00001"
+	MsgFranchiseNoBranches     = "MOD_F_NO_BRANCHES_ERR_00001"
+	MsgFranchiseBranchNotOwned = "MOD_F_BRANCH_NOT_OWNED_ERR_00001"
+	MsgFranchiseHasBranches    = "MOD_F_HAS_BRANCHES_ERR_00001"
+	MsgFranchiseMinBranches    = "MOD_F_MIN_BRANCHES_ERR_00001"
 )
