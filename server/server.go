@@ -202,6 +202,49 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 			middleware.RequireRole(domain.RoleRepresentative),
 			handler.DeleteBranch(),
 		)
+
+		// === FRANCHISES ENDPOINTS (HU26-29) ===
+		// GET /franchises - Listar mis franquicias (solo REPRESENTANTE)
+		protected.GET("/franchises",
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.ListFranchises(dependencies.FranchiseInteractor),
+		)
+
+		// GET /franchises/:id - Consultar info de franquicia
+		protected.GET("/franchises/:id",
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.GetFranchise(dependencies.FranchiseInteractor),
+		)
+
+		// POST /franchises - Registrar nueva franquicia (solo REPRESENTANTE)
+		protected.POST("/franchises",
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.RegisterFranchise(dependencies.FranchiseInteractor),
+		)
+
+		// PUT /franchises/:id - Modificar franquicia (solo REPRESENTANTE dueño) (HU27)
+		protected.PUT("/franchises/:id",
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.UpdateFranchise(dependencies.FranchiseInteractor),
+		)
+
+		// DELETE /franchises/:id - Eliminar franquicia (solo REPRESENTANTE dueño) (HU28)
+		protected.DELETE("/franchises/:id",
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.DeleteFranchise(dependencies.FranchiseInteractor),
+		)
+
+		// POST /franchises/:id/branches - Agregar sede a franquicia
+		protected.POST("/franchises/:id/branches",
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.AddBranchToFranchise(dependencies.FranchiseInteractor),
+		)
+
+		// DELETE /franchises/:id/branches/:branchId - Desvincular sede de franquicia
+		protected.DELETE("/franchises/:id/branches/:branchId",
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.RemoveBranchFromFranchise(dependencies.FranchiseInteractor),
+		)
 	}
 
 	dependencies.Logger.Success(logger.LogRouteConfigured)
