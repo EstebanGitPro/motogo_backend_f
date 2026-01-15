@@ -678,3 +678,104 @@ const (
 	LogBrandRepoValidateError = "Error validando marcas"
 	LogBrandRepoNotFound      = "Marca no encontrada en catálogo"
 )
+
+// ============================================
+// FRANCHISE REPOSITORY (HU26-29)
+// ============================================
+const (
+	LogFranchiseRepoSaveError       = "Error guardando franquicia en BD"
+	LogFranchiseRepoUpdateError     = "Error actualizando franquicia en BD"
+	LogFranchiseRepoDeleteError     = "Error eliminando franquicia de BD"
+	LogFranchiseRepoGetByIDError    = "Error obteniendo franquicia por ID"
+	LogFranchiseRepoGetByNameError  = "Error obteniendo franquicia por nombre"
+	LogFranchiseRepoGetByRepError   = "Error obteniendo franquicias por representante"
+	LogFranchiseRepoScanError       = "Error escaneando fila de franquicia"
+	LogFranchiseRepoCountBranches   = "Error contando sedes de franquicia"
+	LogFranchiseRepoAssociateError  = "Error asociando sede a franquicia"
+	LogFranchiseRepoDissociateError = "Error disociando sedes de franquicia"
+	LogFranchiseRepoPrepareError    = "Error preparando statement de franquicia"
+)
+
+// ============================================
+// FRANCHISE SERVICE (HU26-29)
+// ============================================
+const (
+	LogFranchiseServiceDupNameCheck = "Error verificando nombre duplicado de franquicia"
+	LogFranchiseServiceDupName      = "Nombre de franquicia duplicado"
+	LogFranchiseServiceSaveError    = "Error guardando franquicia"
+	LogFranchiseServiceGetError     = "Error obteniendo franquicia por ID"
+	LogFranchiseServiceUpdateError  = "Error actualizando franquicia"
+	LogFranchiseServiceDeleteError  = "Error eliminando franquicia"
+	LogFranchiseServiceDeleted      = "Franquicia eliminada exitosamente"
+)
+
+// ============================================
+// FRANCHISE INTERACTOR (HU26-29)
+// ============================================
+const (
+	LogFranchiseInteractorCreateStart    = "Iniciando creación de franquicia"
+	LogFranchiseInteractorNoBranches     = "Franquicia requiere al menos una sede"
+	LogFranchiseInteractorBranchNotOwned = "Sede no pertenece al representante"
+	LogFranchiseInteractorTxError        = "Error iniciando transacción para franquicia"
+	LogFranchiseInteractorCreateError    = "Error creando franquicia"
+	LogFranchiseInteractorCreateComplete = "Franquicia creada exitosamente"
+	LogFranchiseInteractorUpdateStart    = "Iniciando actualización de franquicia"
+	LogFranchiseInteractorUpdateError    = "Error actualizando franquicia"
+	LogFranchiseInteractorUpdateComplete = "Franquicia actualizada exitosamente"
+	LogFranchiseInteractorDeleteStart    = "Iniciando eliminación de franquicia"
+	LogFranchiseInteractorDeleteError    = "Error eliminando franquicia"
+	LogFranchiseInteractorDeleteComplete = "Franquicia eliminada exitosamente"
+	LogFranchiseInteractorCommitError    = "COMMIT FALLÓ - Franquicia"
+	LogFranchiseInteractorRollbackError  = "ROLLBACK FALLÓ - Franquicia"
+
+	// Franchise Controller
+	LogFranchiseControllerRequest          = "Solicitud recibida - Franquicia"
+	LogFranchiseControllerProcessing       = "Procesando franquicia"
+	LogFranchiseControllerCreateError      = "Error creando franquicia"
+	LogFranchiseControllerCreateSuccess    = "Franquicia creada exitosamente"
+	LogFranchiseControllerListRequest      = "Solicitud de listado de franquicias"
+	LogFranchiseControllerListError        = "Error listando franquicias"
+	LogFranchiseControllerListSuccess      = "Franquicias listadas exitosamente"
+	LogFranchiseControllerGetError         = "Error obteniendo franquicia"
+	LogFranchiseControllerGetSuccess       = "Franquicia obtenida exitosamente"
+	LogFranchiseControllerBindError        = "Error parseando JSON de franquicia"
+	LogFranchiseControllerIDDecodeError    = "Error decodificando ID de franquicia"
+	LogFranchiseControllerUpdateError      = "Error actualizando franquicia"
+	LogFranchiseControllerUpdateSuccess    = "Franquicia actualizada exitosamente"
+	LogFranchiseControllerDeleteError      = "Error eliminando franquicia"
+	LogFranchiseControllerDeleteSuccess    = "Franquicia eliminada exitosamente"
+	LogFranchiseControllerAddBranchRequest = "Solicitud vincular sede a franquicia"
+	LogFranchiseControllerAddBranchError   = "Error vinculando sede a franquicia"
+	LogFranchiseControllerAddBranchSuccess = "Sede vinculada a franquicia exitosamente"
+	LogFranchiseControllerRemBranchRequest = "Solicitud desvincular sede de franquicia"
+	LogFranchiseControllerRemBranchError   = "Error desvinculando sede de franquicia"
+	LogFranchiseControllerRemBranchSuccess = "Sede desvinculada de franquicia exitosamente"
+	LogFranchiseInteractorMinBranches      = "No se puede desvincular la última sede"
+)
+
+// ============================================
+// DEPENDENCY INITIALIZATION
+// ============================================
+const (
+	// Repository initialization
+	LogDepBranchRepoInit       = "Inicializando repositorio de sedes"
+	LogDepBranchRepoInitOK     = "Repositorio de sedes inicializado"
+	LogDepBranchRepoInitErr    = "Error inicializando repositorio de sedes"
+	LogDepLocationRepoInitOK   = "Repositorio de ubicaciones inicializado"
+	LogDepLocationRepoInitErr  = "Error inicializando repositorio de ubicaciones"
+	LogDepBrandRepoInitOK      = "Repositorio de marcas inicializado"
+	LogDepBrandRepoInitErr     = "Error inicializando repositorio de marcas"
+	LogDepFranchiseRepoInitOK  = "Repositorio de franquicias inicializado"
+	LogDepFranchiseRepoInitErr = "Error inicializando repositorio de franquicias"
+
+	// Interactor initialization
+	LogDepBranchInteractorInitOK    = "Interactor de sedes inicializado"
+	LogDepBrandInteractorInitOK     = "Interactor de marcas inicializado"
+	LogDepLocationInteractorInitOK  = "Interactor de ubicaciones inicializado"
+	LogDepFranchiseInteractorInitOK = "Interactor de franquicias inicializado"
+
+	// External services
+	LogDepGeocodingClientInitOK = "Cliente de geocodificación inicializado"
+	LogDepFirebaseClientInitOK  = "Cliente de Firebase inicializado"
+	LogDepJWKSValidatorInitOK   = "Validador JWKS inicializado"
+)
