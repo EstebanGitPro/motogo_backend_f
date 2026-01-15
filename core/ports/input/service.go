@@ -121,3 +121,22 @@ type LocationService interface {
 	// ValidateCityInDepartment checks if the city belongs to the specified department
 	ValidateCityInDepartment(ctx context.Context, cityID, departmentID string) error
 }
+
+// FranchiseService - Use Cases for Franchise operations (HU26-29)
+type FranchiseService interface {
+	// Transactions
+	BeginTx(ctx context.Context) (output.Tx, error)
+
+	// Franchise CRUD
+	CreateFranchise(ctx context.Context, tx output.Tx, franchise domain.Franchise) (*domain.Franchise, error)
+	GetFranchiseByID(ctx context.Context, franchiseID string) (*domain.Franchise, error)
+	GetFranchisesByRepresentative(ctx context.Context, representativeID string) ([]domain.Franchise, error)
+	UpdateFranchise(ctx context.Context, tx output.Tx, franchise domain.Franchise) error
+	DeleteFranchise(ctx context.Context, tx output.Tx, franchiseID string) error
+
+	// Branch association
+	AssociateBranches(ctx context.Context, tx output.Tx, franchiseID string, branchIDs []string) error
+	DissociateBranches(ctx context.Context, tx output.Tx, franchiseID string) error
+	DissociateSingleBranch(ctx context.Context, tx output.Tx, branchID string) error
+	CountBranches(ctx context.Context, franchiseID string) (int, error)
+}
