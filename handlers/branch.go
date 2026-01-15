@@ -131,6 +131,7 @@ type BranchListItemResponse struct {
 	EstablishmentType      string       `json:"establishment_type"`
 	EstablishmentTypeLabel string       `json:"establishment_type_label"` // Spanish label for UI
 	Status                 string       `json:"status"`
+	FranchiseID            *string      `json:"franchise_id,omitempty"`
 	ProfileImageURL        *string      `json:"profile_image_url,omitempty"`
 	Location               *LocationDTO `json:"location,omitempty"`
 	Brands                 []string     `json:"brands,omitempty"`
@@ -138,13 +139,15 @@ type BranchListItemResponse struct {
 }
 
 // NewBranchListItemResponse creates a BranchListItemResponse from domain.Branch
-func NewBranchListItemResponse(branch domain.Branch, encodedID string, links []Link) BranchListItemResponse {
+// encodedFranchiseID should be the obfuscated franchise ID (or nil if not associated)
+func NewBranchListItemResponse(branch domain.Branch, encodedID string, encodedFranchiseID *string, links []Link) BranchListItemResponse {
 	item := BranchListItemResponse{
 		ID:                     encodedID,
 		Name:                   branch.Name,
 		EstablishmentType:      branch.EstablishmentType,
 		EstablishmentTypeLabel: domain.GetEstablishmentTypeLabel(branch.EstablishmentType),
 		Status:                 branch.Status,
+		FranchiseID:            encodedFranchiseID,
 		ProfileImageURL:        branch.ProfileImageURL,
 		Brands:                 branch.Brands,
 		Links:                  links,
