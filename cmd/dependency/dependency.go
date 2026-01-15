@@ -24,27 +24,29 @@ import (
 
 	branchRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/branch"
 	brandRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/brand"
+	franchiseRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/franchise"
 	locationRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/location"
 	messageRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/message"
 	repo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/person"
 )
 
 type Dependencies struct {
-	PersonService      input.Service
-	PersonRepo         output.Repository
-	KeycloakClient     output.AuthClient
-	Interactor         *interactor.Interactor
-	MessageInteractor  *interactor.MessageInteractor
-	BranchInteractor   *interactor.BranchInteractor   // HU59
-	BrandInteractor    *interactor.BrandInteractor    // Brands catalog
-	LocationInteractor *interactor.LocationInteractor // Geographic catalogs
-	FirebaseClient     *firebase.Client               // Firebase Auth
-	JWTValidator       *jwt.JWKSValidator             // JWT validation with JWKS
-	Config             *config.Config
-	Logger             logger.Logger
-	IDEncoder          *idencoder.HashidsEncoder
-	MessagingCache     *messagingCache.MessageCache
-	ResponseHandler    *middleware.ResponseHandler
+	PersonService       input.Service
+	PersonRepo          output.Repository
+	KeycloakClient      output.AuthClient
+	Interactor          *interactor.Interactor
+	MessageInteractor   *interactor.MessageInteractor
+	BranchInteractor    *interactor.BranchInteractor    // HU59
+	BrandInteractor     *interactor.BrandInteractor     // Brands catalog
+	LocationInteractor  *interactor.LocationInteractor  // Geographic catalogs
+	FranchiseInteractor *interactor.FranchiseInteractor // HU26-29
+	FirebaseClient      *firebase.Client                // Firebase Auth
+	JWTValidator        *jwt.JWKSValidator              // JWT validation with JWKS
+	Config              *config.Config
+	Logger              logger.Logger
+	IDEncoder           *idencoder.HashidsEncoder
+	MessagingCache      *messagingCache.MessageCache
+	ResponseHandler     *middleware.ResponseHandler
 }
 
 func Init() (*Dependencies, error) {
@@ -121,10 +123,10 @@ func Init() (*Dependencies, error) {
 	// Branch dependencies (HU59)
 	branchRepository, err := branchRepo.NewRepository(db)
 	if err != nil {
-		log.Error("error initializing branch repository", "error", err)
+		log.Error(logger.LogDepBranchRepoInitErr, "error", err)
 		return nil, err
 	}
-	log.Success("branch repository initialized")
+	log.Success(logger.LogDepBranchRepoInitOK)
 
 	// Geocoding client (OpenCage)
 	geocodingClient := geocoding.NewOpenCageClient(
@@ -134,35 +136,47 @@ func Init() (*Dependencies, error) {
 		time.Duration(cfg.Geocoding.TimeoutSeconds)*time.Second,
 		log,
 	)
-	log.Success("geocoding client initialized", "provider", cfg.Geocoding.Provider)
+	log.Success(logger.LogDepGeocodingClientInitOK, "provider", cfg.Geocoding.Provider)
 
 	// Location dependencies (geographic catalogs) - must be initialized before branch service
 	locationRepository, err := locationRepo.NewRepository(db)
 	if err != nil {
-		log.Error("error initializing location repository", "error", err)
+		log.Error(logger.LogDepLocationRepoInitErr, "error", err)
 		return nil, err
 	}
-	log.Success("location repository initialized")
+	log.Success(logger.LogDepLocationRepoInitOK)
 
 	branchService := services.NewBranchService(branchRepository, locationRepository, geocodingClient, log)
 	branchInteractor := interactor.NewBranchInteractor(branchService, log)
-	log.Success("branch interactor initialized")
+	log.Success(logger.LogDepBranchInteractorInitOK)
 
 	// Brand dependencies (catalog)
 	brandRepository, err := brandRepo.NewRepository(db)
 	if err != nil {
-		log.Error("error initializing brand repository", "error", err)
+		log.Error(logger.LogDepBrandRepoInitErr, "error", err)
 		return nil, err
 	}
-	log.Success("brand repository initialized")
+	log.Success(logger.LogDepBrandRepoInitOK)
 
 	brandService := services.NewBrandService(brandRepository)
 	brandInteractor := interactor.NewBrandInteractor(brandService, log)
-	log.Success("brand interactor initialized")
+	log.Success(logger.LogDepBrandInteractorInitOK)
 
 	locationService := services.NewLocationService(locationRepository)
 	locationInteractor := interactor.NewLocationInteractor(locationService, log)
-	log.Success("location interactor initialized")
+	log.Success(logger.LogDepLocationInteractorInitOK)
+
+	// Franchise dependencies (HU26-29)
+	franchiseRepository, err := franchiseRepo.NewRepository(db)
+	if err != nil {
+		log.Error(logger.LogDepFranchiseRepoInitErr, "error", err)
+		return nil, err
+	}
+	log.Success(logger.LogDepFranchiseRepoInitOK)
+
+	franchiseService := services.NewFranchiseService(franchiseRepository, log)
+	franchiseInteractor := interactor.NewFranchiseInteractor(franchiseService, branchService, log)
+	log.Success(logger.LogDepFranchiseInteractorInitOK)
 
 	// Firebase dependencies (optional - only if credentials configured)
 	var firebaseClient *firebase.Client
@@ -181,7 +195,7 @@ func Init() (*Dependencies, error) {
 			log.Warn("Firebase initialization skipped", "error", err)
 			// Don't fail startup if Firebase is not configured
 		} else {
-			log.Success("Firebase client initialized")
+			log.Success(logger.LogDepFirebaseClientInitOK)
 		}
 	} else {
 		log.Warn("Firebase credentials not configured, skipping initialization")
@@ -202,24 +216,25 @@ func Init() (*Dependencies, error) {
 		// This allows the app to start even if Keycloak is temporarily unavailable
 		jwtValidator = nil
 	} else {
-		log.Success("JWKS validator initialized", "jwks_url", jwtConfig.JWKSURL)
+		log.Success(logger.LogDepJWKSValidatorInitOK, "jwks_url", jwtConfig.JWKSURL)
 	}
 
 	return &Dependencies{
-		PersonService:      personService,
-		PersonRepo:         personRepo,
-		KeycloakClient:     keycloakClient,
-		Interactor:         interactorFacade,
-		MessageInteractor:  messageInteractor,
-		BranchInteractor:   branchInteractor,
-		BrandInteractor:    brandInteractor,
-		LocationInteractor: locationInteractor,
-		FirebaseClient:     firebaseClient,
-		JWTValidator:       jwtValidator,
-		Config:             cfg,
-		Logger:             log,
-		IDEncoder:          encoder,
-		MessagingCache:     messagingCache,
-		ResponseHandler:    responseHandler,
+		PersonService:       personService,
+		PersonRepo:          personRepo,
+		KeycloakClient:      keycloakClient,
+		Interactor:          interactorFacade,
+		MessageInteractor:   messageInteractor,
+		BranchInteractor:    branchInteractor,
+		BrandInteractor:     brandInteractor,
+		LocationInteractor:  locationInteractor,
+		FranchiseInteractor: franchiseInteractor,
+		FirebaseClient:      firebaseClient,
+		JWTValidator:        jwtValidator,
+		Config:              cfg,
+		Logger:              log,
+		IDEncoder:           encoder,
+		MessagingCache:      messagingCache,
+		ResponseHandler:     responseHandler,
 	}, nil
 }
