@@ -12,28 +12,44 @@ import (
 )
 
 type handler struct {
-	Interactor         *interactor.Interactor
-	MessageInteractor  *interactor.MessageInteractor
-	BranchInteractor   *interactor.BranchInteractor   // HU59
-	BrandInteractor    *interactor.BrandInteractor    // Brands catalog
-	LocationInteractor *interactor.LocationInteractor // Geographic catalogs
-	FirebaseClient     *firebase.Client               // Firebase Auth
-	MessagingCache     *messagingCache.MessageCache
-	IDEncoder          *idencoder.HashidsEncoder
-	Response           *middleware.ResponseHandler
+	Interactor          *interactor.Interactor
+	MessageInteractor   *interactor.MessageInteractor
+	BranchInteractor    *interactor.BranchInteractor    // HU59
+	BrandInteractor     *interactor.BrandInteractor     // Brands catalog
+	LocationInteractor  *interactor.LocationInteractor  // Geographic catalogs
+	ServiceInteractor   *interactor.ServiceInteractor   // Services catalog (HU63, HU75)
+	FranchiseInteractor *interactor.FranchiseInteractor // Franchise CRUD (HU26-29)
+	FirebaseClient      *firebase.Client                // Firebase Auth
+	MessagingCache      *messagingCache.MessageCache
+	IDEncoder           *idencoder.HashidsEncoder
+	Response            *middleware.ResponseHandler
 }
 
-func New(personInteractor *interactor.Interactor, messageInteractor *interactor.MessageInteractor, branchInteractor *interactor.BranchInteractor, brandInteractor *interactor.BrandInteractor, locationInteractor *interactor.LocationInteractor, firebaseClient *firebase.Client, messageCache *messagingCache.MessageCache, encoder *idencoder.HashidsEncoder, responseHandler *middleware.ResponseHandler) *handler {
+func New(
+	personInteractor *interactor.Interactor,
+	messageInteractor *interactor.MessageInteractor,
+	branchInteractor *interactor.BranchInteractor,
+	brandInteractor *interactor.BrandInteractor,
+	locationInteractor *interactor.LocationInteractor,
+	serviceInteractor *interactor.ServiceInteractor,
+	franchiseInteractor *interactor.FranchiseInteractor,
+	firebaseClient *firebase.Client,
+	messageCache *messagingCache.MessageCache,
+	encoder *idencoder.HashidsEncoder,
+	responseHandler *middleware.ResponseHandler,
+) *handler {
 	return &handler{
-		Interactor:         personInteractor,
-		MessageInteractor:  messageInteractor,
-		BranchInteractor:   branchInteractor,
-		BrandInteractor:    brandInteractor,
-		LocationInteractor: locationInteractor,
-		FirebaseClient:     firebaseClient,
-		MessagingCache:     messageCache,
-		IDEncoder:          encoder,
-		Response:           responseHandler,
+		Interactor:          personInteractor,
+		MessageInteractor:   messageInteractor,
+		BranchInteractor:    branchInteractor,
+		BrandInteractor:     brandInteractor,
+		LocationInteractor:  locationInteractor,
+		ServiceInteractor:   serviceInteractor,
+		FranchiseInteractor: franchiseInteractor,
+		FirebaseClient:      firebaseClient,
+		MessagingCache:      messageCache,
+		IDEncoder:           encoder,
+		Response:            responseHandler,
 	}
 }
 
