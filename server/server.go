@@ -57,7 +57,19 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 	errorHandler := middleware.NewErrorHandler(dependencies.MessagingCache)
 	app.Use(errorHandler.Handle())
 
-	handler := handlers.New(dependencies.Interactor, dependencies.MessageInteractor, dependencies.BranchInteractor, dependencies.BrandInteractor, dependencies.LocationInteractor, dependencies.FirebaseClient, dependencies.MessagingCache, dependencies.IDEncoder, dependencies.ResponseHandler)
+	handler := handlers.New(
+		dependencies.Interactor,
+		dependencies.MessageInteractor,
+		dependencies.BranchInteractor,
+		dependencies.BrandInteractor,
+		dependencies.LocationInteractor,
+		dependencies.ServiceInteractor,
+		dependencies.FranchiseInteractor,
+		dependencies.FirebaseClient,
+		dependencies.MessagingCache,
+		dependencies.IDEncoder,
+		dependencies.ResponseHandler,
+	)
 
 	validators, err := schema.NewValidator(&schema.DefaultFileReader{})
 	if err != nil {
@@ -142,13 +154,15 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		// GET /departments/:id/cities - Listar ciudades de un departamento
 		public.GET("/departments/:id/cities", handler.GetCitiesByDepartment())
 
-		// === DEV TOOLS (solo desarrollo) ===
-		// POST /geocoding/test - Probar geocodificación sin crear sede
-		public.POST("/geocoding/test", handler.TestGeocoding())
-
 		// === BRANCH TYPES CATALOG (HU76) ===
 		// GET /branch-types - Listar todos los tipos de establecimiento
 		public.GET("/branch-types", handler.GetBranchTypes())
+
+		// === SERVICES CATALOG (HU63, HU75) ===
+		// GET /service-types - Listar todos los tipos de servicio (HU75)
+		public.GET("/service-types", handler.GetServiceTypes())
+		// GET /services - Listar catálogo de servicios con filtro opcional (HU63)
+		public.GET("/services", handler.GetServices())
 	}
 
 	// ========================================
@@ -172,6 +186,10 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		// GET /auth/firebase-token - Obtener token de Firebase para Storage
 		protected.GET("/auth/firebase-token", handler.GetFirebaseToken())
 
+		// === GEOCODING (any authenticated user) ===
+		// POST /location/geocode - Geocodificar dirección para mapas
+		protected.POST("/location/geocode", handler.TestGeocoding())
+
 		// === BRANCHES ENDPOINTS (HU59, HU62) ===
 		// GET /branches - Listar mis sedes (solo REPRESENTANTE)
 		protected.GET("/branches",
@@ -182,6 +200,22 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		// GET /branches/:id - Consultar info de sede (HU62)
 		// Accessible by all authenticated users, HATEOAS links vary by ownership
 		protected.GET("/branches/:id", handler.GetBranch())
+
+		// GET /branches/:id/services - Obtener servicios de una sede
+		// Accessible by all authenticated users
+		protected.GET("/branches/:id/services", handler.GetBranchServices())
+
+		// POST /branches/:id/services - Asociar servicios a una sede (solo REPRESENTANTE)
+		protected.POST("/branches/:id/services",
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.AssociateBranchServices(),
+		)
+
+		// DELETE /branches/:id/services/:serviceId - Desasociar servicio de una sede (solo REPRESENTANTE)
+		protected.DELETE("/branches/:id/services/:serviceId",
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.DissociateBranchService(),
+		)
 
 		// POST /branches - Registrar nueva sede (solo REPRESENTANTE)
 		protected.POST("/branches",

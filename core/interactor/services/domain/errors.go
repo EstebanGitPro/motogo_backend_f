@@ -304,3 +304,23 @@ const (
 	MsgFranchiseHasBranches    = "MOD_F_HAS_BRANCHES_ERR_00001"
 	MsgFranchiseMinBranches    = "MOD_F_MIN_BRANCHES_ERR_00001"
 )
+
+// Service Catalog Module (MOD_S_*) - HU63, HU75
+const (
+	// Success messages
+	MsgServiceTypesRetrieved = "MOD_S_TYPES_EXI_00001"  // HU75: Service types catalog
+	MsgServicesRetrieved     = "MOD_S_LIST_EXI_00001"   // HU63: Services list
+	MsgServiceAssociated     = "MOD_S_ASSOC_EXI_00001"  // Servicios asociados a sede
+	MsgServiceDissociated    = "MOD_S_DISSOC_EXI_00001" // Servicio desasociado de sede
+
+	// Error messages
+	MsgServiceInvalidType       = "MOD_S_INVALID_TYPE_ERR_00001"  // Tipo de servicio inválido
+	MsgServiceNotFound          = "MOD_S_NOT_FOUND_ERR_00001"     // Servicio no encontrado
+	MsgServiceAlreadyAssociated = "MOD_S_ALREADY_ASSOC_ERR_00001" // Servicio ya asociado
+)
+
+// Service Errors (MOD_S_*)
+var (
+	ErrServiceNotFound          = errors.New("ERR_SERVICE_NOT_FOUND")
+	ErrServiceAlreadyAssociated = errors.New("ERR_SERVICE_ALREADY_ASSOCIATED")
+)

@@ -432,3 +432,47 @@ func BuildBranchDeletedLinks(baseURL string) []Link {
 		{Href: collectionURL, Rel: "create", Method: "POST"},
 	}
 }
+
+// BuildServiceTypeListLinks constructs HATEOAS links for service types catalog (HU75)
+func BuildServiceTypeListLinks(baseURL string) []Link {
+	return []Link{
+		{
+			Href:   fmt.Sprintf("%s/motogo/api/v1/service-types", baseURL),
+			Rel:    "self",
+			Method: "GET",
+		},
+		{
+			Href:   BuildCollectionURL(baseURL, "services"),
+			Rel:    "services",
+			Method: "GET",
+		},
+	}
+}
+
+// BuildServiceListLinks constructs HATEOAS links for services catalog (HU63)
+func BuildServiceListLinks(baseURL string, filterType string) []Link {
+	servicesURL := BuildCollectionURL(baseURL, "services")
+	links := []Link{
+		{
+			Href:   servicesURL,
+			Rel:    "self",
+			Method: "GET",
+		},
+		{
+			Href:   fmt.Sprintf("%s/motogo/api/v1/service-types", baseURL),
+			Rel:    "service-types",
+			Method: "GET",
+		},
+	}
+
+	// If filtered, add link to unfiltered list
+	if filterType != "" {
+		links = append(links, Link{
+			Href:   servicesURL,
+			Rel:    "all-services",
+			Method: "GET",
+		})
+	}
+
+	return links
+}
