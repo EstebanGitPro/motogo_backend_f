@@ -28,6 +28,7 @@ import (
 	locationRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/location"
 	messageRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/message"
 	repo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/person"
+	serviceRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/service"
 )
 
 type Dependencies struct {
@@ -39,6 +40,7 @@ type Dependencies struct {
 	BranchInteractor    *interactor.BranchInteractor    // HU59
 	BrandInteractor     *interactor.BrandInteractor     // Brands catalog
 	LocationInteractor  *interactor.LocationInteractor  // Geographic catalogs
+	ServiceInteractor   *interactor.ServiceInteractor   // Service catalog (HU63, HU75)
 	FranchiseInteractor *interactor.FranchiseInteractor // HU26-29
 	FirebaseClient      *firebase.Client                // Firebase Auth
 	JWTValidator        *jwt.JWKSValidator              // JWT validation with JWKS
@@ -221,6 +223,18 @@ func Init() (*Dependencies, error) {
 	locationInteractor := interactor.NewLocationInteractor(locationService, log)
 	log.Success(logger.LogDepLocationInteractorInitOK)
 
+	// Service catalog dependencies (HU63, HU75)
+	serviceRepository, err := serviceRepo.NewRepository(db)
+	if err != nil {
+		log.Error(logger.LogDepServiceRepoInitErr, "error", err)
+		return nil, err
+	}
+	log.Success(logger.LogDepServiceRepoInitOK)
+
+	serviceCatalogService := services.NewServiceCatalogService(serviceRepository)
+	serviceInteractor := interactor.NewServiceInteractor(serviceCatalogService, log)
+	log.Success(logger.LogDepServiceInteractorInitOK)
+
 	// Franchise dependencies (HU26-29)
 	franchiseRepository, err := franchiseRepo.NewRepository(db)
 	if err != nil {
@@ -283,6 +297,7 @@ func Init() (*Dependencies, error) {
 		BranchInteractor:    branchInteractor,
 		BrandInteractor:     brandInteractor,
 		LocationInteractor:  locationInteractor,
+		ServiceInteractor:   serviceInteractor,
 		FranchiseInteractor: franchiseInteractor,
 		FirebaseClient:      firebaseClient,
 		JWTValidator:        jwtValidator,
