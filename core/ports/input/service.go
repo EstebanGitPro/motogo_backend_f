@@ -140,3 +140,32 @@ type FranchiseService interface {
 	DissociateSingleBranch(ctx context.Context, tx output.Tx, branchID string) error
 	CountBranches(ctx context.Context, franchiseID string) (int, error)
 }
+
+// ServiceCatalogService - Use Cases for Service catalog operations (HU63, HU75)
+type ServiceCatalogService interface {
+	BeginTx(ctx context.Context) (output.Tx, error)
+
+	// GetAllServiceTypes returns all available service types (HU75)
+	GetAllServiceTypes() []domain.ServiceType
+
+	// GetAllServices retrieves all services from catalog (HU63)
+	GetAllServices(ctx context.Context) ([]domain.Service, error)
+
+	// GetServicesByType retrieves services filtered by type (HU63)
+	GetServicesByType(ctx context.Context, serviceType domain.ServiceType) ([]domain.Service, error)
+
+	// GetServicesByBranch retrieves services associated with a specific branch
+	GetServicesByBranch(ctx context.Context, branchID string) ([]domain.BranchServiceInfo, error)
+
+	// AssociateBranchServices associates services to a branch
+	AssociateBranchServices(ctx context.Context, tx output.Tx, branchID string, serviceIDs []string) error
+
+	// DissociateBranchService removes a service from a branch
+	DissociateBranchService(ctx context.Context, tx output.Tx, branchID, serviceID string) error
+
+	// ValidateServiceIDs checks if all provided service IDs exist
+	ValidateServiceIDs(ctx context.Context, serviceIDs []string) error
+
+	// CheckServiceAssociation checks if a service is already associated with a branch
+	CheckServiceAssociation(ctx context.Context, branchID, serviceID string) (bool, error)
+}
