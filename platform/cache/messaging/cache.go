@@ -342,6 +342,17 @@ var messageCodeToHTTPStatus = map[string]int{
 	"MOD_F_BRANCH_REM_EXI_00001":       http.StatusOK,         // 200 - Sede desvinculada
 	"MOD_F_MIN_BRANCHES_ERR_00001":     http.StatusBadRequest, // 400 - Mínimo una sede
 
+	// ========================================
+	// Service Catalog Module (MOD_S_*) - HU63, HU75
+	// ========================================
+	"MOD_S_TYPES_EXI_00001":         http.StatusOK,         // 200 - Tipos de servicio obtenidos (HU75)
+	"MOD_S_LIST_EXI_00001":          http.StatusOK,         // 200 - Catálogo de servicios obtenido (HU63)
+	"MOD_S_INVALID_TYPE_ERR_00001":  http.StatusBadRequest, // 400 - Tipo de servicio inválido
+	"MOD_S_ASSOC_EXI_00001":         http.StatusOK,         // 200 - Servicios asociados a sede
+	"MOD_S_DISSOC_EXI_00001":        http.StatusOK,         // 200 - Servicio desasociado de sede
+	"MOD_S_NOT_FOUND_ERR_00001":     http.StatusNotFound,   // 404 - Servicio no encontrado
+	"MOD_S_ALREADY_ASSOC_ERR_00001": http.StatusConflict,   // 409 - Servicio ya asociado
+
 }
 
 // GetHTTPStatus returns the HTTP status for a message code

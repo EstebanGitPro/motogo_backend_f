@@ -779,3 +779,84 @@ const (
 	LogDepFirebaseClientInitOK  = "Cliente de Firebase inicializado"
 	LogDepJWKSValidatorInitOK   = "Validador JWKS inicializado"
 )
+
+// ============================================
+// SERVICE CATALOG (HU63, HU75)
+// ============================================
+const (
+	// Service Interactor
+	LogServiceInteractorGetTypes       = "Obteniendo tipos de servicio"
+	LogServiceInteractorGetTypesOK     = "Tipos de servicio obtenidos exitosamente"
+	LogServiceInteractorGetAll         = "Obteniendo catálogo de servicios"
+	LogServiceInteractorGetAllOK       = "Catálogo de servicios obtenido exitosamente"
+	LogServiceInteractorGetAllError    = "Error obteniendo catálogo de servicios"
+	LogServiceInteractorGetByType      = "Obteniendo servicios por tipo"
+	LogServiceInteractorGetByTypeOK    = "Servicios por tipo obtenidos exitosamente"
+	LogServiceInteractorGetByTypeError = "Error obteniendo servicios por tipo"
+
+	// Service Repository
+	LogServiceRepoGetAll         = "Consultando todos los servicios desde BD"
+	LogServiceRepoGetAllError    = "Error consultando servicios desde BD"
+	LogServiceRepoGetByType      = "Consultando servicios por tipo desde BD"
+	LogServiceRepoGetByTypeError = "Error consultando servicios por tipo desde BD"
+	LogServiceRepoScanError      = "Error escaneando fila de servicio"
+	LogServiceRepoPrepareError   = "Error preparando statement de servicio"
+
+	// Service Controller
+	LogServiceControllerGetTypes    = "Solicitud de tipos de servicio recibida"
+	LogServiceControllerGetTypesOK  = "Tipos de servicio enviados exitosamente"
+	LogServiceControllerGetAll      = "Solicitud de catálogo de servicios recibida"
+	LogServiceControllerGetAllOK    = "Catálogo de servicios enviado exitosamente"
+	LogServiceControllerGetAllError = "Error obteniendo catálogo de servicios"
+	LogServiceControllerInvalidType = "Tipo de servicio inválido recibido"
+
+	// Dependency Initialization
+	LogDepServiceRepoInitOK       = "Repositorio de servicios inicializado"
+	LogDepServiceRepoInitErr      = "Error inicializando repositorio de servicios"
+	LogDepServiceInteractorInitOK = "Interactor de servicios inicializado"
+)
+
+// ============================================
+// BRANCH SERVICES (Service-Branch Association)
+// ============================================
+const (
+	// Branch Services Controller
+	LogBranchServicesControllerGet          = "branch_services_controller_get"
+	LogBranchServicesControllerGetOK        = "branch_services_controller_get_ok"
+	LogBranchServicesControllerGetError     = "branch_services_get_error"
+	LogBranchServicesControllerInvalidID    = "branch_services_invalid_id"
+	LogBranchServicesControllerAssociate    = "branch_services_associate"
+	LogBranchServicesControllerAssociateOK  = "branch_services_associate_ok"
+	LogBranchServicesControllerAssociateErr = "branch_services_associate_error"
+	LogBranchServicesControllerInvalidBody  = "branch_services_invalid_body"
+	LogBranchServicesControllerInvalidSvcID = "branch_services_invalid_service_id"
+	LogBranchServicesControllerInvalidSvcs  = "branch_services_invalid_services"
+	LogBranchServicesControllerTxError      = "branch_services_tx_error"
+	LogBranchServicesControllerCommitError  = "branch_services_commit_error"
+	LogBranchServicesControllerDissociate   = "branch_services_dissociate"
+	LogBranchServicesControllerDissociateOK = "branch_services_dissociate_ok"
+	LogBranchServicesControllerDisassocErr  = "branch_services_dissociate_error"
+	LogBranchServicesControllerNotFound     = "branch_services_not_found"
+
+	// Branch Services Repository
+	LogBranchServicesRepoGetByBranch    = "service_repo_get_by_branch"
+	LogBranchServicesRepoGetByBranchErr = "service_repo_get_by_branch_error"
+	LogBranchServicesRepoAssociate      = "service_repo_associate"
+	LogBranchServicesRepoAssociateOK    = "service_repo_associate_ok"
+	LogBranchServicesRepoAssociateErr   = "service_repo_associate_error"
+	LogBranchServicesRepoPrepareErr     = "service_repo_associate_prepare_error"
+	LogBranchServicesRepoDissociate     = "service_repo_dissociate"
+	LogBranchServicesRepoDissociateOK   = "service_repo_dissociate_ok"
+	LogBranchServicesRepoDissociateErr  = "service_repo_dissociate_error"
+	LogBranchServicesRepoNotFound       = "service_repo_dissociate_not_found"
+	LogBranchServicesRepoValidateIDs    = "service_repo_validate_ids"
+	LogBranchServicesRepoValidateErr    = "service_repo_validate_ids_error"
+	LogBranchServicesRepoValidateMiss   = "service_repo_validate_ids_mismatch"
+	LogBranchServicesRepoCheckAssoc     = "service_repo_check_association"
+	LogBranchServicesRepoCheckAssocErr  = "service_repo_check_association_error"
+
+	// Branch Services Interactor
+	LogBranchServicesIntGetByBranch    = "service_interactor_get_by_branch"
+	LogBranchServicesIntGetByBranchOK  = "service_interactor_get_by_branch_ok"
+	LogBranchServicesIntGetByBranchErr = "service_interactor_get_by_branch_error"
+)

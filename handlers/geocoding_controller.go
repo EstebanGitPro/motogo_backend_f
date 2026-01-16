@@ -32,7 +32,7 @@ type GeocodingTestResponse struct {
 	Error            string  `json:"error,omitempty"`
 }
 
-// TestGeocoding handles POST /geocoding/test
+// TestGeocoding handles POST /location/geocode
 // @Summary Test geocoding service
 // @Description Test address geocoding without creating a branch
 // @Tags Dev Tools
@@ -41,7 +41,7 @@ type GeocodingTestResponse struct {
 // @Param request body GeocodingTestRequest true "Address to geocode"
 // @Success 200 {object} middleware.APIResponse{data=GeocodingTestResponse}
 // @Failure 400 {object} middleware.APIResponse
-// @Router /geocoding/test [post]
+// @Router /location/geocode [post]
 func (h *handler) TestGeocoding() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		traceID := middleware.GetRequestID(c)
