@@ -40,10 +40,13 @@
         "credentials_path": "config/serviceAccountKey.json"
     },
     "geocoding": {
-        "provider": "opencage",
-        "api_key": "6d5f9b419ba44c7283b692c628c8c529",
-        "base_url": "https://api.opencagedata.com/geocode/v1",
+        "provider": "google",
+        "api_key": "AIzaSyBQgYbMzHzxKrDJPvi8ZrPUS33bLAmGdEI",
+        "base_url": "https://maps.googleapis.com/maps/api/geocode",
         "timeout_seconds": 5,
-        "country_code": "co"
+        "country_code": "co",
+        "fallback_provider": "mapbox",
+        "fallback_api_key": "pk.eyJ1Ijoic3RpZmxlcjA4IiwiYSI6ImNta2U3b3dveDA0ODAzZG9mN3EzbHQzdm4ifQ.uhavqtuqgUt6dwKv0uyNCg",
+        "fallback_base_url": "https://api.mapbox.com/search/geocode/v6"
     }
 }

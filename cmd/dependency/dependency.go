@@ -128,15 +128,70 @@ func Init() (*Dependencies, error) {
 	}
 	log.Success(logger.LogDepBranchRepoInitOK)
 
-	// Geocoding client (OpenCage)
-	geocodingClient := geocoding.NewOpenCageClient(
-		cfg.Geocoding.APIKey,
-		cfg.Geocoding.BaseURL,
-		cfg.Geocoding.CountryCode,
-		time.Duration(cfg.Geocoding.TimeoutSeconds)*time.Second,
-		log,
-	)
-	log.Success(logger.LogDepGeocodingClientInitOK, "provider", cfg.Geocoding.Provider)
+	// Geocoding client (with optional fallback for quota management)
+	// Primary: Google Maps (10k free/month, most accurate)
+	// Fallback: Mapbox (100k free/month) when Google quota exceeded
+	timeout := time.Duration(cfg.Geocoding.TimeoutSeconds) * time.Second
+
+	// Create primary geocoding client
+	var primaryClient geocoding.Client
+	switch cfg.Geocoding.Provider {
+	case "google":
+		primaryClient = geocoding.NewGoogleMapsClient(
+			cfg.Geocoding.APIKey,
+			cfg.Geocoding.BaseURL,
+			cfg.Geocoding.CountryCode,
+			timeout,
+			log,
+		)
+	case "mapbox":
+		fallthrough
+	default:
+		// Default to Mapbox if no valid provider specified
+		primaryClient = geocoding.NewMapboxClient(
+			cfg.Geocoding.APIKey,
+			cfg.Geocoding.BaseURL,
+			cfg.Geocoding.CountryCode,
+			timeout,
+		)
+	}
+
+	// Create geocoding client with optional fallback
+	var geocodingClient geocoding.Client
+	if cfg.Geocoding.FallbackProvider != "" {
+		// Create fallback client
+		var fallbackClient geocoding.Client
+		switch cfg.Geocoding.FallbackProvider {
+		case "mapbox":
+			fallbackClient = geocoding.NewMapboxClient(
+				cfg.Geocoding.FallbackAPIKey,
+				cfg.Geocoding.FallbackBaseURL,
+				cfg.Geocoding.CountryCode,
+				timeout,
+			)
+		case "google":
+			fallbackClient = geocoding.NewGoogleMapsClient(
+				cfg.Geocoding.FallbackAPIKey,
+				cfg.Geocoding.FallbackBaseURL,
+				cfg.Geocoding.CountryCode,
+				timeout,
+				log,
+			)
+		}
+
+		if fallbackClient != nil {
+			geocodingClient = geocoding.NewFallbackClient(primaryClient, fallbackClient)
+			log.Success(logger.LogDepGeocodingClientInitOK,
+				"primary", cfg.Geocoding.Provider,
+				"fallback", cfg.Geocoding.FallbackProvider)
+		} else {
+			geocodingClient = primaryClient
+			log.Success(logger.LogDepGeocodingClientInitOK, "provider", cfg.Geocoding.Provider)
+		}
+	} else {
+		geocodingClient = primaryClient
+		log.Success(logger.LogDepGeocodingClientInitOK, "provider", cfg.Geocoding.Provider)
+	}
 
 	// Location dependencies (geographic catalogs) - must be initialized before branch service
 	locationRepository, err := locationRepo.NewRepository(db)

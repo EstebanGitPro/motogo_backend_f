@@ -30,11 +30,16 @@ type FirebaseConfig struct {
 }
 
 type GeocodingConfig struct {
-	Provider       string `json:"provider"` // e.g., "opencage"
-	APIKey         string `json:"api_key"`
-	BaseURL        string `json:"base_url"`
-	TimeoutSeconds int    `json:"timeout_seconds"`
-	CountryCode    string `json:"country_code"` // e.g., "co" for Colombia
+	Provider       string `json:"provider"`        // Primary: "google", "mapbox", "opencage"
+	APIKey         string `json:"api_key"`         // Primary provider API key
+	BaseURL        string `json:"base_url"`        // Primary provider base URL
+	TimeoutSeconds int    `json:"timeout_seconds"` // Request timeout
+	CountryCode    string `json:"country_code"`    // e.g., "co" for Colombia
+
+	// Fallback provider (optional) - used when primary hits quota limits
+	FallbackProvider string `json:"fallback_provider,omitempty"` // "mapbox", "opencage"
+	FallbackAPIKey   string `json:"fallback_api_key,omitempty"`
+	FallbackBaseURL  string `json:"fallback_base_url,omitempty"`
 }
 
 type IDEncoder struct {
