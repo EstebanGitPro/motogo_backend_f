@@ -141,7 +141,7 @@ type FranchiseService interface {
 	CountBranches(ctx context.Context, franchiseID string) (int, error)
 }
 
-// ServiceCatalogService - Use Cases for Service catalog operations (HU63, HU75)
+// ServiceCatalogService - Use Cases for Service catalog operations (HU63, HU68, HU75)
 type ServiceCatalogService interface {
 	BeginTx(ctx context.Context) (output.Tx, error)
 
@@ -153,6 +153,9 @@ type ServiceCatalogService interface {
 
 	// GetServicesByType retrieves services filtered by type (HU63)
 	GetServicesByType(ctx context.Context, serviceType domain.ServiceType) ([]domain.Service, error)
+
+	// GetServiceByID retrieves a service by its UUID (HU68)
+	GetServiceByID(ctx context.Context, serviceID string) (*domain.Service, error)
 
 	// GetServicesByBranch retrieves services associated with a specific branch
 	GetServicesByBranch(ctx context.Context, branchID string) ([]domain.BranchServiceInfo, error)
@@ -168,4 +171,7 @@ type ServiceCatalogService interface {
 
 	// CheckServiceAssociation checks if a service is already associated with a branch
 	CheckServiceAssociation(ctx context.Context, branchID, serviceID string) (bool, error)
+
+	// UpdateService updates an existing service in the catalog (HU68 - Admin only)
+	UpdateService(ctx context.Context, tx output.Tx, service domain.Service) error
 }

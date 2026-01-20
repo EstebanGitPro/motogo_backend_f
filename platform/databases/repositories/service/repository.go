@@ -11,8 +11,10 @@ import (
 )
 
 const (
-	queryGetAllServices      = "SELECT id, name, description, service_type FROM services ORDER BY name"
-	queryGetServicesByType   = "SELECT id, name, description, service_type FROM services WHERE service_type = ? ORDER BY name"
+	queryGetAllServices      = "SELECT id, name, description, service_type, is_active FROM services ORDER BY name"
+	queryGetServicesByType   = "SELECT id, name, description, service_type, is_active FROM services WHERE service_type = ? ORDER BY name"
+	queryGetServiceByID      = "SELECT id, name, description, service_type, is_active FROM services WHERE id = ?"
+	queryUpdateService       = "UPDATE services SET name = ?, description = ?, service_type = ?, is_active = ? WHERE id = ?"
 	queryGetServicesByBranch = `
 		SELECT s.id, s.name, s.description, s.service_type, bs.created_at, bs.active
 		FROM branch_services bs
@@ -28,6 +30,7 @@ type repository struct {
 	db                      *sql.DB
 	stmtGetAllServices      *sql.Stmt
 	stmtGetServicesByType   *sql.Stmt
+	stmtGetServiceByID      *sql.Stmt
 	stmtGetServicesByBranch *sql.Stmt
 }
 
@@ -49,6 +52,12 @@ func NewRepository(db *sql.DB) (output.ServiceRepository, error) {
 		return nil, err
 	}
 
+	stmtGetServiceByID, err := db.Prepare(queryGetServiceByID)
+	if err != nil {
+		log.Error(logger.LogServiceRepoGetAllError, "error preparing stmtGetServiceByID", err)
+		return nil, err
+	}
+
 	stmtGetServicesByBranch, err := db.Prepare(queryGetServicesByBranch)
 	if err != nil {
 		log.Error(logger.LogServiceRepoGetAllError, "error preparing stmtGetServicesByBranch", err)
@@ -59,6 +68,7 @@ func NewRepository(db *sql.DB) (output.ServiceRepository, error) {
 		db:                      db,
 		stmtGetAllServices:      stmtGetAllServices,
 		stmtGetServicesByType:   stmtGetServicesByType,
+		stmtGetServiceByID:      stmtGetServiceByID,
 		stmtGetServicesByBranch: stmtGetServicesByBranch,
 	}, nil
 }
@@ -78,7 +88,7 @@ func (r *repository) GetAllServices(ctx context.Context) ([]domain.Service, erro
 	for rows.Next() {
 		var svc domain.Service
 		var description sql.NullString
-		if err := rows.Scan(&svc.ID, &svc.Name, &description, &svc.ServiceType); err != nil {
+		if err := rows.Scan(&svc.ID, &svc.Name, &description, &svc.ServiceType, &svc.IsActive); err != nil {
 			log.Error(logger.LogServiceRepoScanError, "error scanning service", err)
 			continue
 		}
@@ -110,7 +120,7 @@ func (r *repository) GetServicesByType(ctx context.Context, serviceType string) 
 	for rows.Next() {
 		var svc domain.Service
 		var description sql.NullString
-		if err := rows.Scan(&svc.ID, &svc.Name, &description, &svc.ServiceType); err != nil {
+		if err := rows.Scan(&svc.ID, &svc.Name, &description, &svc.ServiceType, &svc.IsActive); err != nil {
 			log.Error(logger.LogServiceRepoScanError, "error scanning service", err)
 			continue
 		}
@@ -280,6 +290,61 @@ func (r *repository) CheckServiceAssociation(ctx context.Context, branchID, serv
 	}
 
 	return count > 0, nil
+}
+
+// GetServiceByID retrieves a service by its UUID (HU68)
+func (r *repository) GetServiceByID(ctx context.Context, serviceID string) (*domain.Service, error) {
+	log.Info(logger.LogServiceRepoGetByID, "service_id", serviceID)
+
+	var svc domain.Service
+	var description sql.NullString
+	err := r.stmtGetServiceByID.QueryRowContext(ctx, serviceID).Scan(
+		&svc.ID,
+		&svc.Name,
+		&description,
+		&svc.ServiceType,
+		&svc.IsActive,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			log.Warn(logger.LogServiceRepoNotFound, "service_id", serviceID)
+			return nil, domain.ErrServiceNotFound
+		}
+		log.Error(logger.LogServiceRepoGetByIDError, "error", err, "service_id", serviceID)
+		return nil, err
+	}
+
+	if description.Valid {
+		svc.Description = description.String
+	}
+
+	log.Success(logger.LogServiceRepoGetByIDOK, "service_id", serviceID)
+	return &svc, nil
+}
+
+// UpdateService updates an existing service in the catalog (HU68 - Admin only)
+func (r *repository) UpdateService(ctx context.Context, tx output.Tx, service domain.Service) error {
+	log.Info(logger.LogServiceRepoUpdate, "service_id", service.ID)
+
+	// Use direct DB connection for now (transactional support can be added later if needed)
+	result, err := r.db.ExecContext(ctx, queryUpdateService,
+		service.Name,
+		service.Description,
+		string(service.ServiceType),
+		service.IsActive,
+		service.ID,
+	)
+	if err != nil {
+		log.Error(logger.LogServiceRepoUpdateError, "error", err, "service_id", service.ID)
+		return err
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+	// Note: RowsAffected can be 0 if the values are the same as current.
+	// The service existence is already verified in the controller before calling this.
+	// So we don't fail on RowsAffected=0 - it just means no changes were needed.
+	log.Success(logger.LogServiceRepoUpdateOK, "service_id", service.ID, "rows_affected", rowsAffected)
+	return nil
 }
 
 // generateUUID generates a new UUID

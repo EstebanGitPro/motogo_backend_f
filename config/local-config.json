@@ -27,7 +27,7 @@
         "client_id": "stifler",
         "client_secret": "sO7Jk9qgViBGFaO9GGpAR6ggz1Oqtuaf",
         "admin_user": "admin",
-        "admin_pass": "12345678"
+        "admin_pass": "Secret123*"
       },
     "verification": {
         "base_url": "http://localhost:8085"

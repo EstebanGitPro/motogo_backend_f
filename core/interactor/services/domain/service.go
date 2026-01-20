@@ -34,6 +34,7 @@ type Service struct {
 	Name        string      `json:"name"`
 	Description string      `json:"description,omitempty"`
 	ServiceType ServiceType `json:"service_type"`
+	IsActive    bool        `json:"is_active"`
 }
 
 // IsValidServiceType checks if the provided string is a valid service type

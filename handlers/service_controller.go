@@ -351,3 +351,104 @@ func (h *handler) DissociateBranchService() gin.HandlerFunc {
 		h.Response.Success(c, domain.MsgServiceDissociated)
 	}
 }
+
+// UpdateService handles PUT /admin/services/:id - updates a service in the global catalog (HU68 - Admin only)
+// @Summary Update a service
+// @Description Updates an existing service in the global catalog. Requires ADMIN role.
+// @Tags Admin
+// @Accept json
+// @Produce json
+// @Param id path string true "Service ID"
+// @Param body body UpdateServiceRequest true "Service data to update"
+// @Success 200 {object} StandardResponse{data=ServiceDetailResponse}
+// @Failure 400 {object} StandardResponse
+// @Failure 401 {object} StandardResponse
+// @Failure 403 {object} StandardResponse
+// @Failure 404 {object} StandardResponse
+// @Failure 500 {object} StandardResponse
+// @Router /admin/services/{id} [put]
+func (h *handler) UpdateService() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		traceID := middleware.GetRequestID(c)
+		log := Logger.WithTraceID(traceID)
+
+		serviceID := c.Param("id")
+		log.Info(logger.LogServiceControllerUpdate, "service_id", serviceID)
+
+		// Decode service ID
+		decodedID, err := h.IDEncoder.Decode(serviceID)
+		if err != nil {
+			log.Warn(logger.LogServiceControllerUpdateError, "id", serviceID, "error", err)
+			h.Response.Error(c, domain.MsgServiceNotFound)
+			return
+		}
+
+		// Parse request body
+		var req UpdateServiceRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			log.Warn(logger.LogServiceControllerUpdateError, "error", err)
+			h.Response.Error(c, domain.MsgValBadFormat)
+			return
+		}
+
+		// Validate service type
+		if !domain.IsValidServiceType(req.ServiceType) {
+			log.Warn(logger.LogServiceControllerInvalidType, "type", req.ServiceType)
+			h.Response.Error(c, domain.MsgServiceTypeInvalid)
+			return
+		}
+
+		// Verify service exists
+		existingService, err := h.ServiceInteractor.GetServiceByID(c.Request.Context(), decodedID)
+		if err != nil {
+			if err == domain.ErrServiceNotFound {
+				log.Warn(logger.LogServiceControllerUpdateError, "service_id", serviceID, "error", "not found")
+				h.Response.Error(c, domain.MsgServiceResNotFound)
+				return
+			}
+			log.Error(logger.LogServiceControllerUpdateError, "error", err)
+			h.Response.Error(c, domain.MsgServerError)
+			return
+		}
+
+		// Update service fields
+		existingService.Name = req.Name
+		existingService.Description = req.Description
+		existingService.ServiceType = domain.ServiceType(req.ServiceType)
+
+		// Update activation status if provided
+		if req.IsActive != nil {
+			existingService.IsActive = *req.IsActive
+		}
+
+		// Perform update
+		if err := h.ServiceInteractor.UpdateService(c.Request.Context(), *existingService); err != nil {
+			if err == domain.ErrServiceNotFound {
+				log.Warn(logger.LogServiceControllerUpdateError, "service_id", serviceID, "error", "update failed - not found")
+				h.Response.Error(c, domain.MsgServiceResNotFound)
+				return
+			}
+			log.Error(logger.LogServiceControllerUpdateError, "error", err)
+			h.Response.Error(c, domain.MsgServerError)
+			return
+		}
+
+		// Build HATEOAS links
+		baseURL := GetBaseURL(c)
+		links := []Link{
+			{Rel: "self", Href: baseURL + "/admin/services/" + serviceID, Method: "PUT"},
+			{Rel: "services", Href: baseURL + "/services", Method: "GET"},
+		}
+
+		// Build response with encoded ID
+		response, encErr := NewServiceDetailResponseWithEncoder(existingService, links, h.IDEncoder)
+		if encErr != nil {
+			log.Error(logger.LogMessageIDEncodeError, "error", encErr)
+			h.Response.Error(c, domain.MsgServerError)
+			return
+		}
+
+		log.Success(logger.LogServiceControllerUpdateOK, "service_id", serviceID)
+		h.Response.SuccessWithData(c, domain.MsgServiceUpdated, response)
+	}
+}
