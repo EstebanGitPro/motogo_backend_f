@@ -860,3 +860,38 @@ const (
 	LogBranchServicesIntGetByBranchOK  = "service_interactor_get_by_branch_ok"
 	LogBranchServicesIntGetByBranchErr = "service_interactor_get_by_branch_error"
 )
+
+// ============================================
+// FIREBASE CONTROLLER
+// ============================================
+const (
+	LogFirebaseControllerRequest    = "Solicitud de token Firebase recibida"
+	LogFirebaseControllerUnauth     = "Solicitud no autenticada para token Firebase"
+	LogFirebaseControllerNotConfig  = "Cliente Firebase no configurado"
+	LogFirebaseControllerTokenError = "Error generando token Firebase"
+	LogFirebaseControllerTokenOK    = "Token Firebase generado exitosamente"
+)
+
+// ============================================
+// LOCATION CONTROLLER
+// ============================================
+const (
+	LogLocationControllerGetDepts      = "Solicitud de listado de departamentos recibida"
+	LogLocationControllerGetDeptsError = "Error obteniendo departamentos"
+	LogLocationControllerGetDeptsOK    = "Departamentos obtenidos exitosamente"
+	LogLocationControllerGetCities     = "Solicitud de listado de ciudades recibida"
+	LogLocationControllerGetCitiesErr  = "Error obteniendo ciudades"
+	LogLocationControllerGetCitiesOK   = "Ciudades obtenidas exitosamente"
+)
+
+// ============================================
+// MESSAGE CACHE CONTROLLER
+// ============================================
+const (
+	LogMessageCacheReloadRequest = "Solicitud de recarga de caché de mensajes recibida"
+	LogMessageCacheReloadError   = "Error al recargar caché de mensajes"
+	LogMessageCacheReloadOK      = "Caché de mensajes recargado exitosamente"
+	LogMessageCreatedOK          = "Mensaje creado exitosamente"
+	LogMessageUpdatedOK          = "Mensaje actualizado exitosamente"
+	LogMessageDeletedOK          = "Mensaje eliminado exitosamente"
+)
