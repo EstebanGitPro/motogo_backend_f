@@ -116,7 +116,7 @@ type FranchiseRepository interface {
 	CountBranchesByFranchise(ctx context.Context, franchiseID string) (int, error)
 }
 
-// ServiceRepository interface for Service catalog operations (HU63, HU75)
+// ServiceRepository interface for Service catalog operations (HU63, HU75, HU68)
 type ServiceRepository interface {
 	BeginTx(ctx context.Context) (Tx, error)
 
@@ -125,6 +125,9 @@ type ServiceRepository interface {
 
 	// GetServicesByType retrieves services filtered by type
 	GetServicesByType(ctx context.Context, serviceType string) ([]domain.Service, error)
+
+	// GetServiceByID retrieves a service by its UUID (HU68)
+	GetServiceByID(ctx context.Context, serviceID string) (*domain.Service, error)
 
 	// GetServicesByBranch retrieves services associated with a specific branch
 	// Returns the services with their added_at timestamp from branch_services table
@@ -141,4 +144,7 @@ type ServiceRepository interface {
 
 	// CheckServiceAssociation checks if a service is already associated with a branch
 	CheckServiceAssociation(ctx context.Context, branchID, serviceID string) (bool, error)
+
+	// UpdateService updates an existing service in the catalog (HU68 - Admin only)
+	UpdateService(ctx context.Context, tx Tx, service domain.Service) error
 }
