@@ -78,7 +78,7 @@ func (h handler) CreateMessage() func(c *gin.Context) {
 			Links: links,
 		}
 
-		log.Success("Mensaje creado exitosamente",
+		log.Success(logger.LogMessageCreatedOK,
 			"id", result.ID,
 			"encoded_id", encodedID,
 			"code", result.Code,
@@ -164,7 +164,7 @@ func (h handler) UpdateMessage() func(c *gin.Context) {
 			Links: links,
 		}
 
-		log.Success("Mensaje actualizado exitosamente",
+		log.Success(logger.LogMessageUpdatedOK,
 			"id", result.ID,
 			"code", result.Code,
 			"client_ip", c.ClientIP())
@@ -220,7 +220,7 @@ func (h handler) DeleteMessage() func(c *gin.Context) {
 			return
 		}
 
-		log.Success("Mensaje eliminado exitosamente",
+		log.Success(logger.LogMessageDeletedOK,
 			"id", uuid,
 			"client_ip", c.ClientIP())
 
@@ -384,7 +384,7 @@ func (h handler) ReloadMessageCache() func(c *gin.Context) {
 		traceID := middleware.GetRequestID(c)
 		log := Logger.WithTraceID(traceID)
 
-		log.Info("Recargando caché de mensajes",
+		log.Info(logger.LogMessageCacheReloadRequest,
 			"method", c.Request.Method,
 			"path", c.Request.URL.Path,
 			"client_ip", c.ClientIP())
@@ -395,7 +395,7 @@ func (h handler) ReloadMessageCache() func(c *gin.Context) {
 		// Recargar el caché desde BD
 		err := h.MessagingCache.ReloadMessages(c.Request.Context())
 		if err != nil {
-			log.Error("Error al recargar caché de mensajes",
+			log.Error(logger.LogMessageCacheReloadError,
 				"error", err,
 				"client_ip", c.ClientIP())
 			c.Error(domain.ErrInternalServer)
@@ -412,7 +412,7 @@ func (h handler) ReloadMessageCache() func(c *gin.Context) {
 			Message:     "Caché de mensajes recargado exitosamente desde la base de datos",
 		}
 
-		log.Success("Caché de mensajes recargado exitosamente",
+		log.Success(logger.LogMessageCacheReloadOK,
 			"before_count", beforeCount,
 			"after_count", afterCount,
 			"client_ip", c.ClientIP())

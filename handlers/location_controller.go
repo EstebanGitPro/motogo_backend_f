@@ -3,6 +3,7 @@ package handlers
 import (
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/middleware"
+	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 	"github.com/gin-gonic/gin"
 )
 
@@ -19,14 +20,14 @@ func (h *handler) GetDepartments() gin.HandlerFunc {
 		traceID := middleware.GetRequestID(c)
 		log := Logger.WithTraceID(traceID)
 
-		log.Info("Department list request received",
+		log.Info(logger.LogLocationControllerGetDepts,
 			"method", c.Request.Method,
 			"path", c.Request.URL.Path,
 			"client_ip", c.ClientIP())
 
 		departments, err := h.LocationInteractor.GetAllDepartments(c.Request.Context())
 		if err != nil {
-			log.Error("Error getting departments", "error", err)
+			log.Error(logger.LogLocationControllerGetDeptsError, "error", err)
 			h.Response.Error(c, domain.MsgServerError)
 			return
 		}
@@ -34,7 +35,7 @@ func (h *handler) GetDepartments() gin.HandlerFunc {
 		links := BuildDepartmentListLinks()
 		response := NewDepartmentListResponse(departments, links)
 
-		log.Success("Departments retrieved successfully",
+		log.Success(logger.LogLocationControllerGetDeptsOK,
 			"count", len(departments),
 			"client_ip", c.ClientIP())
 
@@ -59,7 +60,7 @@ func (h *handler) GetCitiesByDepartment() gin.HandlerFunc {
 
 		departmentID := c.Param("id")
 
-		log.Info("Cities list request received",
+		log.Info(logger.LogLocationControllerGetCities,
 			"method", c.Request.Method,
 			"path", c.Request.URL.Path,
 			"department_id", departmentID,
@@ -67,7 +68,7 @@ func (h *handler) GetCitiesByDepartment() gin.HandlerFunc {
 
 		cities, err := h.LocationInteractor.GetCitiesByDepartment(c.Request.Context(), departmentID)
 		if err != nil {
-			log.Error("Error getting cities", "error", err, "department_id", departmentID)
+			log.Error(logger.LogLocationControllerGetCitiesErr, "error", err, "department_id", departmentID)
 			h.Response.Error(c, domain.MsgServerError)
 			return
 		}
@@ -75,7 +76,7 @@ func (h *handler) GetCitiesByDepartment() gin.HandlerFunc {
 		links := BuildCityListLinks(departmentID)
 		response := NewCityListResponse(cities, links)
 
-		log.Success("Cities retrieved successfully",
+		log.Success(logger.LogLocationControllerGetCitiesOK,
 			"count", len(cities),
 			"department_id", departmentID,
 			"client_ip", c.ClientIP())

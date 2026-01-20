@@ -304,3 +304,28 @@ const (
 	MsgFranchiseHasBranches    = "MOD_F_HAS_BRANCHES_ERR_00001"
 	MsgFranchiseMinBranches    = "MOD_F_MIN_BRANCHES_ERR_00001"
 )
+
+// Service Catalog Module (MOD_S_*) - HU63, HU68, HU75
+const (
+	// Success messages
+	MsgServiceTypesRetrieved = "MOD_S_TYPES_EXI_00001"       // HU75: Service types catalog
+	MsgServicesRetrieved     = "MOD_S_LIST_EXI_00001"        // HU63: Services list
+	MsgServiceAssociated     = "MOD_S_ASSOC_EXI_00001"       // Servicios asociados a sede
+	MsgServiceDissociated    = "MOD_S_DISSOC_EXI_00001"      // Servicio desasociado de sede
+	MsgServiceUpdated        = "MOD_S_UPD_EXI_00001"         // HU68: Service updated (Admin)
+	MsgServiceActivated      = "MOD_S_ACTIVATED_EXI_00001"   // HU68: Service activated (Admin)
+	MsgServiceDeactivated    = "MOD_S_DEACTIVATED_EXI_00001" // HU68: Service deactivated (Admin)
+
+	// Error messages
+	MsgServiceInvalidType       = "MOD_S_INVALID_TYPE_ERR_00001"  // Tipo de servicio inválido
+	MsgServiceNotFound          = "MOD_S_NOT_FOUND_ERR_00001"     // Servicio no encontrado (legacy)
+	MsgServiceAlreadyAssociated = "MOD_S_ALREADY_ASSOC_ERR_00001" // Servicio ya asociado
+	MsgServiceResNotFound       = "MOD_S_RES_ERR_00001"           // HU68: Service not found in catalog
+	MsgServiceTypeInvalid       = "MOD_S_TYPE_ERR_00001"          // HU68: Invalid service type
+)
+
+// Service Errors (MOD_S_*)
+var (
+	ErrServiceNotFound          = errors.New("ERR_SERVICE_NOT_FOUND")
+	ErrServiceAlreadyAssociated = errors.New("ERR_SERVICE_ALREADY_ASSOCIATED")
+)

@@ -28,6 +28,7 @@ import (
 	locationRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/location"
 	messageRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/message"
 	repo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/person"
+	serviceRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/service"
 )
 
 type Dependencies struct {
@@ -39,6 +40,7 @@ type Dependencies struct {
 	BranchInteractor    *interactor.BranchInteractor    // HU59
 	BrandInteractor     *interactor.BrandInteractor     // Brands catalog
 	LocationInteractor  *interactor.LocationInteractor  // Geographic catalogs
+	ServiceInteractor   *interactor.ServiceInteractor   // Service catalog (HU63, HU75)
 	FranchiseInteractor *interactor.FranchiseInteractor // HU26-29
 	FirebaseClient      *firebase.Client                // Firebase Auth
 	JWTValidator        *jwt.JWKSValidator              // JWT validation with JWKS
@@ -128,15 +130,70 @@ func Init() (*Dependencies, error) {
 	}
 	log.Success(logger.LogDepBranchRepoInitOK)
 
-	// Geocoding client (OpenCage)
-	geocodingClient := geocoding.NewOpenCageClient(
-		cfg.Geocoding.APIKey,
-		cfg.Geocoding.BaseURL,
-		cfg.Geocoding.CountryCode,
-		time.Duration(cfg.Geocoding.TimeoutSeconds)*time.Second,
-		log,
-	)
-	log.Success(logger.LogDepGeocodingClientInitOK, "provider", cfg.Geocoding.Provider)
+	// Geocoding client (with optional fallback for quota management)
+	// Primary: Google Maps (10k free/month, most accurate)
+	// Fallback: Mapbox (100k free/month) when Google quota exceeded
+	timeout := time.Duration(cfg.Geocoding.TimeoutSeconds) * time.Second
+
+	// Create primary geocoding client
+	var primaryClient geocoding.Client
+	switch cfg.Geocoding.Provider {
+	case "google":
+		primaryClient = geocoding.NewGoogleMapsClient(
+			cfg.Geocoding.APIKey,
+			cfg.Geocoding.BaseURL,
+			cfg.Geocoding.CountryCode,
+			timeout,
+			log,
+		)
+	case "mapbox":
+		fallthrough
+	default:
+		// Default to Mapbox if no valid provider specified
+		primaryClient = geocoding.NewMapboxClient(
+			cfg.Geocoding.APIKey,
+			cfg.Geocoding.BaseURL,
+			cfg.Geocoding.CountryCode,
+			timeout,
+		)
+	}
+
+	// Create geocoding client with optional fallback
+	var geocodingClient geocoding.Client
+	if cfg.Geocoding.FallbackProvider != "" {
+		// Create fallback client
+		var fallbackClient geocoding.Client
+		switch cfg.Geocoding.FallbackProvider {
+		case "mapbox":
+			fallbackClient = geocoding.NewMapboxClient(
+				cfg.Geocoding.FallbackAPIKey,
+				cfg.Geocoding.FallbackBaseURL,
+				cfg.Geocoding.CountryCode,
+				timeout,
+			)
+		case "google":
+			fallbackClient = geocoding.NewGoogleMapsClient(
+				cfg.Geocoding.FallbackAPIKey,
+				cfg.Geocoding.FallbackBaseURL,
+				cfg.Geocoding.CountryCode,
+				timeout,
+				log,
+			)
+		}
+
+		if fallbackClient != nil {
+			geocodingClient = geocoding.NewFallbackClient(primaryClient, fallbackClient)
+			log.Success(logger.LogDepGeocodingClientInitOK,
+				"primary", cfg.Geocoding.Provider,
+				"fallback", cfg.Geocoding.FallbackProvider)
+		} else {
+			geocodingClient = primaryClient
+			log.Success(logger.LogDepGeocodingClientInitOK, "provider", cfg.Geocoding.Provider)
+		}
+	} else {
+		geocodingClient = primaryClient
+		log.Success(logger.LogDepGeocodingClientInitOK, "provider", cfg.Geocoding.Provider)
+	}
 
 	// Location dependencies (geographic catalogs) - must be initialized before branch service
 	locationRepository, err := locationRepo.NewRepository(db)
@@ -165,6 +222,18 @@ func Init() (*Dependencies, error) {
 	locationService := services.NewLocationService(locationRepository)
 	locationInteractor := interactor.NewLocationInteractor(locationService, log)
 	log.Success(logger.LogDepLocationInteractorInitOK)
+
+	// Service catalog dependencies (HU63, HU75)
+	serviceRepository, err := serviceRepo.NewRepository(db)
+	if err != nil {
+		log.Error(logger.LogDepServiceRepoInitErr, "error", err)
+		return nil, err
+	}
+	log.Success(logger.LogDepServiceRepoInitOK)
+
+	serviceCatalogService := services.NewServiceCatalogService(serviceRepository)
+	serviceInteractor := interactor.NewServiceInteractor(serviceCatalogService, log)
+	log.Success(logger.LogDepServiceInteractorInitOK)
 
 	// Franchise dependencies (HU26-29)
 	franchiseRepository, err := franchiseRepo.NewRepository(db)
@@ -228,6 +297,7 @@ func Init() (*Dependencies, error) {
 		BranchInteractor:    branchInteractor,
 		BrandInteractor:     brandInteractor,
 		LocationInteractor:  locationInteractor,
+		ServiceInteractor:   serviceInteractor,
 		FranchiseInteractor: franchiseInteractor,
 		FirebaseClient:      firebaseClient,
 		JWTValidator:        jwtValidator,

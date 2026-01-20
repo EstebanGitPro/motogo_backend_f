@@ -24,6 +24,5 @@ ENV GF_SECURITY_ADMIN_USER=admin
 ENV GF_SECURITY_ADMIN_PASSWORD=0000
 ENV GF_USERS_ALLOW_SIGN_UP=false
 ENV GF_SERVER_ROOT_URL=http://localhost:3000
-ENV GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource,grafana-piechart-panel
 
 # El comando de inicio ya está definido en la imagen base

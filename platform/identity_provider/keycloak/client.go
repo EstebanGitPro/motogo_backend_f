@@ -150,7 +150,11 @@ func (c *client) CreateUser(ctx context.Context, person *domain.Person) (string,
 		keycloakUser,
 	)
 	if err != nil {
-		c.logger.Error(logger.LogKeycloakUserCreateError, "email", person.Email, "error", err)
+		c.logger.Error(logger.LogKeycloakUserCreateError,
+			"email", person.Email,
+			"error", err,
+			"error_details", err.Error(),
+			"realm", c.config.Realm)
 		return "", fmt.Errorf("failed to create user in keycloak: %w", err)
 	}
 
