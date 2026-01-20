@@ -22,6 +22,7 @@ type ServiceItemResponse struct {
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
 	ServiceType string `json:"service_type"`
+	IsActive    bool   `json:"is_active"`
 }
 
 // ServiceListResponse represents the response for GET /services
@@ -53,6 +54,7 @@ func NewServiceListResponse(services []domain.Service, links []Link) ServiceList
 			Name:        svc.Name,
 			Description: svc.Description,
 			ServiceType: string(svc.ServiceType),
+			IsActive:    svc.IsActive,
 		}
 	}
 	return ServiceListResponse{
@@ -74,6 +76,7 @@ func NewServiceListResponseWithEncoder(services []domain.Service, links []Link, 
 			Name:        svc.Name,
 			Description: svc.Description,
 			ServiceType: string(svc.ServiceType),
+			IsActive:    svc.IsActive,
 		}
 	}
 	return ServiceListResponse{
@@ -137,5 +140,50 @@ func NewBranchServiceListResponseWithEncoder(services []domain.BranchServiceInfo
 	return BranchServiceListResponse{
 		Services: items,
 		Links:    links,
+	}, nil
+}
+
+// UpdateServiceRequest represents the request body for PUT /admin/services/:id (HU68)
+type UpdateServiceRequest struct {
+	Name        string `json:"name" binding:"required"`
+	Description string `json:"description"`
+	ServiceType string `json:"service_type" binding:"required"`
+	IsActive    *bool  `json:"is_active"` // Optional: activate/deactivate service
+}
+
+// ServiceDetailResponse represents a single service response (HU68)
+type ServiceDetailResponse struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	ServiceType string `json:"service_type"`
+	IsActive    bool   `json:"is_active"`
+	Links       []Link `json:"_links"`
+}
+
+// NewServiceDetailResponse creates a ServiceDetailResponse from domain service
+func NewServiceDetailResponse(service *domain.Service, links []Link) ServiceDetailResponse {
+	return ServiceDetailResponse{
+		ID:          service.ID,
+		Name:        service.Name,
+		Description: service.Description,
+		ServiceType: string(service.ServiceType),
+		Links:       links,
+	}
+}
+
+// NewServiceDetailResponseWithEncoder creates a ServiceDetailResponse with encoded ID
+func NewServiceDetailResponseWithEncoder(service *domain.Service, links []Link, encoder *idencoder.HashidsEncoder) (ServiceDetailResponse, error) {
+	encodedID, err := encoder.Encode(service.ID)
+	if err != nil {
+		return ServiceDetailResponse{}, err
+	}
+	return ServiceDetailResponse{
+		ID:          encodedID,
+		Name:        service.Name,
+		Description: service.Description,
+		ServiceType: string(service.ServiceType),
+		IsActive:    service.IsActive,
+		Links:       links,
 	}, nil
 }

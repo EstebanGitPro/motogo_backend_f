@@ -281,6 +281,18 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		)
 	}
 
+	// ========================================
+	// Admin Routes (require JWT + ADMIN role)
+	// ========================================
+	admin := app.Group("motogo/api/v1/admin")
+	admin.Use(middleware.RequireAuth(dependencies.PersonService, dependencies.MessagingCache, dependencies.JWTValidator))
+	admin.Use(middleware.RequireRole(domain.RoleAdmin))
+	{
+		// === SERVICES CATALOG ADMIN (HU68) ===
+		// PUT /admin/services/:id - Modificar servicio del catálogo global
+		admin.PUT("/services/:id", handler.UpdateService())
+	}
+
 	dependencies.Logger.Success(logger.LogRouteConfigured)
 }
 

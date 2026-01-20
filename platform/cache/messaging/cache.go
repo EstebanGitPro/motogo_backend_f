@@ -343,10 +343,15 @@ var messageCodeToHTTPStatus = map[string]int{
 	"MOD_F_MIN_BRANCHES_ERR_00001":     http.StatusBadRequest, // 400 - Mínimo una sede
 
 	// ========================================
-	// Service Catalog Module (MOD_S_*) - HU63, HU75
+	// Service Catalog Module (MOD_S_*) - HU63, HU68, HU75
 	// ========================================
 	"MOD_S_TYPES_EXI_00001":         http.StatusOK,         // 200 - Tipos de servicio obtenidos (HU75)
 	"MOD_S_LIST_EXI_00001":          http.StatusOK,         // 200 - Catálogo de servicios obtenido (HU63)
+	"MOD_S_UPD_EXI_00001":           http.StatusOK,         // 200 - Servicio actualizado (HU68 - Admin)
+	"MOD_S_ACTIVATED_EXI_00001":     http.StatusOK,         // 200 - Servicio activado (HU68 - Admin)
+	"MOD_S_DEACTIVATED_EXI_00001":   http.StatusOK,         // 200 - Servicio desactivado (HU68 - Admin)
+	"MOD_S_RES_ERR_00001":           http.StatusNotFound,   // 404 - Servicio no encontrado (HU68)
+	"MOD_S_TYPE_ERR_00001":          http.StatusBadRequest, // 400 - Tipo de servicio inválido (HU68)
 	"MOD_S_INVALID_TYPE_ERR_00001":  http.StatusBadRequest, // 400 - Tipo de servicio inválido
 	"MOD_S_ASSOC_EXI_00001":         http.StatusOK,         // 200 - Servicios asociados a sede
 	"MOD_S_DISSOC_EXI_00001":        http.StatusOK,         // 200 - Servicio desasociado de sede
