@@ -781,7 +781,7 @@ const (
 )
 
 // ============================================
-// SERVICE CATALOG (HU63, HU75)
+// SERVICE CATALOG (HU63, HU68, HU75)
 // ============================================
 const (
 	// Service Interactor
@@ -793,6 +793,13 @@ const (
 	LogServiceInteractorGetByType      = "Obteniendo servicios por tipo"
 	LogServiceInteractorGetByTypeOK    = "Servicios por tipo obtenidos exitosamente"
 	LogServiceInteractorGetByTypeError = "Error obteniendo servicios por tipo"
+	// HU68: Service Update (Admin)
+	LogServiceInteractorGetByID      = "Obteniendo servicio por ID"
+	LogServiceInteractorGetByIDOK    = "Servicio obtenido por ID exitosamente"
+	LogServiceInteractorGetByIDError = "Error obteniendo servicio por ID"
+	LogServiceInteractorUpdate       = "Actualizando servicio"
+	LogServiceInteractorUpdateOK     = "Servicio actualizado exitosamente"
+	LogServiceInteractorUpdateError  = "Error actualizando servicio"
 
 	// Service Repository
 	LogServiceRepoGetAll         = "Consultando todos los servicios desde BD"
@@ -801,6 +808,14 @@ const (
 	LogServiceRepoGetByTypeError = "Error consultando servicios por tipo desde BD"
 	LogServiceRepoScanError      = "Error escaneando fila de servicio"
 	LogServiceRepoPrepareError   = "Error preparando statement de servicio"
+	// HU68: Service Update (Admin)
+	LogServiceRepoGetByID      = "Consultando servicio por ID desde BD"
+	LogServiceRepoGetByIDOK    = "Servicio consultado por ID exitosamente"
+	LogServiceRepoGetByIDError = "Error consultando servicio por ID desde BD"
+	LogServiceRepoNotFound     = "Servicio no encontrado en BD"
+	LogServiceRepoUpdate       = "Actualizando servicio en BD"
+	LogServiceRepoUpdateOK     = "Servicio actualizado en BD exitosamente"
+	LogServiceRepoUpdateError  = "Error actualizando servicio en BD"
 
 	// Service Controller
 	LogServiceControllerGetTypes    = "Solicitud de tipos de servicio recibida"
@@ -809,6 +824,10 @@ const (
 	LogServiceControllerGetAllOK    = "Catálogo de servicios enviado exitosamente"
 	LogServiceControllerGetAllError = "Error obteniendo catálogo de servicios"
 	LogServiceControllerInvalidType = "Tipo de servicio inválido recibido"
+	// HU68: Service Update (Admin)
+	LogServiceControllerUpdate      = "Solicitud de actualización de servicio recibida"
+	LogServiceControllerUpdateOK    = "Servicio actualizado exitosamente"
+	LogServiceControllerUpdateError = "Error actualizando servicio"
 
 	// Dependency Initialization
 	LogDepServiceRepoInitOK       = "Repositorio de servicios inicializado"
@@ -859,4 +878,39 @@ const (
 	LogBranchServicesIntGetByBranch    = "service_interactor_get_by_branch"
 	LogBranchServicesIntGetByBranchOK  = "service_interactor_get_by_branch_ok"
 	LogBranchServicesIntGetByBranchErr = "service_interactor_get_by_branch_error"
+)
+
+// ============================================
+// FIREBASE CONTROLLER
+// ============================================
+const (
+	LogFirebaseControllerRequest    = "Solicitud de token Firebase recibida"
+	LogFirebaseControllerUnauth     = "Solicitud no autenticada para token Firebase"
+	LogFirebaseControllerNotConfig  = "Cliente Firebase no configurado"
+	LogFirebaseControllerTokenError = "Error generando token Firebase"
+	LogFirebaseControllerTokenOK    = "Token Firebase generado exitosamente"
+)
+
+// ============================================
+// LOCATION CONTROLLER
+// ============================================
+const (
+	LogLocationControllerGetDepts      = "Solicitud de listado de departamentos recibida"
+	LogLocationControllerGetDeptsError = "Error obteniendo departamentos"
+	LogLocationControllerGetDeptsOK    = "Departamentos obtenidos exitosamente"
+	LogLocationControllerGetCities     = "Solicitud de listado de ciudades recibida"
+	LogLocationControllerGetCitiesErr  = "Error obteniendo ciudades"
+	LogLocationControllerGetCitiesOK   = "Ciudades obtenidas exitosamente"
+)
+
+// ============================================
+// MESSAGE CACHE CONTROLLER
+// ============================================
+const (
+	LogMessageCacheReloadRequest = "Solicitud de recarga de caché de mensajes recibida"
+	LogMessageCacheReloadError   = "Error al recargar caché de mensajes"
+	LogMessageCacheReloadOK      = "Caché de mensajes recargado exitosamente"
+	LogMessageCreatedOK          = "Mensaje creado exitosamente"
+	LogMessageUpdatedOK          = "Mensaje actualizado exitosamente"
+	LogMessageDeletedOK          = "Mensaje eliminado exitosamente"
 )

@@ -69,6 +69,19 @@ func (m *MockServiceRepository) CheckServiceAssociation(ctx context.Context, bra
 	return args.Bool(0), args.Error(1)
 }
 
+func (m *MockServiceRepository) GetServiceByID(ctx context.Context, serviceID string) (*domain.Service, error) {
+	args := m.Called(ctx, serviceID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Service), args.Error(1)
+}
+
+func (m *MockServiceRepository) UpdateService(ctx context.Context, tx output.Tx, service domain.Service) error {
+	args := m.Called(ctx, tx, service)
+	return args.Error(0)
+}
+
 // MockTx is a mock transaction
 type MockTx struct {
 	mock.Mock

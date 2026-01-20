@@ -27,7 +27,7 @@ func (h *handler) GetFirebaseToken() gin.HandlerFunc {
 		traceID := middleware.GetRequestID(c)
 		log := Logger.WithTraceID(traceID)
 
-		log.Info("Firebase token request received",
+		log.Info(logger.LogFirebaseControllerRequest,
 			"method", c.Request.Method,
 			"path", c.Request.URL.Path,
 			"client_ip", c.ClientIP())
@@ -35,7 +35,7 @@ func (h *handler) GetFirebaseToken() gin.HandlerFunc {
 		// Get authenticated person from context (set by auth middleware)
 		person, exists := middleware.GetAuthenticatedUser(c)
 		if !exists || person == nil {
-			log.Warn("Unauthenticated request for Firebase token")
+			log.Warn(logger.LogFirebaseControllerUnauth)
 			h.Response.Error(c, domain.MsgUnauthorized)
 			return
 		}
@@ -50,7 +50,7 @@ func (h *handler) GetFirebaseToken() gin.HandlerFunc {
 
 		// Verify Firebase client is available
 		if h.FirebaseClient == nil {
-			log.Error("Firebase client not configured", "keycloak_uid", keycloakUID)
+			log.Error(logger.LogFirebaseControllerNotConfig, "keycloak_uid", keycloakUID)
 			h.Response.Error(c, domain.MsgServerError)
 			return
 		}
@@ -58,12 +58,12 @@ func (h *handler) GetFirebaseToken() gin.HandlerFunc {
 		// Generate Firebase custom token
 		token, err := h.FirebaseClient.CreateCustomToken(c.Request.Context(), keycloakUID)
 		if err != nil {
-			log.Error("Error generating Firebase token", "error", err, "keycloak_uid", keycloakUID)
+			log.Error(logger.LogFirebaseControllerTokenError, "error", err, "keycloak_uid", keycloakUID)
 			h.Response.Error(c, domain.MsgServerError)
 			return
 		}
 
-		log.Success("Firebase token generated",
+		log.Success(logger.LogFirebaseControllerTokenOK,
 			"keycloak_uid", keycloakUID,
 			"client_ip", c.ClientIP())
 

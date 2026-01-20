@@ -63,3 +63,13 @@ func (s *serviceCatalogService) ValidateServiceIDs(ctx context.Context, serviceI
 func (s *serviceCatalogService) CheckServiceAssociation(ctx context.Context, branchID, serviceID string) (bool, error) {
 	return s.serviceRepo.CheckServiceAssociation(ctx, branchID, serviceID)
 }
+
+// GetServiceByID retrieves a service by its UUID (HU68)
+func (s *serviceCatalogService) GetServiceByID(ctx context.Context, serviceID string) (*domain.Service, error) {
+	return s.serviceRepo.GetServiceByID(ctx, serviceID)
+}
+
+// UpdateService updates an existing service in the catalog (HU68 - Admin only)
+func (s *serviceCatalogService) UpdateService(ctx context.Context, tx output.Tx, service domain.Service) error {
+	return s.serviceRepo.UpdateService(ctx, tx, service)
+}

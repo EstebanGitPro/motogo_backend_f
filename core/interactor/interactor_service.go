@@ -107,3 +107,50 @@ func (i *ServiceInteractor) AssociateBranchServices(ctx context.Context, tx outp
 func (i *ServiceInteractor) DissociateBranchService(ctx context.Context, tx output.Tx, branchID, serviceID string) error {
 	return i.serviceCatalogService.DissociateBranchService(ctx, tx, branchID, serviceID)
 }
+
+// GetServiceByID retrieves a service by UUID (HU68)
+func (i *ServiceInteractor) GetServiceByID(ctx context.Context, serviceID string) (*domain.Service, error) {
+	traceID := middleware.GetTraceIDFromContext(ctx)
+	log := i.logger.WithTraceID(traceID)
+
+	log.Info(logger.LogServiceInteractorGetByID, "service_id", serviceID)
+
+	service, err := i.serviceCatalogService.GetServiceByID(ctx, serviceID)
+	if err != nil {
+		log.Error(logger.LogServiceInteractorGetByIDError, "error", err, "service_id", serviceID)
+		return nil, err
+	}
+
+	log.Success(logger.LogServiceInteractorGetByIDOK, "service_id", serviceID)
+	return service, nil
+}
+
+// UpdateService updates a service in the catalog (HU68 - Admin only)
+func (i *ServiceInteractor) UpdateService(ctx context.Context, service domain.Service) error {
+	traceID := middleware.GetTraceIDFromContext(ctx)
+	log := i.logger.WithTraceID(traceID)
+
+	log.Info(logger.LogServiceInteractorUpdate, "service_id", service.ID)
+
+	// Begin transaction
+	tx, err := i.serviceCatalogService.BeginTx(ctx)
+	if err != nil {
+		log.Error(logger.LogServiceInteractorUpdateError, "error", err)
+		return domain.ErrInternalServer
+	}
+	defer tx.Rollback()
+
+	// Update service
+	if err := i.serviceCatalogService.UpdateService(ctx, tx, service); err != nil {
+		log.Error(logger.LogServiceInteractorUpdateError, "error", err, "service_id", service.ID)
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		log.Error(logger.LogServiceInteractorUpdateError, "error", err)
+		return domain.ErrInternalServer
+	}
+
+	log.Success(logger.LogServiceInteractorUpdateOK, "service_id", service.ID)
+	return nil
+}

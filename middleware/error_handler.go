@@ -14,6 +14,7 @@ import (
 var errorToMessageCode = map[error]string{
 	// User Management Errors (MOD_U_*)
 	domain.ErrDuplicateUser:             domain.MsgUserDuplicate,
+	domain.ErrUserNotFound:              domain.MsgUserNotFound, // User authenticated in Keycloak but not in local DB
 	domain.ErrUserCannotSave:            domain.MsgUserCannotSave,
 	domain.ErrUserCannotFound:           domain.MsgUserNotFound,
 	domain.ErrUserCannotGet:             domain.MsgUserNotFound,
