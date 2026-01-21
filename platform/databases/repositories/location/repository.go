@@ -108,59 +108,7 @@ func (r *repository) BeginTx(ctx context.Context) (output.Tx, error) {
 	return common.NewSQLTx(tx), nil
 }
 
-// GetAllDepartments retrieves all departments ordered by name
-func (r *repository) GetAllDepartments(ctx context.Context) ([]domain.Department, error) {
-	rows, err := r.stmtGetAllDepartments.QueryContext(ctx)
-	if err != nil {
-		log.Error(logger.LogLocationRepoGetDepartmentsError, "error", err)
-		return nil, err
-	}
-	defer rows.Close()
 
-	var departments []domain.Department
-	for rows.Next() {
-		var dept domain.Department
-		if err := rows.Scan(&dept.ID, &dept.Name); err != nil {
-			log.Error(logger.LogLocationRepoGetDepartmentsScanError, "error", err)
-			continue
-		}
-		departments = append(departments, dept)
-	}
-
-	if err := rows.Err(); err != nil {
-		log.Error(logger.LogLocationRepoGetDepartmentsIterError, "error", err)
-		return nil, err
-	}
-
-	return departments, nil
-}
-
-// GetCitiesByDepartment retrieves all cities for a specific department
-func (r *repository) GetCitiesByDepartment(ctx context.Context, departmentID string) ([]domain.City, error) {
-	rows, err := r.stmtGetCitiesByDepartment.QueryContext(ctx, departmentID)
-	if err != nil {
-		log.Error(logger.LogLocationRepoGetCitiesError, "error", err, "department_id", departmentID)
-		return nil, err
-	}
-	defer rows.Close()
-
-	var cities []domain.City
-	for rows.Next() {
-		var city domain.City
-		if err := rows.Scan(&city.ID, &city.Name, &city.DepartmentID); err != nil {
-			log.Error(logger.LogLocationRepoGetCitiesScanError, "error", err)
-			continue
-		}
-		cities = append(cities, city)
-	}
-
-	if err := rows.Err(); err != nil {
-		log.Error(logger.LogLocationRepoGetCitiesIterError, "error", err)
-		return nil, err
-	}
-
-	return cities, nil
-}
 
 // ValidateCityInDepartment checks if the city belongs to the specified department
 func (r *repository) ValidateCityInDepartment(ctx context.Context, cityID, departmentID string) error {
@@ -176,16 +124,3 @@ func (r *repository) ValidateCityInDepartment(ctx context.Context, cityID, depar
 	return nil
 }
 
-// GetDepartmentByID retrieves a department by its ID
-func (r *repository) GetDepartmentByID(ctx context.Context, departmentID string) (*domain.Department, error) {
-	var dept domain.Department
-	err := r.stmtGetDepartmentByID.QueryRowContext(ctx, departmentID).Scan(&dept.ID, &dept.Name)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, domain.ErrDepartmentNotFound
-		}
-		log.Error(logger.LogLocationRepoGetDeptByIDError, "error", err, "department_id", departmentID)
-		return nil, err
-	}
-	return &dept, nil
-}

@@ -148,3 +148,18 @@ type ServiceRepository interface {
 	// UpdateService updates an existing service in the catalog (HU68 - Admin only)
 	UpdateService(ctx context.Context, tx Tx, service domain.Service) error
 }
+
+// ScheduleRepository interface for Schedule operations (HU30-35)
+type ScheduleRepository interface {
+	BeginTx(ctx context.Context) (Tx, error)
+
+	// Schedule operations - transactional
+	SaveSchedule(ctx context.Context, tx Tx, schedule domain.BranchSchedule) error
+	UpdateSchedule(ctx context.Context, tx Tx, schedule domain.BranchSchedule) error
+	DeleteSchedule(ctx context.Context, tx Tx, scheduleID string) error
+	SetActive(ctx context.Context, tx Tx, scheduleID string, active bool) error
+
+	// Schedule operations - read
+	GetScheduleByID(ctx context.Context, scheduleID string) (*domain.BranchSchedule, error)
+	GetScheduleByBranchID(ctx context.Context, branchID string) (*domain.BranchSchedule, error)
+}

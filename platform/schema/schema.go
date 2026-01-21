@@ -19,6 +19,8 @@ type Validators struct {
 	ResetPasswordWithTokenValidator *jsonschema.Schema
 	ChangePasswordValidator         *jsonschema.Schema
 	RegisterBranchValidator         *jsonschema.Schema // HU59
+	ScheduleDetailValidator         *jsonschema.Schema // HU6-9 (schedule time slots)
+	UpdateScheduleValidator         *jsonschema.Schema // HU31 (update schedule)
 }
 
 type FileReaderInterface interface {
@@ -90,6 +92,16 @@ func NewValidator(fileReader FileReaderInterface) (*Validators, error) {
 		return nil, err
 	}
 
+	scheduleDetail, err := validator.createSchema("schedule_detail_schema.json")
+	if err != nil {
+		return nil, err
+	}
+
+	updateSchedule, err := validator.createSchema("update_schedule_schema.json")
+	if err != nil {
+		return nil, err
+	}
+
 	validator.RegisterValidator = register
 	validator.MessageValidator = message
 	validator.ResendVerificationValidator = resendVerification
@@ -98,6 +110,8 @@ func NewValidator(fileReader FileReaderInterface) (*Validators, error) {
 	validator.ResetPasswordWithTokenValidator = resetPasswordWithToken
 	validator.ChangePasswordValidator = changePassword
 	validator.RegisterBranchValidator = registerBranch
+	validator.ScheduleDetailValidator = scheduleDetail
+	validator.UpdateScheduleValidator = updateSchedule
 
 	return validator, nil
 
