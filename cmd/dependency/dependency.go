@@ -28,6 +28,7 @@ import (
 	locationRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/location"
 	messageRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/message"
 	repo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/person"
+	scheduleRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/schedule"
 	serviceRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/service"
 )
 
@@ -42,6 +43,7 @@ type Dependencies struct {
 	LocationInteractor  *interactor.LocationInteractor  // Geographic catalogs
 	ServiceInteractor   *interactor.ServiceInteractor   // Service catalog (HU63, HU75)
 	FranchiseInteractor *interactor.FranchiseInteractor // HU26-29
+	ScheduleInteractor  *interactor.ScheduleInteractor  // HU30-35
 	FirebaseClient      *firebase.Client                // Firebase Auth
 	JWTValidator        *jwt.JWKSValidator              // JWT validation with JWKS
 	Config              *config.Config
@@ -247,6 +249,18 @@ func Init() (*Dependencies, error) {
 	franchiseInteractor := interactor.NewFranchiseInteractor(franchiseService, branchService, log)
 	log.Success(logger.LogDepFranchiseInteractorInitOK)
 
+	// Schedule dependencies (HU30-35)
+	scheduleRepository, err := scheduleRepo.NewRepository(db)
+	if err != nil {
+		log.Error("Error initializing schedule repository", "error", err)
+		return nil, err
+	}
+	log.Success("Schedule repository initialized")
+
+	scheduleService := services.NewScheduleService(scheduleRepository, branchRepository)
+	scheduleInteractor := interactor.NewScheduleInteractor(scheduleService, branchService)
+	log.Success("Schedule interactor initialized")
+
 	// Firebase dependencies (optional - only if credentials configured)
 	var firebaseClient *firebase.Client
 	if cfg.Firebase.CredentialsPath != "" {
@@ -299,6 +313,7 @@ func Init() (*Dependencies, error) {
 		LocationInteractor:  locationInteractor,
 		ServiceInteractor:   serviceInteractor,
 		FranchiseInteractor: franchiseInteractor,
+		ScheduleInteractor:  scheduleInteractor,
 		FirebaseClient:      firebaseClient,
 		JWTValidator:        jwtValidator,
 		Config:              cfg,

@@ -329,3 +329,35 @@ var (
 	ErrServiceNotFound          = errors.New("ERR_SERVICE_NOT_FOUND")
 	ErrServiceAlreadyAssociated = errors.New("ERR_SERVICE_ALREADY_ASSOCIATED")
 )
+
+// Schedule Errors (MOD_H_*) - HU30-35
+var (
+	ErrScheduleNotFound      = errors.New("ERR_SCHEDULE_NOT_FOUND")
+	ErrScheduleAlreadyExists = errors.New("ERR_SCHEDULE_ALREADY_EXISTS")
+	ErrInvalidDayOfWeek      = errors.New("ERR_INVALID_DAY_OF_WEEK")
+	ErrInvalidTimeFormat     = errors.New("ERR_INVALID_TIME_FORMAT")
+	ErrClosingBeforeOpening  = errors.New("ERR_CLOSING_BEFORE_OPENING")
+	ErrScheduleInactive      = errors.New("ERR_SCHEDULE_INACTIVE")
+)
+
+// Schedule Module (MOD_H_*) - HU30-35, HU10
+const (
+	// Success messages
+	MsgScheduleCreated      = "MOD_H_CREATE_EXI_00001"
+	MsgScheduleRetrieved    = "MOD_H_GET_EXI_00001"
+	MsgScheduleUpdated      = "MOD_H_UPDATE_EXI_00001"
+	MsgScheduleDeleted      = "MOD_H_DELETE_EXI_00001"
+	MsgScheduleActivated    = "MOD_H_ACTIV_EXI_00001"
+	MsgScheduleDeactivated  = "MOD_H_DEACT_EXI_00001"
+	MsgDaysCatalogRetrieved = "MOD_H_DAYS_EXI_00001"
+
+	// Error messages
+	MsgScheduleNotFound          = "MOD_H_NOT_FOUND_ERR_00001"
+	MsgScheduleAlreadyExists     = "MOD_H_EXISTS_ERR_00001"
+	MsgInvalidDayOfWeek          = "MOD_H_DAY_ERR_00001"
+	MsgInvalidTimeFormat         = "MOD_H_TIME_ERR_00001"
+	MsgClosingBeforeOpening      = "MOD_H_TIME_ORDER_ERR_00001"
+	MsgScheduleInactive          = "MOD_H_INACTIVE_ERR_00001"
+	MsgScheduleInvalidDateFormat = "MOD_H_DATE_FORMAT_ERR_00001"
+	MsgScheduleInvalidDateRange  = "MOD_H_DATE_RANGE_ERR_00001"
+)
