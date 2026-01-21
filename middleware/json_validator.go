@@ -59,6 +59,16 @@ func (b *Builder) WithValidateRegisterBranch() gin.HandlerFunc {
 	return b.jsonValidator(b.Validators.RegisterBranchValidator)
 }
 
+// WithValidateScheduleDetail validates schedule detail (time slot) request (HU6-9)
+func (b *Builder) WithValidateScheduleDetail() gin.HandlerFunc {
+	return b.jsonValidator(b.Validators.ScheduleDetailValidator)
+}
+
+// WithValidateUpdateSchedule validates update schedule request (HU31)
+func (b *Builder) WithValidateUpdateSchedule() gin.HandlerFunc {
+	return b.jsonValidator(b.Validators.UpdateScheduleValidator)
+}
+
 func (b *Builder) jsonValidator(schema *jsonschema.Schema) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Get request ID for trace correlation

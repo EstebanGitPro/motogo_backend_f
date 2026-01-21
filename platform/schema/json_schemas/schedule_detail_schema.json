@@ -1,0 +1,65 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Schedule Detail Schema",
+  "description": "Validates schedule detail (time slot) creation/update for HU6-9",
+  "type": "object",
+  "required": ["entry_type"],
+  "properties": {
+    "entry_type": {
+      "type": "string",
+      "enum": ["REGULAR", "EXCEPTION"],
+      "description": "REGULAR for day-based, EXCEPTION for date-based"
+    },
+    "day_of_week": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 7,
+      "description": "1=Monday to 7=Sunday (required for REGULAR)"
+    },
+    "exception_date": {
+      "type": "string",
+      "format": "date",
+      "description": "YYYY-MM-DD format (required for EXCEPTION)"
+    },
+    "opening_time": {
+      "type": "string",
+      "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)$",
+      "description": "HH:MM format (24h)"
+    },
+    "closing_time": {
+      "type": "string",
+      "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)$",
+      "description": "HH:MM format (24h)"
+    },
+    "is_closed": {
+      "type": "boolean",
+      "description": "If true, the branch is closed for this entry"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "entry_type": { "const": "REGULAR" } }
+      },
+      "then": {
+        "required": ["day_of_week"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "entry_type": { "const": "EXCEPTION" } }
+      },
+      "then": {
+        "required": ["exception_date"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "is_closed": { "const": false } }
+      },
+      "then": {
+        "required": ["opening_time", "closing_time"]
+      }
+    }
+  ]
+}
