@@ -358,6 +358,25 @@ var messageCodeToHTTPStatus = map[string]int{
 	"MOD_S_NOT_FOUND_ERR_00001":     http.StatusNotFound,   // 404 - Servicio no encontrado
 	"MOD_S_ALREADY_ASSOC_ERR_00001": http.StatusConflict,   // 409 - Servicio ya asociado
 
+	// ========================================
+	// Schedule Module (MOD_H_*) - HU30-35, HU10
+	// ========================================
+	// Success messages
+	"MOD_H_CREATE_EXI_00001": http.StatusCreated, // 201 - Horario registrado
+	"MOD_H_GET_EXI_00001":    http.StatusOK,      // 200 - Horario consultado
+	"MOD_H_UPDATE_EXI_00001": http.StatusOK,      // 200 - Horario actualizado
+	"MOD_H_DELETE_EXI_00001": http.StatusOK,      // 200 - Horario eliminado
+	"MOD_H_ACTIV_EXI_00001":  http.StatusOK,      // 200 - Horario activado
+	"MOD_H_DEACT_EXI_00001":  http.StatusOK,      // 200 - Horario desactivado
+	"MOD_H_DAYS_EXI_00001":   http.StatusOK,      // 200 - Catálogo de días
+	// Error messages
+	"MOD_H_NOT_FOUND_ERR_00001":  http.StatusNotFound,   // 404 - Horario no encontrado
+	"MOD_H_EXISTS_ERR_00001":     http.StatusConflict,   // 409 - Sede ya tiene horario
+	"MOD_H_DAY_ERR_00001":        http.StatusBadRequest, // 400 - Día inválido
+	"MOD_H_TIME_ERR_00001":       http.StatusBadRequest, // 400 - Formato hora inválido
+	"MOD_H_TIME_ORDER_ERR_00001": http.StatusBadRequest, // 400 - Hora cierre antes apertura
+	"MOD_H_INACTIVE_ERR_00001":   http.StatusBadRequest, // 400 - Horario desactivado
+
 }
 
 // GetHTTPStatus returns the HTTP status for a message code
