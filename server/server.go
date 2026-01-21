@@ -237,6 +237,45 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 			handler.DeleteBranch(),
 		)
 
+		// === SCHEDULES ENDPOINTS (HU30-35) ===
+		// POST /branches/:id/schedules - Crear horario para una sede (HU30)
+		protected.POST("/branches/:id/schedules",
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.CreateBranchSchedule(dependencies.ScheduleInteractor),
+		)
+
+		// GET /branches/:id/schedules - Consultar horario de una sede (HU32)
+		protected.GET("/branches/:id/schedules",
+			handler.GetBranchSchedule(dependencies.ScheduleInteractor),
+		)
+
+		// PUT /branches/:id/schedules - Modificar horario de una sede (HU31)
+		protected.PUT("/branches/:id/schedules",
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.UpdateBranchSchedule(dependencies.ScheduleInteractor),
+		)
+
+		// DELETE /branches/:id/schedules - Eliminar horario de una sede (HU33)
+		protected.DELETE("/branches/:id/schedules",
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.DeleteBranchSchedule(dependencies.ScheduleInteractor),
+		)
+
+		// PUT /branches/:id/schedules/activate - Activar horario (HU34)
+		protected.PUT("/branches/:id/schedules/activate",
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.ActivateBranchSchedule(dependencies.ScheduleInteractor),
+		)
+
+		// PUT /branches/:id/schedules/deactivate - Desactivar horario (HU35)
+		protected.PUT("/branches/:id/schedules/deactivate",
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.DeactivateBranchSchedule(dependencies.ScheduleInteractor),
+		)
+
+		// GET /schedules/days - Catálogo de días de la semana (HU10)
+		protected.GET("/schedules/days", handler.GetDaysOfWeek())
+
 		// === FRANCHISES ENDPOINTS (HU26-29) ===
 		// GET /franchises - Listar mis franquicias (solo REPRESENTANTE)
 		protected.GET("/franchises",
