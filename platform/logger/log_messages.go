@@ -914,3 +914,86 @@ const (
 	LogMessageUpdatedOK          = "Mensaje actualizado exitosamente"
 	LogMessageDeletedOK          = "Mensaje eliminado exitosamente"
 )
+
+// ============================================
+// SCHEDULE REPOSITORY (HU30-35)
+// ============================================
+const (
+	LogScheduleRepoPrepareError     = "Error preparando statement de horario"
+	LogScheduleRepoSaveError        = "Error guardando horario en BD"
+	LogScheduleRepoUpdateError      = "Error actualizando horario en BD"
+	LogScheduleRepoDeleteError      = "Error eliminando horario de BD"
+	LogScheduleRepoGetByIDError     = "Error obteniendo horario por ID"
+	LogScheduleRepoGetByBranchError = "Error obteniendo horario por sede"
+	LogScheduleRepoActivateError    = "Error activando/desactivando horario"
+)
+
+// ============================================
+// SCHEDULE SERVICE (HU30-35)
+// ============================================
+const (
+	LogScheduleServiceCreateStart    = "Iniciando creación de horario"
+	LogScheduleServiceBranchNotFound = "Sede no encontrada para horario"
+	LogScheduleServiceAlreadyExists  = "La sede ya tiene un horario configurado"
+	LogScheduleServiceSaveError      = "Error guardando horario"
+	LogScheduleServiceCreateOK       = "Horario creado exitosamente"
+	LogScheduleServiceGetError       = "Error obteniendo horario"
+	LogScheduleServiceGetOK          = "Horario obtenido exitosamente"
+	LogScheduleServiceUpdateError    = "Error actualizando horario"
+	LogScheduleServiceUpdateOK       = "Horario actualizado exitosamente"
+	LogScheduleServiceDeleteError    = "Error eliminando horario"
+	LogScheduleServiceDeleteOK       = "Horario eliminado exitosamente"
+	LogScheduleServiceActivateError  = "Error activando/desactivando horario"
+	LogScheduleServiceActivateOK     = "Horario activado/desactivado exitosamente"
+)
+
+// ============================================
+// SCHEDULE INTERACTOR (HU30-35)
+// ============================================
+const (
+	LogScheduleInteractorCreateStart    = "Iniciando proceso de registro de horario"
+	LogScheduleInteractorTxError        = "Error iniciando transacción para horario"
+	LogScheduleInteractorTxStarted      = "Transacción iniciada para horario"
+	LogScheduleInteractorCreateError    = "Error registrando horario"
+	LogScheduleInteractorCommitError    = "COMMIT FALLÓ - Horario"
+	LogScheduleInteractorCreateComplete = "Horario registrado exitosamente"
+	LogScheduleInteractorRollbackError  = "ROLLBACK FALLÓ - Horario"
+	LogScheduleInteractorRollbackOK     = "Rollback ejecutado para horario"
+	LogScheduleInteractorUpdateStart    = "Iniciando actualización de horario"
+	LogScheduleInteractorUpdateComplete = "Horario actualizado exitosamente"
+	LogScheduleInteractorDeleteStart    = "Iniciando eliminación de horario"
+	LogScheduleInteractorDeleteComplete = "Horario eliminado exitosamente"
+	LogScheduleInteractorGetError       = "Error obteniendo horario"
+	LogScheduleInteractorGetOK          = "Horario obtenido exitosamente"
+)
+
+// ============================================
+// SCHEDULE CONTROLLER (HU30-35, HU10)
+// ============================================
+const (
+	LogScheduleControllerRequest             = "Solicitud recibida - Horario"
+	LogScheduleControllerCreateRequest       = "Solicitud de creación de horario recibida"
+	LogScheduleControllerCreateError         = "Error creando horario"
+	LogScheduleControllerCreateOK            = "Horario creado exitosamente"
+	LogScheduleControllerGetRequest          = "Solicitud de consulta de horario recibida"
+	LogScheduleControllerGetError            = "Error obteniendo horario"
+	LogScheduleControllerGetOK               = "Horario obtenido exitosamente"
+	LogScheduleControllerUpdateRequest       = "Solicitud de actualización de horario recibida"
+	LogScheduleControllerUpdateError         = "Error actualizando horario"
+	LogScheduleControllerUpdateOK            = "Horario actualizado exitosamente"
+	LogScheduleControllerDeleteRequest       = "Solicitud de eliminación de horario recibida"
+	LogScheduleControllerDeleteError         = "Error eliminando horario"
+	LogScheduleControllerDeleteOK            = "Horario eliminado exitosamente"
+	LogScheduleControllerActivateReq         = "Solicitud de activación de horario recibida"
+	LogScheduleControllerActivateError       = "Error activando horario"
+	LogScheduleControllerActivateOK          = "Horario activado exitosamente"
+	LogScheduleControllerDeactivateReq       = "Solicitud de desactivación de horario recibida"
+	LogScheduleControllerDeactivateErr       = "Error desactivando horario"
+	LogScheduleControllerDeactivateOK        = "Horario desactivado exitosamente"
+	LogScheduleControllerGetDaysReq          = "Solicitud de catálogo de días recibida"
+	LogScheduleControllerGetDaysOK           = "Catálogo de días enviado exitosamente"
+	LogScheduleControllerBindError           = "Error parseando JSON de horario"
+	LogScheduleControllerIDDecodeError       = "Error decodificando ID de horario"
+	LogScheduleControllerDateParseError      = "Error parseando fecha de horario"
+	LogScheduleControllerDateValidationError = "Error validando rango de fechas"
+)
