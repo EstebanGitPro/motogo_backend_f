@@ -175,3 +175,20 @@ type ServiceCatalogService interface {
 	// UpdateService updates an existing service in the catalog (HU68 - Admin only)
 	UpdateService(ctx context.Context, tx output.Tx, service domain.Service) error
 }
+
+// ScheduleService - Use Cases for Schedule operations (HU30-35)
+type ScheduleService interface {
+	// Transactions
+	BeginTx(ctx context.Context) (output.Tx, error)
+
+	// Schedule CRUD (HU30, HU31, HU32, HU33)
+	CreateSchedule(ctx context.Context, tx output.Tx, branchID string) (*domain.BranchSchedule, error)
+	GetScheduleByBranchID(ctx context.Context, branchID string) (*domain.BranchSchedule, error)
+	GetScheduleByID(ctx context.Context, scheduleID string) (*domain.BranchSchedule, error)
+	UpdateSchedule(ctx context.Context, tx output.Tx, schedule domain.BranchSchedule) error
+	DeleteSchedule(ctx context.Context, tx output.Tx, scheduleID string) error
+
+	// Activation (HU34, HU35)
+	ActivateSchedule(ctx context.Context, tx output.Tx, scheduleID string) error
+	DeactivateSchedule(ctx context.Context, tx output.Tx, scheduleID string) error
+}
