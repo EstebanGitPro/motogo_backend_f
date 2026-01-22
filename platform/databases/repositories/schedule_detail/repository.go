@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
 	"github.com/EstebanGitPro/motogo-backend/platform/databases/common"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
@@ -61,6 +60,33 @@ const (
 			(opening_time >= ? AND closing_time <= ?)
 		  )
 	`
+
+	// ============================================
+	// Schedule Exception queries (HU20-25)
+	// ============================================
+
+	// GetExceptionsByScheduleID retrieves all exceptions for a schedule ordered by date
+	queryGetExceptionsByScheduleID = `
+		SELECT id, schedule_id, entry_type, day_of_week, exception_date,
+			opening_time, closing_time, is_closed, active, created_at, updated_at
+		FROM schedule_details
+		WHERE schedule_id = ? AND entry_type = 'EXCEPTION'
+		ORDER BY exception_date ASC
+	`
+
+	// GetExceptionByID retrieves a specific exception ensuring it's an EXCEPTION type
+	queryGetExceptionByID = `
+		SELECT id, schedule_id, entry_type, day_of_week, exception_date,
+			opening_time, closing_time, is_closed, active, created_at, updated_at
+		FROM schedule_details
+		WHERE id = ? AND entry_type = 'EXCEPTION'
+	`
+
+	// CheckExceptionDateConflict checks if an exception already exists for the given date
+	queryCheckExceptionDateConflict = `
+		SELECT COUNT(*) FROM schedule_details
+		WHERE schedule_id = ? AND exception_date = ? AND entry_type = 'EXCEPTION' AND id != ?
+	`
 )
 
 var log logger.Logger = logger.NewSlogLogger()
@@ -74,6 +100,10 @@ type repository struct {
 	stmtUpdateDetail            *sql.Stmt
 	stmtDeleteDetail            *sql.Stmt
 	stmtCheckTimeConflict       *sql.Stmt
+	// Exception statements (HU20-25)
+	stmtGetExceptionsByScheduleID  *sql.Stmt
+	stmtGetExceptionByID           *sql.Stmt
+	stmtCheckExceptionDateConflict *sql.Stmt
 }
 
 // NewRepository creates a new ScheduleDetailRepository with prepared statements (fail-fast pattern)
@@ -124,15 +154,37 @@ func NewRepository(db *sql.DB) (output.ScheduleDetailRepository, error) {
 		return nil, fmt.Errorf("error preparing stmtCheckTimeConflict: %w", err)
 	}
 
+	// Exception prepared statements (HU20-25)
+	stmtGetExceptionsByScheduleID, err := db.Prepare(queryGetExceptionsByScheduleID)
+	if err != nil {
+		log.Error(logger.LogScheduleDetailRepoPrepareError, "statement", "GetExceptionsByScheduleID", "error", err)
+		return nil, fmt.Errorf("error preparing stmtGetExceptionsByScheduleID: %w", err)
+	}
+
+	stmtGetExceptionByID, err := db.Prepare(queryGetExceptionByID)
+	if err != nil {
+		log.Error(logger.LogScheduleDetailRepoPrepareError, "statement", "GetExceptionByID", "error", err)
+		return nil, fmt.Errorf("error preparing stmtGetExceptionByID: %w", err)
+	}
+
+	stmtCheckExceptionDateConflict, err := db.Prepare(queryCheckExceptionDateConflict)
+	if err != nil {
+		log.Error(logger.LogScheduleDetailRepoPrepareError, "statement", "CheckExceptionDateConflict", "error", err)
+		return nil, fmt.Errorf("error preparing stmtCheckExceptionDateConflict: %w", err)
+	}
+
 	return &repository{
-		db:                          db,
-		stmtSaveDetail:              stmtSaveDetail,
-		stmtGetDetailByID:           stmtGetDetailByID,
-		stmtGetDetailsByScheduleID:  stmtGetDetailsByScheduleID,
-		stmtGetDetailsByScheduleDay: stmtGetDetailsByScheduleDay,
-		stmtUpdateDetail:            stmtUpdateDetail,
-		stmtDeleteDetail:            stmtDeleteDetail,
-		stmtCheckTimeConflict:       stmtCheckTimeConflict,
+		db:                             db,
+		stmtSaveDetail:                 stmtSaveDetail,
+		stmtGetDetailByID:              stmtGetDetailByID,
+		stmtGetDetailsByScheduleID:     stmtGetDetailsByScheduleID,
+		stmtGetDetailsByScheduleDay:    stmtGetDetailsByScheduleDay,
+		stmtUpdateDetail:               stmtUpdateDetail,
+		stmtDeleteDetail:               stmtDeleteDetail,
+		stmtCheckTimeConflict:          stmtCheckTimeConflict,
+		stmtGetExceptionsByScheduleID:  stmtGetExceptionsByScheduleID,
+		stmtGetExceptionByID:           stmtGetExceptionByID,
+		stmtCheckExceptionDateConflict: stmtCheckExceptionDateConflict,
 	}, nil
 }
 
@@ -143,203 +195,4 @@ func (r *repository) BeginTx(ctx context.Context) (output.Tx, error) {
 		return nil, err
 	}
 	return common.NewSQLTx(tx), nil
-}
-
-// SaveScheduleDetail saves a new schedule detail to the database (HU6)
-func (r *repository) SaveScheduleDetail(ctx context.Context, tx output.Tx, detail domain.ScheduleDetail) error {
-	sqlTx := tx.(*common.SQLTx)
-
-	_, err := sqlTx.StmtContext(ctx, r.stmtSaveDetail).ExecContext(ctx,
-		detail.ID,
-		detail.ScheduleID,
-		detail.EntryType,
-		detail.DayOfWeek,
-		detail.ExceptionDate,
-		detail.OpeningTime,
-		detail.ClosingTime,
-		detail.IsClosed,
-		detail.Active,
-	)
-
-	if err != nil {
-		log.Error(logger.LogScheduleDetailRepoSaveError, "detail_id", detail.ID, "error", err)
-		return err
-	}
-
-	return nil
-}
-
-// GetDetailByID retrieves a schedule detail by its ID
-func (r *repository) GetDetailByID(ctx context.Context, detailID string) (*domain.ScheduleDetail, error) {
-	var detail domain.ScheduleDetail
-	var entryType string
-
-	err := r.stmtGetDetailByID.QueryRowContext(ctx, detailID).Scan(
-		&detail.ID,
-		&detail.ScheduleID,
-		&entryType,
-		&detail.DayOfWeek,
-		&detail.ExceptionDate,
-		&detail.OpeningTime,
-		&detail.ClosingTime,
-		&detail.IsClosed,
-		&detail.Active,
-		&detail.CreatedAt,
-		&detail.UpdatedAt,
-	)
-
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-		log.Error(logger.LogScheduleDetailRepoGetByIDError, "detail_id", detailID, "error", err)
-		return nil, err
-	}
-
-	detail.EntryType = domain.EntryType(entryType)
-	return &detail, nil
-}
-
-// GetDetailsByScheduleID retrieves all schedule details for a schedule (HU9)
-func (r *repository) GetDetailsByScheduleID(ctx context.Context, scheduleID string) ([]domain.ScheduleDetail, error) {
-	rows, err := r.stmtGetDetailsByScheduleID.QueryContext(ctx, scheduleID)
-	if err != nil {
-		log.Error(logger.LogScheduleDetailRepoGetBySchedError, "schedule_id", scheduleID, "error", err)
-		return nil, err
-	}
-	defer rows.Close()
-
-	var details []domain.ScheduleDetail
-	for rows.Next() {
-		var detail domain.ScheduleDetail
-		var entryType string
-
-		if err := rows.Scan(
-			&detail.ID,
-			&detail.ScheduleID,
-			&entryType,
-			&detail.DayOfWeek,
-			&detail.ExceptionDate,
-			&detail.OpeningTime,
-			&detail.ClosingTime,
-			&detail.IsClosed,
-			&detail.Active,
-			&detail.CreatedAt,
-			&detail.UpdatedAt,
-		); err != nil {
-			log.Error(logger.LogScheduleDetailRepoScanError, "error", err)
-			return nil, err
-		}
-
-		detail.EntryType = domain.EntryType(entryType)
-		details = append(details, detail)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return details, nil
-}
-
-// GetDetailsByScheduleAndDay retrieves schedule details for a specific schedule and day
-func (r *repository) GetDetailsByScheduleAndDay(ctx context.Context, scheduleID string, dayOfWeek int) ([]domain.ScheduleDetail, error) {
-	rows, err := r.stmtGetDetailsByScheduleDay.QueryContext(ctx, scheduleID, dayOfWeek)
-	if err != nil {
-		log.Error(logger.LogScheduleDetailRepoGetBySchedError, "schedule_id", scheduleID, "day", dayOfWeek, "error", err)
-		return nil, err
-	}
-	defer rows.Close()
-
-	var details []domain.ScheduleDetail
-	for rows.Next() {
-		var detail domain.ScheduleDetail
-		var entryType string
-
-		if err := rows.Scan(
-			&detail.ID,
-			&detail.ScheduleID,
-			&entryType,
-			&detail.DayOfWeek,
-			&detail.ExceptionDate,
-			&detail.OpeningTime,
-			&detail.ClosingTime,
-			&detail.IsClosed,
-			&detail.Active,
-			&detail.CreatedAt,
-			&detail.UpdatedAt,
-		); err != nil {
-			log.Error(logger.LogScheduleDetailRepoScanError, "error", err)
-			return nil, err
-		}
-
-		detail.EntryType = domain.EntryType(entryType)
-		details = append(details, detail)
-	}
-
-	return details, nil
-}
-
-// UpdateScheduleDetail updates an existing schedule detail (HU7)
-func (r *repository) UpdateScheduleDetail(ctx context.Context, tx output.Tx, detail domain.ScheduleDetail) error {
-	sqlTx := tx.(*common.SQLTx)
-
-	_, err := sqlTx.StmtContext(ctx, r.stmtUpdateDetail).ExecContext(ctx,
-		detail.DayOfWeek,
-		detail.OpeningTime,
-		detail.ClosingTime,
-		detail.IsClosed,
-		detail.Active,
-		detail.ID,
-	)
-
-	if err != nil {
-		log.Error(logger.LogScheduleDetailRepoUpdateError, "detail_id", detail.ID, "error", err)
-		return err
-	}
-
-	return nil
-}
-
-// DeleteScheduleDetail deletes a schedule detail (HU8)
-func (r *repository) DeleteScheduleDetail(ctx context.Context, tx output.Tx, detailID string) error {
-	sqlTx := tx.(*common.SQLTx)
-
-	_, err := sqlTx.StmtContext(ctx, r.stmtDeleteDetail).ExecContext(ctx, detailID)
-	if err != nil {
-		log.Error(logger.LogScheduleDetailRepoDeleteError, "detail_id", detailID, "error", err)
-		return err
-	}
-
-	return nil
-}
-
-// CheckTimeConflict checks if a proposed time slot conflicts with existing slots
-func (r *repository) CheckTimeConflict(
-	ctx context.Context,
-	scheduleID string,
-	dayOfWeek int,
-	openingTime, closingTime string,
-	excludeDetailID string,
-) (bool, error) {
-	if excludeDetailID == "" {
-		excludeDetailID = "00000000-0000-0000-0000-000000000000" // UUID that won't match any real ID
-	}
-
-	var count int
-	err := r.stmtCheckTimeConflict.QueryRowContext(ctx,
-		scheduleID,
-		dayOfWeek,
-		excludeDetailID,
-		closingTime, openingTime, // Check if new closing is after existing opening AND new opening is before existing closing
-		closingTime, openingTime,
-		openingTime, closingTime,
-	).Scan(&count)
-
-	if err != nil {
-		log.Error(logger.LogScheduleDetailRepoConflictCheck, "schedule_id", scheduleID, "error", err)
-		return false, err
-	}
-
-	return count > 0, nil
 }
