@@ -163,3 +163,21 @@ type ScheduleRepository interface {
 	GetScheduleByID(ctx context.Context, scheduleID string) (*domain.BranchSchedule, error)
 	GetScheduleByBranchID(ctx context.Context, branchID string) (*domain.BranchSchedule, error)
 }
+
+// ScheduleDetailRepository interface for Schedule Detail operations (HU6-9)
+type ScheduleDetailRepository interface {
+	BeginTx(ctx context.Context) (Tx, error)
+
+	// Schedule Detail operations - transactional
+	SaveScheduleDetail(ctx context.Context, tx Tx, detail domain.ScheduleDetail) error
+	UpdateScheduleDetail(ctx context.Context, tx Tx, detail domain.ScheduleDetail) error
+	DeleteScheduleDetail(ctx context.Context, tx Tx, detailID string) error
+
+	// Schedule Detail operations - read
+	GetDetailByID(ctx context.Context, detailID string) (*domain.ScheduleDetail, error)
+	GetDetailsByScheduleID(ctx context.Context, scheduleID string) ([]domain.ScheduleDetail, error)
+	GetDetailsByScheduleAndDay(ctx context.Context, scheduleID string, dayOfWeek int) ([]domain.ScheduleDetail, error)
+
+	// Conflict detection
+	CheckTimeConflict(ctx context.Context, scheduleID string, dayOfWeek int, openingTime, closingTime string, excludeDetailID string) (bool, error)
+}

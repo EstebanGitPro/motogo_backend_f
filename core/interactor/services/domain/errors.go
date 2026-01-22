@@ -361,3 +361,28 @@ const (
 	MsgScheduleInvalidDateFormat = "MOD_H_DATE_FORMAT_ERR_00001"
 	MsgScheduleInvalidDateRange  = "MOD_H_DATE_RANGE_ERR_00001"
 )
+
+// Schedule Detail Errors (MOD_HD_*) - HU6-9
+var (
+	ErrScheduleDetailNotFound    = errors.New("ERR_SCHEDULE_DETAIL_NOT_FOUND")
+	ErrScheduleDetailTimeConflict = errors.New("ERR_SCHEDULE_DETAIL_TIME_CONFLICT")
+	ErrScheduleDetailInvalidTime = errors.New("ERR_SCHEDULE_DETAIL_INVALID_TIME")
+	ErrScheduleDetailInvalidDay  = errors.New("ERR_SCHEDULE_DETAIL_INVALID_DAY")
+)
+
+// Schedule Detail Module (MOD_HD_*) - HU6-9
+const (
+	// Success messages
+	MsgScheduleDetailCreated   = "MOD_HD_CREATE_EXI_00001"
+	MsgScheduleDetailRetrieved = "MOD_HD_GET_EXI_00001"
+	MsgScheduleDetailUpdated   = "MOD_HD_UPDATE_EXI_00001"
+	MsgScheduleDetailDeleted   = "MOD_HD_DELETE_EXI_00001"
+	MsgScheduleDetailsListed   = "MOD_HD_LIST_EXI_00001"
+
+	// Error messages
+	MsgScheduleDetailNotFound     = "MOD_HD_NOT_FOUND_ERR_00001"
+	MsgScheduleDetailTimeConflict = "MOD_HD_CONFLICT_ERR_00001"
+	MsgScheduleDetailInvalidTime  = "MOD_HD_TIME_ERR_00001"
+	MsgScheduleDetailInvalidDay   = "MOD_HD_DAY_ERR_00001"
+)
+

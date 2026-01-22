@@ -997,3 +997,78 @@ const (
 	LogScheduleControllerDateParseError      = "Error parseando fecha de horario"
 	LogScheduleControllerDateValidationError = "Error validando rango de fechas"
 )
+
+// ============================================
+// SCHEDULE DETAIL SERVICE (HU6-9)
+// ============================================
+const (
+	LogScheduleDetailServiceCreateStart      = "Iniciando creación de detalle horario"
+	LogScheduleDetailServiceScheduleNotFound = "Horario base no encontrado para detalle"
+	LogScheduleDetailServiceInvalidDay       = "Día de la semana inválido"
+	LogScheduleDetailServiceInvalidTime      = "Formato de hora inválido"
+	LogScheduleDetailServiceInvalidTimeRange = "Hora de cierre anterior a apertura"
+	LogScheduleDetailServiceConflictCheck    = "Error verificando conflictos de horario"
+	LogScheduleDetailServiceTimeConflict     = "Conflicto de horario detectado"
+	LogScheduleDetailServiceSaveError        = "Error guardando detalle horario"
+	LogScheduleDetailServiceCreateOK         = "Detalle horario creado exitosamente"
+	LogScheduleDetailServiceGetError         = "Error obteniendo detalle horario"
+	LogScheduleDetailServiceGetOK            = "Detalle horario obtenido exitosamente"
+	LogScheduleDetailServiceListError        = "Error listando detalles horario"
+	LogScheduleDetailServiceListOK           = "Detalles horario listados exitosamente"
+	LogScheduleDetailServiceUpdateError      = "Error actualizando detalle horario"
+	LogScheduleDetailServiceUpdateOK         = "Detalle horario actualizado exitosamente"
+	LogScheduleDetailServiceDeleteError      = "Error eliminando detalle horario"
+	LogScheduleDetailServiceDeleteOK         = "Detalle horario eliminado exitosamente"
+)
+
+// ============================================
+// SCHEDULE DETAIL INTERACTOR (HU6-9)
+// ============================================
+const (
+	LogScheduleDetailInteractorCreateStart    = "Iniciando creación de detalle horario"
+	LogScheduleDetailInteractorBranchError    = "Error obteniendo sede para detalle horario"
+	LogScheduleDetailInteractorOwnershipError = "Usuario no es dueño de la sede"
+	LogScheduleDetailInteractorTxError        = "Error iniciando transacción de detalle horario"
+	LogScheduleDetailInteractorCreateError    = "Error creando detalle horario"
+	LogScheduleDetailInteractorCommitError    = "COMMIT FALLÓ - Detalle horario"
+	LogScheduleDetailInteractorCreateOK       = "Detalle horario creado exitosamente"
+	LogScheduleDetailInteractorListError      = "Error listando detalles horario"
+	LogScheduleDetailInteractorListOK         = "Detalles horario listados exitosamente"
+)
+
+// ============================================
+// SCHEDULE DETAIL REPOSITORY (HU6-9)
+// ============================================
+const (
+	LogScheduleDetailRepoPrepareError    = "Error preparando statement de detalle horario"
+	LogScheduleDetailRepoSaveError       = "Error guardando detalle horario en BD"
+	LogScheduleDetailRepoUpdateError     = "Error actualizando detalle horario en BD"
+	LogScheduleDetailRepoDeleteError     = "Error eliminando detalle horario de BD"
+	LogScheduleDetailRepoGetByIDError    = "Error obteniendo detalle horario por ID"
+	LogScheduleDetailRepoGetBySchedError = "Error obteniendo detalles por horario"
+	LogScheduleDetailRepoConflictCheck   = "Error verificando conflictos de horario"
+	LogScheduleDetailRepoScanError       = "Error escaneando fila de detalle horario"
+)
+
+// ============================================
+// SCHEDULE DETAIL CONTROLLER (HU6-9)
+// ============================================
+const (
+	LogScheduleDetailControllerCreateRequest = "Solicitud de creación de detalle horario recibida"
+	LogScheduleDetailControllerCreateError   = "Error creando detalle horario"
+	LogScheduleDetailControllerCreateOK      = "Detalle horario creado exitosamente"
+	LogScheduleDetailControllerListRequest   = "Solicitud de listado de detalles horario recibida"
+	LogScheduleDetailControllerListError     = "Error listando detalles horario"
+	LogScheduleDetailControllerListOK        = "Detalles horario listados exitosamente"
+	LogScheduleDetailControllerGetRequest    = "Solicitud de consulta de detalle horario recibida"
+	LogScheduleDetailControllerGetError      = "Error obteniendo detalle horario"
+	LogScheduleDetailControllerGetOK         = "Detalle horario obtenido exitosamente"
+	LogScheduleDetailControllerUpdateRequest = "Solicitud de actualización de detalle horario recibida"
+	LogScheduleDetailControllerUpdateError   = "Error actualizando detalle horario"
+	LogScheduleDetailControllerUpdateOK      = "Detalle horario actualizado exitosamente"
+	LogScheduleDetailControllerDeleteRequest = "Solicitud de eliminación de detalle horario recibida"
+	LogScheduleDetailControllerDeleteError   = "Error eliminando detalle horario"
+	LogScheduleDetailControllerDeleteOK      = "Detalle horario eliminado exitosamente"
+	LogScheduleDetailControllerBindError     = "Error parseando JSON de detalle horario"
+	LogScheduleDetailControllerIDDecodeError = "Error decodificando ID de detalle horario"
+)
