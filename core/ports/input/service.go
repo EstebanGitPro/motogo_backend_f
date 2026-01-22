@@ -192,3 +192,20 @@ type ScheduleService interface {
 	ActivateSchedule(ctx context.Context, tx output.Tx, scheduleID string) error
 	DeactivateSchedule(ctx context.Context, tx output.Tx, scheduleID string) error
 }
+
+// ScheduleDetailService - Use Cases for Schedule Detail operations (HU6-9)
+type ScheduleDetailService interface {
+	// Transactions
+	BeginTx(ctx context.Context) (output.Tx, error)
+
+	// Schedule Detail CRUD (HU6, HU7, HU8, HU9)
+	CreateDetail(ctx context.Context, tx output.Tx, detail domain.ScheduleDetail) (*domain.ScheduleDetail, error)
+	GetDetailByID(ctx context.Context, detailID string) (*domain.ScheduleDetail, error)
+	GetDetailsByScheduleID(ctx context.Context, scheduleID string) ([]domain.ScheduleDetail, error)
+	UpdateDetail(ctx context.Context, tx output.Tx, detail domain.ScheduleDetail) error
+	DeleteDetail(ctx context.Context, tx output.Tx, detailID string) error
+
+	// Validation
+	ValidateTimeRange(openingTime, closingTime string) error
+	CheckTimeConflict(ctx context.Context, scheduleID string, dayOfWeek int, openingTime, closingTime string, excludeDetailID string) (bool, error)
+}

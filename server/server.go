@@ -273,6 +273,19 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 			handler.DeactivateBranchSchedule(dependencies.ScheduleInteractor),
 		)
 
+		// === SCHEDULE DETAILS ENDPOINTS (HU6-9) ===
+		// POST /branches/:id/schedules/details - Crear franja horaria (HU6)
+		protected.POST("/branches/:id/schedules/details",
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.CreateScheduleDetail(dependencies.ScheduleDetailInteractor, dependencies.ScheduleInteractor),
+		)
+
+		// GET /branches/:id/schedules/details - Listar franjas horarias (HU9)
+		protected.GET("/branches/:id/schedules/details",
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.ListScheduleDetails(dependencies.ScheduleDetailInteractor, dependencies.ScheduleInteractor),
+		)
+
 		// GET /schedules/days - Catálogo de días de la semana (HU10)
 		protected.GET("/schedules/days", handler.GetDaysOfWeek())
 
