@@ -289,6 +289,43 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		// GET /schedules/days - Catálogo de días de la semana (HU10)
 		protected.GET("/schedules/days", handler.GetDaysOfWeek())
 
+		// === SCHEDULE EXCEPTIONS ENDPOINTS (HU20-25) ===
+		// POST /branches/:id/schedules/exceptions - Crear excepción de horario (HU20)
+		protected.POST("/branches/:id/schedules/exceptions",
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.CreateScheduleException(dependencies.ScheduleExceptionInteractor, dependencies.ScheduleInteractor),
+		)
+
+		// GET /branches/:id/schedules/exceptions - Listar excepciones de horario (HU23)
+		protected.GET("/branches/:id/schedules/exceptions",
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.ListScheduleExceptions(dependencies.ScheduleExceptionInteractor, dependencies.ScheduleInteractor),
+		)
+
+		// PUT /schedule-exceptions/:id - Modificar excepción de horario (HU21)
+		protected.PUT("/schedule-exceptions/:id",
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.UpdateScheduleException(dependencies.ScheduleExceptionInteractor),
+		)
+
+		// DELETE /schedule-exceptions/:id - Eliminar excepción de horario (HU22)
+		protected.DELETE("/schedule-exceptions/:id",
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.DeleteScheduleException(dependencies.ScheduleExceptionInteractor),
+		)
+
+		// PUT /schedule-exceptions/:id/activate - Activar excepción de horario (HU24)
+		protected.PUT("/schedule-exceptions/:id/activate",
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.ActivateScheduleException(dependencies.ScheduleExceptionInteractor),
+		)
+
+		// PUT /schedule-exceptions/:id/deactivate - Desactivar excepción de horario (HU25)
+		protected.PUT("/schedule-exceptions/:id/deactivate",
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.DeactivateScheduleException(dependencies.ScheduleExceptionInteractor),
+		)
+
 		// === FRANCHISES ENDPOINTS (HU26-29) ===
 		// GET /franchises - Listar mis franquicias (solo REPRESENTANTE)
 		protected.GET("/franchises",
