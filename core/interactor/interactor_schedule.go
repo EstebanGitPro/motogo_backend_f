@@ -64,8 +64,31 @@ func (i *ScheduleInteractor) CreateSchedule(ctx context.Context, branchID, repre
 	return schedule, nil
 }
 
-// GetScheduleByBranchID retrieves schedule for a branch (HU32)
-func (i *ScheduleInteractor) GetScheduleByBranchID(ctx context.Context, branchID string) (*domain.BranchSchedule, error) {
+// GetScheduleByBranchID retrieves schedule for a branch with ownership check (HU32, protected)
+func (i *ScheduleInteractor) GetScheduleByBranchID(ctx context.Context, branchID, representativeID string) (*domain.BranchSchedule, error) {
+	// 1. Verify ownership of branch
+	branch, err := i.branchService.GetBranchByID(ctx, branchID)
+	if err != nil {
+		scheduleInteractorLog.Error(logger.LogScheduleInteractorGetError, "error", "branch not found", "branch_id", branchID)
+		return nil, domain.ErrBranchNotFound
+	}
+	if branch.RepresentativeID != representativeID {
+		scheduleInteractorLog.Warn(logger.LogBranchInteractorOwnershipError, "branch_id", branchID, "representative_id", representativeID)
+		return nil, domain.ErrForbidden
+	}
+
+	// 2. Get schedule
+	schedule, err := i.scheduleService.GetScheduleByBranchID(ctx, branchID)
+	if err != nil {
+		scheduleInteractorLog.Error(logger.LogScheduleInteractorGetError, "branch_id", branchID, "error", err)
+		return nil, err
+	}
+	scheduleInteractorLog.Info(logger.LogScheduleInteractorGetOK, "schedule_id", schedule.ID, "branch_id", branchID)
+	return schedule, nil
+}
+
+// GetScheduleByBranchIDPublic retrieves schedule for a branch without ownership check (for public endpoints)
+func (i *ScheduleInteractor) GetScheduleByBranchIDPublic(ctx context.Context, branchID string) (*domain.BranchSchedule, error) {
 	schedule, err := i.scheduleService.GetScheduleByBranchID(ctx, branchID)
 	if err != nil {
 		scheduleInteractorLog.Error(logger.LogScheduleInteractorGetError, "branch_id", branchID, "error", err)

@@ -377,6 +377,21 @@ var messageCodeToHTTPStatus = map[string]int{
 	"MOD_H_TIME_ORDER_ERR_00001": http.StatusBadRequest, // 400 - Hora cierre antes apertura
 	"MOD_H_INACTIVE_ERR_00001":   http.StatusBadRequest, // 400 - Horario desactivado
 
+	// ========================================
+	// Schedule Detail Module (MOD_HD_*) - HU6-9
+	// ========================================
+	// Success messages
+	"MOD_HD_CREATE_EXI_00001": http.StatusCreated, // 201 - Detalle horario registrado (HU6)
+	"MOD_HD_GET_EXI_00001":    http.StatusOK,      // 200 - Detalle horario consultado
+	"MOD_HD_UPDATE_EXI_00001": http.StatusOK,      // 200 - Detalle horario actualizado (HU7)
+	"MOD_HD_DELETE_EXI_00001": http.StatusOK,      // 200 - Detalle horario eliminado (HU8)
+	"MOD_HD_LIST_EXI_00001":   http.StatusOK,      // 200 - Detalles horario listados (HU9)
+	// Error messages
+	"MOD_HD_NOT_FOUND_ERR_00001": http.StatusNotFound,   // 404 - Detalle horario no encontrado
+	"MOD_HD_CONFLICT_ERR_00001":  http.StatusConflict,   // 409 - Conflicto de horario
+	"MOD_HD_TIME_ERR_00001":      http.StatusBadRequest, // 400 - Formato hora inválido
+	"MOD_HD_DAY_ERR_00001":       http.StatusBadRequest, // 400 - Día de la semana inválido
+
 }
 
 // GetHTTPStatus returns the HTTP status for a message code
