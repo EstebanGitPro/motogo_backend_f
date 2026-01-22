@@ -364,10 +364,10 @@ const (
 
 // Schedule Detail Errors (MOD_HD_*) - HU6-9
 var (
-	ErrScheduleDetailNotFound    = errors.New("ERR_SCHEDULE_DETAIL_NOT_FOUND")
+	ErrScheduleDetailNotFound     = errors.New("ERR_SCHEDULE_DETAIL_NOT_FOUND")
 	ErrScheduleDetailTimeConflict = errors.New("ERR_SCHEDULE_DETAIL_TIME_CONFLICT")
-	ErrScheduleDetailInvalidTime = errors.New("ERR_SCHEDULE_DETAIL_INVALID_TIME")
-	ErrScheduleDetailInvalidDay  = errors.New("ERR_SCHEDULE_DETAIL_INVALID_DAY")
+	ErrScheduleDetailInvalidTime  = errors.New("ERR_SCHEDULE_DETAIL_INVALID_TIME")
+	ErrScheduleDetailInvalidDay   = errors.New("ERR_SCHEDULE_DETAIL_INVALID_DAY")
 )
 
 // Schedule Detail Module (MOD_HD_*) - HU6-9
@@ -386,3 +386,28 @@ const (
 	MsgScheduleDetailInvalidDay   = "MOD_HD_DAY_ERR_00001"
 )
 
+// Schedule Exception Errors (MOD_EH_*) - HU20-25
+var (
+	ErrScheduleExceptionNotFound     = errors.New("ERR_SCHEDULE_EXCEPTION_NOT_FOUND")
+	ErrScheduleExceptionDateConflict = errors.New("ERR_SCHEDULE_EXCEPTION_DATE_CONFLICT")
+	ErrScheduleExceptionDatePast     = errors.New("ERR_SCHEDULE_EXCEPTION_DATE_PAST")
+	ErrScheduleExceptionInvalidTime  = errors.New("ERR_SCHEDULE_EXCEPTION_INVALID_TIME")
+)
+
+// Schedule Exception Module (MOD_EH_*) - HU20-25
+const (
+	// Success messages
+	MsgScheduleExceptionCreated     = "MOD_EH_CREATE_EXI_00001"
+	MsgScheduleExceptionRetrieved   = "MOD_EH_GET_EXI_00001"
+	MsgScheduleExceptionsListed     = "MOD_EH_LIST_EXI_00001"
+	MsgScheduleExceptionUpdated     = "MOD_EH_UPDATE_EXI_00001"
+	MsgScheduleExceptionDeleted     = "MOD_EH_DELETE_EXI_00001"
+	MsgScheduleExceptionActivated   = "MOD_EH_ACTIVATE_EXI_00001"
+	MsgScheduleExceptionDeactivated = "MOD_EH_DEACTIVATE_EXI_00001"
+
+	// Error messages
+	MsgScheduleExceptionNotFound     = "MOD_EH_NOT_FOUND_ERR_00001"
+	MsgScheduleExceptionDateConflict = "MOD_EH_DATE_CONFLICT_ERR_00001"
+	MsgScheduleExceptionDatePast     = "MOD_EH_DATE_PAST_ERR_00001"
+	MsgScheduleExceptionInvalidTime  = "MOD_EH_TIME_ERR_00001"
+)
