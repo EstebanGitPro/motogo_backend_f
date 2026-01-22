@@ -116,7 +116,7 @@ func (h *handler) GetBranchSchedule(scheduleInteractor *interactor.ScheduleInter
 		}
 
 		// 2. Get schedule
-		schedule, err := scheduleInteractor.GetScheduleByBranchID(c.Request.Context(), branchID)
+		schedule, err := scheduleInteractor.GetScheduleByBranchIDPublic(c.Request.Context(), branchID)
 		if err != nil {
 			log.Error(logger.LogScheduleControllerGetError, "error", err, "branch_id", branchID)
 			if err == domain.ErrScheduleNotFound {
@@ -191,7 +191,7 @@ func (h *handler) UpdateBranchSchedule(scheduleInteractor *interactor.ScheduleIn
 		req.Sanitize()
 
 		// 4. Get existing schedule
-		schedule, err := scheduleInteractor.GetScheduleByBranchID(c.Request.Context(), branchID)
+		schedule, err := scheduleInteractor.GetScheduleByBranchIDPublic(c.Request.Context(), branchID)
 		if err != nil {
 			if err == domain.ErrScheduleNotFound {
 				h.Response.Error(c, domain.MsgScheduleNotFound)
@@ -292,7 +292,7 @@ func (h *handler) DeleteBranchSchedule(scheduleInteractor *interactor.ScheduleIn
 		}
 
 		// 3. Get schedule first to get its ID
-		schedule, err := scheduleInteractor.GetScheduleByBranchID(c.Request.Context(), branchID)
+		schedule, err := scheduleInteractor.GetScheduleByBranchIDPublic(c.Request.Context(), branchID)
 		if err != nil {
 			if err == domain.ErrScheduleNotFound {
 				h.Response.Error(c, domain.MsgScheduleNotFound)
@@ -355,7 +355,7 @@ func (h *handler) ActivateBranchSchedule(scheduleInteractor *interactor.Schedule
 		}
 
 		// 3. Get schedule to get its ID
-		schedule, err := scheduleInteractor.GetScheduleByBranchID(c.Request.Context(), branchID)
+		schedule, err := scheduleInteractor.GetScheduleByBranchIDPublic(c.Request.Context(), branchID)
 		if err != nil {
 			if err == domain.ErrScheduleNotFound {
 				h.Response.Error(c, domain.MsgScheduleNotFound)
@@ -425,7 +425,7 @@ func (h *handler) DeactivateBranchSchedule(scheduleInteractor *interactor.Schedu
 		}
 
 		// 3. Get schedule to get its ID
-		schedule, err := scheduleInteractor.GetScheduleByBranchID(c.Request.Context(), branchID)
+		schedule, err := scheduleInteractor.GetScheduleByBranchIDPublic(c.Request.Context(), branchID)
 		if err != nil {
 			if err == domain.ErrScheduleNotFound {
 				h.Response.Error(c, domain.MsgScheduleNotFound)
