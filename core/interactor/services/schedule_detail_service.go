@@ -264,3 +264,200 @@ func (s *scheduleDetailService) CheckTimeConflict(
 ) (bool, error) {
 	return s.detailRepo.CheckTimeConflict(ctx, scheduleID, dayOfWeek, openingTime, closingTime, excludeDetailID)
 }
+
+// ============================================
+// Schedule Exception Methods (HU20-25)
+// ============================================
+
+// CreateException creates a new schedule exception (HU20)
+func (s *scheduleDetailService) CreateException(
+	ctx context.Context,
+	tx output.Tx,
+	exception domain.ScheduleDetail,
+) (*domain.ScheduleDetail, error) {
+	scheduleDetailLog.Info(logger.LogScheduleDetailServiceCreateStart,
+		"schedule_id", exception.ScheduleID,
+		"exception_date", exception.ExceptionDate)
+
+	// 1. Verify schedule exists
+	schedule, err := s.scheduleRepo.GetScheduleByID(ctx, exception.ScheduleID)
+	if err != nil {
+		scheduleDetailLog.Error(logger.LogScheduleDetailServiceScheduleNotFound,
+			"schedule_id", exception.ScheduleID, "error", err)
+		return nil, domain.ErrScheduleNotFound
+	}
+	if schedule == nil {
+		return nil, domain.ErrScheduleNotFound
+	}
+
+	// 2. Validate exception date is provided
+	if exception.ExceptionDate == nil {
+		return nil, domain.ErrScheduleExceptionDatePast
+	}
+
+	// 3. Validate exception date is not in the past
+	today := time.Now().Truncate(24 * time.Hour)
+	exceptionDay := exception.ExceptionDate.Truncate(24 * time.Hour)
+	if exceptionDay.Before(today) {
+		scheduleDetailLog.Warn(logger.LogScheduleDetailServiceInvalidDay,
+			"exception_date", exception.ExceptionDate)
+		return nil, domain.ErrScheduleExceptionDatePast
+	}
+
+	// 4. Check for date conflict (same date already exists)
+	hasConflict, err := s.detailRepo.CheckExceptionDateConflict(
+		ctx,
+		exception.ScheduleID,
+		exception.ExceptionDate.Format("2006-01-02"),
+		"", // No exclude ID for new exception
+	)
+	if err != nil {
+		return nil, err
+	}
+	if hasConflict {
+		scheduleDetailLog.Warn(logger.LogScheduleDetailServiceTimeConflict,
+			"schedule_id", exception.ScheduleID,
+			"exception_date", exception.ExceptionDate)
+		return nil, domain.ErrScheduleExceptionDateConflict
+	}
+
+	// 5. Validate time format if not closed
+	if !exception.IsClosed {
+		if exception.OpeningTime == nil || exception.ClosingTime == nil {
+			return nil, domain.ErrScheduleExceptionInvalidTime
+		}
+		if err := s.ValidateTimeRange(*exception.OpeningTime, *exception.ClosingTime); err != nil {
+			return nil, domain.ErrScheduleExceptionInvalidTime
+		}
+	}
+
+	// 6. Generate ID and set defaults
+	exception.ID = uuid.New().String()
+	exception.EntryType = domain.EntryTypeException
+	exception.DayOfWeek = nil // Exceptions don't use day_of_week
+	exception.Active = true
+	exception.CreatedAt = time.Now()
+	exception.UpdatedAt = time.Now()
+
+	// 7. Save exception
+	if err := s.detailRepo.SaveScheduleDetail(ctx, tx, exception); err != nil {
+		scheduleDetailLog.Error(logger.LogScheduleDetailServiceSaveError,
+			"schedule_id", exception.ScheduleID, "error", err)
+		return nil, err
+	}
+
+	scheduleDetailLog.Info(logger.LogScheduleDetailServiceCreateOK,
+		"exception_id", exception.ID,
+		"schedule_id", exception.ScheduleID,
+		"exception_date", exception.ExceptionDate)
+
+	return &exception, nil
+}
+
+// GetExceptionsByScheduleID retrieves all exceptions for a schedule (HU23)
+func (s *scheduleDetailService) GetExceptionsByScheduleID(
+	ctx context.Context,
+	scheduleID string,
+) ([]domain.ScheduleDetail, error) {
+	exceptions, err := s.detailRepo.GetExceptionsByScheduleID(ctx, scheduleID)
+	if err != nil {
+		scheduleDetailLog.Error(logger.LogScheduleDetailServiceListError,
+			"schedule_id", scheduleID, "error", err)
+		return nil, err
+	}
+
+	scheduleDetailLog.Info(logger.LogScheduleDetailServiceListOK,
+		"schedule_id", scheduleID,
+		"exceptions_count", len(exceptions))
+
+	return exceptions, nil
+}
+
+// GetExceptionByID retrieves a specific exception by ID
+func (s *scheduleDetailService) GetExceptionByID(ctx context.Context, exceptionID string) (*domain.ScheduleDetail, error) {
+	exception, err := s.detailRepo.GetExceptionByID(ctx, exceptionID)
+	if err != nil {
+		scheduleDetailLog.Error(logger.LogScheduleDetailServiceGetError,
+			"exception_id", exceptionID, "error", err)
+		return nil, err
+	}
+	if exception == nil {
+		return nil, domain.ErrScheduleExceptionNotFound
+	}
+	return exception, nil
+}
+
+// UpdateException updates an existing schedule exception (HU21)
+func (s *scheduleDetailService) UpdateException(
+	ctx context.Context,
+	tx output.Tx,
+	exception domain.ScheduleDetail,
+) error {
+	// 1. Verify exception exists
+	existing, err := s.detailRepo.GetExceptionByID(ctx, exception.ID)
+	if err != nil {
+		return err
+	}
+	if existing == nil {
+		return domain.ErrScheduleExceptionNotFound
+	}
+
+	// 2. Validate time range if not closed
+	if !exception.IsClosed {
+		if exception.OpeningTime == nil || exception.ClosingTime == nil {
+			return domain.ErrScheduleExceptionInvalidTime
+		}
+		if err := s.ValidateTimeRange(*exception.OpeningTime, *exception.ClosingTime); err != nil {
+			return domain.ErrScheduleExceptionInvalidTime
+		}
+	}
+
+	// 3. Update exception (preserve existing exception_date and schedule_id)
+	exception.ScheduleID = existing.ScheduleID
+	exception.ExceptionDate = existing.ExceptionDate
+	exception.EntryType = domain.EntryTypeException
+	exception.UpdatedAt = time.Now()
+
+	if err := s.detailRepo.UpdateScheduleDetail(ctx, tx, exception); err != nil {
+		scheduleDetailLog.Error(logger.LogScheduleDetailServiceUpdateError,
+			"exception_id", exception.ID, "error", err)
+		return err
+	}
+
+	scheduleDetailLog.Info(logger.LogScheduleDetailServiceUpdateOK, "exception_id", exception.ID)
+	return nil
+}
+
+// DeleteException deletes a schedule exception (HU22)
+func (s *scheduleDetailService) DeleteException(
+	ctx context.Context,
+	tx output.Tx,
+	exceptionID string,
+) error {
+	// 1. Verify exception exists
+	existing, err := s.detailRepo.GetExceptionByID(ctx, exceptionID)
+	if err != nil {
+		return err
+	}
+	if existing == nil {
+		return domain.ErrScheduleExceptionNotFound
+	}
+
+	// 2. Delete exception
+	if err := s.detailRepo.DeleteScheduleDetail(ctx, tx, exceptionID); err != nil {
+		scheduleDetailLog.Error(logger.LogScheduleDetailServiceDeleteError,
+			"exception_id", exceptionID, "error", err)
+		return err
+	}
+
+	scheduleDetailLog.Info(logger.LogScheduleDetailServiceDeleteOK, "exception_id", exceptionID)
+	return nil
+}
+
+// CheckExceptionDateConflict checks if an exception already exists for the given date
+func (s *scheduleDetailService) CheckExceptionDateConflict(
+	ctx context.Context,
+	scheduleID, exceptionDate, excludeExceptionID string,
+) (bool, error) {
+	return s.detailRepo.CheckExceptionDateConflict(ctx, scheduleID, exceptionDate, excludeExceptionID)
+}
