@@ -504,6 +504,36 @@ func BuildScheduleLinks(baseURL, encodedBranchID, encodedScheduleID string) []Li
 		{Rel: "delete", Href: branchScheduleURL, Method: "DELETE"},
 		{Rel: "activate", Href: branchScheduleURL + "/activate", Method: "PUT"},
 		{Rel: "deactivate", Href: branchScheduleURL + "/deactivate", Method: "PUT"},
+		{Rel: "details-list", Href: branchScheduleURL + "/details", Method: "GET"},    // HU6-9: Schedule Details
+		{Rel: "details-create", Href: branchScheduleURL + "/details", Method: "POST"}, // HU6: Create Detail
+		{Rel: "branch", Href: BuildResourceURL(baseURL, "branches", encodedBranchID), Method: "GET"},
+		{Rel: "days-catalog", Href: baseURL + "/schedules/days", Method: "GET"},
+	}
+}
+
+// BuildScheduleDetailLinks generates HATEOAS links for a schedule detail resource (HU6-9)
+func BuildScheduleDetailLinks(baseURL, encodedBranchID, encodedDetailID string) []Link {
+	branchScheduleURL := BuildResourceURL(baseURL, "branches", encodedBranchID) + "/schedules"
+	detailURL := BuildResourceURL(baseURL, "schedule-details", encodedDetailID)
+
+	return []Link{
+		{Rel: "self", Href: detailURL, Method: "GET"},
+		{Rel: "update", Href: detailURL, Method: "PUT"},
+		{Rel: "delete", Href: detailURL, Method: "DELETE"},
+		{Rel: "schedule", Href: branchScheduleURL, Method: "GET"},
+		{Rel: "details-list", Href: branchScheduleURL + "/details", Method: "GET"},
+		{Rel: "days-catalog", Href: baseURL + "/schedules/days", Method: "GET"},
+	}
+}
+
+// BuildScheduleDetailListLinks generates HATEOAS links for the schedule details list (HU9)
+func BuildScheduleDetailListLinks(baseURL, encodedBranchID string) []Link {
+	branchScheduleURL := BuildResourceURL(baseURL, "branches", encodedBranchID) + "/schedules"
+
+	return []Link{
+		{Rel: "self", Href: branchScheduleURL + "/details", Method: "GET"},
+		{Rel: "create", Href: branchScheduleURL + "/details", Method: "POST"},
+		{Rel: "schedule", Href: branchScheduleURL, Method: "GET"},
 		{Rel: "branch", Href: BuildResourceURL(baseURL, "branches", encodedBranchID), Method: "GET"},
 		{Rel: "days-catalog", Href: baseURL + "/schedules/days", Method: "GET"},
 	}
