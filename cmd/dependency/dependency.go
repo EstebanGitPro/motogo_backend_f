@@ -29,28 +29,30 @@ import (
 	messageRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/message"
 	repo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/person"
 	scheduleRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/schedule"
+	scheduleDetailRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/schedule_detail"
 	serviceRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/service"
 )
 
 type Dependencies struct {
-	PersonService       input.Service
-	PersonRepo          output.Repository
-	KeycloakClient      output.AuthClient
-	Interactor          *interactor.Interactor
-	MessageInteractor   *interactor.MessageInteractor
-	BranchInteractor    *interactor.BranchInteractor    // HU59
-	BrandInteractor     *interactor.BrandInteractor     // Brands catalog
-	LocationInteractor  *interactor.LocationInteractor  // Geographic catalogs
-	ServiceInteractor   *interactor.ServiceInteractor   // Service catalog (HU63, HU75)
-	FranchiseInteractor *interactor.FranchiseInteractor // HU26-29
-	ScheduleInteractor  *interactor.ScheduleInteractor  // HU30-35
-	FirebaseClient      *firebase.Client                // Firebase Auth
-	JWTValidator        *jwt.JWKSValidator              // JWT validation with JWKS
-	Config              *config.Config
-	Logger              logger.Logger
-	IDEncoder           *idencoder.HashidsEncoder
-	MessagingCache      *messagingCache.MessageCache
-	ResponseHandler     *middleware.ResponseHandler
+	PersonService            input.Service
+	PersonRepo               output.Repository
+	KeycloakClient           output.AuthClient
+	Interactor               *interactor.Interactor
+	MessageInteractor        *interactor.MessageInteractor
+	BranchInteractor         *interactor.BranchInteractor         // HU59
+	BrandInteractor          *interactor.BrandInteractor          // Brands catalog
+	LocationInteractor       *interactor.LocationInteractor       // Geographic catalogs
+	ServiceInteractor        *interactor.ServiceInteractor        // Service catalog (HU63, HU75)
+	FranchiseInteractor      *interactor.FranchiseInteractor      // HU26-29
+	ScheduleInteractor       *interactor.ScheduleInteractor       // HU30-35
+	ScheduleDetailInteractor *interactor.ScheduleDetailInteractor // HU6-9
+	FirebaseClient           *firebase.Client                     // Firebase Auth
+	JWTValidator             *jwt.JWKSValidator                   // JWT validation with JWKS
+	Config                   *config.Config
+	Logger                   logger.Logger
+	IDEncoder                *idencoder.HashidsEncoder
+	MessagingCache           *messagingCache.MessageCache
+	ResponseHandler          *middleware.ResponseHandler
 }
 
 func Init() (*Dependencies, error) {
@@ -261,6 +263,18 @@ func Init() (*Dependencies, error) {
 	scheduleInteractor := interactor.NewScheduleInteractor(scheduleService, branchService)
 	log.Success("Schedule interactor initialized")
 
+	// Schedule Detail dependencies (HU6-9)
+	scheduleDetailRepository, err := scheduleDetailRepo.NewRepository(db)
+	if err != nil {
+		log.Error("Error initializing schedule detail repository", "error", err)
+		return nil, err
+	}
+	log.Success("Schedule detail repository initialized")
+
+	scheduleDetailService := services.NewScheduleDetailService(scheduleDetailRepository, scheduleRepository)
+	scheduleDetailInteractor := interactor.NewScheduleDetailInteractor(scheduleDetailService, scheduleService, branchService)
+	log.Success("Schedule detail interactor initialized")
+
 	// Firebase dependencies (optional - only if credentials configured)
 	var firebaseClient *firebase.Client
 	if cfg.Firebase.CredentialsPath != "" {
@@ -303,23 +317,24 @@ func Init() (*Dependencies, error) {
 	}
 
 	return &Dependencies{
-		PersonService:       personService,
-		PersonRepo:          personRepo,
-		KeycloakClient:      keycloakClient,
-		Interactor:          interactorFacade,
-		MessageInteractor:   messageInteractor,
-		BranchInteractor:    branchInteractor,
-		BrandInteractor:     brandInteractor,
-		LocationInteractor:  locationInteractor,
-		ServiceInteractor:   serviceInteractor,
-		FranchiseInteractor: franchiseInteractor,
-		ScheduleInteractor:  scheduleInteractor,
-		FirebaseClient:      firebaseClient,
-		JWTValidator:        jwtValidator,
-		Config:              cfg,
-		Logger:              log,
-		IDEncoder:           encoder,
-		MessagingCache:      messagingCache,
-		ResponseHandler:     responseHandler,
+		PersonService:            personService,
+		PersonRepo:               personRepo,
+		KeycloakClient:           keycloakClient,
+		Interactor:               interactorFacade,
+		MessageInteractor:        messageInteractor,
+		BranchInteractor:         branchInteractor,
+		BrandInteractor:          brandInteractor,
+		LocationInteractor:       locationInteractor,
+		ServiceInteractor:        serviceInteractor,
+		FranchiseInteractor:      franchiseInteractor,
+		ScheduleInteractor:       scheduleInteractor,
+		ScheduleDetailInteractor: scheduleDetailInteractor,
+		FirebaseClient:           firebaseClient,
+		JWTValidator:             jwtValidator,
+		Config:                   cfg,
+		Logger:                   log,
+		IDEncoder:                encoder,
+		MessagingCache:           messagingCache,
+		ResponseHandler:          responseHandler,
 	}, nil
 }
