@@ -330,38 +330,95 @@ func (s *scheduleDetailService) CreateException(
 		return nil, domain.ErrScheduleNotFound
 	}
 
-	// 2. Validate exception date is provided
-	if exception.ExceptionDate == nil {
+	// 2. Validate exception start date is provided
+	if exception.ExceptionStartDate == nil {
 		return nil, domain.ErrScheduleExceptionDatePast
 	}
 
-	// 3. Validate exception date is not in the past
+	// 3. Validate exception start date is not in the past
 	today := time.Now().Truncate(24 * time.Hour)
-	exceptionDay := exception.ExceptionDate.Truncate(24 * time.Hour)
+	exceptionDay := exception.ExceptionStartDate.Truncate(24 * time.Hour)
 	if exceptionDay.Before(today) {
 		scheduleDetailLog.Warn(logger.LogScheduleDetailServiceInvalidDay,
-			"exception_date", exception.ExceptionDate)
+			"exception_start_date", exception.ExceptionStartDate)
 		return nil, domain.ErrScheduleExceptionDatePast
 	}
 
-	// 4. Check for date conflict (same date already exists)
-	hasConflict, err := s.detailRepo.CheckExceptionDateConflict(
-		ctx,
-		exception.ScheduleID,
-		exception.ExceptionDate.Format("2006-01-02"),
-		"", // No exclude ID for new exception
-	)
-	if err != nil {
-		return nil, err
-	}
-	if hasConflict {
-		scheduleDetailLog.Warn(logger.LogScheduleDetailServiceTimeConflict,
-			"schedule_id", exception.ScheduleID,
-			"exception_date", exception.ExceptionDate)
-		return nil, domain.ErrScheduleExceptionDateConflict
+	// 4. If end date not set, use start date
+	if exception.ExceptionEndDate == nil {
+		exception.ExceptionEndDate = exception.ExceptionStartDate
 	}
 
-	// 5. Validate time format if not closed
+	// 5. Check for date conflict (overlapping dates) - using FOR UPDATE lock to prevent race conditions
+	// The tx parameter ensures this query runs within the transaction context
+	existingExceptions, err := s.detailRepo.GetExceptionsByScheduleIDForUpdate(ctx, tx, exception.ScheduleID)
+	if err != nil {
+		scheduleDetailLog.Error("DEBUG_GetExceptions_ERROR", "error", err)
+		return nil, err
+	}
+
+	scheduleDetailLog.Info("DEBUG_CheckExceptionDateConflict_EXPLICIT",
+		"schedule_id", exception.ScheduleID,
+		"new_start_date", exception.ExceptionStartDate.Format("2006-01-02"),
+		"new_end_date", exception.ExceptionEndDate.Format("2006-01-02"),
+		"new_is_closed", exception.IsClosed,
+		"existing_exceptions_count", len(existingExceptions))
+
+	// Check for overlapping dates with any existing exception
+	for _, existing := range existingExceptions {
+		if existing.ExceptionStartDate == nil || existing.ExceptionEndDate == nil {
+			continue
+		}
+
+		// Use date-only strings to compare (YYYY-MM-DD) - avoids timezone truncation issues
+		existingStartStr := existing.ExceptionStartDate.Format("2006-01-02")
+		existingEndStr := existing.ExceptionEndDate.Format("2006-01-02")
+		newStartStr := exception.ExceptionStartDate.Format("2006-01-02")
+		newEndStr := exception.ExceptionEndDate.Format("2006-01-02")
+
+		// Overlap condition: existing.start <= new.end AND existing.end >= new.start
+		hasOverlap := existingStartStr <= newEndStr && existingEndStr >= newStartStr
+
+		scheduleDetailLog.Info("DEBUG_CheckOverlap",
+			"existing_id", existing.ID,
+			"existing_start", existingStartStr,
+			"existing_end", existingEndStr,
+			"new_start", newStartStr,
+			"new_end", newEndStr,
+			"existing_is_closed", existing.IsClosed,
+			"has_overlap", hasOverlap)
+
+		if hasOverlap {
+			scheduleDetailLog.Warn(logger.LogScheduleDetailServiceTimeConflict,
+				"schedule_id", exception.ScheduleID,
+				"exception_start_date", exception.ExceptionStartDate,
+				"conflicting_exception_id", existing.ID)
+			return nil, domain.ErrScheduleExceptionDateConflict
+		}
+	}
+
+	// 6. Validation E1: If is_closed=true, check if day is already closed in REGULAR schedule (redundant)
+	if exception.IsClosed {
+		// Get day of week from exception date
+		dayOfWeek := int(exception.ExceptionStartDate.Weekday())
+		if dayOfWeek == 0 {
+			dayOfWeek = 7 // Sunday is 7 in ISO format
+		}
+
+		isRedundant, err := s.detailRepo.CheckExceptionIsRedundant(ctx, exception.ScheduleID, dayOfWeek)
+		if err != nil {
+			return nil, err
+		}
+		if isRedundant {
+			scheduleDetailLog.Warn(logger.LogScheduleDetailServiceTimeConflict,
+				"schedule_id", exception.ScheduleID,
+				"exception_start_date", exception.ExceptionStartDate,
+				"reason", "exception_redundant_day_already_closed")
+			return nil, domain.ErrScheduleExceptionRedundant
+		}
+	}
+
+	// 7. Validate time format if not closed
 	if !exception.IsClosed {
 		if exception.OpeningTime == nil || exception.ClosingTime == nil {
 			return nil, domain.ErrScheduleExceptionInvalidTime
@@ -371,7 +428,7 @@ func (s *scheduleDetailService) CreateException(
 		}
 	}
 
-	// 6. Generate ID and set defaults
+	// 7. Generate ID and set defaults
 	exception.ID = uuid.New().String()
 	exception.EntryType = domain.EntryTypeException
 	exception.DayOfWeek = nil // Exceptions don't use day_of_week
@@ -379,7 +436,13 @@ func (s *scheduleDetailService) CreateException(
 	exception.CreatedAt = time.Now()
 	exception.UpdatedAt = time.Now()
 
-	// 7. Save exception
+	// 7.5 Validation: If is_closed=true, clear time fields to prevent inconsistent data
+	if exception.IsClosed {
+		exception.OpeningTime = nil
+		exception.ClosingTime = nil
+	}
+
+	// 8. Save exception
 	if err := s.detailRepo.SaveScheduleDetail(ctx, tx, exception); err != nil {
 		scheduleDetailLog.Error(logger.LogScheduleDetailServiceSaveError,
 			"schedule_id", exception.ScheduleID, "error", err)
@@ -501,10 +564,10 @@ func (s *scheduleDetailService) DeleteException(
 	return nil
 }
 
-// CheckExceptionDateConflict checks if an exception already exists for the given date
+// CheckExceptionDateConflict checks if an exception already exists for the given date range
 func (s *scheduleDetailService) CheckExceptionDateConflict(
 	ctx context.Context,
-	scheduleID, exceptionDate, excludeExceptionID string,
+	scheduleID, excludeExceptionID, startDate, endDate string,
 ) (bool, error) {
-	return s.detailRepo.CheckExceptionDateConflict(ctx, scheduleID, exceptionDate, excludeExceptionID)
+	return s.detailRepo.CheckExceptionDateConflict(ctx, scheduleID, excludeExceptionID, startDate, endDate)
 }

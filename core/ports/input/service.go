@@ -215,5 +215,5 @@ type ScheduleDetailService interface {
 	GetExceptionByID(ctx context.Context, exceptionID string) (*domain.ScheduleDetail, error)
 	UpdateException(ctx context.Context, tx output.Tx, exception domain.ScheduleDetail) error
 	DeleteException(ctx context.Context, tx output.Tx, exceptionID string) error
-	CheckExceptionDateConflict(ctx context.Context, scheduleID, exceptionDate, excludeExceptionID string) (bool, error)
+	CheckExceptionDateConflict(ctx context.Context, scheduleID, excludeExceptionID, startDate, endDate string) (bool, error)
 }

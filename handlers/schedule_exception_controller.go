@@ -227,6 +227,8 @@ func (h *handler) CreateScheduleException(
 				h.Response.Error(c, domain.MsgScheduleExceptionDateConflict)
 			case domain.ErrScheduleExceptionInvalidTime:
 				h.Response.Error(c, domain.MsgScheduleExceptionInvalidTime)
+			case domain.ErrScheduleExceptionRedundant:
+				h.Response.Error(c, domain.MsgScheduleExceptionRedundant)
 			case domain.ErrForbidden:
 				h.Response.Error(c, domain.MsgForbidden)
 			default:
