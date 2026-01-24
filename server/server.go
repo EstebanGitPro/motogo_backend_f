@@ -286,12 +286,25 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 			handler.ListScheduleDetails(dependencies.ScheduleDetailInteractor, dependencies.ScheduleInteractor),
 		)
 
+		// PUT /schedule-details/:id - Modificar franja horaria (HU7)
+		protected.PUT("/schedule-details/:id",
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.UpdateScheduleDetail(dependencies.ScheduleDetailInteractor),
+		)
+
+		// DELETE /schedule-details/:id - Eliminar franja horaria (HU8)
+		protected.DELETE("/schedule-details/:id",
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.DeleteScheduleDetail(dependencies.ScheduleDetailInteractor),
+		)
+
 		// GET /schedules/days - Catálogo de días de la semana (HU10)
 		protected.GET("/schedules/days", handler.GetDaysOfWeek())
 
 		// === SCHEDULE EXCEPTIONS ENDPOINTS (HU20-25) ===
 		// POST /branches/:id/schedules/exceptions - Crear excepción de horario (HU20)
 		protected.POST("/branches/:id/schedules/exceptions",
+			validator.WithValidateScheduleException(),
 			middleware.RequireRole(domain.RoleRepresentative),
 			handler.CreateScheduleException(dependencies.ScheduleExceptionInteractor, dependencies.ScheduleInteractor),
 		)

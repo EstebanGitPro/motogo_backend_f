@@ -193,17 +193,22 @@ func (s *scheduleDetailService) UpdateDetail(
 		return domain.ErrScheduleDetailNotFound
 	}
 
-	// 2. Validate time range if not closed
+	// 2. Preserve immutable fields from existing (not provided in update request)
+	detail.ScheduleID = existing.ScheduleID
+	detail.DayOfWeek = existing.DayOfWeek
+	detail.EntryType = existing.EntryType
+
+	// 3. Validate time range if not closed
 	if !detail.IsClosed {
 		if err := s.ValidateTimeRange(*detail.OpeningTime, *detail.ClosingTime); err != nil {
 			return err
 		}
 
-		// 3. Check for time conflicts (excluding this detail)
+		// 4. Check for time conflicts (excluding this detail)
 		hasConflict, err := s.detailRepo.CheckTimeConflict(
 			ctx,
-			detail.ScheduleID,
-			*detail.DayOfWeek,
+			existing.ScheduleID,
+			*existing.DayOfWeek,
 			*detail.OpeningTime,
 			*detail.ClosingTime,
 			detail.ID, // Exclude this detail from conflict check
@@ -216,7 +221,7 @@ func (s *scheduleDetailService) UpdateDetail(
 		}
 	}
 
-	// 4. Update detail
+	// 5. Update detail
 	detail.UpdatedAt = time.Now()
 	if err := s.detailRepo.UpdateScheduleDetail(ctx, tx, detail); err != nil {
 		scheduleDetailLog.Error(logger.LogScheduleDetailServiceUpdateError,
