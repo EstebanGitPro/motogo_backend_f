@@ -118,6 +118,12 @@ var (
 	ErrCityNotInDepartment = errors.New("ERR_CITY_NOT_IN_DEPARTMENT")
 )
 
+// Location Module (MOD_L_*) - Geographic Catalogs
+const (
+	MsgDepartmentsRetrieved = "MOD_L_DEP_EXI_00001"
+	MsgCitiesRetrieved      = "MOD_L_CIT_EXI_00001"
+)
+
 // Franchise Errors (MOD_F_*) - HU26-29
 var (
 	ErrFranchiseNotFound       = errors.New("ERR_FRANCHISE_NOT_FOUND")
@@ -283,6 +289,7 @@ const (
 	MsgBranchListFound     = "MOD_B_LIST_EXI_00001"      // HU62: Branch list found
 	MsgBranchCannotDelete  = "MOD_B_DEL_ERR_00001"       // HU61: Delete error
 	MsgBranchHasAssoc      = "MOD_B_HAS_ASSOC_ERR_00001" // HU61: Has associations
+	MsgBrandsRetrieved     = "MOD_B_BRD_EXI_00001"       // Brand catalog retrieved
 )
 
 // Franchise Module (MOD_F_*) - HU26-29
