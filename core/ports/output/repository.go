@@ -164,7 +164,7 @@ type ScheduleRepository interface {
 	GetScheduleByBranchID(ctx context.Context, branchID string) (*domain.BranchSchedule, error)
 }
 
-// ScheduleDetailRepository interface for Schedule Detail operations (HU6-9)
+// ScheduleDetailRepository interface for Schedule Detail operations (HU6-9, HU20-25)
 type ScheduleDetailRepository interface {
 	BeginTx(ctx context.Context) (Tx, error)
 
@@ -180,4 +180,19 @@ type ScheduleDetailRepository interface {
 
 	// Conflict detection
 	CheckTimeConflict(ctx context.Context, scheduleID string, dayOfWeek int, openingTime, closingTime string, excludeDetailID string) (bool, error)
+
+	// Schedule Exception operations - read (HU20-25)
+	GetExceptionsByScheduleID(ctx context.Context, scheduleID string) ([]domain.ScheduleDetail, error)
+	GetExceptionsByScheduleIDForUpdate(ctx context.Context, tx Tx, scheduleID string) ([]domain.ScheduleDetail, error)
+	GetExceptionByID(ctx context.Context, exceptionID string) (*domain.ScheduleDetail, error)
+
+	// Exception conflict detection (HU20)
+	CheckExceptionDateConflict(ctx context.Context, scheduleID string, excludeExceptionID string, startDate string, endDate string) (bool, error)
+
+	// Duplicate detection for REGULAR entries (Validation R1, R2, R3)
+	CheckDayIsClosed(ctx context.Context, scheduleID string, dayOfWeek int, excludeDetailID string) (bool, error)
+	CheckDayHasTimeSlots(ctx context.Context, scheduleID string, dayOfWeek int, excludeDetailID string) (bool, error)
+
+	// Redundancy detection for EXCEPTION entries (Validation E1)
+	CheckExceptionIsRedundant(ctx context.Context, scheduleID string, dayOfWeek int) (bool, error)
 }

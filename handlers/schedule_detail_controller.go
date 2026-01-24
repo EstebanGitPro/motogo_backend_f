@@ -99,6 +99,10 @@ func (h *handler) CreateScheduleDetail(
 				h.Response.Error(c, domain.MsgScheduleDetailInvalidTime)
 			case domain.ErrScheduleDetailTimeConflict:
 				h.Response.Error(c, domain.MsgScheduleDetailTimeConflict)
+			case domain.ErrScheduleDetailDayAlreadyClosed:
+				h.Response.Error(c, domain.MsgScheduleDetailDayAlreadyClosed)
+			case domain.ErrScheduleDetailDayHasSlots:
+				h.Response.Error(c, domain.MsgScheduleDetailDayHasSlots)
 			case domain.ErrBranchNotFound:
 				h.Response.Error(c, domain.MsgBranchNotFound)
 			case domain.ErrForbidden:
@@ -220,5 +224,140 @@ func (h *handler) ListScheduleDetails(
 			"count", len(details))
 
 		h.Response.SuccessWithData(c, domain.MsgScheduleDetailsListed, response)
+	}
+}
+
+// UpdateScheduleDetail handles PUT /schedule-details/:id (HU7)
+// @Summary Update a time slot
+// @Description Updates an existing time slot (schedule detail)
+// @Tags Schedule Details
+// @Accept json
+// @Produce json
+// @Param id path string true "Schedule Detail ID (encoded)"
+// @Param body body UpdateScheduleDetailRequest true "Update data"
+// @Success 200 {object} StandardResponse
+// @Failure 400 {object} StandardResponse
+// @Failure 403 {object} StandardResponse
+// @Failure 404 {object} StandardResponse
+// @Failure 409 {object} StandardResponse
+// @Router /schedule-details/{id} [put]
+func (h *handler) UpdateScheduleDetail(
+	scheduleDetailInteractor *interactor.ScheduleDetailInteractor,
+) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		traceID := middleware.GetRequestID(c)
+		log := Logger.WithTraceID(traceID)
+
+		log.Info(logger.LogScheduleDetailControllerUpdateRequest,
+			"method", c.Request.Method,
+			"path", c.Request.URL.Path,
+			"client_ip", c.ClientIP())
+
+		// 1. Get authenticated person from context
+		person, _ := middleware.GetAuthenticatedUser(c)
+
+		// 2. Decode detail ID
+		encodedDetailID := c.Param("id")
+		detailID, err := h.DecodeID(encodedDetailID)
+		if err != nil {
+			log.Warn(logger.LogScheduleDetailControllerIDDecodeError, "encoded_id", encodedDetailID, "error", err)
+			h.Response.Error(c, domain.MsgScheduleDetailNotFound)
+			return
+		}
+
+		// 3. Parse request body
+		var req UpdateScheduleDetailRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			log.Warn(logger.LogScheduleDetailControllerBindError, "error", err)
+			h.Response.Error(c, domain.MsgValBadFormat)
+			return
+		}
+		req.Sanitize()
+
+		// 4. Build domain object (only updatable fields)
+		isClosed := false
+		if req.IsClosed != nil {
+			isClosed = *req.IsClosed
+		}
+		detail := domain.ScheduleDetail{
+			ID:          detailID,
+			OpeningTime: req.OpeningTime,
+			ClosingTime: req.ClosingTime,
+			IsClosed:    isClosed,
+		}
+
+		// 5. Update detail
+		if err := scheduleDetailInteractor.UpdateDetail(c.Request.Context(), detail, person.ID); err != nil {
+			log.Error(logger.LogScheduleDetailControllerUpdateError, "error", err, "detail_id", detailID)
+			switch err {
+			case domain.ErrScheduleDetailNotFound:
+				h.Response.Error(c, domain.MsgScheduleDetailNotFound)
+			case domain.ErrScheduleDetailInvalidTime:
+				h.Response.Error(c, domain.MsgScheduleDetailInvalidTime)
+			case domain.ErrScheduleDetailTimeConflict:
+				h.Response.Error(c, domain.MsgScheduleDetailTimeConflict)
+			case domain.ErrForbidden:
+				h.Response.Error(c, domain.MsgForbidden)
+			default:
+				h.Response.Error(c, domain.MsgServerError)
+			}
+			return
+		}
+
+		log.Success(logger.LogScheduleDetailControllerUpdateOK, "detail_id", detailID)
+		h.Response.Success(c, domain.MsgScheduleDetailUpdated)
+	}
+}
+
+// DeleteScheduleDetail handles DELETE /schedule-details/:id (HU8)
+// @Summary Delete a time slot
+// @Description Deletes an existing time slot (schedule detail)
+// @Tags Schedule Details
+// @Produce json
+// @Param id path string true "Schedule Detail ID (encoded)"
+// @Success 200 {object} StandardResponse
+// @Failure 403 {object} StandardResponse
+// @Failure 404 {object} StandardResponse
+// @Router /schedule-details/{id} [delete]
+func (h *handler) DeleteScheduleDetail(
+	scheduleDetailInteractor *interactor.ScheduleDetailInteractor,
+) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		traceID := middleware.GetRequestID(c)
+		log := Logger.WithTraceID(traceID)
+
+		log.Info(logger.LogScheduleDetailControllerDeleteRequest,
+			"method", c.Request.Method,
+			"path", c.Request.URL.Path,
+			"client_ip", c.ClientIP())
+
+		// 1. Get authenticated person from context
+		person, _ := middleware.GetAuthenticatedUser(c)
+
+		// 2. Decode detail ID
+		encodedDetailID := c.Param("id")
+		detailID, err := h.DecodeID(encodedDetailID)
+		if err != nil {
+			log.Warn(logger.LogScheduleDetailControllerIDDecodeError, "encoded_id", encodedDetailID, "error", err)
+			h.Response.Error(c, domain.MsgScheduleDetailNotFound)
+			return
+		}
+
+		// 3. Delete detail
+		if err := scheduleDetailInteractor.DeleteDetail(c.Request.Context(), detailID, person.ID); err != nil {
+			log.Error(logger.LogScheduleDetailControllerDeleteError, "error", err, "detail_id", detailID)
+			switch err {
+			case domain.ErrScheduleDetailNotFound:
+				h.Response.Error(c, domain.MsgScheduleDetailNotFound)
+			case domain.ErrForbidden:
+				h.Response.Error(c, domain.MsgForbidden)
+			default:
+				h.Response.Error(c, domain.MsgServerError)
+			}
+			return
+		}
+
+		log.Success(logger.LogScheduleDetailControllerDeleteOK, "detail_id", detailID)
+		h.Response.Success(c, domain.MsgScheduleDetailDeleted)
 	}
 }
