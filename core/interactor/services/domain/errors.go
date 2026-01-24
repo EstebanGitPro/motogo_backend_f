@@ -364,10 +364,12 @@ const (
 
 // Schedule Detail Errors (MOD_HD_*) - HU6-9
 var (
-	ErrScheduleDetailNotFound     = errors.New("ERR_SCHEDULE_DETAIL_NOT_FOUND")
-	ErrScheduleDetailTimeConflict = errors.New("ERR_SCHEDULE_DETAIL_TIME_CONFLICT")
-	ErrScheduleDetailInvalidTime  = errors.New("ERR_SCHEDULE_DETAIL_INVALID_TIME")
-	ErrScheduleDetailInvalidDay   = errors.New("ERR_SCHEDULE_DETAIL_INVALID_DAY")
+	ErrScheduleDetailNotFound         = errors.New("ERR_SCHEDULE_DETAIL_NOT_FOUND")
+	ErrScheduleDetailTimeConflict     = errors.New("ERR_SCHEDULE_DETAIL_TIME_CONFLICT")
+	ErrScheduleDetailInvalidTime      = errors.New("ERR_SCHEDULE_DETAIL_INVALID_TIME")
+	ErrScheduleDetailInvalidDay       = errors.New("ERR_SCHEDULE_DETAIL_INVALID_DAY")
+	ErrScheduleDetailDayAlreadyClosed = errors.New("ERR_SCHEDULE_DETAIL_DAY_CLOSED")
+	ErrScheduleDetailDayHasSlots      = errors.New("ERR_SCHEDULE_DETAIL_DAY_HAS_SLOTS")
 )
 
 // Schedule Detail Module (MOD_HD_*) - HU6-9
@@ -380,10 +382,12 @@ const (
 	MsgScheduleDetailsListed   = "MOD_HD_LIST_EXI_00001"
 
 	// Error messages
-	MsgScheduleDetailNotFound     = "MOD_HD_NOT_FOUND_ERR_00001"
-	MsgScheduleDetailTimeConflict = "MOD_HD_CONFLICT_ERR_00001"
-	MsgScheduleDetailInvalidTime  = "MOD_HD_TIME_ERR_00001"
-	MsgScheduleDetailInvalidDay   = "MOD_HD_DAY_ERR_00001"
+	MsgScheduleDetailNotFound         = "MOD_HD_NOT_FOUND_ERR_00001"
+	MsgScheduleDetailTimeConflict     = "MOD_HD_CONFLICT_ERR_00001"
+	MsgScheduleDetailInvalidTime      = "MOD_HD_TIME_ERR_00001"
+	MsgScheduleDetailInvalidDay       = "MOD_HD_DAY_ERR_00001"
+	MsgScheduleDetailDayAlreadyClosed = "MOD_HD_DAY_CLOSED_ERR_00001"
+	MsgScheduleDetailDayHasSlots      = "MOD_HD_DAY_HAS_SLOTS_ERR_00001"
 )
 
 // Schedule Exception Errors (MOD_EH_*) - HU20-25
@@ -392,6 +396,7 @@ var (
 	ErrScheduleExceptionDateConflict = errors.New("ERR_SCHEDULE_EXCEPTION_DATE_CONFLICT")
 	ErrScheduleExceptionDatePast     = errors.New("ERR_SCHEDULE_EXCEPTION_DATE_PAST")
 	ErrScheduleExceptionInvalidTime  = errors.New("ERR_SCHEDULE_EXCEPTION_INVALID_TIME")
+	ErrScheduleExceptionRedundant    = errors.New("ERR_SCHEDULE_EXCEPTION_REDUNDANT")
 )
 
 // Schedule Exception Module (MOD_EH_*) - HU20-25
@@ -410,4 +415,5 @@ const (
 	MsgScheduleExceptionDateConflict = "MOD_EH_DATE_CONFLICT_ERR_00001"
 	MsgScheduleExceptionDatePast     = "MOD_EH_DATE_PAST_ERR_00001"
 	MsgScheduleExceptionInvalidTime  = "MOD_EH_TIME_ERR_00001"
+	MsgScheduleExceptionRedundant    = "MOD_EH_REDUNDANT_ERR_00001"
 )

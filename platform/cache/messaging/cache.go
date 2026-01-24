@@ -387,10 +387,30 @@ var messageCodeToHTTPStatus = map[string]int{
 	"MOD_HD_DELETE_EXI_00001": http.StatusOK,      // 200 - Detalle horario eliminado (HU8)
 	"MOD_HD_LIST_EXI_00001":   http.StatusOK,      // 200 - Detalles horario listados (HU9)
 	// Error messages
-	"MOD_HD_NOT_FOUND_ERR_00001": http.StatusNotFound,   // 404 - Detalle horario no encontrado
-	"MOD_HD_CONFLICT_ERR_00001":  http.StatusConflict,   // 409 - Conflicto de horario
-	"MOD_HD_TIME_ERR_00001":      http.StatusBadRequest, // 400 - Formato hora inválido
-	"MOD_HD_DAY_ERR_00001":       http.StatusBadRequest, // 400 - Día de la semana inválido
+	"MOD_HD_NOT_FOUND_ERR_00001":     http.StatusNotFound,   // 404 - Detalle horario no encontrado
+	"MOD_HD_CONFLICT_ERR_00001":      http.StatusConflict,   // 409 - Conflicto de horario
+	"MOD_HD_TIME_ERR_00001":          http.StatusBadRequest, // 400 - Formato hora inválido
+	"MOD_HD_DAY_ERR_00001":           http.StatusBadRequest, // 400 - Día de la semana inválido
+	"MOD_HD_DAY_CLOSED_ERR_00001":    http.StatusConflict,   // 409 - Día ya cerrado (no duplicar)
+	"MOD_HD_DAY_HAS_SLOTS_ERR_00001": http.StatusConflict,   // 409 - Día tiene franjas (no cerrar)
+
+	// ========================================
+	// Schedule Exception Module (MOD_EH_*) - HU20-25
+	// ========================================
+	// Success messages
+	"MOD_EH_CREATE_EXI_00001":     http.StatusCreated, // 201 - Excepción creada
+	"MOD_EH_GET_EXI_00001":        http.StatusOK,      // 200 - Excepción consultada
+	"MOD_EH_LIST_EXI_00001":       http.StatusOK,      // 200 - Excepciones listadas
+	"MOD_EH_UPDATE_EXI_00001":     http.StatusOK,      // 200 - Excepción actualizada
+	"MOD_EH_DELETE_EXI_00001":     http.StatusOK,      // 200 - Excepción eliminada
+	"MOD_EH_ACTIVATE_EXI_00001":   http.StatusOK,      // 200 - Excepción activada
+	"MOD_EH_DEACTIVATE_EXI_00001": http.StatusOK,      // 200 - Excepción desactivada
+	// Error messages
+	"MOD_EH_NOT_FOUND_ERR_00001":     http.StatusNotFound,   // 404 - Excepción no encontrada
+	"MOD_EH_DATE_CONFLICT_ERR_00001": http.StatusConflict,   // 409 - Fecha duplicada/solapada
+	"MOD_EH_DATE_PAST_ERR_00001":     http.StatusBadRequest, // 400 - Fecha pasada
+	"MOD_EH_TIME_ERR_00001":          http.StatusBadRequest, // 400 - Formato hora inválido
+	"MOD_EH_REDUNDANT_ERR_00001":     http.StatusConflict,   // 409 - Excepción redundante
 
 }
 
