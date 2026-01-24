@@ -143,6 +143,10 @@ type repository struct {
 	stmtGetExceptionsByScheduleID  *sql.Stmt
 	stmtGetExceptionByID           *sql.Stmt
 	stmtCheckExceptionDateConflict *sql.Stmt
+	// Duplicate detection statements (Validation Rules)
+	stmtCheckDayIsClosed          *sql.Stmt
+	stmtCheckDayHasTimeSlots      *sql.Stmt
+	stmtCheckExceptionIsRedundant *sql.Stmt
 }
 
 // NewRepository creates a new ScheduleDetailRepository with prepared statements (fail-fast pattern)
@@ -212,6 +216,25 @@ func NewRepository(db *sql.DB) (output.ScheduleDetailRepository, error) {
 		return nil, fmt.Errorf("error preparing stmtCheckExceptionDateConflict: %w", err)
 	}
 
+	// Duplicate detection prepared statements (Validation Rules)
+	stmtCheckDayIsClosed, err := db.Prepare(queryCheckDayIsClosed)
+	if err != nil {
+		log.Error(logger.LogScheduleDetailRepoPrepareError, "statement", "CheckDayIsClosed", "error", err)
+		return nil, fmt.Errorf("error preparing stmtCheckDayIsClosed: %w", err)
+	}
+
+	stmtCheckDayHasTimeSlots, err := db.Prepare(queryCheckDayHasTimeSlots)
+	if err != nil {
+		log.Error(logger.LogScheduleDetailRepoPrepareError, "statement", "CheckDayHasTimeSlots", "error", err)
+		return nil, fmt.Errorf("error preparing stmtCheckDayHasTimeSlots: %w", err)
+	}
+
+	stmtCheckExceptionIsRedundant, err := db.Prepare(queryCheckExceptionIsRedundant)
+	if err != nil {
+		log.Error(logger.LogScheduleDetailRepoPrepareError, "statement", "CheckExceptionIsRedundant", "error", err)
+		return nil, fmt.Errorf("error preparing stmtCheckExceptionIsRedundant: %w", err)
+	}
+
 	return &repository{
 		db:                             db,
 		stmtSaveDetail:                 stmtSaveDetail,
@@ -224,6 +247,9 @@ func NewRepository(db *sql.DB) (output.ScheduleDetailRepository, error) {
 		stmtGetExceptionsByScheduleID:  stmtGetExceptionsByScheduleID,
 		stmtGetExceptionByID:           stmtGetExceptionByID,
 		stmtCheckExceptionDateConflict: stmtCheckExceptionDateConflict,
+		stmtCheckDayIsClosed:           stmtCheckDayIsClosed,
+		stmtCheckDayHasTimeSlots:       stmtCheckDayHasTimeSlots,
+		stmtCheckExceptionIsRedundant:  stmtCheckExceptionIsRedundant,
 	}, nil
 }
 
