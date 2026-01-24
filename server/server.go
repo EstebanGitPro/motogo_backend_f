@@ -276,6 +276,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		// === SCHEDULE DETAILS ENDPOINTS (HU6-9) ===
 		// POST /branches/:id/schedules/details - Crear franja horaria (HU6)
 		protected.POST("/branches/:id/schedules/details",
+			validator.WithValidateScheduleDetail(),
 			middleware.RequireRole(domain.RoleRepresentative),
 			handler.CreateScheduleDetail(dependencies.ScheduleDetailInteractor, dependencies.ScheduleInteractor),
 		)
@@ -317,6 +318,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 
 		// PUT /schedule-exceptions/:id - Modificar excepción de horario (HU21)
 		protected.PUT("/schedule-exceptions/:id",
+			validator.WithValidateUpdateScheduleException(),
 			middleware.RequireRole(domain.RoleRepresentative),
 			handler.UpdateScheduleException(dependencies.ScheduleExceptionInteractor),
 		)
@@ -354,12 +356,14 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 
 		// POST /franchises - Registrar nueva franquicia (solo REPRESENTANTE)
 		protected.POST("/franchises",
+			validator.WithValidateFranchise(),
 			middleware.RequireRole(domain.RoleRepresentative),
 			handler.RegisterFranchise(dependencies.FranchiseInteractor),
 		)
 
 		// PUT /franchises/:id - Modificar franquicia (solo REPRESENTANTE dueño) (HU27)
 		protected.PUT("/franchises/:id",
+			validator.WithValidateFranchise(),
 			middleware.RequireRole(domain.RoleRepresentative),
 			handler.UpdateFranchise(dependencies.FranchiseInteractor),
 		)
