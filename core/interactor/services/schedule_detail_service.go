@@ -14,8 +14,8 @@ import (
 
 var scheduleDetailLog logger.Logger = logger.NewSlogLogger()
 
-// timeRegex validates HH:MM format (24-hour)
-var timeRegex = regexp.MustCompile(`^([01]?[0-9]|2[0-3]):[0-5][0-9]$`)
+// timeRegex validates HH:MM or HH:MM:SS format (24-hour, optional seconds)
+var timeRegex = regexp.MustCompile(`^([01]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$`)
 
 // scheduleDetailService implements input.ScheduleDetailService
 type scheduleDetailService struct {
@@ -241,9 +241,9 @@ func (s *scheduleDetailService) ValidateTimeRange(openingTime, closingTime strin
 		return domain.ErrScheduleDetailInvalidTime
 	}
 
-	// Parse times and validate range
-	opening, _ := time.Parse("15:04", openingTime)
-	closing, _ := time.Parse("15:04", closingTime)
+	// Parse times and validate range (try HH:mm:ss first, then HH:mm)
+	opening := parseTime(openingTime)
+	closing := parseTime(closingTime)
 
 	if !closing.After(opening) {
 		scheduleDetailLog.Warn(logger.LogScheduleDetailServiceInvalidTimeRange,
@@ -252,6 +252,18 @@ func (s *scheduleDetailService) ValidateTimeRange(openingTime, closingTime strin
 	}
 
 	return nil
+}
+
+// parseTime tries to parse time in HH:mm:ss format first, then HH:mm
+func parseTime(timeStr string) time.Time {
+	// Try HH:mm:ss format first (from DB)
+	t, err := time.Parse("15:04:05", timeStr)
+	if err == nil {
+		return t
+	}
+	// Fallback to HH:mm format (from API)
+	t, _ = time.Parse("15:04", timeStr)
+	return t
 }
 
 // CheckTimeConflict checks if a time slot conflicts with existing slots for the same day
