@@ -141,27 +141,4 @@ func (r *repository) GetScheduleByID(ctx context.Context, scheduleID string) (*d
 	return &schedule, nil
 }
 
-// GetScheduleByBranchID retrieves a schedule by branch ID
-func (r *repository) GetScheduleByBranchID(ctx context.Context, branchID string) (*domain.BranchSchedule, error) {
-	var schedule domain.BranchSchedule
 
-	err := r.stmtGetScheduleByBranchID.QueryRowContext(ctx, branchID).Scan(
-		&schedule.ID,
-		&schedule.BranchID,
-		&schedule.Active,
-		&schedule.StartDate,
-		&schedule.EndDate,
-		&schedule.CreatedAt,
-		&schedule.UpdatedAt,
-	)
-
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil // Not found is not an error - branch simply doesn't have a schedule
-		}
-		log.Error(logger.LogScheduleRepoGetByBranchError, "branch_id", branchID, "error", err)
-		return nil, err
-	}
-
-	return &schedule, nil
-}

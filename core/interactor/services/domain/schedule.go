@@ -79,15 +79,16 @@ type BranchSchedule struct {
 
 // ScheduleDetail represents a specific time slot (HU6-9, HU20-25)
 type ScheduleDetail struct {
-	ID            string     `json:"id"`
-	ScheduleID    string     `json:"schedule_id"`
-	EntryType     EntryType  `json:"entry_type"`
-	DayOfWeek     *int       `json:"day_of_week,omitempty"`
-	ExceptionDate *time.Time `json:"exception_date,omitempty"`
-	OpeningTime   *string    `json:"opening_time,omitempty"`
-	ClosingTime   *string    `json:"closing_time,omitempty"`
-	IsClosed      bool       `json:"is_closed"`
-	Active        bool       `json:"active"`
-	CreatedAt     time.Time  `json:"created_at"`
-	UpdatedAt     time.Time  `json:"updated_at"`
+	ID                 string     `json:"id"`
+	ScheduleID         string     `json:"schedule_id"`
+	EntryType          EntryType  `json:"entry_type"`
+	DayOfWeek          *int       `json:"day_of_week,omitempty"`
+	ExceptionStartDate *time.Time `json:"exception_start_date,omitempty"`
+	ExceptionEndDate   *time.Time `json:"exception_end_date,omitempty"`
+	OpeningTime        *string    `json:"opening_time,omitempty"`
+	ClosingTime        *string    `json:"closing_time,omitempty"`
+	IsClosed           bool       `json:"is_closed"`
+	Active             bool       `json:"active"`
+	CreatedAt          time.Time  `json:"created_at"`
+	UpdatedAt          time.Time  `json:"updated_at"`
 }
