@@ -67,13 +67,41 @@ func (s *scheduleDetailService) CreateDetail(
 		return nil, domain.ErrScheduleDetailInvalidDay
 	}
 
-	// 3. Validate time format and range if not closed
+	// 3. Validation R1/R2: Check if day is already marked as closed
+	dayIsClosed, err := s.detailRepo.CheckDayIsClosed(ctx, detail.ScheduleID, *detail.DayOfWeek, "")
+	if err != nil {
+		return nil, err
+	}
+	if dayIsClosed {
+		scheduleDetailLog.Warn(logger.LogScheduleDetailServiceTimeConflict,
+			"schedule_id", detail.ScheduleID,
+			"day_of_week", *detail.DayOfWeek,
+			"reason", "day_already_closed")
+		return nil, domain.ErrScheduleDetailDayAlreadyClosed
+	}
+
+	// 4. Validation R3: If trying to set is_closed=true, check if day has time slots
+	if detail.IsClosed {
+		dayHasSlots, err := s.detailRepo.CheckDayHasTimeSlots(ctx, detail.ScheduleID, *detail.DayOfWeek, "")
+		if err != nil {
+			return nil, err
+		}
+		if dayHasSlots {
+			scheduleDetailLog.Warn(logger.LogScheduleDetailServiceTimeConflict,
+				"schedule_id", detail.ScheduleID,
+				"day_of_week", *detail.DayOfWeek,
+				"reason", "day_has_time_slots")
+			return nil, domain.ErrScheduleDetailDayHasSlots
+		}
+	}
+
+	// 5. Validate time format and range if not closed
 	if !detail.IsClosed {
 		if err := s.ValidateTimeRange(*detail.OpeningTime, *detail.ClosingTime); err != nil {
 			return nil, err
 		}
 
-		// 4. Check for time conflicts
+		// 6. Check for time conflicts
 		hasConflict, err := s.detailRepo.CheckTimeConflict(
 			ctx,
 			detail.ScheduleID,

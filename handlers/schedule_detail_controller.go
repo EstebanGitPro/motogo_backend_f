@@ -99,6 +99,10 @@ func (h *handler) CreateScheduleDetail(
 				h.Response.Error(c, domain.MsgScheduleDetailInvalidTime)
 			case domain.ErrScheduleDetailTimeConflict:
 				h.Response.Error(c, domain.MsgScheduleDetailTimeConflict)
+			case domain.ErrScheduleDetailDayAlreadyClosed:
+				h.Response.Error(c, domain.MsgScheduleDetailDayAlreadyClosed)
+			case domain.ErrScheduleDetailDayHasSlots:
+				h.Response.Error(c, domain.MsgScheduleDetailDayHasSlots)
 			case domain.ErrBranchNotFound:
 				h.Response.Error(c, domain.MsgBranchNotFound)
 			case domain.ErrForbidden:
