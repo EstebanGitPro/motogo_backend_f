@@ -39,7 +39,7 @@ func (i *ScheduleExceptionInteractor) CreateException(
 ) (*domain.ScheduleDetail, error) {
 	scheduleExceptionInteractorLog.Info(logger.LogScheduleDetailInteractorCreateStart,
 		"schedule_id", exception.ScheduleID,
-		"exception_date", exception.ExceptionDate,
+		"exception_start_date", exception.ExceptionStartDate,
 		"representative_id", representativeID)
 
 	// 1. Verify ownership of branch

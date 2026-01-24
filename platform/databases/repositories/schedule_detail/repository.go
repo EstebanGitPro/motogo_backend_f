@@ -14,25 +14,25 @@ const (
 	// Schedule Detail queries - maps to schedule_details table
 	querySaveDetail = `
 		INSERT INTO schedule_details (
-			id, schedule_id, entry_type, day_of_week, exception_date,
+			id, schedule_id, entry_type, day_of_week, exception_start_date, exception_end_date,
 			opening_time, closing_time, is_closed, active, created_at, updated_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
 	`
 	queryGetDetailByID = `
-		SELECT id, schedule_id, entry_type, day_of_week, exception_date,
+		SELECT id, schedule_id, entry_type, day_of_week, exception_start_date, exception_end_date,
 			opening_time, closing_time, is_closed, active, created_at, updated_at
 		FROM schedule_details
 		WHERE id = ?
 	`
 	queryGetDetailsByScheduleID = `
-		SELECT id, schedule_id, entry_type, day_of_week, exception_date,
+		SELECT id, schedule_id, entry_type, day_of_week, exception_start_date, exception_end_date,
 			opening_time, closing_time, is_closed, active, created_at, updated_at
 		FROM schedule_details
 		WHERE schedule_id = ?
 		ORDER BY day_of_week, opening_time
 	`
 	queryGetDetailsByScheduleAndDay = `
-		SELECT id, schedule_id, entry_type, day_of_week, exception_date,
+		SELECT id, schedule_id, entry_type, day_of_week, exception_start_date, exception_end_date,
 			opening_time, closing_time, is_closed, active, created_at, updated_at
 		FROM schedule_details
 		WHERE schedule_id = ? AND day_of_week = ? AND entry_type = 'REGULAR'
@@ -65,27 +65,66 @@ const (
 	// Schedule Exception queries (HU20-25)
 	// ============================================
 
-	// GetExceptionsByScheduleID retrieves all exceptions for a schedule ordered by date
+	// GetExceptionsByScheduleID retrieves all exceptions for a schedule ordered by start date
 	queryGetExceptionsByScheduleID = `
-		SELECT id, schedule_id, entry_type, day_of_week, exception_date,
+		SELECT id, schedule_id, entry_type, day_of_week, exception_start_date, exception_end_date,
 			opening_time, closing_time, is_closed, active, created_at, updated_at
 		FROM schedule_details
 		WHERE schedule_id = ? AND entry_type = 'EXCEPTION'
-		ORDER BY exception_date ASC
+		ORDER BY exception_start_date ASC
 	`
 
 	// GetExceptionByID retrieves a specific exception ensuring it's an EXCEPTION type
 	queryGetExceptionByID = `
-		SELECT id, schedule_id, entry_type, day_of_week, exception_date,
+		SELECT id, schedule_id, entry_type, day_of_week, exception_start_date, exception_end_date,
 			opening_time, closing_time, is_closed, active, created_at, updated_at
 		FROM schedule_details
 		WHERE id = ? AND entry_type = 'EXCEPTION'
 	`
 
-	// CheckExceptionDateConflict checks if an exception already exists for the given date
+	// CheckExceptionDateConflict checks if an exception already exists with overlapping dates
+	// Overlap condition: existing.start <= new.end AND existing.end >= new.start
 	queryCheckExceptionDateConflict = `
 		SELECT COUNT(*) FROM schedule_details
-		WHERE schedule_id = ? AND exception_date = ? AND entry_type = 'EXCEPTION' AND id != ?
+		WHERE schedule_id = ? 
+		  AND entry_type = 'EXCEPTION' 
+		  AND id != ?
+		  AND exception_start_date <= ?
+		  AND exception_end_date >= ?
+	`
+
+	// ============================================
+	// Duplicate Detection queries (Validation Rules)
+	// ============================================
+
+	// CheckDayIsClosed checks if a day already has a closed entry (R1, R2)
+	queryCheckDayIsClosed = `
+		SELECT COUNT(*) FROM schedule_details
+		WHERE schedule_id = ? 
+		  AND day_of_week = ? 
+		  AND entry_type = 'REGULAR'
+		  AND is_closed = TRUE
+		  AND id != ?
+	`
+
+	// CheckDayHasTimeSlots checks if a day has time slot entries (not closed) (R3)
+	queryCheckDayHasTimeSlots = `
+		SELECT COUNT(*) FROM schedule_details
+		WHERE schedule_id = ? 
+		  AND day_of_week = ? 
+		  AND entry_type = 'REGULAR'
+		  AND is_closed = FALSE
+		  AND id != ?
+	`
+
+	// CheckExceptionIsRedundant checks if exception is redundant because day is already closed in REGULAR (E1)
+	queryCheckExceptionIsRedundant = `
+		SELECT COUNT(*) FROM schedule_details
+		WHERE schedule_id = ? 
+		  AND day_of_week = ? 
+		  AND entry_type = 'REGULAR'
+		  AND is_closed = TRUE
+		  AND active = TRUE
 	`
 )
 

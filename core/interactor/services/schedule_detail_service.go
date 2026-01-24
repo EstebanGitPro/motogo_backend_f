@@ -277,7 +277,7 @@ func (s *scheduleDetailService) CreateException(
 ) (*domain.ScheduleDetail, error) {
 	scheduleDetailLog.Info(logger.LogScheduleDetailServiceCreateStart,
 		"schedule_id", exception.ScheduleID,
-		"exception_date", exception.ExceptionDate)
+		"exception_start_date", exception.ExceptionStartDate)
 
 	// 1. Verify schedule exists
 	schedule, err := s.scheduleRepo.GetScheduleByID(ctx, exception.ScheduleID)
@@ -349,7 +349,7 @@ func (s *scheduleDetailService) CreateException(
 	scheduleDetailLog.Info(logger.LogScheduleDetailServiceCreateOK,
 		"exception_id", exception.ID,
 		"schedule_id", exception.ScheduleID,
-		"exception_date", exception.ExceptionDate)
+		"exception_start_date", exception.ExceptionStartDate)
 
 	return &exception, nil
 }
@@ -412,11 +412,18 @@ func (s *scheduleDetailService) UpdateException(
 		}
 	}
 
-	// 3. Update exception (preserve existing exception_date and schedule_id)
+	// 3. Update exception (preserve existing exception dates and schedule_id)
 	exception.ScheduleID = existing.ScheduleID
-	exception.ExceptionDate = existing.ExceptionDate
+	exception.ExceptionStartDate = existing.ExceptionStartDate
+	exception.ExceptionEndDate = existing.ExceptionEndDate
 	exception.EntryType = domain.EntryTypeException
 	exception.UpdatedAt = time.Now()
+
+	// 3.5 Validation: If is_closed=true, clear time fields to prevent inconsistent data
+	if exception.IsClosed {
+		exception.OpeningTime = nil
+		exception.ClosingTime = nil
+	}
 
 	if err := s.detailRepo.UpdateScheduleDetail(ctx, tx, exception); err != nil {
 		scheduleDetailLog.Error(logger.LogScheduleDetailServiceUpdateError,

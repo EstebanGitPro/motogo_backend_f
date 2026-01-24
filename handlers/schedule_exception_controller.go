@@ -16,10 +16,11 @@ import (
 
 // CreateScheduleExceptionRequest represents the request body for creating an exception
 type CreateScheduleExceptionRequest struct {
-	ExceptionDate string  `json:"exception_date" binding:"required"` // YYYY-MM-DD
-	OpeningTime   *string `json:"opening_time"`                      // HH:mm
-	ClosingTime   *string `json:"closing_time"`                      // HH:mm
-	IsClosed      bool    `json:"is_closed"`
+	ExceptionStartDate string  `json:"exception_start_date" binding:"required"` // YYYY-MM-DD
+	ExceptionEndDate   string  `json:"exception_end_date"`                      // YYYY-MM-DD (optional, defaults to start date)
+	OpeningTime        *string `json:"opening_time"`                            // HH:mm
+	ClosingTime        *string `json:"closing_time"`                            // HH:mm
+	IsClosed           bool    `json:"is_closed"`
 }
 
 // UpdateScheduleExceptionRequest represents the request body for updating an exception
@@ -31,16 +32,18 @@ type UpdateScheduleExceptionRequest struct {
 
 // ScheduleExceptionResponse represents the response for a schedule exception
 type ScheduleExceptionResponse struct {
-	ID                     string `json:"id"`
-	ScheduleID             string `json:"schedule_id"`
-	ExceptionDate          string `json:"exception_date"`
-	ExceptionDateFormatted string `json:"exception_date_formatted"`
-	DayName                string `json:"day_name"`
-	OpeningTime            string `json:"opening_time,omitempty"`
-	ClosingTime            string `json:"closing_time,omitempty"`
-	IsClosed               bool   `json:"is_closed"`
-	Active                 bool   `json:"active"`
-	Links                  []Link `json:"_links"`
+	ID                          string `json:"id"`
+	ScheduleID                  string `json:"schedule_id"`
+	ExceptionStartDate          string `json:"exception_start_date"`
+	ExceptionEndDate            string `json:"exception_end_date"`
+	ExceptionStartDateFormatted string `json:"exception_start_date_formatted"`
+	ExceptionEndDateFormatted   string `json:"exception_end_date_formatted,omitempty"`
+	DayName                     string `json:"day_name"`
+	OpeningTime                 string `json:"opening_time,omitempty"`
+	ClosingTime                 string `json:"closing_time,omitempty"`
+	IsClosed                    bool   `json:"is_closed"`
+	Active                      bool   `json:"active"`
+	Links                       []Link `json:"_links"`
 }
 
 // ScheduleExceptionListResponse represents the list response
@@ -63,10 +66,17 @@ func NewScheduleExceptionResponse(
 		Links:      links,
 	}
 
-	if exception.ExceptionDate != nil {
-		response.ExceptionDate = exception.ExceptionDate.Format("2006-01-02")
-		response.ExceptionDateFormatted = formatDateSpanish(*exception.ExceptionDate)
-		response.DayName = getDayNameSpanish(*exception.ExceptionDate)
+	if exception.ExceptionStartDate != nil {
+		response.ExceptionStartDate = exception.ExceptionStartDate.Format("2006-01-02")
+		response.ExceptionStartDateFormatted = formatDateSpanish(*exception.ExceptionStartDate)
+		response.DayName = getDayNameSpanish(*exception.ExceptionStartDate)
+	}
+
+	if exception.ExceptionEndDate != nil {
+		response.ExceptionEndDate = exception.ExceptionEndDate.Format("2006-01-02")
+		if !exception.ExceptionEndDate.Equal(*exception.ExceptionStartDate) {
+			response.ExceptionEndDateFormatted = formatDateSpanish(*exception.ExceptionEndDate)
+		}
 	}
 
 	if exception.OpeningTime != nil {
@@ -173,21 +183,35 @@ func (h *handler) CreateScheduleException(
 			return
 		}
 
-		// 5. Parse exception date
-		exceptionDate, err := time.Parse("2006-01-02", req.ExceptionDate)
+		// 5. Parse exception dates (start date required, end date optional)
+		// IMPORTANT: Use ParseInLocation with time.Local to match MySQL loc=Local config
+		// Using time.Parse creates UTC dates which cause a 1-day shift when MySQL converts them
+		exceptionStartDate, err := time.ParseInLocation("2006-01-02", req.ExceptionStartDate, time.Local)
 		if err != nil {
-			log.Warn(logger.LogScheduleDetailControllerBindError, "error", err, "date", req.ExceptionDate)
+			log.Warn(logger.LogScheduleDetailControllerBindError, "error", err, "date", req.ExceptionStartDate)
 			h.Response.Error(c, domain.MsgScheduleExceptionDatePast)
 			return
 		}
 
+		// If end date not provided, use start date (single day exception)
+		exceptionEndDate := exceptionStartDate
+		if req.ExceptionEndDate != "" {
+			exceptionEndDate, err = time.ParseInLocation("2006-01-02", req.ExceptionEndDate, time.Local)
+			if err != nil {
+				log.Warn(logger.LogScheduleDetailControllerBindError, "error", err, "date", req.ExceptionEndDate)
+				h.Response.Error(c, domain.MsgScheduleExceptionDatePast)
+				return
+			}
+		}
+
 		// 6. Build domain object
 		exception := domain.ScheduleDetail{
-			ScheduleID:    schedule.ID,
-			ExceptionDate: &exceptionDate,
-			OpeningTime:   req.OpeningTime,
-			ClosingTime:   req.ClosingTime,
-			IsClosed:      req.IsClosed,
+			ScheduleID:         schedule.ID,
+			ExceptionStartDate: &exceptionStartDate,
+			ExceptionEndDate:   &exceptionEndDate,
+			OpeningTime:        req.OpeningTime,
+			ClosingTime:        req.ClosingTime,
+			IsClosed:           req.IsClosed,
 		}
 
 		// 7. Create exception
@@ -234,7 +258,7 @@ func (h *handler) CreateScheduleException(
 		log.Success(logger.LogScheduleDetailControllerCreateOK,
 			"exception_id", createdException.ID,
 			"schedule_id", schedule.ID,
-			"exception_date", req.ExceptionDate)
+			"exception_start_date", req.ExceptionStartDate)
 
 		h.Response.SuccessWithData(c, domain.MsgScheduleExceptionCreated, response)
 	}
