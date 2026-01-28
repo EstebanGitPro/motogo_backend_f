@@ -4,7 +4,6 @@ import (
 	"context"
 )
 
-// getBranchBrands retrieves all active brands for a branch
 func (r *repository) getBranchBrands(ctx context.Context, branchID string) ([]string, error) {
 	rows, err := r.stmtGetBranchBrands.QueryContext(ctx, branchID)
 	if err != nil {

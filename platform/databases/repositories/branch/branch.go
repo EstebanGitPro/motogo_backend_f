@@ -6,7 +6,6 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 )
 
-// Branch represents the database entity for branches
 type Branch struct {
 	ID                string         `db:"id"`
 	RepresentativeID  string         `db:"representative_id"`
@@ -17,7 +16,6 @@ type Branch struct {
 	Status            string         `db:"status"`
 }
 
-// ToDomain converts Branch to domain.Branch
 func (b *Branch) ToDomain() domain.Branch {
 	branch := domain.Branch{
 		ID:                b.ID,
@@ -37,7 +35,6 @@ func (b *Branch) ToDomain() domain.Branch {
 	return branch
 }
 
-// FromDomain converts domain.Branch to Branch entity
 func FromDomain(domainBranch domain.Branch) Branch {
 	b := Branch{
 		ID:                domainBranch.ID,
@@ -55,7 +52,6 @@ func FromDomain(domainBranch domain.Branch) Branch {
 	return b
 }
 
-// Location represents the database entity for branch locations
 type Location struct {
 	ID           sql.NullString  `db:"id"`
 	DepartmentID sql.NullString  `db:"department_id"`
@@ -65,7 +61,6 @@ type Location struct {
 	Longitude    sql.NullFloat64 `db:"longitude"`
 }
 
-// ToDomain converts Location to domain.Location pointer (nil if no location)
 func (l *Location) ToDomain(branchID string) *domain.Location {
 	if !l.ID.Valid {
 		return nil

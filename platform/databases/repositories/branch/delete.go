@@ -9,7 +9,6 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// DeleteBranch deletes a branch by ID
 func (r *repository) DeleteBranch(ctx context.Context, tx output.Tx, branchID string) error {
 	sqlTx := tx.(*common.SQLTx)
 

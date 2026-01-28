@@ -8,7 +8,6 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// GetBranchByID retrieves a branch by its ID including location and brands
 func (r *repository) GetBranchByID(ctx context.Context, branchID string) (*domain.Branch, error) {
 	var branch domain.Branch
 	var franchiseID, profileImageURL sql.NullString
@@ -47,7 +46,6 @@ func (r *repository) GetBranchByID(ctx context.Context, branchID string) (*domai
 		branch.ProfileImageURL = &profileImageURL.String
 	}
 
-	// Parse location if exists
 	if locationID.Valid {
 		branch.Location = &domain.Location{
 			ID:           locationID.String,
@@ -64,7 +62,6 @@ func (r *repository) GetBranchByID(ctx context.Context, branchID string) (*domai
 		}
 	}
 
-	// Get brands
 	brands, err := r.getBranchBrands(ctx, branchID)
 	if err != nil {
 		log.Error(logger.LogBranchRepoBrandGetError, "error", err, "branch_id", branchID)

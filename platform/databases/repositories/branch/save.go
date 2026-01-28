@@ -10,7 +10,6 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// SaveBranch saves a new branch to the database
 func (r *repository) SaveBranch(ctx context.Context, tx output.Tx, branch domain.Branch) error {
 	sqlTx := tx.(*common.SQLTx)
 

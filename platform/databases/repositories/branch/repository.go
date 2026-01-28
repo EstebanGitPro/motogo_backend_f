@@ -11,7 +11,6 @@ import (
 )
 
 const (
-	// Branch queries (branches table)
 	querySaveBranch = `
 		INSERT INTO branches (id, representative_id, franchise_id, name, establishment_type, profile_image_url, status, created_at, updated_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
@@ -45,8 +44,6 @@ const (
 		LEFT JOIN cities c ON l.city_id = c.id
 		WHERE b.representative_id = ?
 	`
-
-	// Branch brands queries
 	querySaveBranchBrand = `
 		INSERT INTO branch_brands (id, branch_id, brand_id, active, created_at, updated_at)
 		VALUES (?, ?, ?, TRUE, NOW(), NOW())
@@ -54,10 +51,10 @@ const (
 	queryDeleteBranchBrands = "DELETE FROM branch_brands WHERE branch_id = ?"
 	queryGetBranchBrands    = "SELECT brand_id FROM branch_brands WHERE branch_id = ? AND active = TRUE"
 
-	// Brand validation query - checks against brands table (normalized catalog)
 	queryValidateBrands = `
 		SELECT id FROM brands WHERE id IN (%s)
 	`
+	queryHasBranchesByRepresentative = "SELECT EXISTS(SELECT 1 FROM branches WHERE representative_id = ? LIMIT 1)"
 )
 
 var log logger.Logger = logger.NewSlogLogger()
@@ -149,7 +146,6 @@ func NewRepository(db *sql.DB) (output.BranchRepository, error) {
 	}, nil
 }
 
-// BeginTx starts a new database transaction
 func (r *repository) BeginTx(ctx context.Context) (output.Tx, error) {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {

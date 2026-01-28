@@ -9,7 +9,6 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// DeleteBranchBrands removes all brands for a branch
 func (r *repository) DeleteBranchBrands(ctx context.Context, tx output.Tx, branchID string) error {
 	sqlTx := tx.(*common.SQLTx)
 

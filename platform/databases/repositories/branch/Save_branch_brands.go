@@ -10,7 +10,6 @@ import (
 	uuid "github.com/EstebanGitPro/motogo-backend/tools/utils"
 )
 
-// SaveBranchBrands saves brands for a branch
 func (r *repository) SaveBranchBrands(ctx context.Context, tx output.Tx, branchID string, brands []string) error {
 	sqlTx := tx.(*common.SQLTx)
 

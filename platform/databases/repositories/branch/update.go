@@ -9,7 +9,6 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// UpdateBranch updates an existing branch
 func (r *repository) UpdateBranch(ctx context.Context, tx output.Tx, branch domain.Branch) error {
 	sqlTx := tx.(*common.SQLTx)
 
