@@ -13,7 +13,6 @@ import (
 const (
 	queryGetAllBrands = "SELECT id, name FROM brands ORDER BY name"
 
-	// Dynamic query for validating brand IDs
 	queryValidateBrandIDs = "SELECT id FROM brands WHERE id IN (%s)"
 )
 
@@ -24,7 +23,6 @@ type repository struct {
 	stmtGetAllBrands *sql.Stmt
 }
 
-// NewRepository creates a new BrandRepository with prepared statements (fail-fast pattern)
 func NewRepository(db *sql.DB) (output.BrandRepository, error) {
 	if db == nil {
 		return nil, sql.ErrConnDone
@@ -42,13 +40,10 @@ func NewRepository(db *sql.DB) (output.BrandRepository, error) {
 	}, nil
 }
 
-// ValidateBrandIDs checks if all provided brand IDs exist in the brands table
 func (r *repository) ValidateBrandIDs(ctx context.Context, brandIDs []string) error {
 	if len(brandIDs) == 0 {
 		return nil
 	}
-
-	// Build dynamic query with placeholders
 	placeholders := ""
 	args := make([]interface{}, len(brandIDs))
 	for i, id := range brandIDs {
@@ -67,7 +62,6 @@ func (r *repository) ValidateBrandIDs(ctx context.Context, brandIDs []string) er
 	}
 	defer rows.Close()
 
-	// Collect found brand IDs
 	foundBrands := make(map[string]bool)
 	for rows.Next() {
 		var id string
@@ -77,7 +71,6 @@ func (r *repository) ValidateBrandIDs(ctx context.Context, brandIDs []string) er
 		foundBrands[id] = true
 	}
 
-	// Check if all brand IDs were found
 	for _, id := range brandIDs {
 		if !foundBrands[id] {
 			log.Warn(logger.LogBranchRepoBrandValidateErr, "brand_id", id)
