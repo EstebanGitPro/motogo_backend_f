@@ -1072,3 +1072,66 @@ const (
 	LogScheduleDetailControllerBindError     = "Error parseando JSON de detalle horario"
 	LogScheduleDetailControllerIDDecodeError = "Error decodificando ID de detalle horario"
 )
+
+// ============================================
+// MOTORCYCLE MODULE (HU43-47)
+// ============================================
+const (
+	// Motorcycle Controller - GET (HU46)
+	LogMotorcycleControllerGetRequest    = "Motorcycle get request received"
+	LogMotorcycleControllerIDDecodeError = "Error decoding motorcycle ID"
+	LogMotorcycleControllerGetByID       = "Searching motorcycle by ID"
+	LogMotorcycleControllerGetError      = "Error getting motorcycle"
+	LogMotorcycleControllerGetSuccess    = "Motorcycle retrieved successfully"
+
+	// Motorcycle Controller - POST (HU43)
+	LogMotorcycleControllerRegRequest  = "Motorcycle registration request received"
+	LogMotorcycleControllerRegBody     = "Motorcycle registration body parsed"
+	LogMotorcycleControllerAuthError   = "Motorcycle registration auth error"
+	LogMotorcycleControllerBindError   = "Error binding motorcycle request body"
+	LogMotorcycleControllerRefDecError = "Error decoding motorcycle reference ID"
+	LogMotorcycleControllerRegError    = "Error registering motorcycle"
+	LogMotorcycleControllerIDEncError  = "Error encoding motorcycle ID"
+	LogMotorcycleControllerRegSuccess  = "Motorcycle registered successfully"
+
+	// Motorcycle Interactor (HU43-47)
+	LogMotorcycleInteractorRegStart        = "Motorcycle registration started"
+	LogMotorcycleInteractorValidateRef     = "Validating motorcycle reference exists"
+	LogMotorcycleInteractorRefError        = "Error validating motorcycle reference"
+	LogMotorcycleInteractorRefNotFound     = "Motorcycle reference not found"
+	LogMotorcycleInteractorCheckPlate      = "Checking license plate uniqueness"
+	LogMotorcycleInteractorCheckPlateErr   = "Error checking license plate uniqueness"
+	LogMotorcycleInteractorDupPlate        = "Duplicate license plate detected"
+	LogMotorcycleInteractorIDGenerated     = "Motorcycle ID generated"
+	LogMotorcycleInteractorBeginTxError    = "Error beginning transaction for motorcycle"
+	LogMotorcycleInteractorSaveError       = "Error saving motorcycle"
+	LogMotorcycleInteractorCommitError     = "Error committing motorcycle transaction"
+	LogMotorcycleInteractorRegSuccess      = "Motorcycle registered successfully"
+	LogMotorcycleInteractorGetStart        = "Motorcycle get by ID started"
+	LogMotorcycleInteractorGetError        = "Error getting motorcycle by ID"
+	LogMotorcycleInteractorGetSuccess      = "Motorcycle get by ID success"
+	LogMotorcycleInteractorGetOwnerStart   = "Motorcycle get by owner started"
+	LogMotorcycleInteractorGetOwnerError   = "Error getting motorcycles by owner"
+	LogMotorcycleInteractorGetOwnerSuccess = "Motorcycles by owner retrieved successfully"
+
+	// Motorcycle Repository (HU43-47)
+	LogMotorcycleRepoGetByID         = "Repository getting motorcycle by ID"
+	LogMotorcycleRepoGetByIDError    = "Repository error getting motorcycle by ID"
+	LogMotorcycleRepoGetByOwner      = "Repository getting motorcycles by owner"
+	LogMotorcycleRepoGetByOwnerError = "Repository error getting motorcycles by owner"
+	LogMotorcycleRepoGetByOwnerScan  = "Repository error scanning motorcycle row"
+	LogMotorcycleRepoGetByOwnerIter  = "Repository error iterating motorcycle rows"
+	LogMotorcycleRepoInvalidTx       = "Repository invalid transaction type"
+	LogMotorcycleRepoSave            = "Repository saving motorcycle"
+	LogMotorcycleRepoSaveError       = "Repository save motorcycle error"
+	LogMotorcycleRepoSaveSuccess     = "Repository motorcycle saved"
+	LogMotorcycleRepoValidateRef     = "Repository validating reference"
+	LogMotorcycleRepoValidateRefErr  = "Repository error validating reference"
+	LogMotorcycleRepoCheckPlate      = "Repository checking license plate"
+	LogMotorcycleRepoCheckPlateErr   = "Repository error checking license plate"
+
+	// Dependency initialization
+	LogDepMotorcycleRepoInitOK       = "Motorcycle repository initialized"
+	LogDepMotorcycleRepoInitErr      = "Error initializing motorcycle repository"
+	LogDepMotorcycleInteractorInitOK = "Motorcycle interactor initialized"
+)
