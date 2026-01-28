@@ -8,7 +8,6 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// AssociateBranchesToFranchise updates branches to link them to a franchise
 func (r *repository) AssociateBranchesToFranchise(ctx context.Context, tx output.Tx, franchiseID string, branchIDs []string) error {
 	sqlTx := tx.(*common.SQLTx)
 	stmt := sqlTx.StmtContext(ctx, r.stmtAssociateBranchToFranchise)

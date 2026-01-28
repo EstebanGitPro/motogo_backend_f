@@ -8,7 +8,6 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// DissociateSingleBranch removes franchise association from a single branch
 func (r *repository) DissociateSingleBranch(ctx context.Context, tx output.Tx, branchID string) error {
 	sqlTx := tx.(*common.SQLTx)
 	stmt := sqlTx.StmtContext(ctx, r.stmtDissociateSingleBranch)

@@ -8,7 +8,6 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// GetFranchiseByID retrieves a franchise by its ID
 func (r *repository) GetFranchiseByID(ctx context.Context, franchiseID string) (*domain.Franchise, error) {
 	var franchise domain.Franchise
 	var description sql.NullString

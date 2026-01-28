@@ -6,7 +6,6 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// CountBranchesByFranchise returns the number of branches associated with a franchise
 func (r *repository) CountBranchesByFranchise(ctx context.Context, franchiseID string) (int, error) {
 	var count int
 	err := r.stmtCountBranchesByFranchise.QueryRowContext(ctx, franchiseID).Scan(&count)

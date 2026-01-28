@@ -8,7 +8,6 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// DeleteFranchise removes a franchise by ID
 func (r *repository) DeleteFranchise(ctx context.Context, tx output.Tx, franchiseID string) error {
 	sqlTx := tx.(*common.SQLTx)
 	stmt := sqlTx.StmtContext(ctx, r.stmtDeleteFranchise)

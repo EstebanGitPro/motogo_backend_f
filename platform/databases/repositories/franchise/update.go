@@ -9,7 +9,6 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// UpdateFranchise updates an existing franchise
 func (r *repository) UpdateFranchise(ctx context.Context, tx output.Tx, franchise domain.Franchise) error {
 	sqlTx := tx.(*common.SQLTx)
 	stmt := sqlTx.StmtContext(ctx, r.stmtUpdateFranchise)
