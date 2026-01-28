@@ -412,6 +412,26 @@ var messageCodeToHTTPStatus = map[string]int{
 	"MOD_EH_TIME_ERR_00001":          http.StatusBadRequest, // 400 - Formato hora inválido
 	"MOD_EH_REDUNDANT_ERR_00001":     http.StatusConflict,   // 409 - Excepción redundante
 
+	// ========================================
+	// Motorcycle Module (MOD_MOT_*) - HU43-47
+	// ========================================
+	// Success messages
+	"MOD_MOT_CREATE_EXI_00001": http.StatusCreated, // 201 - Motocicleta registrada (HU43)
+	"MOD_MOT_GET_EXI_00001":    http.StatusOK,      // 200 - Motocicleta consultada (HU46)
+	"MOD_MOT_UPDATE_EXI_00001": http.StatusOK,      // 200 - Motocicleta actualizada (HU44)
+	"MOD_MOT_DELETE_EXI_00001": http.StatusOK,      // 200 - Motocicleta eliminada (HU45)
+	"MOD_MOT_LIST_EXI_00001":   http.StatusOK,      // 200 - Motocicletas listadas (HU47)
+	// Error messages
+	"MOD_MOT_NOT_FOUND_ERR_00001":     http.StatusNotFound,   // 404 - Motocicleta no encontrada
+	"MOD_MOT_CREATE_ERR_00001":        http.StatusBadRequest, // 400 - Error al registrar
+	"MOD_MOT_UPDATE_ERR_00001":        http.StatusBadRequest, // 400 - Error al actualizar
+	"MOD_MOT_DELETE_ERR_00001":        http.StatusBadRequest, // 400 - Error al eliminar
+	"MOD_MOT_DUP_PLATE_ERR_00001":     http.StatusConflict,   // 409 - Placa duplicada
+	"MOD_MOT_REF_NOT_FOUND_ERR_00001": http.StatusNotFound,   // 404 - Referencia no encontrada
+	"MOD_MOT_HAS_ASSOC_ERR_00001":     http.StatusConflict,   // 409 - Tiene registros asociados
+	"MOD_MOT_FORBIDDEN_ERR_00001":     http.StatusForbidden,  // 403 - Acceso denegado
+	"MOD_MOT_LIST_ERR_00001":          http.StatusBadRequest, // 400 - Error al listar
+
 }
 
 // GetHTTPStatus returns the HTTP status for a message code
