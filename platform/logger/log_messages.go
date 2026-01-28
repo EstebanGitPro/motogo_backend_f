@@ -1078,11 +1078,12 @@ const (
 // ============================================
 const (
 	// Motorcycle Controller - GET (HU46)
-	LogMotorcycleControllerGetRequest    = "Motorcycle get request received"
-	LogMotorcycleControllerIDDecodeError = "Error decoding motorcycle ID"
-	LogMotorcycleControllerGetByID       = "Searching motorcycle by ID"
-	LogMotorcycleControllerGetError      = "Error getting motorcycle"
-	LogMotorcycleControllerGetSuccess    = "Motorcycle retrieved successfully"
+	LogMotorcycleControllerGetRequest      = "Motorcycle get request received"
+	LogMotorcycleControllerIDDecodeError   = "Error decoding motorcycle ID"
+	LogMotorcycleControllerGetByID         = "Searching motorcycle by ID"
+	LogMotorcycleControllerGetError        = "Error getting motorcycle"
+	LogMotorcycleControllerGetSuccess      = "Motorcycle retrieved successfully"
+	LogMotorcycleControllerOwnershipDenied = "Ownership denied - motorcycle belongs to another user"
 
 	// Motorcycle Controller - POST (HU43)
 	LogMotorcycleControllerRegRequest  = "Motorcycle registration request received"

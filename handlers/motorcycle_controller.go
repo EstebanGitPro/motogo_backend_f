@@ -63,20 +63,34 @@ func (h *handler) GetMotorcycle() gin.HandlerFunc {
 			return
 		}
 
-		// 4. Determine if current user is the owner (for HATEOAS links - Richardson Level 3)
-		isOwner := person != nil && person.ID == motorcycle.OwnerID
+		// 4. Validate ownership - only owner can view their motorcycle (security)
+		// Returns 404 to not reveal existence to non-owners (security by obscurity)
+		if person == nil || person.ID != motorcycle.OwnerID {
+			log.Warn(logger.LogMotorcycleControllerOwnershipDenied,
+				"motorcycle_id", motorcycleID,
+				"requested_by", func() string {
+					if person != nil {
+						return person.ID
+					}
+					return "anonymous"
+				}(),
+				"owner_id", motorcycle.OwnerID,
+				"client_ip", c.ClientIP())
+			h.Response.Error(c, domain.MsgMotorcycleNotFound)
+			return
+		}
 
 		// 5. Build response DTO
 		response := ToMotorcycleResponse(motorcycle)
 
 		// 6. Build HATEOAS links (owner sees edit/delete, others only see self)
 		baseURL := GetBaseURL(c)
-		response.Links = BuildMotorcycleDetailLinks(baseURL, encodedID, isOwner)
+		response.Links = BuildMotorcycleDetailLinks(baseURL, encodedID, true) // Owner validated above
 
 		log.Success(logger.LogMotorcycleControllerGetSuccess,
 			"motorcycle_id", motorcycle.ID,
 			"encoded_id", encodedID,
-			"is_owner", isOwner,
+			"is_owner", true,
 			"client_ip", c.ClientIP())
 
 		// 7. Send success response (200 OK)
