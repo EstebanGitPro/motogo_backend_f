@@ -476,3 +476,46 @@ func BuildServiceListLinks(baseURL string, filterType string) []Link {
 
 	return links
 }
+
+// ========================================
+// Motorcycle HATEOAS Functions (HU43-47)
+// ========================================
+
+// BuildMotorcycleDetailLinks constructs HATEOAS links for motorcycle query response (HU46)
+// Implements Richardson Maturity Level 3 with hypermedia controls
+// isOwner: true if the authenticated user is the motorcycle owner (shows edit/delete links)
+func BuildMotorcycleDetailLinks(baseURL string, motorcycleID string, isOwner bool) []Link {
+	resourceURL := BuildResourceURL(baseURL, "motorcycles", motorcycleID)
+	collectionURL := BuildCollectionURL(baseURL, "motorcycles")
+
+	links := []Link{
+		{
+			Href:   resourceURL,
+			Rel:    "self",
+			Method: "GET",
+		},
+	}
+
+	// Only show edit/delete links if user is the owner
+	if isOwner {
+		links = append(links,
+			Link{
+				Href:   resourceURL,
+				Rel:    "update",
+				Method: "PUT",
+			},
+			Link{
+				Href:   resourceURL,
+				Rel:    "delete",
+				Method: "DELETE",
+			},
+			Link{
+				Href:   collectionURL,
+				Rel:    "list",
+				Method: "GET",
+			},
+		)
+	}
+
+	return links
+}
