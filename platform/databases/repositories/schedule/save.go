@@ -9,7 +9,6 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// SaveSchedule inserts a new branch schedule
 func (r *repository) SaveSchedule(ctx context.Context, tx output.Tx, schedule domain.BranchSchedule) error {
 	sqlTx := tx.(*common.SQLTx)
 	stmt := sqlTx.StmtContext(ctx, r.stmtSaveSchedule)

@@ -6,7 +6,6 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// CheckExceptionDateConflict checks if an exception already exists with overlapping dates (HU20)
 func (r *repository) CheckExceptionDateConflict(
 	ctx context.Context,
 	scheduleID string,
@@ -25,12 +24,11 @@ func (r *repository) CheckExceptionDateConflict(
 		"endDate", endDate)
 
 	var count int
-	// Overlap logic: existing.start <= new.end AND existing.end >= new.start
 	err := r.stmtCheckExceptionDateConflict.QueryRowContext(ctx,
 		scheduleID,
 		excludeExceptionID,
-		endDate,   // existing.start <= new.end
-		startDate, // existing.end >= new.start
+		endDate,
+		startDate,
 	).Scan(&count)
 
 	log.Info("DEBUG_CheckExceptionDateConflict_QUERY_RESULT",

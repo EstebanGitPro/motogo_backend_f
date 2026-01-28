@@ -8,10 +8,10 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-func (r *repository) GetScheduleByBranchID(ctx context.Context, branchID string) (*domain.BranchSchedule, error) {
+func (r *repository) GetScheduleByID(ctx context.Context, scheduleID string) (*domain.BranchSchedule, error) {
 	var schedule domain.BranchSchedule
 
-	err := r.stmtGetScheduleByBranchID.QueryRowContext(ctx, branchID).Scan(
+	err := r.stmtGetScheduleByID.QueryRowContext(ctx, scheduleID).Scan(
 		&schedule.ID,
 		&schedule.BranchID,
 		&schedule.Active,
@@ -23,9 +23,9 @@ func (r *repository) GetScheduleByBranchID(ctx context.Context, branchID string)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, nil
+			return nil, domain.ErrScheduleNotFound
 		}
-		log.Error(logger.LogScheduleRepoGetByBranchError, "branch_id", branchID, "error", err)
+		log.Error(logger.LogScheduleRepoGetByIDError, "schedule_id", scheduleID, "error", err)
 		return nil, err
 	}
 

@@ -7,7 +7,6 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// GetDetailsByScheduleAndDay retrieves schedule details for a specific schedule and day
 func (r *repository) GetDetailsByScheduleAndDay(ctx context.Context, scheduleID string, dayOfWeek int) ([]domain.ScheduleDetail, error) {
 	rows, err := r.stmtGetDetailsByScheduleDay.QueryContext(ctx, scheduleID, dayOfWeek)
 	if err != nil {

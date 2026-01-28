@@ -9,7 +9,6 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// UpdateSchedule updates an existing branch schedule (HU31)
 func (r *repository) UpdateSchedule(ctx context.Context, tx output.Tx, schedule domain.BranchSchedule) error {
 	sqlTx := tx.(*common.SQLTx)
 	stmt := sqlTx.StmtContext(ctx, r.stmtUpdateSchedule)

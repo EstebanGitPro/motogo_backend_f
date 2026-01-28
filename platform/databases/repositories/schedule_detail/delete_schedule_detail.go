@@ -8,7 +8,6 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// DeleteScheduleDetail deletes a schedule detail (HU8)
 func (r *repository) DeleteScheduleDetail(ctx context.Context, tx output.Tx, detailID string) error {
 	sqlTx := tx.(*common.SQLTx)
 

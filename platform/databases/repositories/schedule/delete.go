@@ -8,7 +8,6 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// DeleteSchedule removes a branch schedule by ID
 func (r *repository) DeleteSchedule(ctx context.Context, tx output.Tx, scheduleID string) error {
 	sqlTx := tx.(*common.SQLTx)
 	stmt := sqlTx.StmtContext(ctx, r.stmtDeleteSchedule)
