@@ -7,7 +7,6 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// GetAllBrands retrieves all brands from the catalog ordered by name
 func (r *repository) GetAllBrands(ctx context.Context) ([]domain.Brand, error) {
 	rows, err := r.stmtGetAllBrands.QueryContext(ctx)
 	if err != nil {
