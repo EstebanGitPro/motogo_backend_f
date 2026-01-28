@@ -196,3 +196,19 @@ type ScheduleDetailRepository interface {
 	// Redundancy detection for EXCEPTION entries (Validation E1)
 	CheckExceptionIsRedundant(ctx context.Context, scheduleID string, dayOfWeek int) (bool, error)
 }
+
+// MotorcycleRepository interface for Motorcycle operations (HU43-47)
+type MotorcycleRepository interface {
+	BeginTx(ctx context.Context) (Tx, error)
+
+	// Motorcycle operations - write (HU43)
+	Save(ctx context.Context, tx Tx, motorcycle *domain.Motorcycle) error
+
+	// Motorcycle operations - read (HU46, HU47)
+	GetByID(ctx context.Context, motorcycleID string) (*domain.Motorcycle, error)
+	GetByOwnerID(ctx context.Context, ownerID string) ([]domain.Motorcycle, error)
+
+	// Validation methods (HU43)
+	ValidateReferenceExists(ctx context.Context, referenceID string) (bool, error)
+	CheckLicensePlateExists(ctx context.Context, licensePlate string) (bool, error)
+}
