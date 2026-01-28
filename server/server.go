@@ -65,6 +65,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		dependencies.LocationInteractor,
 		dependencies.ServiceInteractor,
 		dependencies.FranchiseInteractor,
+		dependencies.MotorcycleInteractor,
 		dependencies.FirebaseClient,
 		dependencies.MessagingCache,
 		dependencies.IDEncoder,
@@ -86,10 +87,9 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		})
 	})
 
-	// 404 handler - must be registered AFTER all routes
+	// 404 handler - must be registered AFTER all rote
 	app.NoRoute(middleware.NotFoundHandler())
 
-	// Richardson Maturity Model Nivel 2-3: Recursos con URIs únicas + HATEOAS
 	public := app.Group("motogo/api/v1")
 	{
 		// === PERSONS ENDPOINTS ===
@@ -204,6 +204,22 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		// GET /branches/:id/services - Obtener servicios de una sede
 		// Accessible by all authenticated users
 		protected.GET("/branches/:id/services", handler.GetBranchServices())
+
+		// === MOTORCYCLES ENDPOINTS (HU43-47) ===
+		// Only USER role can access motorcycle endpoints (not ADMIN, not REPRESENTATIVE)
+
+		// POST /motorcycles - Register new motorcycle (HU43)
+		protected.POST("/motorcycles",
+			middleware.RequireRole(domain.RoleUser),
+			handler.RegisterMotorcycle(),
+		)
+
+		// GET /motorcycles/:id - Get motorcycle details (HU46)
+		// HATEOAS links vary by ownership (Richardson Level 3)
+		protected.GET("/motorcycles/:id",
+			middleware.RequireRole(domain.RoleUser),
+			handler.GetMotorcycle(),
+		)
 
 		// POST /branches/:id/services - Asociar servicios a una sede (solo REPRESENTANTE)
 		protected.POST("/branches/:id/services",
