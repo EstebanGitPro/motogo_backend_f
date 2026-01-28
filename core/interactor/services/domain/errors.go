@@ -424,3 +424,31 @@ const (
 	MsgScheduleExceptionInvalidTime  = "MOD_EH_TIME_ERR_00001"
 	MsgScheduleExceptionRedundant    = "MOD_EH_REDUNDANT_ERR_00001"
 )
+
+// Motorcycle Errors (MOD_MOT_*) - HU43-47
+var (
+	ErrMotorcycleNotFound     = errors.New("ERR_MOTORCYCLE_NOT_FOUND")
+	ErrMotorcycleCannotSave   = errors.New("ERR_MOTORCYCLE_CANNOT_SAVE")
+	ErrMotorcycleCannotUpdate = errors.New("ERR_MOTORCYCLE_CANNOT_UPDATE")
+	ErrMotorcycleCannotDelete = errors.New("ERR_MOTORCYCLE_CANNOT_DELETE")
+	ErrDuplicateLicensePlate  = errors.New("ERR_DUPLICATE_LICENSE_PLATE")
+	ErrReferenceNotFound      = errors.New("ERR_REFERENCE_NOT_FOUND")
+)
+
+// Motorcycle Module (MOD_MOT_*) - HU43-47
+const (
+	// Success messages
+	MsgMotorcycleCreated   = "MOD_MOT_CREATE_EXI_00001"
+	MsgMotorcycleRetrieved = "MOD_MOT_GET_EXI_00001"
+	MsgMotorcycleUpdated   = "MOD_MOT_UPDATE_EXI_00001"
+	MsgMotorcycleDeleted   = "MOD_MOT_DELETE_EXI_00001"
+	MsgMotorcyclesListed   = "MOD_MOT_LIST_EXI_00001"
+
+	// Error messages
+	MsgMotorcycleNotFound          = "MOD_MOT_NOT_FOUND_ERR_00001"
+	MsgMotorcycleCannotSave        = "MOD_MOT_CREATE_ERR_00001"
+	MsgMotorcycleCannotUpdate      = "MOD_MOT_UPDATE_ERR_00001"
+	MsgMotorcycleCannotDelete      = "MOD_MOT_DELETE_ERR_00001"
+	MsgDuplicateLicensePlate       = "MOD_MOT_DUP_PLATE_ERR_00001"
+	MsgMotorcycleReferenceNotFound = "MOD_MOT_REF_NOT_FOUND_ERR_00001"
+)

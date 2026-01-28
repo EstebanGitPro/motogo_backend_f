@@ -4,20 +4,17 @@ import (
 	uuid "github.com/EstebanGitPro/motogo-backend/tools/utils"
 )
 
-// EstablishmentType defines valid types for branches
 const (
 	EstablishmentTypeWorkshop      = "WORKSHOP"
 	EstablishmentTypeStore         = "STORE"
 	EstablishmentTypeWorkshopStore = "WORKSHOP_STORE"
 )
 
-// EstablishmentTypeInfo represents an establishment type with its label (HU76)
 type EstablishmentTypeInfo struct {
 	Code  string `json:"code"`
 	Label string `json:"label"`
 }
 
-// GetAllEstablishmentTypes returns all valid establishment types (HU76)
 func GetAllEstablishmentTypes() []EstablishmentTypeInfo {
 	return []EstablishmentTypeInfo{
 		{Code: EstablishmentTypeWorkshop, Label: "Taller"},
@@ -26,7 +23,6 @@ func GetAllEstablishmentTypes() []EstablishmentTypeInfo {
 	}
 }
 
-// GetEstablishmentTypeLabel returns the Spanish label for an establishment type code
 func GetEstablishmentTypeLabel(code string) string {
 	labels := map[string]string{
 		EstablishmentTypeWorkshop:      "Taller",
@@ -36,29 +32,26 @@ func GetEstablishmentTypeLabel(code string) string {
 	if label, ok := labels[code]; ok {
 		return label
 	}
-	return code // Fallback to code if not found
+	return code
 }
 
-// BranchStatus defines valid statuses for branches
 const (
 	BranchStatusActive   = "ACTIVE"
 	BranchStatusInactive = "INACTIVE"
 )
 
-// Branch represents a workshop or store branch (Sede)
 type Branch struct {
 	ID                string    `json:"id"`
 	RepresentativeID  string    `json:"representative_id"`
 	FranchiseID       *string   `json:"franchise_id,omitempty"`
 	Name              string    `json:"name"`
-	EstablishmentType string    `json:"establishment_type"` // WORKSHOP or STORE
+	EstablishmentType string    `json:"establishment_type"`
 	ProfileImageURL   *string   `json:"profile_image_url,omitempty"`
-	Status            string    `json:"status"` // ACTIVE or INACTIVE
+	Status            string    `json:"status"`
 	Location          *Location `json:"location,omitempty"`
 	Brands            []string  `json:"brands,omitempty"`
 }
 
-// Location represents the physical location of a branch
 type Location struct {
 	ID             string   `json:"id,omitempty"`
 	BranchID       string   `json:"branch_id,omitempty"`
@@ -67,11 +60,10 @@ type Location struct {
 	Address        string   `json:"address"`
 	Latitude       *float64 `json:"latitude,omitempty"`
 	Longitude      *float64 `json:"longitude,omitempty"`
-	CityName       string   `json:"-"` // Used for geocoding query
-	DepartmentName string   `json:"-"` // Used for geocoding query
+	CityName       string   `json:"-"`
+	DepartmentName string   `json:"-"`
 }
 
-// SetID generates a new UUID for the branch
 func (b *Branch) SetID() {
 	b.ID = uuid.Generate()
 }
@@ -83,7 +75,6 @@ func (b *Branch) IsValidEstablishmentType() bool {
 		b.EstablishmentType == EstablishmentTypeWorkshopStore
 }
 
-// ToLogger returns a slice of strings for structured logging
 func (b *Branch) ToLogger() []string {
 	return []string{
 		"id:" + b.ID,
