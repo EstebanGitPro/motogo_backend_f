@@ -38,6 +38,10 @@ const (
 		UPDATE locations 
 		SET city_id = ?, address = ?, latitude = ?, longitude = ?, updated_at = NOW()
 		WHERE branch_id = ? `
+
+	queryCheckAddressExists = `
+	SELECT 1 FROM locations WHERE LOWER(TRIM(address)) = LOWER(TRIM(?)) LIMIT 1
+`
 )
 
 type repository struct {

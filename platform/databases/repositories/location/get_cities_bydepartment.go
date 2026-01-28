@@ -7,7 +7,6 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// GetCitiesByDepartment retrieves all cities for a specific department
 func (r *repository) GetCitiesByDepartment(ctx context.Context, departmentID string) ([]domain.City, error) {
 	rows, err := r.stmtGetCitiesByDepartment.QueryContext(ctx, departmentID)
 	if err != nil {

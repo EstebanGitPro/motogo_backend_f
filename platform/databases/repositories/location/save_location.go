@@ -10,7 +10,6 @@ import (
 	uuid "github.com/EstebanGitPro/motogo-backend/tools/utils"
 )
 
-// SaveLocation saves a location for a branch
 func (r *repository) SaveLocation(ctx context.Context, tx output.Tx, location domain.Location) error {
 	sqlTx := tx.(*common.SQLTx)
 

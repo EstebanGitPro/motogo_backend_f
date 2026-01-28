@@ -8,7 +8,6 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// GetDepartmentByID retrieves a department by its ID
 func (r *repository) GetDepartmentByID(ctx context.Context, departmentID string) (*domain.Department, error) {
 	var dept domain.Department
 	err := r.stmtGetDepartmentByID.QueryRowContext(ctx, departmentID).Scan(&dept.ID, &dept.Name)

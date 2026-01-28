@@ -7,7 +7,6 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// GetAllDepartments retrieves all departments ordered by name
 func (r *repository) GetAllDepartments(ctx context.Context) ([]domain.Department, error) {
 	rows, err := r.stmtGetAllDepartments.QueryContext(ctx)
 	if err != nil {

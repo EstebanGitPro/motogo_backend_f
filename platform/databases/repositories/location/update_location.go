@@ -9,7 +9,6 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// UpdateLocation updates a location for a branch
 func (r *repository) UpdateLocation(ctx context.Context, tx output.Tx, location domain.Location) error {
 	sqlTx := tx.(*common.SQLTx)
 
