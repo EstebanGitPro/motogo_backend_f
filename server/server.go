@@ -221,6 +221,19 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 			handler.GetMotorcycle(),
 		)
 
+		// GET /motorcycles - List all motorcycles for authenticated user (HU46)
+		protected.GET("/motorcycles",
+			middleware.RequireRole(domain.RoleUser),
+			handler.ListMotorcycles(),
+		)
+
+		// GET /motorcycles/lookup?plate={placa} - Lookup motorcycle by plate (HU47)
+		// Accessible by representatives (workshops) for service purposes
+		protected.GET("/motorcycles/lookup",
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.LookupMotorcycleByPlate(),
+		)
+
 		// POST /branches/:id/services - Asociar servicios a una sede (solo REPRESENTANTE)
 		protected.POST("/branches/:id/services",
 			middleware.RequireRole(domain.RoleRepresentative),

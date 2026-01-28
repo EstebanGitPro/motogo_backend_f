@@ -207,6 +207,7 @@ type MotorcycleRepository interface {
 	// Motorcycle operations - read (HU46, HU47)
 	GetByID(ctx context.Context, motorcycleID string) (*domain.Motorcycle, error)
 	GetByOwnerID(ctx context.Context, ownerID string) ([]domain.Motorcycle, error)
+	GetByLicensePlate(ctx context.Context, licensePlate string) (*domain.Motorcycle, error)
 
 	// Validation methods (HU43)
 	ValidateReferenceExists(ctx context.Context, referenceID string) (bool, error)

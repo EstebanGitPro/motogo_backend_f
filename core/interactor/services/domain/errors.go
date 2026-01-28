@@ -451,4 +451,5 @@ const (
 	MsgMotorcycleCannotDelete      = "MOD_MOT_DELETE_ERR_00001"
 	MsgDuplicateLicensePlate       = "MOD_MOT_DUP_PLATE_ERR_00001"
 	MsgMotorcycleReferenceNotFound = "MOD_MOT_REF_NOT_FOUND_ERR_00001"
+	MsgMissingPlateParam           = "MOD_MOT_PLATE_REQ_ERR_00001"
 )

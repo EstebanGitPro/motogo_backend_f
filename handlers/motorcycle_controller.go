@@ -65,6 +65,15 @@ func (h *handler) GetMotorcycle() gin.HandlerFunc {
 
 		// 4. Validate ownership - only owner can view their motorcycle (security)
 		// Returns 404 to not reveal existence to non-owners (security by obscurity)
+		// DEBUG: Log both IDs to compare
+		log.Debug("DEBUG_OWNERSHIP_CHECK",
+			"person_id", func() string {
+				if person != nil {
+					return person.ID
+				}
+				return "nil"
+			}(),
+			"motorcycle_owner_id", motorcycle.OwnerID)
 		if person == nil || person.ID != motorcycle.OwnerID {
 			log.Warn(logger.LogMotorcycleControllerOwnershipDenied,
 				"motorcycle_id", motorcycleID,
@@ -210,5 +219,148 @@ func (h *handler) RegisterMotorcycle() gin.HandlerFunc {
 
 		// 9. Send success response (201 Created)
 		h.Response.SuccessWithData(c, domain.MsgMotorcycleCreated, response)
+	}
+}
+
+// ListMotorcycles handles GET /motorcycles - lists all motorcycles for authenticated user (HU47)
+// @Summary List user's motorcycles
+// @Description Retrieves all motorcycles owned by the authenticated user. Returns HATEOAS links for each motorcycle (Richardson Maturity Level 3).
+// @Tags Motorcycles
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} StandardResponse{data=[]MotorcycleResponse} "Motorcycles listed successfully"
+// @Failure 401 {object} StandardResponse "Unauthorized - missing or invalid token"
+// @Failure 500 {object} StandardResponse "Internal server error"
+// @Router /motorcycles [get]
+func (h *handler) ListMotorcycles() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Create logger with trace ID for this request
+		traceID := middleware.GetRequestID(c)
+		log := Logger.WithTraceID(traceID)
+
+		log.Info(logger.LogMotorcycleControllerListRequest,
+			"method", c.Request.Method,
+			"path", c.Request.URL.Path,
+			"client_ip", c.ClientIP())
+
+		// 1. Get authenticated user from context
+		person, _ := middleware.GetAuthenticatedUser(c)
+		if person == nil {
+			log.Warn("No authenticated user in context", "client_ip", c.ClientIP())
+			h.Response.Error(c, domain.MsgUnauthorized)
+			return
+		}
+
+		// 2. Get all motorcycles for this owner
+		motorcycles, err := h.MotorcycleInteractor.GetMotorcyclesByOwner(c.Request.Context(), person.ID)
+		if err != nil {
+			log.Error(logger.LogMotorcycleControllerListError,
+				"error", err,
+				"owner_id", person.ID,
+				"client_ip", c.ClientIP())
+			h.Response.Error(c, domain.MsgServerError)
+			return
+		}
+
+		// 3. Build response DTOs with HATEOAS links
+		baseURL := GetBaseURL(c)
+		var responses []MotorcycleResponse
+		for _, moto := range motorcycles {
+			encodedID, err := h.EncodeID(moto.ID)
+			if err != nil {
+				log.Warn(logger.LogMotorcycleControllerIDEncError,
+					"motorcycle_id", moto.ID,
+					"error", err)
+				continue // Skip this motorcycle if encoding fails
+			}
+
+			response := ToMotorcycleResponse(&moto)
+			response.ID = encodedID
+			response.Links = BuildMotorcycleDetailLinks(baseURL, encodedID, true) // Owner always true
+			responses = append(responses, response)
+		}
+
+		log.Success(logger.LogMotorcycleControllerListSuccess,
+			"owner_id", person.ID,
+			"count", len(responses),
+			"client_ip", c.ClientIP())
+
+		// 4. Send success response (200 OK)
+		h.Response.SuccessWithData(c, domain.MsgMotorcyclesListed, responses)
+	}
+}
+
+// LookupMotorcycleByPlate handles GET /motorcycles/lookup - lookup motorcycle by plate (HU47)
+// @Summary Lookup motorcycle by license plate
+// @Description Retrieves motorcycle information by license plate. Accessible by representatives (workshops). Returns motorcycle details for service purposes.
+// @Tags Motorcycles
+// @Produce json
+// @Security BearerAuth
+// @Param plate query string true "License plate to lookup (exact match)"
+// @Success 200 {object} StandardResponse{data=MotorcycleResponse} "Motorcycle found successfully"
+// @Failure 400 {object} StandardResponse "Bad request - missing plate parameter"
+// @Failure 401 {object} StandardResponse "Unauthorized - missing or invalid token"
+// @Failure 403 {object} StandardResponse "Forbidden - user is not a representative"
+// @Failure 404 {object} StandardResponse "Motorcycle not found"
+// @Failure 500 {object} StandardResponse "Internal server error"
+// @Router /motorcycles/lookup [get]
+func (h *handler) LookupMotorcycleByPlate() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Create logger with trace ID for this request
+		traceID := middleware.GetRequestID(c)
+		log := Logger.WithTraceID(traceID)
+
+		log.Info(logger.LogMotorcycleControllerPlateRequest,
+			"method", c.Request.Method,
+			"path", c.Request.URL.Path,
+			"client_ip", c.ClientIP())
+
+		// 1. Get plate from query parameter
+		plate := c.Query("plate")
+		if plate == "" {
+			log.Warn("Missing plate query parameter", "client_ip", c.ClientIP())
+			h.Response.Error(c, domain.MsgMissingPlateParam)
+			return
+		}
+
+		log.Debug("Looking up motorcycle by plate", "license_plate", plate)
+
+		// 2. Call interactor to get motorcycle by plate
+		motorcycle, err := h.MotorcycleInteractor.GetMotorcycleByLicensePlate(c.Request.Context(), plate)
+		if err != nil {
+			log.Error(logger.LogMotorcycleControllerPlateError,
+				"error", err,
+				"license_plate", plate,
+				"client_ip", c.ClientIP())
+			if err == domain.ErrMotorcycleNotFound {
+				h.Response.Error(c, domain.MsgMotorcycleNotFound)
+			} else {
+				h.Response.Error(c, domain.MsgServerError)
+			}
+			return
+		}
+
+		// 3. Build response DTO (no HATEOAS links for representative - read-only view)
+		response := ToMotorcycleResponse(motorcycle)
+
+		// Encode motorcycle ID for response
+		encodedID, err := h.EncodeID(motorcycle.ID)
+		if err != nil {
+			log.Error(logger.LogMotorcycleControllerIDEncError,
+				"motorcycle_id", motorcycle.ID,
+				"error", err,
+				"client_ip", c.ClientIP())
+			h.Response.Error(c, domain.MsgServerError)
+			return
+		}
+		response.ID = encodedID
+
+		log.Success(logger.LogMotorcycleControllerPlateSuccess,
+			"motorcycle_id", motorcycle.ID,
+			"license_plate", plate,
+			"client_ip", c.ClientIP())
+
+		// 4. Send success response (200 OK)
+		h.Response.SuccessWithData(c, domain.MsgMotorcycleRetrieved, response)
 	}
 }

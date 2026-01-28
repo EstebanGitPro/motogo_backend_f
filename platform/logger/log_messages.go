@@ -1095,6 +1095,11 @@ const (
 	LogMotorcycleControllerIDEncError  = "Error encoding motorcycle ID"
 	LogMotorcycleControllerRegSuccess  = "Motorcycle registered successfully"
 
+	// Motorcycle Controller - LIST (HU47)
+	LogMotorcycleControllerListRequest = "Motorcycle list request received"
+	LogMotorcycleControllerListError   = "Error listing motorcycles"
+	LogMotorcycleControllerListSuccess = "Motorcycles listed successfully"
+
 	// Motorcycle Interactor (HU43-47)
 	LogMotorcycleInteractorRegStart        = "Motorcycle registration started"
 	LogMotorcycleInteractorValidateRef     = "Validating motorcycle reference exists"
@@ -1114,6 +1119,14 @@ const (
 	LogMotorcycleInteractorGetOwnerStart   = "Motorcycle get by owner started"
 	LogMotorcycleInteractorGetOwnerError   = "Error getting motorcycles by owner"
 	LogMotorcycleInteractorGetOwnerSuccess = "Motorcycles by owner retrieved successfully"
+	LogMotorcycleInteractorGetPlateStart   = "Motorcycle get by license plate started"
+	LogMotorcycleInteractorGetPlateError   = "Error getting motorcycle by license plate"
+	LogMotorcycleInteractorGetPlateSuccess = "Motorcycle by license plate retrieved successfully"
+
+	// Motorcycle Controller - GET BY PLATE (HU47)
+	LogMotorcycleControllerPlateRequest = "Motorcycle lookup by plate request received"
+	LogMotorcycleControllerPlateError   = "Error looking up motorcycle by plate"
+	LogMotorcycleControllerPlateSuccess = "Motorcycle by plate retrieved successfully"
 
 	// Motorcycle Repository (HU43-47)
 	LogMotorcycleRepoGetByID         = "Repository getting motorcycle by ID"
@@ -1122,6 +1135,8 @@ const (
 	LogMotorcycleRepoGetByOwnerError = "Repository error getting motorcycles by owner"
 	LogMotorcycleRepoGetByOwnerScan  = "Repository error scanning motorcycle row"
 	LogMotorcycleRepoGetByOwnerIter  = "Repository error iterating motorcycle rows"
+	LogMotorcycleRepoGetByPlate      = "Repository getting motorcycle by license plate"
+	LogMotorcycleRepoGetByPlateError = "Repository error getting motorcycle by license plate"
 	LogMotorcycleRepoInvalidTx       = "Repository invalid transaction type"
 	LogMotorcycleRepoSave            = "Repository saving motorcycle"
 	LogMotorcycleRepoSaveError       = "Repository save motorcycle error"

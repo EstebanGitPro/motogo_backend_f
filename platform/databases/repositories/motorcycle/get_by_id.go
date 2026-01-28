@@ -65,3 +65,26 @@ func (r *repository) GetByOwnerID(ctx context.Context, ownerID string) ([]domain
 
 	return motorcycles, nil
 }
+
+func (r *repository) GetByLicensePlate(ctx context.Context, licensePlate string) (*domain.Motorcycle, error) {
+	row := r.stmtGetByLicensePlate.QueryRowContext(ctx, licensePlate)
+
+	var m Motorcycle
+	var ref MotorcycleReference
+
+	err := row.Scan(
+		&m.ID, &m.LicensePlate, &m.ReferenceID, &m.OwnerID, &m.Year, &m.CurrentMileage, &m.OwnerNotes,
+		&ref.ID, &ref.BrandID, &ref.BrandName, &ref.Model, &ref.Category, &ref.EngineDisplacement,
+	)
+
+	if err == sql.ErrNoRows {
+		return nil, domain.ErrMotorcycleNotFound
+	}
+	if err != nil {
+		log.Error(logger.LogMotorcycleRepoGetByPlateError, "error", err, "license_plate", licensePlate)
+		return nil, err
+	}
+
+	motorcycle := m.ToDomain(&ref)
+	return &motorcycle, nil
+}

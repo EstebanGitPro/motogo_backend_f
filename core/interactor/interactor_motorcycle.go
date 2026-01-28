@@ -117,3 +117,21 @@ func (i *MotorcycleInteractor) GetMotorcyclesByOwner(ctx context.Context, ownerI
 	log.Success(logger.LogMotorcycleInteractorGetOwnerSuccess, "owner_id", ownerID, "count", len(motorcycles))
 	return motorcycles, nil
 }
+
+// GetMotorcycleByLicensePlate retrieves a motorcycle by license plate (HU47)
+// This endpoint is accessible by representatives (workshops) to lookup motorcycle info
+func (i *MotorcycleInteractor) GetMotorcycleByLicensePlate(ctx context.Context, licensePlate string) (*domain.Motorcycle, error) {
+	traceID := middleware.GetTraceIDFromContext(ctx)
+	log := i.logger.WithTraceID(traceID)
+
+	log.Info(logger.LogMotorcycleInteractorGetPlateStart, "license_plate", licensePlate)
+
+	motorcycle, err := i.motorcycleRepo.GetByLicensePlate(ctx, licensePlate)
+	if err != nil {
+		log.Error(logger.LogMotorcycleInteractorGetPlateError, "error", err, "license_plate", licensePlate)
+		return nil, err
+	}
+
+	log.Success(logger.LogMotorcycleInteractorGetPlateSuccess, "license_plate", licensePlate, "motorcycle_id", motorcycle.ID)
+	return motorcycle, nil
+}
