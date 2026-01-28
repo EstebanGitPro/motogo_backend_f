@@ -37,7 +37,6 @@ func NewClientRepository(db *sql.DB) (*repository, error) {
 		return nil, sql.ErrConnDone
 	}
 
-	// Prepare all statements to fail-fast on application startup if SQL queries are malformed
 	stmtSave, err := db.Prepare(querySave)
 	if err != nil {
 		log.Error(logger.LogDatabaseUnavailable, "error preparing stmtSave", err)
