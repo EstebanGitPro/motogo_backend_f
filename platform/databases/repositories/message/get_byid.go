@@ -7,7 +7,6 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 )
 
-// GetByID retrieves a message by ID (for CRUD operations, ignores is_active)
 func (r *repository) GetByID(ctx context.Context, id string) (*domain.Message, error) {
 	var m domain.Message
 
