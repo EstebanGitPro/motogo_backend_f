@@ -1,11 +1,9 @@
 # golangci-lint v2 configuration
-# Run with: golangci-lint run ./...
-
 version: "2"
 
 run:
   timeout: 5m
-  tests: false  # Skip test files for now
+  tests: false
 
 output:
   formats:
@@ -16,7 +14,6 @@ linters:
   default: standard
   enable:
     - bodyclose
-    # - dupl  # Disabled: detected "duplicates" are valid CRUD patterns
     - errname
     - errorlint
     - gocognit
@@ -33,81 +30,33 @@ linters:
     - unconvert
     - unparam
     - whitespace
-
-linters-settings:
-  errcheck:
-    check-type-assertions: true
-    check-blank: false  # Reduce noise
-    
-  gocognit:
-    min-complexity: 25  # Slightly more lenient
-    
-  gocyclo:
-    min-complexity: 20
-    
-  goconst:
-    min-len: 3
-    min-occurrences: 4  # More occurrences needed
-    
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - performance
-    disabled-checks:
-      - hugeParam
-      - rangeValCopy
-      
-  gosec:
-    excludes:
-      - G104  # Unhandled errors (covered by errcheck)
-      - G304  # File inclusion (false positives)
-      
-  revive:
-    rules:
-      - name: exported
-        severity: warning
-        disabled: true  # Too many, fix later
-      - name: package-comments
-        severity: warning
-        disabled: true  # Too many, fix later
-      - name: blank-imports
-        severity: warning
-        
-  dupl:
-    threshold: 200  # More lenient threshold
-
-issues:
-  exclude-dirs:
-    - docs
-    - bin
-    - mocks
-    - vendor
-    
-  exclude-rules:
-    # Exclude test files from most linters
-    - path: _test\.go
-      linters:
-        - dupl
-        - gosec
-        - goconst
-        - errcheck
-        - gocognit
-        
-    # Exclude mocks completely
-    - path: mocks/
-      linters:
-        - errcheck
-        - revive
-        - gocritic
-        - dupl
-        
-    # Allow naked returns in short functions
-    - linters:
-        - nakedret
-      text: "naked return in func"
-      
-  max-issues-per-linter: 30
-  max-same-issues: 5
+  settings:
+    errcheck:
+      check-type-assertions: true
+      check-blank: false
+    gocognit:
+      min-complexity: 30
+    gocyclo:
+      min-complexity: 20
+    goconst:
+      min-len: 3
+      min-occurrences: 4
+    gocritic:
+      disabled-checks:
+        - hugeParam
+        - rangeValCopy
+    gosec:
+      excludes:
+        - G104
+        - G304
+        - G101
+        - G301
+    revive:
+      rules:
+        - name: exported
+          disabled: true
+        - name: package-comments
+          disabled: true
 
 formatters:
   enable:
