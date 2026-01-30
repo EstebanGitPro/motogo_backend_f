@@ -1,0 +1,59 @@
+meta {
+  name: Login Admin
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/auth/login
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "email": "admin@motogo.com",
+    "password": "Admin123*"
+  }
+}
+
+script:post-response {
+  if (res.status === 200) {
+    var accessToken = res.body.data.access_token;
+    bru.setVar("access_token", accessToken);
+    console.log("✅ Admin token saved to access_token variable");
+    console.log("🔑 Role:", res.body.data.role || "Check manually");
+  } else {
+    console.log("❌ Login failed:", res.body);
+  }
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has access_token", function() {
+    expect(res.body.data.access_token).to.exist;
+  });
+}
+
+docs {
+  # Login Admin
+  
+  Autenticación con usuario administrador para obtener token de acceso.
+  
+  ## Credenciales por defecto
+  - **Email:** admin@motogo.com
+  - **Password:** Admin123*
+  
+  ## Notas
+  - El token se guarda automáticamente en la variable `access_token`
+  - Este usuario debe tener rol ADMIN para acceder a los endpoints de esta colección
+  - Si no tienes usuario admin, créalo primero o ajusta las credenciales
+}
