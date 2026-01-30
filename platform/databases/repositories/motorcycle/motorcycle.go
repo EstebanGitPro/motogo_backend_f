@@ -17,8 +17,8 @@ type Motorcycle struct {
 }
 
 type MotorcycleReference struct {
-	ID                 string         `db:"ref_id"`
-	BrandID            string         `db:"brand_id"`
+	ID                 sql.NullString `db:"ref_id"`
+	BrandID            sql.NullString `db:"brand_id"`
 	BrandName          sql.NullString `db:"brand_name"`
 	Model              sql.NullString `db:"model"`
 	Category           sql.NullString `db:"category"`
@@ -45,10 +45,10 @@ func (m *Motorcycle) ToDomain(ref *MotorcycleReference) domain.Motorcycle {
 		motorcycle.OwnerNotes = &notes
 	}
 
-	if ref != nil {
+	if ref != nil && ref.ID.Valid {
 		motorcycle.Reference = &domain.MotorcycleReference{
-			ID:      ref.ID,
-			BrandID: ref.BrandID,
+			ID:      ref.ID.String,
+			BrandID: ref.BrandID.String,
 		}
 		if ref.BrandName.Valid {
 			motorcycle.Reference.BrandName = ref.BrandName.String
