@@ -16,7 +16,7 @@ func (r *repository) GetServicesByBranch(ctx context.Context, branchID string) (
 		log.Error(logger.LogBranchServicesRepoGetByBranchErr, "error", err)
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }() // Rows close error intentionally ignored
 
 	var services []domain.BranchServiceInfo
 	for rows.Next() {

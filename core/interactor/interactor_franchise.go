@@ -58,7 +58,7 @@ func (i *FranchiseInteractor) CreateFranchiseWithBranches(ctx context.Context, f
 	}
 	defer func() {
 		if err != nil {
-			tx.Rollback()
+			_ = tx.Rollback() // Intentionally ignoring rollback error
 		}
 	}()
 
@@ -111,7 +111,7 @@ func (i *FranchiseInteractor) UpdateFranchise(ctx context.Context, franchise dom
 	}
 	defer func() {
 		if err != nil {
-			tx.Rollback()
+			_ = tx.Rollback() // Intentionally ignoring rollback error
 		}
 	}()
 
@@ -140,7 +140,7 @@ func (i *FranchiseInteractor) DeleteFranchise(ctx context.Context, franchiseID, 
 	}
 	defer func() {
 		if err != nil {
-			tx.Rollback()
+			_ = tx.Rollback() // Intentionally ignoring rollback error
 		}
 	}()
 
@@ -182,7 +182,7 @@ func (i *FranchiseInteractor) AddBranchToFranchise(ctx context.Context, franchis
 	}
 	defer func() {
 		if err != nil {
-			tx.Rollback()
+			_ = tx.Rollback() // Intentionally ignoring rollback error
 		}
 	}()
 
@@ -222,7 +222,7 @@ func (i *FranchiseInteractor) RemoveBranchFromFranchise(ctx context.Context, fra
 	}
 	defer func() {
 		if err != nil {
-			tx.Rollback()
+			_ = tx.Rollback() // Intentionally ignoring rollback error
 		}
 	}()
 

@@ -13,7 +13,7 @@ func (r *repository) GetCitiesByDepartment(ctx context.Context, departmentID str
 		log.Error(logger.LogLocationRepoGetCitiesError, "error", err, "department_id", departmentID)
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }() // Rows close error intentionally ignored
 
 	var cities []domain.City
 	for rows.Next() {

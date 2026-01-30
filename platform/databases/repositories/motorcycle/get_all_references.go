@@ -14,7 +14,7 @@ func (r *repository) GetAllReferences(ctx context.Context) ([]domain.MotorcycleR
 		log.Error(logger.LogMotorcycleRepoGetAllRefQuery, "error", err.Error())
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }() // Rows close error intentionally ignored
 
 	var references []domain.MotorcycleReference
 	for rows.Next() {

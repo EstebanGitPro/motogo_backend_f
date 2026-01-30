@@ -16,7 +16,7 @@ func (r *repository) GetReferencesByBrandID(ctx context.Context, brandID string)
 		log.Error(logger.LogMotorcycleRepoBrandLinesError, "error", err, "brand_id", brandID)
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }() // Rows close error intentionally ignored
 
 	var references []domain.MotorcycleReference
 	for rows.Next() {

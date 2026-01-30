@@ -29,7 +29,7 @@ func (r *repository) GetExceptionsByScheduleIDForUpdate(
 			"error", err)
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }() // Rows close error intentionally ignored
 
 	var exceptions []domain.ScheduleDetail
 	for rows.Next() {

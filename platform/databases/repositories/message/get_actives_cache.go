@@ -11,7 +11,7 @@ func (r *repository) GetAllActiveForCache(ctx context.Context) ([]cachetypes.Cac
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }() // Rows close error intentionally ignored
 
 	var messages []cachetypes.CachedMessage
 	for rows.Next() {

@@ -16,7 +16,7 @@ func (r *repository) GetServicesByType(ctx context.Context, serviceType string) 
 		log.Error(logger.LogServiceRepoGetByTypeError, "error", err)
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }() // Rows close error intentionally ignored
 
 	var services []domain.Service
 	for rows.Next() {

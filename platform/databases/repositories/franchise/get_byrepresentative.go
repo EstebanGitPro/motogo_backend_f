@@ -14,7 +14,7 @@ func (r *repository) GetFranchisesByRepresentative(ctx context.Context, represen
 		log.Error(logger.LogFranchiseRepoGetByRepError, "representative_id", representativeID, "error", err)
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }() // Rows close error intentionally ignored
 
 	var franchises []domain.Franchise
 	for rows.Next() {

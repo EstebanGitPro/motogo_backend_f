@@ -44,7 +44,7 @@ func (f *DefaultFileReader) ReadJsonSchema(resourcePath string) ([]byte, error) 
 	if err != nil {
 		return nil, err
 	}
-	defer data.Close()
+	defer func() { _ = data.Close() }() // Close error intentionally ignored
 
 	return io.ReadAll(data)
 }

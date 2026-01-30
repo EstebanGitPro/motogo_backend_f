@@ -29,7 +29,7 @@ func (r *repository) ValidateBrands(ctx context.Context, brands []string) error 
 		log.Error(logger.LogBrandRepoValidateError, "error", err)
 		return err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }() // Rows close error intentionally ignored
 
 	foundBrands := make(map[string]bool)
 	for rows.Next() {

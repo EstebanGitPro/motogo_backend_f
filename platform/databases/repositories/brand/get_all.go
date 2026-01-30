@@ -13,7 +13,7 @@ func (r *repository) GetAllBrands(ctx context.Context) ([]domain.Brand, error) {
 		log.Error(logger.LogDatabaseUnavailable, "error", err)
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }() // Rows close error intentionally ignored
 
 	var brands []domain.Brand
 	for rows.Next() {

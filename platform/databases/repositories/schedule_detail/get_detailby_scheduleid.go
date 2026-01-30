@@ -13,7 +13,7 @@ func (r *repository) GetDetailsByScheduleID(ctx context.Context, scheduleID stri
 		log.Error(logger.LogScheduleDetailRepoGetBySchedError, "schedule_id", scheduleID, "error", err)
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }() // Rows close error intentionally ignored
 
 	var details []domain.ScheduleDetail
 	for rows.Next() {

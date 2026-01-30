@@ -9,7 +9,7 @@ func (r *repository) getBranchBrands(ctx context.Context, branchID string) ([]st
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }() // Rows close error intentionally ignored
 
 	var brands []string
 	for rows.Next() {

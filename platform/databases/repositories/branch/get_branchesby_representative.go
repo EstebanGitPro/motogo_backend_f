@@ -14,7 +14,7 @@ func (r *repository) GetBranchesByRepresentative(ctx context.Context, representa
 		log.Error(logger.LogBranchRepoGetByRepError, "error", err, "representative_id", representativeID)
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }() // Rows close error intentionally ignored
 
 	var branches []domain.Branch
 	for rows.Next() {

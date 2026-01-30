@@ -36,7 +36,7 @@ func (r *repository) GetBranchesNearby(
 		log.Error(logger.LogDatabaseUnavailable, "error querying nearby branches", err)
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }() // Rows close error intentionally ignored
 
 	var branches []domain.NearbyBranch
 	for rows.Next() {

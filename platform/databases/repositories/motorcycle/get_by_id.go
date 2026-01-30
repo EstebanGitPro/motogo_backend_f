@@ -37,7 +37,7 @@ func (r *repository) GetByOwnerID(ctx context.Context, ownerID string) ([]domain
 		log.Error(logger.LogMotorcycleRepoGetByOwnerError, "error", err, "owner_id", ownerID)
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }() // Rows close error intentionally ignored
 
 	var motorcycles []domain.Motorcycle
 

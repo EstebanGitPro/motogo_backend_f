@@ -170,7 +170,7 @@ func (b *Builder) jsonValidator(schema *jsonschema.Schema) gin.HandlerFunc {
 			if log != nil {
 				log.Error(logger.LogMiddlewareBodyReadError, "error", err, "path", c.Request.URL.Path)
 			}
-			c.Error(json_schema.ErrBodyReadFailed)
+			_ = c.Error(json_schema.ErrBodyReadFailed)
 			c.Abort()
 			return
 		}
@@ -182,7 +182,7 @@ func (b *Builder) jsonValidator(schema *jsonschema.Schema) gin.HandlerFunc {
 			if log != nil {
 				log.Error(logger.LogMiddlewareJSONParseError, "error", err, "path", c.Request.URL.Path)
 			}
-			c.Error(json_schema.ErrBadRequest)
+			_ = c.Error(json_schema.ErrBadRequest)
 			c.Abort()
 			return
 		}
@@ -259,7 +259,7 @@ func (b *Builder) jsonValidator(schema *jsonschema.Schema) gin.HandlerFunc {
 			if log != nil {
 				log.Warn(logger.LogMiddlewareValidationFailed, "path", c.Request.URL.Path, "fields", fieldNames)
 			}
-			c.Error(validationError)
+			_ = c.Error(validationError)
 			c.Abort()
 			return
 		}

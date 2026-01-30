@@ -13,7 +13,7 @@ func (r *repository) GetAllDepartments(ctx context.Context) ([]domain.Department
 		log.Error(logger.LogLocationRepoGetDepartmentsError, "error", err)
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }() // Rows close error intentionally ignored
 
 	var departments []domain.Department
 	for rows.Next() {
