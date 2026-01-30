@@ -31,17 +31,21 @@ func (i *MotorcycleInteractor) RegisterMotorcycle(ctx context.Context, motorcycl
 
 	log.Info(logger.LogMotorcycleInteractorRegStart, "license_plate", motorcycle.LicensePlate, "owner_id", motorcycle.OwnerID)
 
-	// Step 1: Validate reference exists (only if provided - optional until Release 11)
-	if motorcycle.ReferenceID != "" {
-		refExists, err := i.motorcycleRepo.ValidateReferenceExists(ctx, motorcycle.ReferenceID)
-		if err != nil {
-			log.Error(logger.LogMotorcycleInteractorRefError, "error", err, "reference_id", motorcycle.ReferenceID)
-			return nil, domain.ErrMotorcycleCannotSave
-		}
-		if !refExists {
-			log.Warn(logger.LogMotorcycleInteractorRefNotFound, "reference_id", motorcycle.ReferenceID)
-			return nil, domain.ErrReferenceNotFound
-		}
+	// Step 1: Validate reference_id is provided (required field)
+	if motorcycle.ReferenceID == "" {
+		log.Warn(logger.LogMotorcycleInteractorRefRequired)
+		return nil, domain.ErrReferenceRequired
+	}
+
+	// Step 2: Validate reference exists in catalog
+	refExists, err := i.motorcycleRepo.ValidateReferenceExists(ctx, motorcycle.ReferenceID)
+	if err != nil {
+		log.Error(logger.LogMotorcycleInteractorRefError, "error", err, "reference_id", motorcycle.ReferenceID)
+		return nil, domain.ErrMotorcycleCannotSave
+	}
+	if !refExists {
+		log.Warn(logger.LogMotorcycleInteractorRefNotFound, "reference_id", motorcycle.ReferenceID)
+		return nil, domain.ErrReferenceNotFound
 	}
 
 	// Step 2: Validate license plate is unique
@@ -134,4 +138,156 @@ func (i *MotorcycleInteractor) GetMotorcycleByLicensePlate(ctx context.Context, 
 
 	log.Success(logger.LogMotorcycleInteractorGetPlateSuccess, "license_plate", licensePlate, "motorcycle_id", motorcycle.ID)
 	return motorcycle, nil
+}
+
+// UpdateMotorcycle updates motorcycle information (HU44)
+// Only owner can update their motorcycle - caller must validate ownership
+func (i *MotorcycleInteractor) UpdateMotorcycle(ctx context.Context, motorcycleID string, ownerID string, updates *domain.Motorcycle) (*domain.Motorcycle, error) {
+	traceID := middleware.GetTraceIDFromContext(ctx)
+	log := i.logger.WithTraceID(traceID)
+
+	log.Info(logger.LogMotorcycleInteractorUpdateStart, "motorcycle_id", motorcycleID, "owner_id", ownerID)
+
+	// Step 1: Get existing motorcycle
+	motorcycle, err := i.motorcycleRepo.GetByID(ctx, motorcycleID)
+	if err != nil {
+		log.Error(logger.LogMotorcycleInteractorUpdateError, "error", err, "motorcycle_id", motorcycleID)
+		return nil, err
+	}
+
+	// Step 2: Validate ownership
+	if motorcycle.OwnerID != ownerID {
+		log.Warn(logger.LogMotorcycleInteractorUpdateError, "reason", "not owner", "motorcycle_id", motorcycleID, "owner_id", ownerID)
+		return nil, domain.ErrMotorcycleNotFound
+	}
+
+	// Step 3: Validate new reference_id if changed
+	if updates.ReferenceID != "" && updates.ReferenceID != motorcycle.ReferenceID {
+		refExists, err := i.motorcycleRepo.ValidateReferenceExists(ctx, updates.ReferenceID)
+		if err != nil {
+			log.Error(logger.LogMotorcycleInteractorRefError, "error", err, "reference_id", updates.ReferenceID)
+			return nil, domain.ErrMotorcycleCannotUpdate
+		}
+		if !refExists {
+			log.Warn(logger.LogMotorcycleInteractorRefNotFound, "reference_id", updates.ReferenceID)
+			return nil, domain.ErrReferenceNotFound
+		}
+		motorcycle.ReferenceID = updates.ReferenceID
+	}
+
+	// Step 4: Apply updates (only if provided)
+	if updates.Year != nil {
+		motorcycle.Year = updates.Year
+	}
+	if updates.CurrentMileage != nil {
+		motorcycle.CurrentMileage = updates.CurrentMileage
+	}
+	if updates.OwnerNotes != nil {
+		motorcycle.OwnerNotes = updates.OwnerNotes
+	}
+
+	// Step 5: Begin transaction
+	tx, err := i.motorcycleRepo.BeginTx(ctx)
+	if err != nil {
+		log.Error(logger.LogMotorcycleInteractorBeginTxError, "error", err)
+		return nil, domain.ErrMotorcycleCannotUpdate
+	}
+
+	// Step 6: Update motorcycle
+	err = i.motorcycleRepo.Update(ctx, tx, motorcycle)
+	if err != nil {
+		log.Error(logger.LogMotorcycleInteractorUpdateError, "error", err, "motorcycle_id", motorcycleID)
+		tx.Rollback()
+		return nil, domain.ErrMotorcycleCannotUpdate
+	}
+
+	// Step 7: Commit transaction
+	if err := tx.Commit(); err != nil {
+		log.Error(logger.LogMotorcycleInteractorCommitError, "error", err)
+		return nil, domain.ErrMotorcycleCannotUpdate
+	}
+
+	log.Success(logger.LogMotorcycleInteractorUpdateSuccess, "motorcycle_id", motorcycleID)
+
+	// Step 8: Return updated motorcycle with reference info
+	return i.motorcycleRepo.GetByID(ctx, motorcycleID)
+}
+
+// DeleteMotorcycle soft-deletes a motorcycle (HU45)
+// Only owner can delete their motorcycle - returns 404 for non-owners
+func (i *MotorcycleInteractor) DeleteMotorcycle(ctx context.Context, motorcycleID string, ownerID string) error {
+	traceID := middleware.GetTraceIDFromContext(ctx)
+	log := i.logger.WithTraceID(traceID)
+
+	log.Info(logger.LogMotorcycleInteractorDeleteStart, "motorcycle_id", motorcycleID, "owner_id", ownerID)
+
+	// Step 1: Get existing motorcycle to validate ownership
+	motorcycle, err := i.motorcycleRepo.GetByID(ctx, motorcycleID)
+	if err != nil {
+		log.Error(logger.LogMotorcycleInteractorDeleteError, "error", err, "motorcycle_id", motorcycleID)
+		return err
+	}
+
+	// Step 2: Validate ownership (security by obscurity - 404 for non-owners)
+	if motorcycle.OwnerID != ownerID {
+		log.Warn(logger.LogMotorcycleInteractorDeleteError, "reason", "not owner", "motorcycle_id", motorcycleID, "owner_id", ownerID)
+		return domain.ErrMotorcycleNotFound
+	}
+
+	// Step 3: Begin transaction
+	tx, err := i.motorcycleRepo.BeginTx(ctx)
+	if err != nil {
+		log.Error(logger.LogMotorcycleInteractorBeginTxError, "error", err)
+		return domain.ErrMotorcycleCannotDelete
+	}
+
+	// Step 4: Soft delete motorcycle
+	err = i.motorcycleRepo.Delete(ctx, tx, motorcycleID)
+	if err != nil {
+		log.Error(logger.LogMotorcycleInteractorDeleteError, "error", err, "motorcycle_id", motorcycleID)
+		tx.Rollback()
+		return domain.ErrMotorcycleCannotDelete
+	}
+
+	// Step 5: Commit transaction
+	if err := tx.Commit(); err != nil {
+		log.Error(logger.LogMotorcycleInteractorCommitError, "error", err)
+		return domain.ErrMotorcycleCannotDelete
+	}
+
+	log.Success(logger.LogMotorcycleInteractorDeleteSuccess, "motorcycle_id", motorcycleID)
+	return nil
+}
+
+// GetMotorcycleReferences retrieves all motorcycle references from catalog (HU50)
+func (i *MotorcycleInteractor) GetMotorcycleReferences(ctx context.Context) ([]domain.MotorcycleReference, error) {
+	traceID := middleware.GetTraceIDFromContext(ctx)
+	log := i.logger.WithTraceID(traceID)
+
+	log.Info(logger.LogMotorcycleInteractorGetRefsStart)
+
+	references, err := i.motorcycleRepo.GetAllReferences(ctx)
+	if err != nil {
+		log.Error(logger.LogMotorcycleInteractorGetRefsError, "error", err)
+		return nil, err
+	}
+
+	return references, nil
+}
+
+// GetReferencesByBrandID retrieves motorcycle references for a specific brand (HU40 - Admin only)
+func (i *MotorcycleInteractor) GetReferencesByBrandID(ctx context.Context, brandID string) ([]domain.MotorcycleReference, error) {
+	traceID := middleware.GetTraceIDFromContext(ctx)
+	log := i.logger.WithTraceID(traceID)
+
+	log.Info(logger.LogMotorcycleInteractorBrandLinesStart, "brand_id", brandID)
+
+	references, err := i.motorcycleRepo.GetReferencesByBrandID(ctx, brandID)
+	if err != nil {
+		log.Error(logger.LogMotorcycleInteractorBrandLinesError, "error", err, "brand_id", brandID)
+		return nil, err
+	}
+
+	log.Success(logger.LogMotorcycleInteractorBrandLinesSuccess, "brand_id", brandID, "count", len(references))
+	return references, nil
 }

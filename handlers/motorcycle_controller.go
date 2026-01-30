@@ -66,7 +66,7 @@ func (h *handler) GetMotorcycle() gin.HandlerFunc {
 		// 4. Validate ownership - only owner can view their motorcycle (security)
 		// Returns 404 to not reveal existence to non-owners (security by obscurity)
 		// DEBUG: Log both IDs to compare
-		log.Debug("DEBUG_OWNERSHIP_CHECK",
+		log.Debug(logger.LogMotorcycleControllerOwnershipDebug,
 			"person_id", func() string {
 				if person != nil {
 					return person.ID
@@ -184,8 +184,12 @@ func (h *handler) RegisterMotorcycle() gin.HandlerFunc {
 			switch err {
 			case domain.ErrReferenceNotFound:
 				h.Response.Error(c, domain.MsgMotorcycleReferenceNotFound)
+			case domain.ErrReferenceRequired:
+				h.Response.Error(c, domain.MsgReferenceRequired)
 			case domain.ErrDuplicateLicensePlate:
 				h.Response.Error(c, domain.MsgDuplicateLicensePlate)
+			case domain.ErrMotorcycleCannotSave:
+				h.Response.Error(c, domain.MsgMotorcycleCannotSave)
 			default:
 				h.Response.Error(c, domain.MsgServerError)
 			}
@@ -246,7 +250,7 @@ func (h *handler) ListMotorcycles() gin.HandlerFunc {
 		// 1. Get authenticated user from context
 		person, _ := middleware.GetAuthenticatedUser(c)
 		if person == nil {
-			log.Warn("No authenticated user in context", "client_ip", c.ClientIP())
+			log.Warn(logger.LogMotorcycleControllerNoAuthUser, "client_ip", c.ClientIP())
 			h.Response.Error(c, domain.MsgUnauthorized)
 			return
 		}
@@ -318,12 +322,12 @@ func (h *handler) LookupMotorcycleByPlate() gin.HandlerFunc {
 		// 1. Get plate from query parameter
 		plate := c.Query("plate")
 		if plate == "" {
-			log.Warn("Missing plate query parameter", "client_ip", c.ClientIP())
+			log.Warn(logger.LogMotorcycleControllerMissingPlate, "client_ip", c.ClientIP())
 			h.Response.Error(c, domain.MsgMissingPlateParam)
 			return
 		}
 
-		log.Debug("Looking up motorcycle by plate", "license_plate", plate)
+		log.Debug(logger.LogMotorcycleControllerPlateDebug, "license_plate", plate)
 
 		// 2. Call interactor to get motorcycle by plate
 		motorcycle, err := h.MotorcycleInteractor.GetMotorcycleByLicensePlate(c.Request.Context(), plate)
@@ -340,8 +344,8 @@ func (h *handler) LookupMotorcycleByPlate() gin.HandlerFunc {
 			return
 		}
 
-		// 3. Build response DTO (no HATEOAS links for representative - read-only view)
-		response := ToMotorcycleResponse(motorcycle)
+		// 3. Build response DTO (workshop view - excludes private owner data)
+		response := ToMotorcycleLookupResponse(motorcycle)
 
 		// Encode motorcycle ID for response
 		encodedID, err := h.EncodeID(motorcycle.ID)
@@ -362,5 +366,345 @@ func (h *handler) LookupMotorcycleByPlate() gin.HandlerFunc {
 
 		// 4. Send success response (200 OK)
 		h.Response.SuccessWithData(c, domain.MsgMotorcycleRetrieved, response)
+	}
+}
+
+// UpdateMotorcycle handles PUT /motorcycles/:id - update motorcycle (HU44)
+// @Summary Update motorcycle information
+// @Description Updates motorcycle details. Only the owner can update their motorcycle. Returns 404 for non-owners (security by obscurity). License plate cannot be changed.
+// @Tags Motorcycles
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Motorcycle ID (hashid encoded)"
+// @Param motorcycle body UpdateMotorcycleRequest true "Motorcycle update data"
+// @Success 200 {object} StandardResponse{data=MotorcycleResponse} "Motorcycle updated successfully"
+// @Failure 400 {object} StandardResponse "Bad request - invalid data"
+// @Failure 401 {object} StandardResponse "Unauthorized - missing or invalid token"
+// @Failure 404 {object} StandardResponse "Motorcycle not found or not owner"
+// @Failure 500 {object} StandardResponse "Internal server error"
+// @Router /motorcycles/{id} [put]
+func (h *handler) UpdateMotorcycle() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Create logger with trace ID for this request
+		traceID := middleware.GetRequestID(c)
+		log := Logger.WithTraceID(traceID)
+
+		log.Info(logger.LogMotorcycleControllerUpdateRequest,
+			"method", c.Request.Method,
+			"path", c.Request.URL.Path,
+			"client_ip", c.ClientIP())
+
+		// 1. Get authenticated user from context
+		person, exists := middleware.GetAuthenticatedUser(c)
+		if !exists || person == nil {
+			log.Warn(logger.LogMotorcycleControllerAuthError, "client_ip", c.ClientIP())
+			h.Response.Error(c, domain.MsgServerError)
+			return
+		}
+
+		// 2. Get and decode motorcycle ID from URL
+		encodedID := c.Param("id")
+		motorcycleID, err := h.DecodeID(encodedID)
+		if err != nil {
+			log.Warn(logger.LogMotorcycleControllerIDDecodeError,
+				"encoded_id", encodedID,
+				"error", err)
+			h.Response.Error(c, domain.MsgMotorcycleNotFound)
+			return
+		}
+
+		// 3. Parse request body
+		var req UpdateMotorcycleRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			log.Warn(logger.LogMotorcycleControllerBindError,
+				"error", err,
+				"client_ip", c.ClientIP())
+			h.Response.Error(c, domain.MsgMotorcycleCannotUpdate)
+			return
+		}
+
+		log.Debug(logger.LogMotorcycleControllerUpdateDebug,
+			"motorcycle_id", motorcycleID,
+			"encoded_id", encodedID,
+			"owner_id", person.ID)
+
+		// 4. Call interactor to update motorcycle
+		updates := req.ToDomain()
+		motorcycle, err := h.MotorcycleInteractor.UpdateMotorcycle(c.Request.Context(), motorcycleID, person.ID, updates)
+		if err != nil {
+			log.Error(logger.LogMotorcycleControllerUpdateError,
+				"error", err,
+				"motorcycle_id", motorcycleID,
+				"client_ip", c.ClientIP())
+			switch err {
+			case domain.ErrMotorcycleNotFound:
+				h.Response.Error(c, domain.MsgMotorcycleNotFound)
+			case domain.ErrReferenceNotFound:
+				h.Response.Error(c, domain.MsgMotorcycleReferenceNotFound)
+			case domain.ErrMotorcycleCannotUpdate:
+				h.Response.Error(c, domain.MsgMotorcycleCannotUpdate)
+			default:
+				h.Response.Error(c, domain.MsgServerError)
+			}
+			return
+		}
+
+		// 5. Build response DTO with HATEOAS links
+		response := ToMotorcycleResponse(motorcycle)
+		response.ID = encodedID
+
+		// 6. Build HATEOAS links (only implemented: self, update, list)
+		baseURL := GetBaseURL(c)
+		response.Links = BuildMotorcycleDetailLinks(baseURL, encodedID, true)
+
+		log.Success(logger.LogMotorcycleControllerUpdateSuccess,
+			"motorcycle_id", motorcycle.ID,
+			"encoded_id", encodedID,
+			"client_ip", c.ClientIP())
+
+		// 7. Send success response (200 OK)
+		h.Response.SuccessWithData(c, domain.MsgMotorcycleUpdated, response)
+	}
+}
+
+// DeleteMotorcycle handles DELETE /motorcycles/:id - soft delete motorcycle (HU45)
+// @Summary Delete a motorcycle
+// @Description Soft deletes a motorcycle. Only the owner can delete their motorcycle. Returns 404 for non-owners (security by obscurity).
+// @Tags Motorcycles
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Motorcycle ID (hashid encoded)"
+// @Success 200 {object} StandardResponse "Motorcycle deleted successfully with HATEOAS links"
+// @Failure 401 {object} StandardResponse "Unauthorized - missing or invalid token"
+// @Failure 404 {object} StandardResponse "Motorcycle not found or not owner"
+// @Failure 500 {object} StandardResponse "Internal server error"
+// @Router /motorcycles/{id} [delete]
+func (h *handler) DeleteMotorcycle() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Create logger with trace ID for this request
+		traceID := middleware.GetRequestID(c)
+		log := Logger.WithTraceID(traceID)
+
+		log.Info(logger.LogMotorcycleControllerDeleteRequest,
+			"method", c.Request.Method,
+			"path", c.Request.URL.Path,
+			"client_ip", c.ClientIP())
+
+		// 1. Get authenticated user from context
+		person, exists := middleware.GetAuthenticatedUser(c)
+		if !exists || person == nil {
+			log.Warn(logger.LogMotorcycleControllerAuthError, "client_ip", c.ClientIP())
+			h.Response.Error(c, domain.MsgServerError)
+			return
+		}
+
+		// 2. Get and decode motorcycle ID from URL
+		encodedID := c.Param("id")
+		motorcycleID, err := h.DecodeID(encodedID)
+		if err != nil {
+			log.Warn(logger.LogMotorcycleControllerIDDecodeError,
+				"encoded_id", encodedID,
+				"error", err)
+			h.Response.Error(c, domain.MsgMotorcycleNotFound)
+			return
+		}
+
+		log.Debug(logger.LogMotorcycleControllerDeleteRequest,
+			"motorcycle_id", motorcycleID,
+			"encoded_id", encodedID,
+			"owner_id", person.ID)
+
+		// 3. Call interactor to delete motorcycle
+		err = h.MotorcycleInteractor.DeleteMotorcycle(c.Request.Context(), motorcycleID, person.ID)
+		if err != nil {
+			log.Error(logger.LogMotorcycleControllerDeleteError,
+				"error", err,
+				"motorcycle_id", motorcycleID,
+				"client_ip", c.ClientIP())
+			switch err {
+			case domain.ErrMotorcycleNotFound:
+				h.Response.Error(c, domain.MsgMotorcycleNotFound)
+			case domain.ErrMotorcycleCannotDelete:
+				h.Response.Error(c, domain.MsgMotorcycleCannotDelete)
+			default:
+				h.Response.Error(c, domain.MsgServerError)
+			}
+			return
+		}
+
+		log.Success(logger.LogMotorcycleControllerDeleteSuccess,
+			"motorcycle_id", motorcycleID,
+			"encoded_id", encodedID,
+			"client_ip", c.ClientIP())
+
+		// 4. Build HATEOAS links for next actions (Richardson Level 3)
+		baseURL := GetBaseURL(c)
+		links := BuildMotorcycleDeletedLinks(baseURL)
+
+		// 5. Send success response (200 OK with HATEOAS links)
+		response := map[string]interface{}{
+			"_links": links,
+		}
+		h.Response.SuccessWithData(c, domain.MsgMotorcycleDeleted, response)
+	}
+}
+
+// GetMotorcycleReferences handles GET /motorcycle-references - lists motorcycle reference catalog (HU50)
+// @Summary List motorcycle reference catalog
+// @Description Retrieves all motorcycle references (brands/models) for selection during motorcycle registration.
+// @Tags Motorcycles
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} StandardResponse{data=[]MotorcycleReferenceCatalogItem} "References retrieved successfully"
+// @Failure 401 {object} StandardResponse "Unauthorized - missing or invalid token"
+// @Failure 500 {object} StandardResponse "Internal server error"
+// @Router /motorcycle-references [get]
+func (h *handler) GetMotorcycleReferences() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Create logger with trace ID for this request
+		traceID := middleware.GetRequestID(c)
+		log := Logger.WithTraceID(traceID)
+
+		log.Info(logger.LogMotorcycleControllerRefsRequest,
+			"method", c.Request.Method,
+			"path", c.Request.URL.Path,
+			"client_ip", c.ClientIP())
+
+		// 1. Call interactor to get all references
+		references, err := h.MotorcycleInteractor.GetMotorcycleReferences(c.Request.Context())
+		if err != nil {
+			log.Error(logger.LogMotorcycleControllerRefsError,
+				"error", err,
+				"client_ip", c.ClientIP())
+			h.Response.Error(c, domain.MsgServerError)
+			return
+		}
+
+		// 2. Build response with encoded IDs
+		var responseItems []MotorcycleReferenceCatalogItem
+		for _, ref := range references {
+			encodedID, err := h.EncodeID(ref.ID)
+			if err != nil {
+				log.Warn(logger.LogMotorcycleControllerIDEncError,
+					"reference_id", ref.ID,
+					"error", err)
+				continue // Skip if encoding fails
+			}
+
+			encodedBrandID, err := h.EncodeID(ref.BrandID)
+			if err != nil {
+				log.Warn(logger.LogMotorcycleControllerIDEncError,
+					"brand_id", ref.BrandID,
+					"error", err)
+				continue
+			}
+
+			responseItems = append(responseItems, MotorcycleReferenceCatalogItem{
+				ID:                 encodedID,
+				BrandID:            encodedBrandID,
+				BrandName:          ref.BrandName,
+				Model:              ref.Model,
+				Category:           ref.Category,
+				EngineDisplacement: ref.EngineDisplacement,
+			})
+		}
+
+		log.Success(logger.LogMotorcycleControllerRefsSuccess,
+			"count", len(responseItems),
+			"client_ip", c.ClientIP())
+
+		// 3. Build HATEOAS links
+		baseURL := GetBaseURL(c)
+		links := BuildMotorcycleReferencesLinks(baseURL)
+
+		// 4. Build final response with data and links
+		response := map[string]interface{}{
+			"references": responseItems,
+			"_links":     links,
+		}
+
+		// 5. Send success response (200 OK)
+		h.Response.SuccessWithData(c, domain.MsgMotorcycleReferencesListed, response)
+	}
+}
+
+// GetBrandLines handles GET /admin/brands/:brandId/lines - lists motorcycle lines for a brand (HU40)
+// @Summary List motorcycle lines for a specific brand
+// @Description Retrieves all motorcycle references (models/lines) associated with a specific brand. This endpoint requires ADMIN role and is used for catalog management.
+// @Tags Admin Brands
+// @Produce json
+// @Security BearerAuth
+// @Param brandId path string true "Brand ID (hashid encoded)"
+// @Success 200 {object} StandardResponse{data=[]MotorcycleReferenceCatalogItem} "Lines retrieved successfully"
+// @Failure 401 {object} StandardResponse "Unauthorized - missing or invalid token"
+// @Failure 403 {object} StandardResponse "Forbidden - requires ADMIN role"
+// @Failure 500 {object} StandardResponse "Internal server error"
+// @Router /admin/brands/{brandId}/lines [get]
+func (h *handler) GetBrandLines() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Create logger with trace ID for this request
+		traceID := middleware.GetRequestID(c)
+		log := Logger.WithTraceID(traceID)
+
+		log.Info(logger.LogMotorcycleControllerBrandLinesRequest,
+			"method", c.Request.Method,
+			"path", c.Request.URL.Path,
+			"client_ip", c.ClientIP())
+
+		// 1. Get and decode brand ID from URL
+		encodedBrandID := c.Param("brandId")
+		brandID, err := h.DecodeID(encodedBrandID)
+		if err != nil {
+			log.Warn(logger.LogMotorcycleControllerBrandLinesError,
+				"encoded_brand_id", encodedBrandID,
+				"error", err)
+			// Return empty list for invalid brand ID
+			h.Response.SuccessWithData(c, domain.MsgBrandLinesRetrieved, map[string]interface{}{
+				"lines":  []BrandLineItem{},
+				"_links": BuildBrandLinesLinks(GetBaseURL(c), encodedBrandID),
+			})
+			return
+		}
+
+		log.Debug("Decoded brand ID", "encoded", encodedBrandID, "decoded", brandID)
+
+		// 2. Call interactor to get references by brand
+		references, err := h.MotorcycleInteractor.GetReferencesByBrandID(c.Request.Context(), brandID)
+		if err != nil {
+			log.Error(logger.LogMotorcycleControllerBrandLinesError,
+				"error", err,
+				"brand_id", brandID,
+				"client_ip", c.ClientIP())
+			h.Response.Error(c, domain.MsgServerError)
+			return
+		}
+
+		// 3. Build simplified response (only brand_name and model)
+		var responseItems []BrandLineItem
+		for _, ref := range references {
+			responseItems = append(responseItems, BrandLineItem{
+				BrandName: ref.BrandName,
+				Model:     ref.Model,
+			})
+		}
+
+		log.Success(logger.LogMotorcycleControllerBrandLinesSuccess,
+			"brand_id", brandID,
+			"count", len(responseItems),
+			"client_ip", c.ClientIP())
+
+		// 4. Build HATEOAS links
+		baseURL := GetBaseURL(c)
+		links := BuildBrandLinesLinks(baseURL, encodedBrandID)
+
+		// 5. Build final response with data and links
+		response := map[string]interface{}{
+			"lines":  responseItems,
+			"_links": links,
+		}
+
+		// 6. Send success response (200 OK)
+		h.Response.SuccessWithData(c, domain.MsgBrandLinesRetrieved, response)
 	}
 }

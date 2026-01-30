@@ -481,7 +481,7 @@ func BuildServiceListLinks(baseURL string, filterType string) []Link {
 // Motorcycle HATEOAS Functions (HU43-47)
 // ========================================
 
-// BuildMotorcycleDetailLinks constructs HATEOAS links for motorcycle query response (HU46)
+// BuildMotorcycleDetailLinks constructs HATEOAS links for motorcycle response (HU43-47)
 // Implements Richardson Maturity Level 3 with hypermedia controls
 // isOwner: true if the authenticated user is the motorcycle owner (shows edit/delete links)
 func BuildMotorcycleDetailLinks(baseURL string, motorcycleID string, isOwner bool) []Link {
@@ -518,4 +518,42 @@ func BuildMotorcycleDetailLinks(baseURL string, motorcycleID string, isOwner boo
 	}
 
 	return links
+}
+
+// BuildMotorcycleDeletedLinks constructs HATEOAS links after motorcycle deletion (HU45)
+// Shows next possible actions: list motorcycles or create new motorcycle
+func BuildMotorcycleDeletedLinks(baseURL string) []Link {
+	collectionURL := BuildCollectionURL(baseURL, "motorcycles")
+	return []Link{
+		{Href: collectionURL, Rel: "list", Method: "GET"},
+		{Href: collectionURL, Rel: "create", Method: "POST"},
+	}
+}
+
+// BuildNearbyBranchesLinks constructs HATEOAS links for nearby branches search (HU89)
+func BuildNearbyBranchesLinks(baseURL string, lat, lng, radiusKm float64) []Link {
+	nearbyURL := fmt.Sprintf("%s/motogo/api/v1/branches/nearby?lat=%.8f&lng=%.8f&radius=%.1f", baseURL, lat, lng, radiusKm)
+	return []Link{
+		{Href: nearbyURL, Rel: "self", Method: "GET"},
+		{Href: BuildCollectionURL(baseURL, "branches"), Rel: "branches", Method: "GET"},
+		{Href: fmt.Sprintf("%s/motogo/api/v1/branch-types", baseURL), Rel: "branch-types", Method: "GET"},
+	}
+}
+
+// BuildMotorcycleReferencesLinks constructs HATEOAS links for motorcycle references catalog (HU50)
+func BuildMotorcycleReferencesLinks(baseURL string) []Link {
+	return []Link{
+		{Href: fmt.Sprintf("%s/motogo/api/v1/motorcycle-references", baseURL), Rel: "self", Method: "GET"},
+		{Href: BuildCollectionURL(baseURL, "motorcycles"), Rel: "motorcycles", Method: "GET"},
+		{Href: BuildCollectionURL(baseURL, "brands"), Rel: "brands", Method: "GET"},
+	}
+}
+
+// BuildBrandLinesLinks constructs HATEOAS links for brand lines catalog (HU40 - Admin)
+func BuildBrandLinesLinks(baseURL string, brandID string) []Link {
+	return []Link{
+		{Href: fmt.Sprintf("%s/motogo/api/v1/admin/brands/%s/lines", baseURL, brandID), Rel: "self", Method: "GET"},
+		{Href: BuildCollectionURL(baseURL, "brands"), Rel: "brands", Method: "GET"},
+		{Href: fmt.Sprintf("%s/motogo/api/v1/motorcycle-references", baseURL), Rel: "references", Method: "GET"},
+	}
 }

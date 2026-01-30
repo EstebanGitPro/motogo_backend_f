@@ -197,6 +197,10 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 			handler.ListBranches(),
 		)
 
+		// GET /branches/nearby - Buscar sedes cercanas (HU89)
+		// Accessible by all authenticated users (USER, REPRESENTATIVE)
+		protected.GET("/branches/nearby", handler.GetNearbyBranches())
+
 		// GET /branches/:id - Consultar info de sede (HU62)
 		// Accessible by all authenticated users, HATEOAS links vary by ownership
 		protected.GET("/branches/:id", handler.GetBranch())
@@ -211,6 +215,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		// POST /motorcycles - Register new motorcycle (HU43)
 		protected.POST("/motorcycles",
 			middleware.RequireRole(domain.RoleUser),
+			validator.WithValidateRegisterMotorcycle(),
 			handler.RegisterMotorcycle(),
 		)
 
@@ -227,11 +232,30 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 			handler.ListMotorcycles(),
 		)
 
+		// PUT /motorcycles/:id - Update motorcycle (HU44, solo propietario)
+		protected.PUT("/motorcycles/:id",
+			middleware.RequireRole(domain.RoleUser),
+			handler.UpdateMotorcycle(),
+		)
+
+		// DELETE /motorcycles/:id - Soft delete motorcycle (HU45, solo propietario)
+		protected.DELETE("/motorcycles/:id",
+			middleware.RequireRole(domain.RoleUser),
+			handler.DeleteMotorcycle(),
+		)
+
 		// GET /motorcycles/lookup?plate={placa} - Lookup motorcycle by plate (HU47)
 		// Accessible by representatives (workshops) for service purposes
 		protected.GET("/motorcycles/lookup",
 			middleware.RequireRole(domain.RoleRepresentative),
 			handler.LookupMotorcycleByPlate(),
+		)
+
+		// GET /motorcycle-references - List motorcycle reference catalog (HU50)
+		// Accessible by USER role for motorcycle registration
+		protected.GET("/motorcycle-references",
+			middleware.RequireRole(domain.RoleUser),
+			handler.GetMotorcycleReferences(),
 		)
 
 		// POST /branches/:id/services - Asociar servicios a una sede (solo REPRESENTANTE)
@@ -426,6 +450,10 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		// === SERVICES CATALOG ADMIN (HU68) ===
 		// PUT /admin/services/:id - Modificar servicio del catálogo global
 		admin.PUT("/services/:id", handler.UpdateService())
+
+		// === BRAND LINES ADMIN (HU40) ===
+		// GET /admin/brands/:brandId/lines - Consultar líneas de una marca
+		admin.GET("/brands/:brandId/lines", handler.GetBrandLines())
 	}
 
 	dependencies.Logger.Success(logger.LogRouteConfigured)
