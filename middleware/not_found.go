@@ -21,7 +21,6 @@ func NotFoundHandler() gin.HandlerFunc {
 			"client_ip", c.ClientIP(),
 			"user_agent", c.Request.UserAgent())
 
-
 		// Return JSON response
 		c.JSON(http.StatusNotFound, gin.H{
 
@@ -30,7 +29,6 @@ func NotFoundHandler() gin.HandlerFunc {
 			"message": "Endpoint no encontrado",
 			"path":    c.Request.URL.Path,
 		})
-
 
 	}
 }

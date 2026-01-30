@@ -8,6 +8,7 @@ type Brand struct {
 	ID   string `db:"id"`
 	Name string `db:"name"`
 }
+
 func (b *Brand) ToDomain() domain.Brand {
 	return domain.Brand{
 		ID:   b.ID,

@@ -138,20 +138,20 @@ const (
 var log logger.Logger = logger.NewSlogLogger()
 
 type repository struct {
-	db                          *sql.DB
-	stmtSaveDetail              *sql.Stmt
-	stmtGetDetailByID           *sql.Stmt
-	stmtGetDetailsByScheduleID  *sql.Stmt
-	stmtGetDetailsByScheduleDay *sql.Stmt
-	stmtUpdateDetail            *sql.Stmt
-	stmtDeleteDetail            *sql.Stmt
-	stmtCheckTimeConflict       *sql.Stmt
+	db                             *sql.DB
+	stmtSaveDetail                 *sql.Stmt
+	stmtGetDetailByID              *sql.Stmt
+	stmtGetDetailsByScheduleID     *sql.Stmt
+	stmtGetDetailsByScheduleDay    *sql.Stmt
+	stmtUpdateDetail               *sql.Stmt
+	stmtDeleteDetail               *sql.Stmt
+	stmtCheckTimeConflict          *sql.Stmt
 	stmtGetExceptionsByScheduleID  *sql.Stmt
 	stmtGetExceptionByID           *sql.Stmt
 	stmtCheckExceptionDateConflict *sql.Stmt
-	stmtCheckDayIsClosed          *sql.Stmt
-	stmtCheckDayHasTimeSlots      *sql.Stmt
-	stmtCheckExceptionIsRedundant *sql.Stmt
+	stmtCheckDayIsClosed           *sql.Stmt
+	stmtCheckDayHasTimeSlots       *sql.Stmt
+	stmtCheckExceptionIsRedundant  *sql.Stmt
 }
 
 // NewRepository creates a new ScheduleDetailRepository with prepared statements (fail-fast pattern)

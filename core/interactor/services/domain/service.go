@@ -4,7 +4,6 @@ import (
 	uuid "github.com/EstebanGitPro/motogo-backend/tools/utils"
 )
 
-
 type ServiceType string
 
 const (
@@ -58,4 +57,3 @@ type BranchServiceInfo struct {
 func GenerateUUID() string {
 	return uuid.Generate()
 }
-

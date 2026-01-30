@@ -42,7 +42,7 @@ func (r *repository) UpdateMessage(ctx context.Context, tx output.Tx, message do
 	if err != nil {
 		return domain.ErrMessageCannotUpdate
 	}
-	_ = result 
+	_ = result
 
 	return nil
 }

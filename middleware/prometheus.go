@@ -70,9 +70,9 @@ func PrometheusInit() {
 func TrackMetrics() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
-		path := c.FullPath() 
+		path := c.FullPath()
 		if path == "" {
-			path = c.Request.URL.Path 
+			path = c.Request.URL.Path
 		}
 		method := c.Request.Method
 

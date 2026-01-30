@@ -11,10 +11,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-
 func RequireAuth(personService input.Service, msgCache *messaging.MessageCache, jwtValidator *jwt.JWKSValidator) gin.HandlerFunc {
 	tokenParser := jwt.NewTokenParser()
-	_ = tokenParser 
+	_ = tokenParser
 
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
@@ -36,7 +35,7 @@ func RequireAuth(personService input.Service, msgCache *messaging.MessageCache, 
 		var err error
 
 		if jwtValidator != nil {
-		
+
 			claims, err = jwtValidator.ValidateToken(token)
 			if err != nil {
 				switch {

@@ -11,7 +11,6 @@ type Franchise struct {
 	Branches    []Branch `json:"branches,omitempty"`
 }
 
-
 func (f *Franchise) SetID() {
 	f.ID = uuid.Generate()
 }

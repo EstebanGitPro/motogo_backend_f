@@ -53,6 +53,7 @@ type Department struct {
 	ID   string `db:"id"`
 	Name string `db:"name"`
 }
+
 func (d *Department) ToDomain() domain.Department {
 	return domain.Department{
 		ID:   d.ID,

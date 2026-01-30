@@ -16,16 +16,16 @@ func (r *repository) GetExceptionsByScheduleIDForUpdate(
 ) ([]domain.ScheduleDetail, error) {
 	sqlTx, ok := tx.(*common.SQLTx)
 	if !ok {
-		log.Error(logger.LogScheduleDetailRepoGetBySchedError, 
-			"schedule_id", scheduleID, 
+		log.Error(logger.LogScheduleDetailRepoGetBySchedError,
+			"schedule_id", scheduleID,
 			"error", "invalid transaction type")
 		return nil, domain.ErrInternalServer
 	}
 
 	rows, err := sqlTx.QueryContext(ctx, queryGetExceptionsForUpdate, scheduleID)
 	if err != nil {
-		log.Error(logger.LogScheduleDetailRepoGetBySchedError, 
-			"schedule_id", scheduleID, 
+		log.Error(logger.LogScheduleDetailRepoGetBySchedError,
+			"schedule_id", scheduleID,
 			"error", err)
 		return nil, err
 	}

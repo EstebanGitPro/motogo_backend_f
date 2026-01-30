@@ -7,8 +7,6 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-
-
 func (r *repository) CheckAddressExists(ctx context.Context, address string) (bool, error) {
 	var exists int
 	err := r.db.QueryRowContext(ctx, queryCheckAddressExists, address).Scan(&exists)

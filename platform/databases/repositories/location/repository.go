@@ -112,8 +112,6 @@ func (r *repository) BeginTx(ctx context.Context) (output.Tx, error) {
 	return common.NewSQLTx(tx), nil
 }
 
-
-
 // ValidateCityInDepartment checks if the city belongs to the specified department
 func (r *repository) ValidateCityInDepartment(ctx context.Context, cityID, departmentID string) error {
 	var exists int
@@ -127,4 +125,3 @@ func (r *repository) ValidateCityInDepartment(ctx context.Context, cityID, depar
 	}
 	return nil
 }
-

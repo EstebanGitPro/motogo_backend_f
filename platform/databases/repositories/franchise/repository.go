@@ -156,11 +156,3 @@ func (r *repository) BeginTx(ctx context.Context) (output.Tx, error) {
 	}
 	return common.NewSQLTx(tx), nil
 }
-
-
-
-
-
-
-
-

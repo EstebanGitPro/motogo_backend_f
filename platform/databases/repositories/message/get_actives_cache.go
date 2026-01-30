@@ -16,7 +16,7 @@ func (r *repository) GetAllActiveForCache(ctx context.Context) ([]cachetypes.Cac
 	var messages []cachetypes.CachedMessage
 	for rows.Next() {
 		var m cachetypes.CachedMessage
-		var createdAt, updatedAt interface{} 
+		var createdAt, updatedAt interface{}
 		err := rows.Scan(
 			&m.ID,
 			&m.Code,
