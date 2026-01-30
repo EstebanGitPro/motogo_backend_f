@@ -1,0 +1,36 @@
+package input
+
+import (
+	"context"
+
+	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
+)
+
+// ============================================
+// Interactor Interfaces for Handler Layer
+// These interfaces allow dependency injection and testing
+// ============================================
+
+// BrandInteractorInterface defines the contract for brand catalog operations
+type BrandInteractorInterface interface {
+	GetAllBrands(ctx context.Context) ([]domain.Brand, error)
+}
+
+// LocationInteractorInterface defines the contract for geographic catalog operations
+type LocationInteractorInterface interface {
+	GetAllDepartments(ctx context.Context) ([]domain.Department, error)
+	GetCitiesByDepartment(ctx context.Context, departmentID string) ([]domain.City, error)
+}
+
+// MotorcycleInteractorInterface defines the contract for motorcycle operations
+// Note: Signatures match the actual MotorcycleInteractor implementation
+type MotorcycleInteractorInterface interface {
+	RegisterMotorcycle(ctx context.Context, motorcycle *domain.Motorcycle) (*domain.Motorcycle, error)
+	GetMotorcycleByID(ctx context.Context, motorcycleID string) (*domain.Motorcycle, error)
+	GetMotorcyclesByOwner(ctx context.Context, ownerID string) ([]domain.Motorcycle, error)
+	GetMotorcycleByLicensePlate(ctx context.Context, licensePlate string) (*domain.Motorcycle, error)
+	UpdateMotorcycle(ctx context.Context, motorcycleID string, ownerID string, updates *domain.Motorcycle) (*domain.Motorcycle, error)
+	DeleteMotorcycle(ctx context.Context, motorcycleID string, ownerID string) error
+	GetMotorcycleReferences(ctx context.Context) ([]domain.MotorcycleReference, error)
+	GetReferencesByBrandID(ctx context.Context, brandID string) ([]domain.MotorcycleReference, error)
+}

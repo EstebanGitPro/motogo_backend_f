@@ -1,6 +1,9 @@
 package handlers
 
-import "github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
+import (
+	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
+	"github.com/EstebanGitPro/motogo-backend/tools/idencoder"
+)
 
 // BrandItemResponse represents a single brand in the catalog
 type BrandItemResponse struct {
@@ -15,11 +18,17 @@ type BrandListResponse struct {
 }
 
 // NewBrandListResponse creates a BrandListResponse from domain brands
-func NewBrandListResponse(brands []domain.Brand, links []Link) BrandListResponse {
+// IDs are encoded using the provided encoder for security
+func NewBrandListResponse(brands []domain.Brand, links []Link, encoder *idencoder.HashidsEncoder) BrandListResponse {
 	items := make([]BrandItemResponse, len(brands))
 	for i, brand := range brands {
+		encodedID, err := encoder.Encode(brand.ID)
+		if err != nil {
+			// Use original ID if encoding fails (shouldn't happen with valid UUIDs)
+			encodedID = brand.ID
+		}
 		items[i] = BrandItemResponse{
-			ID:   brand.ID,
+			ID:   encodedID,
 			Name: brand.Name,
 		}
 	}

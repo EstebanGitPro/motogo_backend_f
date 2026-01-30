@@ -32,6 +32,11 @@ func (m *Motorcycle) ToDomain(ref *MotorcycleReference) domain.Motorcycle {
 		OwnerID:      m.OwnerID,
 	}
 
+	// Preserve ReferenceID from database
+	if m.ReferenceID.Valid {
+		motorcycle.ReferenceID = m.ReferenceID.String
+	}
+
 	if m.Year.Valid {
 		year := int(m.Year.Int64)
 		motorcycle.Year = &year
