@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"errors"
+
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/middleware"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
@@ -74,14 +76,14 @@ func (h *handler) RegisterBranch() gin.HandlerFunc {
 				"error", err,
 				"branch_name", req.Name,
 				"client_ip", c.ClientIP())
-			switch err {
-			case domain.ErrInvalidBranchType:
+			switch {
+			case errors.Is(err, domain.ErrInvalidBranchType):
 				h.Response.Error(c, domain.MsgBranchInvalidType)
-			case domain.ErrDuplicateBranchName:
+			case errors.Is(err, domain.ErrDuplicateBranchName):
 				h.Response.Error(c, domain.MsgBranchDuplicateName)
-			case domain.ErrBrandNotFound:
+			case errors.Is(err, domain.ErrBrandNotFound):
 				h.Response.Error(c, domain.MsgBrandNotFound)
-			case domain.ErrDuplicateAddress:
+			case errors.Is(err, domain.ErrDuplicateAddress):
 				h.Response.Error(c, domain.MsgDuplicateAddress)
 			default:
 				h.Response.Error(c, domain.MsgBranchCannotSave)
@@ -176,7 +178,7 @@ func (h *handler) GetBranch() gin.HandlerFunc {
 				"error", err,
 				"branch_id", branchID,
 				"client_ip", c.ClientIP())
-			if err == domain.ErrBranchNotFound {
+			if errors.Is(err, domain.ErrBranchNotFound) {
 				h.Response.Error(c, domain.MsgBranchNotFound)
 			} else {
 				h.Response.Error(c, domain.MsgServerError)
@@ -391,14 +393,14 @@ func (h *handler) UpdateBranch() gin.HandlerFunc {
 		updatedBranch, geocodingSucceeded, err := h.BranchInteractor.UpdateBranch(c.Request.Context(), branchID, branch, person.ID)
 		if err != nil {
 			log.Error(logger.LogBranchControllerUpdateError, "error", err, "branch_id", branchID)
-			switch err {
-			case domain.ErrBranchNotFound:
+			switch {
+			case errors.Is(err, domain.ErrBranchNotFound):
 				h.Response.Error(c, domain.MsgBranchNotFound)
-			case domain.ErrForbidden:
+			case errors.Is(err, domain.ErrForbidden):
 				h.Response.Error(c, domain.MsgForbidden)
-			case domain.ErrInvalidBranchType:
+			case errors.Is(err, domain.ErrInvalidBranchType):
 				h.Response.Error(c, domain.MsgBranchInvalidType)
-			case domain.ErrBrandNotFound:
+			case errors.Is(err, domain.ErrBrandNotFound):
 				h.Response.Error(c, domain.MsgBrandNotFound)
 			default:
 				h.Response.Error(c, domain.MsgBranchCannotUpdate)
@@ -481,12 +483,12 @@ func (h *handler) DeleteBranch() gin.HandlerFunc {
 		err = h.BranchInteractor.DeleteBranch(c.Request.Context(), branchID, person.ID)
 		if err != nil {
 			log.Error(logger.LogBranchControllerDeleteError, "error", err, "branch_id", branchID)
-			switch err {
-			case domain.ErrBranchNotFound:
+			switch {
+			case errors.Is(err, domain.ErrBranchNotFound):
 				h.Response.Error(c, domain.MsgBranchNotFound)
-			case domain.ErrForbidden:
+			case errors.Is(err, domain.ErrForbidden):
 				h.Response.Error(c, domain.MsgForbidden)
-			case domain.ErrBranchCannotDelete:
+			case errors.Is(err, domain.ErrBranchCannotDelete):
 				h.Response.Error(c, domain.MsgBranchHasAssoc)
 			default:
 				h.Response.Error(c, domain.MsgBranchCannotDelete)

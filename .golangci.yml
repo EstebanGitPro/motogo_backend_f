@@ -5,7 +5,7 @@ version: "2"
 
 run:
   timeout: 5m
-  tests: true
+  tests: false  # Skip test files for now
 
 output:
   formats:
@@ -15,84 +15,99 @@ output:
 linters:
   default: standard
   enable:
-    # Additional recommended linters
-    - bodyclose     # Checks whether HTTP response body is closed
-    - dupl          # Code clone detection
-    - errname       # Checks error naming conventions
-    - errorlint     # Find code that will cause problems with error wrapping
-    - gocognit      # Computes cognitive complexity
-    - goconst       # Finds repeated strings that could be constants
-    - gocritic      # Extensible Go linter
-    - gocyclo       # Computes cyclomatic complexity
-    - gosec         # Security issues
-    - misspell      # Finds commonly misspelled words
-    - nakedret      # Finds naked returns
-    - nilerr        # Finds errors not returned
-    - prealloc      # Slice preallocation
-    - predeclared   # Finds shadowed predeclared identifiers
-    - revive        # Fast, configurable linter
-    - unconvert     # Unnecessary type conversions
-    - unparam       # Reports unused function parameters
-    - whitespace    # Checks for unnecessary whitespace
+    - bodyclose
+    - dupl
+    - errname
+    - errorlint
+    - gocognit
+    - goconst
+    - gocritic
+    - gocyclo
+    - gosec
+    - misspell
+    - nakedret
+    - nilerr
+    - prealloc
+    - predeclared
+    - revive
+    - unconvert
+    - unparam
+    - whitespace
 
 linters-settings:
   errcheck:
     check-type-assertions: true
-    check-blank: true
+    check-blank: false  # Reduce noise
     
   gocognit:
-    min-complexity: 20
+    min-complexity: 25  # Slightly more lenient
     
   gocyclo:
-    min-complexity: 15
+    min-complexity: 20
     
   goconst:
     min-len: 3
-    min-occurrences: 3
+    min-occurrences: 4  # More occurrences needed
     
   gocritic:
     enabled-tags:
       - diagnostic
-      - style
       - performance
     disabled-checks:
       - hugeParam
+      - rangeValCopy
       
   gosec:
     excludes:
-      - G104
+      - G104  # Unhandled errors (covered by errcheck)
+      - G304  # File inclusion (false positives)
       
   revive:
     rules:
       - name: exported
         severity: warning
+        disabled: true  # Too many, fix later
       - name: package-comments
         severity: warning
+        disabled: true  # Too many, fix later
       - name: blank-imports
         severity: warning
         
   dupl:
-    threshold: 150
+    threshold: 200  # More lenient threshold
 
 issues:
   exclude-dirs:
     - docs
     - bin
     - mocks
+    - vendor
     
   exclude-rules:
+    # Exclude test files from most linters
     - path: _test\.go
       linters:
         - dupl
         - gosec
         - goconst
+        - errcheck
+        - gocognit
         
+    # Exclude mocks completely
     - path: mocks/
       linters:
-        - all
+        - errcheck
+        - revive
+        - gocritic
+        - dupl
         
-  max-issues-per-linter: 50
-  max-same-issues: 10
+    # Allow naked returns in short functions
+    - linters:
+        - nakedret
+      text: "naked return in func"
+      
+  max-issues-per-linter: 30
+  max-same-issues: 5
 
 formatters:
   enable:

@@ -63,7 +63,7 @@ func NewJWKSValidator(ctx context.Context, config JWKSConfig) (*JWKSValidator, e
 	// Fetch JWKS from Keycloak
 	jwks, err := keyfunc.Get(config.JWKSURL, options)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrJWKSUnavailable, err)
+		return nil, fmt.Errorf("%w: %w", ErrJWKSUnavailable, err)
 	}
 
 	return &JWKSValidator{
@@ -96,7 +96,7 @@ func (v *JWKSValidator) ValidateToken(tokenString string) (map[string]interface{
 				return nil, ErrTokenMalformed
 			}
 		}
-		return nil, fmt.Errorf("%w: %v", ErrInvalidClaims, err)
+		return nil, fmt.Errorf("%w: %w", ErrInvalidClaims, err)
 	}
 
 	if !token.Valid {

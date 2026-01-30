@@ -2,6 +2,7 @@ package person
 
 import (
 	"context"
+	"errors"
 
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
@@ -29,7 +30,8 @@ func (r *repository) SavePerson(ctx context.Context, tx output.Tx, person domain
 		personToSave.KeycloakUserID)
 
 	if err != nil {
-		if mysqlErr, ok := err.(*mysql.MySQLError); ok && mysqlErr.Number == 1062 {
+		mysqlErr := &mysql.MySQLError{}
+		if errors.As(err, &mysqlErr) {
 			return domain.ErrDuplicateUser
 		}
 		return domain.ErrUserCannotSave

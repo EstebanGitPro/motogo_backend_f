@@ -242,9 +242,9 @@ const (
 // DEPENDENCY INJECTION
 // ============================================
 const (
-	LogDepInit          = "Inicializando dependencias"
-	LogDepInitComplete  = "Dependencias inicializadas completamente"
-	LogDepInitError     = "Error inicializando dependencias"
+	LogDepInit          = "Inicializando dependencies"
+	LogDepInitComplete  = "Dependencies inicializadas completamente"
+	LogDepInitError     = "Error inicializando dependencies"
 	LogDepWiringService = "Inyectando servicio"
 )
 
@@ -1011,7 +1011,7 @@ const (
 	LogScheduleDetailServiceInvalidDay       = "Día de la semana inválido"
 	LogScheduleDetailServiceInvalidTime      = "Formato de hora inválido"
 	LogScheduleDetailServiceInvalidTimeRange = "Hora de cierre anterior a apertura"
-	LogScheduleDetailServiceConflictCheck    = "Error verificando conflictos de horario"
+	LogScheduleDetailServiceConflictCheck    = "Error verificando conflicts de horario"
 	LogScheduleDetailServiceTimeConflict     = "Conflicto de horario detectado"
 	LogScheduleDetailServiceSaveError        = "Error guardando detalle horario"
 	LogScheduleDetailServiceCreateOK         = "Detalle horario creado exitosamente"
@@ -1050,7 +1050,7 @@ const (
 	LogScheduleDetailRepoDeleteError     = "Error eliminando detalle horario de BD"
 	LogScheduleDetailRepoGetByIDError    = "Error obteniendo detalle horario por ID"
 	LogScheduleDetailRepoGetBySchedError = "Error obteniendo detalles por horario"
-	LogScheduleDetailRepoConflictCheck   = "Error verificando conflictos de horario"
+	LogScheduleDetailRepoConflictCheck   = "Error verificando conflicts de horario"
 	LogScheduleDetailRepoScanError       = "Error escaneando fila de detalle horario"
 )
 

@@ -3,6 +3,7 @@ package branch
 import (
 	"context"
 	"database/sql"
+	"errors"
 
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
@@ -32,7 +33,7 @@ func (r *repository) GetBranchByID(ctx context.Context, branchID string) (*domai
 	)
 
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, domain.ErrBranchNotFound
 		}
 		log.Error(logger.LogBranchRepoGetByIDError, "error", err, "branch_id", branchID)

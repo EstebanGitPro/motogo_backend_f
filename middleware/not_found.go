@@ -29,6 +29,5 @@ func NotFoundHandler() gin.HandlerFunc {
 			"message": "Endpoint no encontrado",
 			"path":    c.Request.URL.Path,
 		})
-
 	}
 }

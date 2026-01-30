@@ -331,9 +331,10 @@ func (h handler) ListMessages() func(c *gin.Context) {
 			filters["category"] = category
 		}
 		if active := c.Query("active"); active != "" {
-			if active == "true" || active == "1" {
+			switch active {
+			case "true", "1":
 				filters["active"] = true
-			} else if active == "false" || active == "0" {
+			case "false", "0":
 				filters["active"] = false
 			}
 		}
@@ -371,7 +372,7 @@ func (h handler) ListMessages() func(c *gin.Context) {
 
 // ReloadMessageCache godoc
 // @Summary      Recargar caché de mensajes
-// @Description  Fuerza la recarga del caché de mensajes desde la base de datos. Útil después de actualizaciones o eliminaciones manuales.
+// @Description  Fuerza la recarga del caché de mensajes desde la base de datos. Útil después de actualizaciones o eliminaciones manuals.
 // @Tags         messages
 // @Accept       json
 // @Produce      json

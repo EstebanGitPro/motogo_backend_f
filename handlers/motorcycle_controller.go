@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"errors"
+
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/middleware"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
@@ -55,7 +57,7 @@ func (h *handler) GetMotorcycle() gin.HandlerFunc {
 				"error", err,
 				"motorcycle_id", motorcycleID,
 				"client_ip", c.ClientIP())
-			if err == domain.ErrMotorcycleNotFound {
+			if errors.Is(err, domain.ErrMotorcycleNotFound) {
 				h.Response.Error(c, domain.MsgMotorcycleNotFound)
 			} else {
 				h.Response.Error(c, domain.MsgServerError)
@@ -181,14 +183,14 @@ func (h *handler) RegisterMotorcycle() gin.HandlerFunc {
 				"license_plate", motorcycle.LicensePlate,
 				"client_ip", c.ClientIP())
 
-			switch err {
-			case domain.ErrReferenceNotFound:
+			switch {
+			case errors.Is(err, domain.ErrReferenceNotFound):
 				h.Response.Error(c, domain.MsgMotorcycleReferenceNotFound)
-			case domain.ErrReferenceRequired:
+			case errors.Is(err, domain.ErrReferenceRequired):
 				h.Response.Error(c, domain.MsgReferenceRequired)
-			case domain.ErrDuplicateLicensePlate:
+			case errors.Is(err, domain.ErrDuplicateLicensePlate):
 				h.Response.Error(c, domain.MsgDuplicateLicensePlate)
-			case domain.ErrMotorcycleCannotSave:
+			case errors.Is(err, domain.ErrMotorcycleCannotSave):
 				h.Response.Error(c, domain.MsgMotorcycleCannotSave)
 			default:
 				h.Response.Error(c, domain.MsgServerError)
@@ -336,7 +338,7 @@ func (h *handler) LookupMotorcycleByPlate() gin.HandlerFunc {
 				"error", err,
 				"license_plate", plate,
 				"client_ip", c.ClientIP())
-			if err == domain.ErrMotorcycleNotFound {
+			if errors.Is(err, domain.ErrMotorcycleNotFound) {
 				h.Response.Error(c, domain.MsgMotorcycleNotFound)
 			} else {
 				h.Response.Error(c, domain.MsgServerError)
@@ -437,12 +439,12 @@ func (h *handler) UpdateMotorcycle() gin.HandlerFunc {
 				"error", err,
 				"motorcycle_id", motorcycleID,
 				"client_ip", c.ClientIP())
-			switch err {
-			case domain.ErrMotorcycleNotFound:
+			switch {
+			case errors.Is(err, domain.ErrMotorcycleNotFound):
 				h.Response.Error(c, domain.MsgMotorcycleNotFound)
-			case domain.ErrReferenceNotFound:
+			case errors.Is(err, domain.ErrReferenceNotFound):
 				h.Response.Error(c, domain.MsgMotorcycleReferenceNotFound)
-			case domain.ErrMotorcycleCannotUpdate:
+			case errors.Is(err, domain.ErrMotorcycleCannotUpdate):
 				h.Response.Error(c, domain.MsgMotorcycleCannotUpdate)
 			default:
 				h.Response.Error(c, domain.MsgServerError)
@@ -522,10 +524,10 @@ func (h *handler) DeleteMotorcycle() gin.HandlerFunc {
 				"error", err,
 				"motorcycle_id", motorcycleID,
 				"client_ip", c.ClientIP())
-			switch err {
-			case domain.ErrMotorcycleNotFound:
+			switch {
+			case errors.Is(err, domain.ErrMotorcycleNotFound):
 				h.Response.Error(c, domain.MsgMotorcycleNotFound)
-			case domain.ErrMotorcycleCannotDelete:
+			case errors.Is(err, domain.ErrMotorcycleCannotDelete):
 				h.Response.Error(c, domain.MsgMotorcycleCannotDelete)
 			default:
 				h.Response.Error(c, domain.MsgServerError)

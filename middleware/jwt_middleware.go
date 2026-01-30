@@ -35,7 +35,6 @@ func RequireAuth(personService input.Service, msgCache *messaging.MessageCache, 
 		var err error
 
 		if jwtValidator != nil {
-
 			claims, err = jwtValidator.ValidateToken(token)
 			if err != nil {
 				switch {

@@ -7,7 +7,6 @@ import (
 )
 
 func (r *repository) HasBranchesByRepresentative(ctx context.Context, representativeID string) (bool, error) {
-
 	var exists bool
 	err := r.db.QueryRowContext(ctx, queryHasBranchesByRepresentative, representativeID).Scan(&exists)
 	if err != nil {

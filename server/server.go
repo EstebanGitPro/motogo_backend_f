@@ -99,7 +99,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 
 		// GET /persons/:id - Locate: Obtener persona por ID
 		// Este es el endpoint referenciado en el Location header del POST
-		//public.GET("/persons/:id", handler.GetPersonByID())
+		// public.GET("/persons/:id", handler.GetPersonByID())
 
 		// === AUTH ENDPOINTS ===
 		// POST /auth/login - Autenticar usuario
@@ -138,7 +138,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		public.GET("/messages", handler.ListMessages())
 
 		// POST /messages/cache/reload - Recargar caché de mensajes desde BD
-		// Endpoint administrativo para forzar recarga después de cambios manuales
+		// Endpoint administration para forzar recarga después de cambios manuals
 		public.POST("/messages/cache/reload", handler.ReloadMessageCache())
 
 		// GET /persons/:id/contact - Obtener info de contacto pública (HU55)

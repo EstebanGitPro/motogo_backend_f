@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
@@ -95,7 +96,7 @@ func (s *scheduleService) GetScheduleByBranchID(ctx context.Context, branchID st
 func (s *scheduleService) GetScheduleByID(ctx context.Context, scheduleID string) (*domain.BranchSchedule, error) {
 	schedule, err := s.scheduleRepo.GetScheduleByID(ctx, scheduleID)
 	if err != nil {
-		if err == domain.ErrScheduleNotFound {
+		if errors.Is(err, domain.ErrScheduleNotFound) {
 			return nil, err
 		}
 		scheduleLog.Error(logger.LogScheduleServiceGetError, "schedule_id", scheduleID, "error", err)

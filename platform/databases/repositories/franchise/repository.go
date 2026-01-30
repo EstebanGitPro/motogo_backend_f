@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+
 	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
 	"github.com/EstebanGitPro/motogo-backend/platform/databases/common"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"

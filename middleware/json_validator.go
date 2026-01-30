@@ -19,7 +19,6 @@ type Builder struct {
 }
 
 func NewMiddlewareValidator(validators *json_schema.Validators) *Builder {
-
 	return &Builder{
 		Validators: validators,
 	}

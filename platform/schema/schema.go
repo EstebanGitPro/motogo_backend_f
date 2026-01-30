@@ -34,7 +34,6 @@ type FileReaderInterface interface {
 type DefaultFileReader struct{}
 
 func (f *DefaultFileReader) ReadJsonSchema(resourcePath string) ([]byte, error) {
-
 	root, err := utils.FindModuleRoot()
 
 	if err != nil {
@@ -48,7 +47,6 @@ func (f *DefaultFileReader) ReadJsonSchema(resourcePath string) ([]byte, error) 
 	defer data.Close()
 
 	return io.ReadAll(data)
-
 }
 
 func NewValidator(fileReader FileReaderInterface) (*Validators, error) {
@@ -142,7 +140,6 @@ func NewValidator(fileReader FileReaderInterface) (*Validators, error) {
 	validator.RegisterMotorcycleValidator = registerMotorcycle
 
 	return validator, nil
-
 }
 
 func (v *Validators) createSchema(resourcePath string) (*jsonschema.Schema, error) {

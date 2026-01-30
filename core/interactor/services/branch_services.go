@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/input"
@@ -108,7 +109,7 @@ func (s *branchService) RegisterBranch(ctx context.Context, tx output.Tx, branch
 	// 2. Check for duplicate name within franchise (only if franchise is set)
 	if branch.FranchiseID != nil && *branch.FranchiseID != "" {
 		existingBranch, err := s.repository.GetBranchByFranchiseAndName(ctx, *branch.FranchiseID, branch.Name)
-		if err != nil && err != domain.ErrBranchNotFound {
+		if err != nil && !errors.Is(err, domain.ErrBranchNotFound) {
 			s.logger.Error(logger.LogBranchServiceDupNameCheck, "error", err)
 			return nil, err
 		}
