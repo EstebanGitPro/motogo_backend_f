@@ -24,6 +24,7 @@ type Validators struct {
 	ScheduleExceptionValidator       *jsonschema.Schema // HU20 (create exception)
 	UpdateScheduleExceptionValidator *jsonschema.Schema // HU21 (update exception)
 	FranchiseValidator               *jsonschema.Schema // HU26-29 (franchises)
+	RegisterMotorcycleValidator      *jsonschema.Schema // HU43 (register motorcycle)
 }
 
 type FileReaderInterface interface {
@@ -120,6 +121,11 @@ func NewValidator(fileReader FileReaderInterface) (*Validators, error) {
 		return nil, err
 	}
 
+	registerMotorcycle, err := validator.createSchema("register_motorcycle_schema.json")
+	if err != nil {
+		return nil, err
+	}
+
 	validator.RegisterValidator = register
 	validator.MessageValidator = message
 	validator.ResendVerificationValidator = resendVerification
@@ -133,6 +139,7 @@ func NewValidator(fileReader FileReaderInterface) (*Validators, error) {
 	validator.ScheduleExceptionValidator = scheduleException
 	validator.UpdateScheduleExceptionValidator = updateScheduleException
 	validator.FranchiseValidator = franchise
+	validator.RegisterMotorcycleValidator = registerMotorcycle
 
 	return validator, nil
 
@@ -179,6 +186,20 @@ func (v *Validators) ValidateMessage(data interface{}) error {
 	}
 
 	result := v.MessageValidator.Validate(data)
+	if !result.IsValid() {
+		return ErrValidationFailed
+	}
+
+	return nil
+}
+
+// ValidateRegisterMotorcycle validates data against the register motorcycle schema (HU43)
+func (v *Validators) ValidateRegisterMotorcycle(data interface{}) error {
+	if v.RegisterMotorcycleValidator == nil {
+		return ErrSchemaEmpty
+	}
+
+	result := v.RegisterMotorcycleValidator.Validate(data)
 	if !result.IsValid() {
 		return ErrValidationFailed
 	}

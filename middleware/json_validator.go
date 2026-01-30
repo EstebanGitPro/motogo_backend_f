@@ -74,6 +74,13 @@ var fieldNameMapping = map[string]string{
 	"module":   "Módulo",
 	"category": "Categoría",
 	"type":     "Tipo",
+
+	// Motorcycles (HU43-47)
+	"license_plate":   "Placa",
+	"reference_id":    "Referencia de motocicleta",
+	"year":            "Año del modelo",
+	"current_mileage": "Kilometraje actual",
+	"owner_notes":     "Notas del propietario",
 }
 
 // translateFieldNames converts technical field names to Spanish labels
@@ -146,6 +153,11 @@ func (b *Builder) WithValidateUpdateScheduleException() gin.HandlerFunc {
 // WithValidateFranchise validates franchise creation/update request (HU26-29)
 func (b *Builder) WithValidateFranchise() gin.HandlerFunc {
 	return b.jsonValidator(b.Validators.FranchiseValidator)
+}
+
+// WithValidateRegisterMotorcycle validates motorcycle registration request (HU43)
+func (b *Builder) WithValidateRegisterMotorcycle() gin.HandlerFunc {
+	return b.jsonValidator(b.Validators.RegisterMotorcycleValidator)
 }
 
 func (b *Builder) jsonValidator(schema *jsonschema.Schema) gin.HandlerFunc {
