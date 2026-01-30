@@ -251,3 +251,40 @@ func (s *branchService) DeleteBranch(ctx context.Context, tx output.Tx, branchID
 	s.logger.Info(logger.LogBranchServiceDelComplete, "branch_id", branchID)
 	return nil
 }
+
+// GetBranchesNearby retrieves branches within radius of given coordinates (HU89)
+// Uses bounding box pre-filter for optimization before Haversine calculation
+func (s *branchService) GetBranchesNearby(ctx context.Context, lat, lng, radiusKm float64, establishmentType string) ([]domain.NearbyBranch, error) {
+	const earthRadiusKm = 6371.0
+	const degToRad = 3.141592653589793 / 180.0
+
+	// Calculate bounding box for optimization
+	// latDelta = radiusKm / earthRadiusKm * (180 / π)
+	latDelta := radiusKm / earthRadiusKm * (180.0 / 3.141592653589793)
+
+	// lngDelta = radiusKm / (earthRadiusKm * cos(lat in radians)) * (180 / π)
+	cosLat := cosine(lat * degToRad)
+	lngDelta := radiusKm / (earthRadiusKm * cosLat) * (180.0 / 3.141592653589793)
+
+	latMin := lat - latDelta
+	latMax := lat + latDelta
+	lngMin := lng - lngDelta
+	lngMax := lng + lngDelta
+
+	return s.repository.GetBranchesNearby(ctx, lat, lng, radiusKm, establishmentType, latMin, latMax, lngMin, lngMax)
+}
+
+// cosine calculates cosine using Taylor series (avoids math import)
+func cosine(x float64) float64 {
+	// Normalize x to [-π, π]
+	for x > 3.141592653589793 {
+		x -= 2 * 3.141592653589793
+	}
+	for x < -3.141592653589793 {
+		x += 2 * 3.141592653589793
+	}
+
+	// Taylor series: cos(x) = 1 - x²/2! + x⁴/4! - x⁶/6! + ...
+	x2 := x * x
+	return 1 - x2/2 + x2*x2/24 - x2*x2*x2/720 + x2*x2*x2*x2/40320
+}

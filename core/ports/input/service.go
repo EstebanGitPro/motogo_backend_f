@@ -99,6 +99,9 @@ type BranchService interface {
 
 	// DeleteBranch deletes a branch by ID (HU61)
 	DeleteBranch(ctx context.Context, tx output.Tx, branchID string) error
+
+	// GetBranchesNearby retrieves branches within radius of given coordinates (HU89)
+	GetBranchesNearby(ctx context.Context, lat, lng, radiusKm float64, establishmentType string) ([]domain.NearbyBranch, error)
 }
 
 // BrandService - Use Cases for Brand catalog operations

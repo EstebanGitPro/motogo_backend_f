@@ -514,3 +514,173 @@ func (h *handler) DeleteBranch() gin.HandlerFunc {
 		h.Response.SuccessWithData(c, domain.MsgBranchDeleted, response)
 	}
 }
+
+// GetNearbyBranches handles GET /branches/nearby - search branches near location (HU89)
+// @Summary Search nearby branches
+// @Description Returns branches within the specified radius from given coordinates
+// @Tags Branch
+// @Produce json
+// @Security BearerAuth
+// @Param lat query number true "Latitude of the center point"
+// @Param lng query number true "Longitude of the center point"
+// @Param radius query number false "Search radius in kilometers (default: 5, max: 50)"
+// @Param type query string false "Filter by establishment type (WORKSHOP, STORE, WORKSHOP_STORE)"
+// @Success 200 {object} StandardResponse{data=NearbyBranchesResponse}
+// @Failure 400 {object} StandardResponse
+// @Failure 401 {object} StandardResponse
+// @Router /branches/nearby [get]
+func (h *handler) GetNearbyBranches() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		traceID := middleware.GetRequestID(c)
+		log := Logger.WithTraceID(traceID)
+
+		log.Info(logger.LogBranchControllerGetRequest,
+			"method", c.Request.Method,
+			"path", c.Request.URL.Path,
+			"client_ip", c.ClientIP())
+
+		// 1. Parse latitude (required)
+		latStr := c.Query("lat")
+		if latStr == "" {
+			log.Warn("nearby_branches_missing_lat", "client_ip", c.ClientIP())
+			h.Response.Error(c, domain.MsgValLatitudeRequired)
+			return
+		}
+		lat, err := parseFloat(latStr)
+		if err != nil || lat < -90 || lat > 90 {
+			log.Warn("nearby_branches_invalid_lat", "lat", latStr, "error", err)
+			h.Response.Error(c, domain.MsgValLatitudeInvalid)
+			return
+		}
+
+		// 2. Parse longitude (required)
+		lngStr := c.Query("lng")
+		if lngStr == "" {
+			log.Warn("nearby_branches_missing_lng", "client_ip", c.ClientIP())
+			h.Response.Error(c, domain.MsgValLongitudeRequired)
+			return
+		}
+		lng, err := parseFloat(lngStr)
+		if err != nil || lng < -180 || lng > 180 {
+			log.Warn("nearby_branches_invalid_lng", "lng", lngStr, "error", err)
+			h.Response.Error(c, domain.MsgValLongitudeInvalid)
+			return
+		}
+
+		// 3. Parse radius (optional, default 5km, max 50km)
+		radiusKm := 5.0 // default
+		if radiusStr := c.Query("radius"); radiusStr != "" {
+			radius, err := parseFloat(radiusStr)
+			if err != nil || radius <= 0 || radius > 50 {
+				log.Warn("nearby_branches_invalid_radius", "radius", radiusStr, "error", err)
+				h.Response.Error(c, domain.MsgValRadiusInvalid)
+				return
+			}
+			radiusKm = radius
+		}
+
+		// 4. Parse type (optional: WORKSHOP, STORE, WORKSHOP_STORE)
+		establishmentType := c.Query("type")
+		if establishmentType != "" {
+			if !domain.IsValidEstablishmentType(establishmentType) {
+				log.Warn("nearby_branches_invalid_type", "type", establishmentType)
+				h.Response.Error(c, domain.MsgBranchInvalidType)
+				return
+			}
+		}
+
+		log.Info("nearby_branches_search",
+			"lat", lat,
+			"lng", lng,
+			"radius_km", radiusKm,
+			"type", establishmentType)
+
+		// 5. Call interactor
+		branches, err := h.BranchInteractor.GetBranchesNearby(c.Request.Context(), lat, lng, radiusKm, establishmentType)
+		if err != nil {
+			log.Error("nearby_branches_error", "error", err)
+			h.Response.Error(c, domain.MsgServerError)
+			return
+		}
+
+		// 6. Build response with encoded IDs and HATEOAS links
+		baseURL := GetBaseURL(c)
+		items := make([]NearbyBranchResponse, 0, len(branches))
+		for _, branch := range branches {
+			encodedID, err := h.EncodeID(branch.ID)
+			if err != nil {
+				log.Warn(logger.LogIDEncodeError, "branch_id", branch.ID, "error", err)
+				continue
+			}
+			items = append(items, NewNearbyBranchResponse(branch, encodedID, baseURL))
+		}
+
+		// 7. Build collection response
+		response := NearbyBranchesResponse{
+			Branches: items,
+			Count:    len(items),
+			Center: struct {
+				Latitude  float64 `json:"latitude"`
+				Longitude float64 `json:"longitude"`
+			}{
+				Latitude:  lat,
+				Longitude: lng,
+			},
+			RadiusKm: radiusKm,
+			Links:    BuildNearbyBranchesLinks(baseURL, lat, lng, radiusKm),
+		}
+
+		log.Success("nearby_branches_found",
+			"count", len(items),
+			"radius_km", radiusKm,
+			"client_ip", c.ClientIP())
+
+		// 8. Send success response
+		h.Response.SuccessWithData(c, domain.MsgBranchNearbyFound, response)
+	}
+}
+
+// parseFloat converts string to float64
+func parseFloat(s string) (float64, error) {
+	var result float64
+	var negative bool
+	var i int
+
+	if len(s) == 0 {
+		return 0, domain.ErrInvalidBranchType
+	}
+
+	if s[0] == '-' {
+		negative = true
+		i = 1
+	}
+
+	var decimal bool
+	var decimalDiv float64 = 10
+
+	for ; i < len(s); i++ {
+		c := s[i]
+		if c == '.' {
+			if decimal {
+				return 0, domain.ErrInvalidBranchType
+			}
+			decimal = true
+			continue
+		}
+		if c < '0' || c > '9' {
+			return 0, domain.ErrInvalidBranchType
+		}
+		digit := float64(c - '0')
+		if decimal {
+			result += digit / decimalDiv
+			decimalDiv *= 10
+		} else {
+			result = result*10 + digit
+		}
+	}
+
+	if negative {
+		result = -result
+	}
+	return result, nil
+}

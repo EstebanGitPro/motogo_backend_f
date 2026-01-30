@@ -55,6 +55,32 @@ const (
 		SELECT id FROM brands WHERE id IN (%s)
 	`
 	queryHasBranchesByRepresentative = "SELECT EXISTS(SELECT 1 FROM branches WHERE representative_id = ? LIMIT 1)"
+
+	// HU89: Nearby branches search with Haversine formula and bounding box optimization
+	queryGetBranchesNearby = `
+		SELECT 
+			b.id, b.name, b.establishment_type, b.profile_image_url, b.status,
+			l.address, l.latitude, l.longitude,
+			ci.name AS city_name, d.name AS department_name,
+			(6371 * ACOS(
+				COS(RADIANS(?)) * COS(RADIANS(l.latitude)) *
+				COS(RADIANS(l.longitude) - RADIANS(?)) +
+				SIN(RADIANS(?)) * SIN(RADIANS(l.latitude))
+			)) AS distance_km
+		FROM branches b
+		INNER JOIN locations l ON b.id = l.branch_id
+		INNER JOIN cities ci ON l.city_id = ci.id
+		INNER JOIN departments d ON ci.department_id = d.id
+		WHERE b.status = 'ACTIVE'
+		  AND l.latitude IS NOT NULL
+		  AND l.longitude IS NOT NULL
+		  AND (? = '' OR b.establishment_type = ?)
+		  AND l.latitude BETWEEN ? AND ?
+		  AND l.longitude BETWEEN ? AND ?
+		HAVING distance_km <= ?
+		ORDER BY distance_km ASC
+		LIMIT 50
+	`
 )
 
 var log logger.Logger = logger.NewSlogLogger()
@@ -70,6 +96,7 @@ type repository struct {
 	stmtSaveBranchBrand             *sql.Stmt
 	stmtDeleteBranchBrands          *sql.Stmt
 	stmtGetBranchBrands             *sql.Stmt
+	stmtGetBranchesNearby           *sql.Stmt // HU89
 }
 
 // NewRepository creates a new BranchRepository with prepared statements (fail-fast pattern)
@@ -132,6 +159,12 @@ func NewRepository(db *sql.DB) (output.BranchRepository, error) {
 		return nil, fmt.Errorf("error preparing stmtGetBranchBrands: %w", err)
 	}
 
+	stmtGetBranchesNearby, err := db.Prepare(queryGetBranchesNearby)
+	if err != nil {
+		log.Error(logger.LogDatabaseUnavailable, "error preparing stmtGetBranchesNearby", err)
+		return nil, fmt.Errorf("error preparing stmtGetBranchesNearby: %w", err)
+	}
+
 	return &repository{
 		db:                              db,
 		stmtSaveBranch:                  stmtSaveBranch,
@@ -143,6 +176,7 @@ func NewRepository(db *sql.DB) (output.BranchRepository, error) {
 		stmtSaveBranchBrand:             stmtSaveBranchBrand,
 		stmtDeleteBranchBrands:          stmtDeleteBranchBrands,
 		stmtGetBranchBrands:             stmtGetBranchBrands,
+		stmtGetBranchesNearby:           stmtGetBranchesNearby,
 	}, nil
 }
 

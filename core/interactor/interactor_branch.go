@@ -314,3 +314,25 @@ func findSubstring(s, substr string) bool {
 	}
 	return false
 }
+
+// GetBranchesNearby retrieves branches within radius of given coordinates (HU89)
+// Default radius is 5km if not specified
+func (i *BranchInteractor) GetBranchesNearby(ctx context.Context, lat, lng, radiusKm float64, establishmentType string) ([]domain.NearbyBranch, error) {
+	traceID := middleware.GetTraceIDFromContext(ctx)
+	log := i.logger.WithTraceID(traceID)
+
+	log.Info(logger.LogBranchInteractorNearbyStart,
+		"lat", lat,
+		"lng", lng,
+		"radius_km", radiusKm,
+		"type", establishmentType)
+
+	branches, err := i.branchService.GetBranchesNearby(ctx, lat, lng, radiusKm, establishmentType)
+	if err != nil {
+		log.Error(logger.LogBranchInteractorNearbyError, "error", err)
+		return nil, err
+	}
+
+	log.Success(logger.LogBranchInteractorNearbyComplete, "count", len(branches))
+	return branches, nil
+}

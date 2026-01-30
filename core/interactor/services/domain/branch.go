@@ -75,6 +75,13 @@ func (b *Branch) IsValidEstablishmentType() bool {
 		b.EstablishmentType == EstablishmentTypeWorkshopStore
 }
 
+// IsValidEstablishmentType checks if a string is a valid establishment type
+func IsValidEstablishmentType(t string) bool {
+	return t == EstablishmentTypeWorkshop ||
+		t == EstablishmentTypeStore ||
+		t == EstablishmentTypeWorkshopStore
+}
+
 func (b *Branch) ToLogger() []string {
 	return []string{
 		"id:" + b.ID,
@@ -82,4 +89,23 @@ func (b *Branch) ToLogger() []string {
 		"type:" + b.EstablishmentType,
 		"representative_id:" + b.RepresentativeID,
 	}
+}
+
+// NearbyBranch represents a branch with distance information for proximity search (HU89)
+type NearbyBranch struct {
+	ID                string          `json:"id"`
+	Name              string          `json:"name"`
+	EstablishmentType string          `json:"establishment_type"`
+	ProfileImageURL   *string         `json:"profile_image_url,omitempty"`
+	Location          *NearbyLocation `json:"location,omitempty"`
+	DistanceKm        float64         `json:"distance_km"`
+}
+
+// NearbyLocation contains location info for nearby search results (HU89)
+type NearbyLocation struct {
+	Address        string  `json:"address"`
+	CityName       string  `json:"city_name"`
+	DepartmentName string  `json:"department_name"`
+	Latitude       float64 `json:"latitude"`
+	Longitude      float64 `json:"longitude"`
 }
