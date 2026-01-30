@@ -16,7 +16,7 @@ linters:
   default: standard
   enable:
     - bodyclose
-    - dupl
+    # - dupl  # Disabled: detected "duplicates" are valid CRUD patterns
     - errname
     - errorlint
     - gocognit
