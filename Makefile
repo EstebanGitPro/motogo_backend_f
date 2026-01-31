@@ -4,7 +4,7 @@
 BINARY_NAME=motogo-api
 COVERAGE_FILE=coverage.out
 COVERAGE_HTML=coverage.html
-MIN_COVERAGE=50
+MIN_COVERAGE=65
 
 # Colors for output
 GREEN=\033[0;32m
