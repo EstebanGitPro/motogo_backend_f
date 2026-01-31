@@ -57,6 +57,96 @@ func TestNewRepository_PrepareError(t *testing.T) {
 	assert.Contains(t, err.Error(), "error preparing stmtSaveSchedule")
 }
 
+func TestNewRepository_PrepareError_GetByBranchID(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("INSERT INTO branch_schedules")
+	mock.ExpectPrepare("SELECT id, branch_id, active.*WHERE branch_id").
+		WillReturnError(sql.ErrConnDone)
+
+	repo, err := NewRepository(db)
+
+	assert.Nil(t, repo)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "error preparing stmtGetScheduleByBranchID")
+}
+
+func TestNewRepository_PrepareError_GetByID(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("INSERT INTO branch_schedules")
+	mock.ExpectPrepare("SELECT id, branch_id, active.*WHERE branch_id")
+	mock.ExpectPrepare("SELECT id, branch_id, active.*WHERE id").
+		WillReturnError(sql.ErrConnDone)
+
+	repo, err := NewRepository(db)
+
+	assert.Nil(t, repo)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "error preparing stmtGetScheduleByID")
+}
+
+func TestNewRepository_PrepareError_Update(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("INSERT INTO branch_schedules")
+	mock.ExpectPrepare("SELECT id, branch_id, active.*WHERE branch_id")
+	mock.ExpectPrepare("SELECT id, branch_id, active.*WHERE id")
+	mock.ExpectPrepare("UPDATE branch_schedules.*SET active").
+		WillReturnError(sql.ErrConnDone)
+
+	repo, err := NewRepository(db)
+
+	assert.Nil(t, repo)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "error preparing stmtUpdateSchedule")
+}
+
+func TestNewRepository_PrepareError_Delete(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("INSERT INTO branch_schedules")
+	mock.ExpectPrepare("SELECT id, branch_id, active.*WHERE branch_id")
+	mock.ExpectPrepare("SELECT id, branch_id, active.*WHERE id")
+	mock.ExpectPrepare("UPDATE branch_schedules.*SET active")
+	mock.ExpectPrepare("DELETE FROM branch_schedules").
+		WillReturnError(sql.ErrConnDone)
+
+	repo, err := NewRepository(db)
+
+	assert.Nil(t, repo)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "error preparing stmtDeleteSchedule")
+}
+
+func TestNewRepository_PrepareError_SetActive(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("INSERT INTO branch_schedules")
+	mock.ExpectPrepare("SELECT id, branch_id, active.*WHERE branch_id")
+	mock.ExpectPrepare("SELECT id, branch_id, active.*WHERE id")
+	mock.ExpectPrepare("UPDATE branch_schedules.*SET active")
+	mock.ExpectPrepare("DELETE FROM branch_schedules")
+	mock.ExpectPrepare("UPDATE branch_schedules.*SET active").
+		WillReturnError(sql.ErrConnDone)
+
+	repo, err := NewRepository(db)
+
+	assert.Nil(t, repo)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "error preparing stmtSetActive")
+}
+
 // ============================================
 // BeginTx Tests
 // ============================================
