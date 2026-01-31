@@ -59,6 +59,72 @@ func TestNewRepository_PrepareError(t *testing.T) {
 	assert.Equal(t, sql.ErrConnDone, err)
 }
 
+func TestNewRepository_PrepareError_GetByType(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("SELECT id, name.*ORDER BY name")
+	mock.ExpectPrepare("SELECT id, name.*WHERE service_type").
+		WillReturnError(sql.ErrConnDone)
+
+	repo, err := NewRepository(db)
+
+	assert.Nil(t, repo)
+	assert.Error(t, err)
+}
+
+func TestNewRepository_PrepareError_GetByID(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("SELECT id, name.*ORDER BY name")
+	mock.ExpectPrepare("SELECT id, name.*WHERE service_type")
+	mock.ExpectPrepare("SELECT id, name.*WHERE id").
+		WillReturnError(sql.ErrConnDone)
+
+	repo, err := NewRepository(db)
+
+	assert.Nil(t, repo)
+	assert.Error(t, err)
+}
+
+func TestNewRepository_PrepareError_GetByBranch(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("SELECT id, name.*ORDER BY name")
+	mock.ExpectPrepare("SELECT id, name.*WHERE service_type")
+	mock.ExpectPrepare("SELECT id, name.*WHERE id")
+	mock.ExpectPrepare("SELECT.*branch_services.*WHERE bs.branch_id").
+		WillReturnError(sql.ErrConnDone)
+
+	repo, err := NewRepository(db)
+
+	assert.Nil(t, repo)
+	assert.Error(t, err)
+}
+
+func TestNewRepository_PrepareError_Update(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("SELECT id, name.*ORDER BY name")
+	mock.ExpectPrepare("SELECT id, name.*WHERE service_type")
+	mock.ExpectPrepare("SELECT id, name.*WHERE id")
+	mock.ExpectPrepare("SELECT.*branch_services.*WHERE bs.branch_id")
+	mock.ExpectPrepare("UPDATE services").
+		WillReturnError(sql.ErrConnDone)
+
+	repo, err := NewRepository(db)
+
+	assert.Nil(t, repo)
+	assert.Error(t, err)
+}
+
 // ============================================
 // BeginTx Tests
 // ============================================
