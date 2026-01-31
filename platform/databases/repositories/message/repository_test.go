@@ -686,3 +686,64 @@ func TestUpdateMessage_InvalidTransaction(t *testing.T) {
 	// Assert
 	assert.Equal(t, domain.ErrInvalidTransaction, err)
 }
+
+// ============================================
+// GetByCodeIncludingInactive Tests
+// ============================================
+
+func TestGetByCodeIncludingInactive_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	rows := sqlmock.NewRows([]string{
+		"id", "code", "type", "category", "module", "title", "content", "active", "created_at", "updated_at",
+	}).AddRow("msg-001", "ERR_TEST", "error", "user", "auth", "Test Title", "Test Content", false, time.Now(), time.Now())
+
+	mock.ExpectQuery("SELECT").
+		WithArgs("ERR_TEST").
+		WillReturnRows(rows)
+
+	repo := &repository{db: db}
+
+	msg, err := repo.GetByCodeIncludingInactive(context.Background(), "ERR_TEST")
+
+	assert.NoError(t, err)
+	assert.NotNil(t, msg)
+	assert.Equal(t, "ERR_TEST", msg.Code)
+	assert.False(t, msg.Active)
+}
+
+func TestGetByCodeIncludingInactive_NotFound(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectQuery("SELECT").
+		WithArgs("NOT_FOUND").
+		WillReturnError(sql.ErrNoRows)
+
+	repo := &repository{db: db}
+
+	msg, err := repo.GetByCodeIncludingInactive(context.Background(), "NOT_FOUND")
+
+	assert.NoError(t, err)
+	assert.Nil(t, msg)
+}
+
+func TestGetByCodeIncludingInactive_DBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectQuery("SELECT").
+		WithArgs("ERR_CODE").
+		WillReturnError(sql.ErrConnDone)
+
+	repo := &repository{db: db}
+
+	msg, err := repo.GetByCodeIncludingInactive(context.Background(), "ERR_CODE")
+
+	assert.Nil(t, msg)
+	assert.Error(t, err)
+}

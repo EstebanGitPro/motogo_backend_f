@@ -154,3 +154,93 @@ func TestUpdateScheduleRequest_Sanitize_NilFields(t *testing.T) {
 	assert.Nil(t, req.StartDate)
 	assert.Nil(t, req.EndDate)
 }
+
+// ============================================
+// BuildScheduleLinks Tests
+// ============================================
+
+func TestBuildScheduleLinks(t *testing.T) {
+	// Arrange
+	baseURL := "http://api.test.com"
+	encodedBranchID := "branch-enc"
+	encodedScheduleID := "schedule-enc"
+
+	// Act
+	links := handlers.BuildScheduleLinks(baseURL, encodedBranchID, encodedScheduleID)
+
+	// Assert
+	assert.GreaterOrEqual(t, len(links), 4) // At least: self, delete, activate, deactivate
+
+	// Find self link
+	var selfLink *handlers.Link
+	for i, l := range links {
+		if l.Rel == "self" {
+			selfLink = &links[i]
+			break
+		}
+	}
+	assert.NotNil(t, selfLink)
+	assert.Equal(t, "GET", selfLink.Method)
+	assert.Contains(t, selfLink.Href, "/branches/branch-enc/schedules")
+}
+
+func TestBuildScheduleLinks_ContainsExpectedRels(t *testing.T) {
+	// Arrange
+	links := handlers.BuildScheduleLinks("http://api", "branch-1", "sched-1")
+
+	// Act - check all expected rels exist
+	expectedRels := []string{"self", "delete", "activate", "deactivate", "details-list", "details-create", "branch", "days-catalog"}
+	foundRels := make(map[string]bool)
+	for _, l := range links {
+		foundRels[l.Rel] = true
+	}
+
+	// Assert
+	for _, rel := range expectedRels {
+		assert.True(t, foundRels[rel], "Missing expected rel: "+rel)
+	}
+}
+
+// ============================================
+// BuildScheduleDetailLinks Tests
+// ============================================
+
+func TestBuildScheduleDetailLinks(t *testing.T) {
+	// Act
+	links := handlers.BuildScheduleDetailLinks("http://api", "branch-1", "detail-1")
+
+	// Assert
+	assert.GreaterOrEqual(t, len(links), 3)
+
+	expectedRels := []string{"self", "update", "delete", "schedule", "details-list"}
+	foundRels := make(map[string]bool)
+	for _, l := range links {
+		foundRels[l.Rel] = true
+	}
+
+	for _, rel := range expectedRels {
+		assert.True(t, foundRels[rel], "Missing expected rel: "+rel)
+	}
+}
+
+// ============================================
+// BuildScheduleDetailListLinks Tests
+// ============================================
+
+func TestBuildScheduleDetailListLinks(t *testing.T) {
+	// Act
+	links := handlers.BuildScheduleDetailListLinks("http://api", "branch-1")
+
+	// Assert
+	assert.GreaterOrEqual(t, len(links), 4)
+
+	expectedRels := []string{"self", "create", "schedule", "branch", "days-catalog"}
+	foundRels := make(map[string]bool)
+	for _, l := range links {
+		foundRels[l.Rel] = true
+	}
+
+	for _, rel := range expectedRels {
+		assert.True(t, foundRels[rel], "Missing expected rel: "+rel)
+	}
+}

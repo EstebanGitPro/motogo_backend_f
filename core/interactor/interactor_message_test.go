@@ -319,3 +319,124 @@ func TestUpdateMessage_Success(t *testing.T) {
 	mockLogger.AssertExpectations(t)
 	mockTx.AssertExpectations(t)
 }
+
+// ============================================
+// GetMessageByCode Tests
+// ============================================
+
+func TestGetMessageByCode_Success(t *testing.T) {
+	// Arrange
+	ctx := context.Background()
+	mockService := new(MockMessageService)
+	mockLogger := new(mocks.MockLogger)
+
+	messageInteractor := interactor.NewMessageInteractor(mockService, mockLogger)
+
+	expectedMessage := &domain.Message{
+		ID:    "msg-123",
+		Code:  "ERR_USER_NOT_FOUND",
+		Title: "Usuario no encontrado",
+	}
+
+	// Mock expectations
+	mockLogger.On("WithTraceID", mock.Anything).Return(mockLogger)
+	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
+	mockService.On("GetMessageByCode", ctx, "ERR_USER_NOT_FOUND").Return(expectedMessage, nil)
+
+	// Act
+	message, err := messageInteractor.GetMessageByCode(ctx, "ERR_USER_NOT_FOUND")
+
+	// Assert
+	assert.NoError(t, err)
+	assert.NotNil(t, message)
+	assert.Equal(t, "ERR_USER_NOT_FOUND", message.Code)
+
+	mockService.AssertExpectations(t)
+	mockLogger.AssertExpectations(t)
+}
+
+func TestGetMessageByCode_NotFound(t *testing.T) {
+	// Arrange
+	ctx := context.Background()
+	mockService := new(MockMessageService)
+	mockLogger := new(mocks.MockLogger)
+
+	messageInteractor := interactor.NewMessageInteractor(mockService, mockLogger)
+
+	// Mock expectations
+	mockLogger.On("WithTraceID", mock.Anything).Return(mockLogger)
+	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
+	mockLogger.On("Error", mock.Anything, mock.Anything).Return()
+	mockService.On("GetMessageByCode", ctx, "NON_EXISTENT_CODE").Return(nil, domain.ErrMessageNotFound)
+
+	// Act
+	message, err := messageInteractor.GetMessageByCode(ctx, "NON_EXISTENT_CODE")
+
+	// Assert
+	assert.Error(t, err)
+	assert.Nil(t, message)
+	assert.Equal(t, domain.ErrMessageNotFound, err)
+
+	mockService.AssertExpectations(t)
+	mockLogger.AssertExpectations(t)
+}
+
+// ============================================
+// ListMessages Tests
+// ============================================
+
+func TestListMessages_Success(t *testing.T) {
+	// Arrange
+	ctx := context.Background()
+	mockService := new(MockMessageService)
+	mockLogger := new(mocks.MockLogger)
+
+	messageInteractor := interactor.NewMessageInteractor(mockService, mockLogger)
+
+	filters := map[string]interface{}{"active": true}
+	expectedMessages := []domain.Message{
+		{ID: "msg-1", Code: "CODE_001", Active: true},
+		{ID: "msg-2", Code: "CODE_002", Active: true},
+	}
+
+	// Mock expectations
+	mockLogger.On("WithTraceID", mock.Anything).Return(mockLogger)
+	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
+	mockService.On("ListMessages", ctx, filters).Return(expectedMessages, nil)
+
+	// Act
+	messages, err := messageInteractor.ListMessages(ctx, filters)
+
+	// Assert
+	assert.NoError(t, err)
+	assert.Len(t, messages, 2)
+
+	mockService.AssertExpectations(t)
+	mockLogger.AssertExpectations(t)
+}
+
+func TestListMessages_Empty(t *testing.T) {
+	// Arrange
+	ctx := context.Background()
+	mockService := new(MockMessageService)
+	mockLogger := new(mocks.MockLogger)
+
+	messageInteractor := interactor.NewMessageInteractor(mockService, mockLogger)
+
+	filters := map[string]interface{}{"type": "NONEXISTENT"}
+
+	// Mock expectations
+	mockLogger.On("WithTraceID", mock.Anything).Return(mockLogger)
+	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
+	mockService.On("ListMessages", ctx, filters).Return([]domain.Message{}, nil)
+
+	// Act
+	messages, err := messageInteractor.ListMessages(ctx, filters)
+
+	// Assert
+	assert.NoError(t, err)
+	assert.Empty(t, messages)
+
+	mockService.AssertExpectations(t)
+	mockLogger.AssertExpectations(t)
+}

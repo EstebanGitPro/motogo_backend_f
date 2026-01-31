@@ -73,9 +73,28 @@ func (h *handler) RegisterBranch() gin.HandlerFunc {
 			decodedBrands = append(decodedBrands, decoded)
 		}
 
+		// 3.1 Decode location IDs (department_id and city_id come encoded from frontend)
+		decodedDepartmentID, err := h.DecodeID(req.Location.DepartmentID)
+		if err != nil {
+			log.Warn(logger.LogBranchControllerIDDecodeError, "encoded_id", req.Location.DepartmentID, "error", err)
+			h.Response.Error(c, domain.MsgValIDInvalid)
+			return
+		}
+		decodedCityID, err := h.DecodeID(req.Location.CityID)
+		if err != nil {
+			log.Warn(logger.LogBranchControllerIDDecodeError, "encoded_id", req.Location.CityID, "error", err)
+			h.Response.Error(c, domain.MsgValIDInvalid)
+			return
+		}
+
 		// 4. Map DTO to domain model (using mapper in branch.go)
 		branch := req.ToDomain(person.ID)
 		branch.Brands = decodedBrands // Override with decoded brand IDs
+		// Override location IDs with decoded values
+		if branch.Location != nil {
+			branch.Location.DepartmentID = decodedDepartmentID
+			branch.Location.CityID = decodedCityID
+		}
 
 		// 5. Check if user provided coordinates (to determine geocoding status later)
 		userProvidedCoords := branch.Location != nil &&
@@ -141,7 +160,16 @@ func (h *handler) RegisterBranch() gin.HandlerFunc {
 		response := NewBranchResponse(savedBranch, encodedID, geocodingStatus, links)
 		response.Brands = encodedBrands // Override with encoded brand IDs
 
-		// 11.1 Encode location IDs if present
+		// 11.1 Encode franchise_id if present
+		if savedBranch.FranchiseID != nil && *savedBranch.FranchiseID != "" {
+			if encodedFranchiseID, err := h.EncodeID(*savedBranch.FranchiseID); err == nil {
+				response.FranchiseID = &encodedFranchiseID
+			} else {
+				log.Warn(logger.LogIDEncodeError, "franchise_id", *savedBranch.FranchiseID, "error", err)
+			}
+		}
+
+		// 11.2 Encode location IDs if present
 		if response.Location != nil && savedBranch.Location != nil {
 			if encodedDeptID, err := h.EncodeID(savedBranch.Location.DepartmentID); err == nil {
 				response.Location.DepartmentID = encodedDeptID
@@ -242,6 +270,15 @@ func (h *handler) GetBranch() gin.HandlerFunc {
 		// 7. Build response DTO (no geocoding status for query)
 		response := NewBranchResponse(branch, encodedID, "", links)
 		response.Brands = encodedBrands // Override with encoded brand IDs
+
+		// 7.1 Encode franchise_id if present
+		if branch.FranchiseID != nil && *branch.FranchiseID != "" {
+			if encodedFranchiseID, err := h.EncodeID(*branch.FranchiseID); err == nil {
+				response.FranchiseID = &encodedFranchiseID
+			} else {
+				log.Warn(logger.LogIDEncodeError, "franchise_id", *branch.FranchiseID, "error", err)
+			}
+		}
 
 		// 8. Encode location IDs if present
 		if response.Location != nil && branch.Location != nil {
@@ -474,9 +511,27 @@ func (h *handler) UpdateBranch() gin.HandlerFunc {
 			decodedBrands = append(decodedBrands, decoded)
 		}
 
+		// 4.1 Decode location IDs (department_id and city_id come encoded from frontend)
+		decodedDepartmentID, err := h.DecodeID(req.Location.DepartmentID)
+		if err != nil {
+			log.Warn(logger.LogBranchControllerIDDecodeError, "encoded_id", req.Location.DepartmentID, "error", err)
+			h.Response.Error(c, domain.MsgValIDInvalid)
+			return
+		}
+		decodedCityID, err := h.DecodeID(req.Location.CityID)
+		if err != nil {
+			log.Warn(logger.LogBranchControllerIDDecodeError, "encoded_id", req.Location.CityID, "error", err)
+			h.Response.Error(c, domain.MsgValIDInvalid)
+			return
+		}
+
 		// 5. Map DTO to domain model
 		branch := req.ToDomain(person.ID)
-		branch.Brands = decodedBrands // Override with decoded brand IDs
+		branch.Brands = decodedBrands
+		if branch.Location != nil {
+			branch.Location.DepartmentID = decodedDepartmentID
+			branch.Location.CityID = decodedCityID
+		}
 
 		// 6. Check if user provided coordinates
 		userProvidedCoords := branch.Location != nil &&
@@ -538,7 +593,16 @@ func (h *handler) UpdateBranch() gin.HandlerFunc {
 		response := NewBranchResponse(updatedBranch, responseEncodedID, geocodingStatus, links)
 		response.Brands = encodedBrands // Override with encoded brand IDs
 
-		// 12.1 Encode location IDs if present
+		// 12.1 Encode franchise_id if present
+		if updatedBranch.FranchiseID != nil && *updatedBranch.FranchiseID != "" {
+			if encodedFranchiseID, err := h.EncodeID(*updatedBranch.FranchiseID); err == nil {
+				response.FranchiseID = &encodedFranchiseID
+			} else {
+				log.Warn(logger.LogIDEncodeError, "franchise_id", *updatedBranch.FranchiseID, "error", err)
+			}
+		}
+
+		// 12.2 Encode location IDs if present
 		if response.Location != nil && updatedBranch.Location != nil {
 			if encodedDeptID, err := h.EncodeID(updatedBranch.Location.DepartmentID); err == nil {
 				response.Location.DepartmentID = encodedDeptID

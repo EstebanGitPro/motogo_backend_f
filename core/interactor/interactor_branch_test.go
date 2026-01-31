@@ -616,3 +616,103 @@ func TestGeocodeLocation_FailsGracefully(t *testing.T) {
 
 	mockBranchService.AssertExpectations(t)
 }
+
+// ============================================
+// GetBranchesNearby Tests (HU89)
+// ============================================
+
+func TestGetBranchesNearby_Success(t *testing.T) {
+	// Arrange
+	ctx := context.Background()
+	mockBranchService := new(mocks.MockBranchService)
+	mockLogger := setupBranchMockLogger()
+
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService, mockLogger)
+
+	lat := 4.710989
+	lng := -74.072092
+	radiusKm := 5.0
+	establishmentType := "WORKSHOP"
+
+	expectedBranches := []domain.NearbyBranch{
+		{
+			ID:         "branch-1",
+			Name:       "Taller Cercano",
+			DistanceKm: 1.5,
+		},
+		{
+			ID:         "branch-2",
+			Name:       "Taller Zona Sur",
+			DistanceKm: 3.2,
+		},
+	}
+
+	// Mock expectations
+	mockBranchService.On("GetBranchesNearby", ctx, lat, lng, radiusKm, establishmentType).Return(expectedBranches, nil)
+
+	// Act
+	result, err := branchInteractor.GetBranchesNearby(ctx, lat, lng, radiusKm, establishmentType)
+
+	// Assert
+	assert.NoError(t, err)
+	assert.Len(t, result, 2)
+	assert.Equal(t, "branch-1", result[0].ID)
+	assert.Equal(t, 1.5, result[0].DistanceKm)
+
+	mockBranchService.AssertExpectations(t)
+}
+
+func TestGetBranchesNearby_EmptyResults(t *testing.T) {
+	// Arrange
+	ctx := context.Background()
+	mockBranchService := new(mocks.MockBranchService)
+	mockLogger := setupBranchMockLogger()
+
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService, mockLogger)
+
+	lat := 0.0 // Middle of nowhere
+	lng := 0.0
+	radiusKm := 1.0
+	establishmentType := "WORKSHOP"
+
+	// Mock expectations - no branches found
+	mockBranchService.On("GetBranchesNearby", ctx, lat, lng, radiusKm, establishmentType).Return([]domain.NearbyBranch{}, nil)
+
+	// Act
+	result, err := branchInteractor.GetBranchesNearby(ctx, lat, lng, radiusKm, establishmentType)
+
+	// Assert
+	assert.NoError(t, err)
+	assert.Empty(t, result)
+
+	mockBranchService.AssertExpectations(t)
+}
+
+func TestGetBranchesNearby_Error(t *testing.T) {
+	// Arrange
+	ctx := context.Background()
+	mockBranchService := new(mocks.MockBranchService)
+	mockLogger := setupBranchMockLogger()
+
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService, mockLogger)
+
+	lat := 4.710989
+	lng := -74.072092
+	radiusKm := 5.0
+	establishmentType := "WORKSHOP"
+
+	dbError := errors.New("database error")
+
+	// Mock expectations
+	mockBranchService.On("GetBranchesNearby", ctx, lat, lng, radiusKm, establishmentType).Return(nil, dbError)
+
+	// Act
+	result, err := branchInteractor.GetBranchesNearby(ctx, lat, lng, radiusKm, establishmentType)
+
+	// Assert
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Equal(t, dbError, err)
+
+	mockBranchService.AssertExpectations(t)
+}

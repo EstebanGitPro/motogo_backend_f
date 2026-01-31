@@ -274,3 +274,133 @@ func findLinkByRel(links []handlers.Link, rel string) *handlers.Link {
 	}
 	return nil
 }
+
+// ============================================
+// Additional HATEOAS Builder Tests
+// ============================================
+
+func TestBuildChangePasswordLinks(t *testing.T) {
+	// Act
+	links := handlers.BuildChangePasswordLinks("http://localhost:8080")
+
+	// Assert
+	assert.Len(t, links, 2)
+
+	profileLink := findLinkByRel(links, "profile")
+	assert.NotNil(t, profileLink)
+	assert.Contains(t, profileLink.Href, "/persons/me")
+
+	loginLink := findLinkByRel(links, "login")
+	assert.NotNil(t, loginLink)
+}
+
+func TestBuildUpdateProfileLinks(t *testing.T) {
+	// Act
+	links := handlers.BuildUpdateProfileLinks("http://localhost:8080")
+
+	// Assert
+	assert.GreaterOrEqual(t, len(links), 2)
+
+	selfLink := findLinkByRel(links, "self")
+	assert.NotNil(t, selfLink)
+	assert.Contains(t, selfLink.Href, "/persons/me")
+}
+
+func TestBuildPublicContactLinks(t *testing.T) {
+	// Act
+	links := handlers.BuildPublicContactLinks("http://localhost:8080", "person-123")
+
+	// Assert
+	assert.GreaterOrEqual(t, len(links), 1)
+	selfLink := findLinkByRel(links, "self")
+	assert.NotNil(t, selfLink)
+}
+
+func TestBuildBranchCreatedLinks(t *testing.T) {
+	// Act
+	links := handlers.BuildBranchCreatedLinks("http://localhost:8080", "branch-123")
+
+	// Assert
+	assert.GreaterOrEqual(t, len(links), 2)
+
+	selfLink := findLinkByRel(links, "self")
+	assert.NotNil(t, selfLink)
+	assert.Contains(t, selfLink.Href, "branches/branch-123")
+	assert.Equal(t, "GET", selfLink.Method)
+}
+
+func TestBuildBrandListLinks(t *testing.T) {
+	// Act
+	links := handlers.BuildBrandListLinks("http://localhost:8080")
+
+	// Assert
+	assert.GreaterOrEqual(t, len(links), 1)
+
+	selfLink := findLinkByRel(links, "self")
+	assert.NotNil(t, selfLink)
+	assert.Contains(t, selfLink.Href, "/brands")
+}
+
+func TestBuildDepartmentListLinks(t *testing.T) {
+	// Act
+	links := handlers.BuildDepartmentListLinks()
+
+	// Assert
+	assert.GreaterOrEqual(t, len(links), 1)
+
+	selfLink := findLinkByRel(links, "self")
+	assert.NotNil(t, selfLink)
+	assert.Contains(t, selfLink.Href, "/departments")
+}
+
+func TestBuildCityListLinks(t *testing.T) {
+	// Act
+	links := handlers.BuildCityListLinks("dept-123")
+
+	// Assert
+	assert.GreaterOrEqual(t, len(links), 1)
+
+	selfLink := findLinkByRel(links, "self")
+	assert.NotNil(t, selfLink)
+	assert.Contains(t, selfLink.Href, "/cities")
+}
+
+func TestBuildBranchTypesLinks(t *testing.T) {
+	// Act
+	links := handlers.BuildBranchTypesLinks("http://localhost:8080")
+
+	// Assert
+	assert.GreaterOrEqual(t, len(links), 1)
+
+	selfLink := findLinkByRel(links, "self")
+	assert.NotNil(t, selfLink)
+	assert.Contains(t, selfLink.Href, "/branch-types")
+}
+
+func TestBuildBranchDetailLinks(t *testing.T) {
+	// Act
+	links := handlers.BuildBranchDetailLinks("http://localhost:8080", "branch-123", true)
+
+	// Assert
+	assert.GreaterOrEqual(t, len(links), 2)
+
+	selfLink := findLinkByRel(links, "self")
+	assert.NotNil(t, selfLink)
+	assert.Contains(t, selfLink.Href, "branches/branch-123")
+}
+
+func TestBuildBranchDetailLinks_NoEditNoDelete(t *testing.T) {
+	// Act
+	links := handlers.BuildBranchDetailLinks("http://localhost:8080", "branch-123", false)
+
+	// Assert
+	selfLink := findLinkByRel(links, "self")
+	assert.NotNil(t, selfLink)
+
+	// When canEdit=false and canDelete=false, update and delete links should not be present
+	updateLink := findLinkByRel(links, "update")
+	assert.Nil(t, updateLink)
+
+	deleteLink := findLinkByRel(links, "delete")
+	assert.Nil(t, deleteLink)
+}
