@@ -38,6 +38,78 @@ func TestNewRepository_PrepareError(t *testing.T) {
 	assert.Contains(t, err.Error(), "error preparing stmtSaveDetail")
 }
 
+func TestNewRepository_PrepareError_GetDetailByID(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("INSERT INTO schedule_details")
+	mock.ExpectPrepare("SELECT.*FROM schedule_details.*WHERE id").
+		WillReturnError(sql.ErrConnDone)
+
+	repo, err := NewRepository(db)
+
+	assert.Nil(t, repo)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "error preparing stmtGetDetailByID")
+}
+
+func TestNewRepository_PrepareError_GetDetailsByScheduleID(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("INSERT INTO schedule_details")
+	mock.ExpectPrepare("SELECT.*FROM schedule_details.*WHERE id")
+	mock.ExpectPrepare("SELECT.*FROM schedule_details.*WHERE schedule_id").
+		WillReturnError(sql.ErrConnDone)
+
+	repo, err := NewRepository(db)
+
+	assert.Nil(t, repo)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "error preparing stmtGetDetailsByScheduleID")
+}
+
+func TestNewRepository_PrepareError_UpdateDetail(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("INSERT INTO schedule_details")
+	mock.ExpectPrepare("SELECT.*FROM schedule_details.*WHERE id")
+	mock.ExpectPrepare("SELECT.*FROM schedule_details.*WHERE schedule_id")
+	mock.ExpectPrepare("SELECT.*day_of_week.*AND entry_type = 'REGULAR'")
+	mock.ExpectPrepare("UPDATE schedule_details").
+		WillReturnError(sql.ErrConnDone)
+
+	repo, err := NewRepository(db)
+
+	assert.Nil(t, repo)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "error preparing stmtUpdateDetail")
+}
+
+func TestNewRepository_PrepareError_DeleteDetail(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("INSERT INTO schedule_details")
+	mock.ExpectPrepare("SELECT.*FROM schedule_details.*WHERE id")
+	mock.ExpectPrepare("SELECT.*FROM schedule_details.*WHERE schedule_id")
+	mock.ExpectPrepare("SELECT.*day_of_week.*AND entry_type = 'REGULAR'")
+	mock.ExpectPrepare("UPDATE schedule_details")
+	mock.ExpectPrepare("DELETE FROM schedule_details").
+		WillReturnError(sql.ErrConnDone)
+
+	repo, err := NewRepository(db)
+
+	assert.Nil(t, repo)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "error preparing stmtDeleteDetail")
+}
+
 // ============================================
 // BeginTx Tests
 // ============================================
