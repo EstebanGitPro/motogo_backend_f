@@ -7,6 +7,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
+	"github.com/EstebanGitPro/motogo-backend/platform/databases/common"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -524,4 +525,106 @@ func TestCheckAddressExists_DBError(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.False(t, exists)
+}
+
+// ============================================
+// SaveLocation Tests
+// ============================================
+
+func TestSaveLocation_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("INSERT INTO locations").
+		WithArgs(sqlmock.AnyArg(), "branch-123", "city-123", "Test Address", nil, nil).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	location := domain.Location{BranchID: "branch-123", CityID: "city-123", Address: "Test Address"}
+	err = repo.SaveLocation(context.Background(), sqlTx, location)
+
+	assert.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestSaveLocation_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("INSERT INTO locations").WillReturnError(sql.ErrConnDone)
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	err = repo.SaveLocation(context.Background(), sqlTx, domain.Location{})
+	assert.Equal(t, domain.ErrLocationCannotSave, err)
+}
+
+func TestSaveLocation_InvalidTransaction(t *testing.T) {
+	repo := &repository{}
+	err := repo.SaveLocation(context.Background(), nil, domain.Location{})
+	assert.Equal(t, domain.ErrInvalidTransaction, err)
+}
+
+// ============================================
+// UpdateLocation Tests
+// ============================================
+
+func TestUpdateLocation_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE locations").
+		WithArgs("city-456", "Updated Address", nil, nil, "branch-123").
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	location := domain.Location{BranchID: "branch-123", CityID: "city-456", Address: "Updated Address"}
+	err = repo.UpdateLocation(context.Background(), sqlTx, location)
+
+	assert.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestUpdateLocation_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE locations").WillReturnError(sql.ErrConnDone)
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	err = repo.UpdateLocation(context.Background(), sqlTx, domain.Location{})
+	assert.Equal(t, domain.ErrLocationCannotSave, err)
+}
+
+func TestUpdateLocation_InvalidTransaction(t *testing.T) {
+	repo := &repository{}
+	err := repo.UpdateLocation(context.Background(), nil, domain.Location{})
+	assert.Equal(t, domain.ErrInvalidTransaction, err)
 }

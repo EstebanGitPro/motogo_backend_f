@@ -7,6 +7,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
+	"github.com/EstebanGitPro/motogo-backend/platform/databases/common"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -501,4 +502,309 @@ func TestGetFranchisesByRepresentative_DBError(t *testing.T) {
 
 	assert.Nil(t, franchises)
 	assert.Error(t, err)
+}
+
+// ============================================
+// SaveFranchise Tests
+// ============================================
+
+func TestSaveFranchise_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("INSERT INTO franchises").
+		WithArgs("franchise-123", "Test Franchise", nil).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	franchise := domain.Franchise{ID: "franchise-123", Name: "Test Franchise"}
+	err = repo.SaveFranchise(context.Background(), sqlTx, franchise)
+
+	assert.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestSaveFranchise_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("INSERT INTO franchises").WillReturnError(sql.ErrConnDone)
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	err = repo.SaveFranchise(context.Background(), sqlTx, domain.Franchise{})
+	assert.Error(t, err)
+}
+
+func TestSaveFranchise_InvalidTransaction(t *testing.T) {
+	repo := &repository{}
+	err := repo.SaveFranchise(context.Background(), nil, domain.Franchise{})
+	assert.Equal(t, domain.ErrInvalidTransaction, err)
+}
+
+// ============================================
+// UpdateFranchise Tests
+// ============================================
+
+func TestUpdateFranchise_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE franchises").
+		WithArgs("Updated Name", nil, "franchise-123").
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	franchise := domain.Franchise{ID: "franchise-123", Name: "Updated Name"}
+	err = repo.UpdateFranchise(context.Background(), sqlTx, franchise)
+
+	assert.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestUpdateFranchise_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE franchises").WillReturnError(sql.ErrConnDone)
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	err = repo.UpdateFranchise(context.Background(), sqlTx, domain.Franchise{})
+	assert.Error(t, err)
+}
+
+func TestUpdateFranchise_InvalidTransaction(t *testing.T) {
+	repo := &repository{}
+	err := repo.UpdateFranchise(context.Background(), nil, domain.Franchise{})
+	assert.Equal(t, domain.ErrInvalidTransaction, err)
+}
+
+// ============================================
+// DeleteFranchise Tests
+// ============================================
+
+func TestDeleteFranchise_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("DELETE FROM franchises").
+		WithArgs("franchise-123").
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	err = repo.DeleteFranchise(context.Background(), sqlTx, "franchise-123")
+
+	assert.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestDeleteFranchise_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("DELETE FROM franchises").WillReturnError(sql.ErrConnDone)
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	err = repo.DeleteFranchise(context.Background(), sqlTx, "franchise-err")
+	assert.Error(t, err)
+}
+
+func TestDeleteFranchise_InvalidTransaction(t *testing.T) {
+	repo := &repository{}
+	err := repo.DeleteFranchise(context.Background(), nil, "franchise-123")
+	assert.Equal(t, domain.ErrInvalidTransaction, err)
+}
+
+// ============================================
+// AssociateBranchesToFranchise Tests
+// ============================================
+
+func TestAssociateBranchesToFranchise_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE branches SET franchise_id").
+		WithArgs("franchise-123", "branch-1").
+		WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectExec("UPDATE branches SET franchise_id").
+		WithArgs("franchise-123", "branch-2").
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	err = repo.AssociateBranchesToFranchise(context.Background(), sqlTx, "franchise-123", []string{"branch-1", "branch-2"})
+
+	assert.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestAssociateBranchesToFranchise_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE branches SET franchise_id").WillReturnError(sql.ErrConnDone)
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	err = repo.AssociateBranchesToFranchise(context.Background(), sqlTx, "franchise-123", []string{"branch-1"})
+	assert.Error(t, err)
+}
+
+func TestAssociateBranchesToFranchise_InvalidTransaction(t *testing.T) {
+	repo := &repository{}
+	err := repo.AssociateBranchesToFranchise(context.Background(), nil, "franchise-123", []string{"branch-1"})
+	assert.Equal(t, domain.ErrInvalidTransaction, err)
+}
+
+// ============================================
+// DissociateBranchesFromFranchise Tests
+// ============================================
+
+func TestDissociateBranchesFromFranchise_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE branches SET franchise_id = NULL").
+		WithArgs("franchise-123").
+		WillReturnResult(sqlmock.NewResult(0, 3))
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	err = repo.DissociateBranchesFromFranchise(context.Background(), sqlTx, "franchise-123")
+
+	assert.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestDissociateBranchesFromFranchise_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE branches SET franchise_id = NULL").WillReturnError(sql.ErrConnDone)
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	err = repo.DissociateBranchesFromFranchise(context.Background(), sqlTx, "franchise-err")
+	assert.Error(t, err)
+}
+
+func TestDissociateBranchesFromFranchise_InvalidTransaction(t *testing.T) {
+	repo := &repository{}
+	err := repo.DissociateBranchesFromFranchise(context.Background(), nil, "franchise-123")
+	assert.Equal(t, domain.ErrInvalidTransaction, err)
+}
+
+// ============================================
+// DissociateSingleBranch Tests
+// ============================================
+
+func TestDissociateSingleBranch_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE branches SET franchise_id = NULL").
+		WithArgs("branch-123").
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	err = repo.DissociateSingleBranch(context.Background(), sqlTx, "branch-123")
+
+	assert.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestDissociateSingleBranch_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE branches SET franchise_id = NULL").WillReturnError(sql.ErrConnDone)
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	err = repo.DissociateSingleBranch(context.Background(), sqlTx, "branch-err")
+	assert.Error(t, err)
+}
+
+func TestDissociateSingleBranch_InvalidTransaction(t *testing.T) {
+	repo := &repository{}
+	err := repo.DissociateSingleBranch(context.Background(), nil, "branch-123")
+	assert.Equal(t, domain.ErrInvalidTransaction, err)
 }

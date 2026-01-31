@@ -7,6 +7,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
+	"github.com/EstebanGitPro/motogo-backend/platform/databases/common"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -757,4 +758,259 @@ func TestLocation_ToDomain_PartialData(t *testing.T) {
 	assert.Empty(t, domainLoc.CityID)
 	assert.Nil(t, domainLoc.Latitude)
 	assert.Nil(t, domainLoc.Longitude)
+}
+
+// ============================================
+// SaveBranch Tests
+// ============================================
+
+func TestSaveBranch_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("INSERT INTO branches").
+		WithArgs("branch-123", "rep-123", nil, "Test Branch", "WORKSHOP", nil, "ACTIVE").
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	branch := domain.Branch{ID: "branch-123", RepresentativeID: "rep-123", Name: "Test Branch", EstablishmentType: "WORKSHOP", Status: "ACTIVE"}
+	err = repo.SaveBranch(context.Background(), sqlTx, branch)
+
+	assert.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestSaveBranch_DuplicateError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("INSERT INTO branches").WillReturnError(sql.ErrConnDone)
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	err = repo.SaveBranch(context.Background(), sqlTx, domain.Branch{})
+	assert.Equal(t, domain.ErrBranchCannotSave, err)
+}
+
+func TestSaveBranch_InvalidTransaction(t *testing.T) {
+	repo := &repository{}
+	err := repo.SaveBranch(context.Background(), nil, domain.Branch{})
+	assert.Equal(t, domain.ErrInvalidTransaction, err)
+}
+
+// ============================================
+// UpdateBranch Tests
+// ============================================
+
+func TestUpdateBranch_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE branches").
+		WithArgs(nil, "Updated Branch", "STORE", nil, "INACTIVE", "branch-123").
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	branch := domain.Branch{ID: "branch-123", Name: "Updated Branch", EstablishmentType: "STORE", Status: "INACTIVE"}
+	err = repo.UpdateBranch(context.Background(), sqlTx, branch)
+
+	assert.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestUpdateBranch_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE branches").WillReturnError(sql.ErrConnDone)
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	err = repo.UpdateBranch(context.Background(), sqlTx, domain.Branch{})
+	assert.Equal(t, domain.ErrBranchCannotUpdate, err)
+}
+
+func TestUpdateBranch_InvalidTransaction(t *testing.T) {
+	repo := &repository{}
+	err := repo.UpdateBranch(context.Background(), nil, domain.Branch{})
+	assert.Equal(t, domain.ErrInvalidTransaction, err)
+}
+
+// ============================================
+// DeleteBranch Tests
+// ============================================
+
+func TestDeleteBranch_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("DELETE FROM branches").
+		WithArgs("branch-123").
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	err = repo.DeleteBranch(context.Background(), sqlTx, "branch-123")
+
+	assert.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestDeleteBranch_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("DELETE FROM branches").WillReturnError(sql.ErrConnDone)
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	err = repo.DeleteBranch(context.Background(), sqlTx, "branch-err")
+	assert.Equal(t, domain.ErrBranchCannotDelete, err)
+}
+
+func TestDeleteBranch_InvalidTransaction(t *testing.T) {
+	repo := &repository{}
+	err := repo.DeleteBranch(context.Background(), nil, "branch-123")
+	assert.Equal(t, domain.ErrInvalidTransaction, err)
+}
+
+// ============================================
+// SaveBranchBrands Tests
+// ============================================
+
+func TestSaveBranchBrands_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("INSERT INTO branch_brands").
+		WithArgs(sqlmock.AnyArg(), "branch-123", "brand-1").
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("INSERT INTO branch_brands").
+		WithArgs(sqlmock.AnyArg(), "branch-123", "brand-2").
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	err = repo.SaveBranchBrands(context.Background(), sqlTx, "branch-123", []string{"brand-1", "brand-2"})
+
+	assert.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestSaveBranchBrands_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("INSERT INTO branch_brands").WillReturnError(sql.ErrConnDone)
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	err = repo.SaveBranchBrands(context.Background(), sqlTx, "branch-123", []string{"brand-1"})
+	assert.Equal(t, domain.ErrBranchCannotSave, err)
+}
+
+func TestSaveBranchBrands_InvalidTransaction(t *testing.T) {
+	repo := &repository{}
+	err := repo.SaveBranchBrands(context.Background(), nil, "branch-123", []string{"brand-1"})
+	assert.Equal(t, domain.ErrInvalidTransaction, err)
+}
+
+// ============================================
+// DeleteBranchBrands Tests
+// ============================================
+
+func TestDeleteBranchBrands_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("DELETE FROM branch_brands").
+		WithArgs("branch-123").
+		WillReturnResult(sqlmock.NewResult(0, 3))
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	err = repo.DeleteBranchBrands(context.Background(), sqlTx, "branch-123")
+
+	assert.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestDeleteBranchBrands_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("DELETE FROM branch_brands").WillReturnError(sql.ErrConnDone)
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	err = repo.DeleteBranchBrands(context.Background(), sqlTx, "branch-err")
+	assert.Equal(t, domain.ErrBranchCannotDelete, err)
+}
+
+func TestDeleteBranchBrands_InvalidTransaction(t *testing.T) {
+	repo := &repository{}
+	err := repo.DeleteBranchBrands(context.Background(), nil, "branch-123")
+	assert.Equal(t, domain.ErrInvalidTransaction, err)
 }
