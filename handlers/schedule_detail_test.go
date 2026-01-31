@@ -20,7 +20,6 @@ func stringPtrDetail(s string) *string {
 	return &s
 }
 
-
 // ============================================
 // NewScheduleDetailResponse Tests
 // ============================================
