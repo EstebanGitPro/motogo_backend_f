@@ -60,6 +60,76 @@ func TestNewRepository_PrepareError_SaveBranch(t *testing.T) {
 	assert.Contains(t, err.Error(), "error preparing stmtSaveBranch")
 }
 
+func TestNewRepository_PrepareError_Update(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("INSERT INTO branches")
+	mock.ExpectPrepare("UPDATE branches").
+		WillReturnError(sql.ErrConnDone)
+
+	repo, err := NewRepository(db)
+
+	assert.Nil(t, repo)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "error preparing stmtUpdateBranch")
+}
+
+func TestNewRepository_PrepareError_Delete(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("INSERT INTO branches")
+	mock.ExpectPrepare("UPDATE branches")
+	mock.ExpectPrepare("DELETE FROM branches").
+		WillReturnError(sql.ErrConnDone)
+
+	repo, err := NewRepository(db)
+
+	assert.Nil(t, repo)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "error preparing stmtDeleteBranch")
+}
+
+func TestNewRepository_PrepareError_GetByID(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("INSERT INTO branches")
+	mock.ExpectPrepare("UPDATE branches")
+	mock.ExpectPrepare("DELETE FROM branches")
+	mock.ExpectPrepare("SELECT.*FROM branches.*LEFT JOIN locations").
+		WillReturnError(sql.ErrConnDone)
+
+	repo, err := NewRepository(db)
+
+	assert.Nil(t, repo)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "error preparing stmtGetBranchByID")
+}
+
+func TestNewRepository_PrepareError_GetByFranchiseAndName(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("INSERT INTO branches")
+	mock.ExpectPrepare("UPDATE branches")
+	mock.ExpectPrepare("DELETE FROM branches")
+	mock.ExpectPrepare("SELECT.*FROM branches.*LEFT JOIN locations")
+	mock.ExpectPrepare("SELECT.*FROM branches.*WHERE franchise_id").
+		WillReturnError(sql.ErrConnDone)
+
+	repo, err := NewRepository(db)
+
+	assert.Nil(t, repo)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "error preparing stmtGetBranchByFranchiseAndName")
+}
+
 // ============================================
 // BeginTx Tests
 // ============================================
