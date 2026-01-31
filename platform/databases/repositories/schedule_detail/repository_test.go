@@ -8,6 +8,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
+	"github.com/EstebanGitPro/motogo-backend/platform/databases/common"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -843,4 +844,195 @@ func TestCheckExceptionDateConflict_DBError(t *testing.T) {
 
 	assert.False(t, hasConflict)
 	assert.Error(t, err)
+}
+
+// ============================================
+// SaveScheduleDetail Tests
+// ============================================
+
+func TestSaveScheduleDetail_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	monday := 1
+	openingTime := "09:00:00"
+	closingTime := "18:00:00"
+
+	mock.ExpectBegin()
+	mock.ExpectExec("INSERT INTO schedule_details").
+		WithArgs("detail-123", "schedule-123", domain.EntryTypeRegular, &monday, nil, nil, &openingTime, &closingTime, false, true).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	detail := domain.ScheduleDetail{
+		ID:          "detail-123",
+		ScheduleID:  "schedule-123",
+		EntryType:   domain.EntryTypeRegular,
+		DayOfWeek:   &monday,
+		OpeningTime: &openingTime,
+		ClosingTime: &closingTime,
+		IsClosed:    false,
+		Active:      true,
+	}
+
+	err = repo.SaveScheduleDetail(context.Background(), sqlTx, detail)
+
+	assert.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestSaveScheduleDetail_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("INSERT INTO schedule_details").
+		WillReturnError(sql.ErrConnDone)
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	err = repo.SaveScheduleDetail(context.Background(), sqlTx, domain.ScheduleDetail{ID: "detail-err"})
+
+	assert.Error(t, err)
+}
+
+func TestSaveScheduleDetail_InvalidTransaction(t *testing.T) {
+	repo := &repository{}
+
+	err := repo.SaveScheduleDetail(context.Background(), nil, domain.ScheduleDetail{})
+
+	assert.Equal(t, domain.ErrInvalidTransaction, err)
+}
+
+// ============================================
+// UpdateScheduleDetail Tests
+// ============================================
+
+func TestUpdateScheduleDetail_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	monday := 1
+	openingTime := "10:00:00"
+	closingTime := "19:00:00"
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE schedule_details").
+		WithArgs(&monday, &openingTime, &closingTime, false, true, "detail-123").
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	detail := domain.ScheduleDetail{
+		ID:          "detail-123",
+		DayOfWeek:   &monday,
+		OpeningTime: &openingTime,
+		ClosingTime: &closingTime,
+		IsClosed:    false,
+		Active:      true,
+	}
+
+	err = repo.UpdateScheduleDetail(context.Background(), sqlTx, detail)
+
+	assert.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestUpdateScheduleDetail_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE schedule_details").
+		WillReturnError(sql.ErrConnDone)
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	err = repo.UpdateScheduleDetail(context.Background(), sqlTx, domain.ScheduleDetail{ID: "detail-err"})
+
+	assert.Error(t, err)
+}
+
+func TestUpdateScheduleDetail_InvalidTransaction(t *testing.T) {
+	repo := &repository{}
+
+	err := repo.UpdateScheduleDetail(context.Background(), nil, domain.ScheduleDetail{})
+
+	assert.Equal(t, domain.ErrInvalidTransaction, err)
+}
+
+// ============================================
+// DeleteScheduleDetail Tests
+// ============================================
+
+func TestDeleteScheduleDetail_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("DELETE FROM schedule_details").
+		WithArgs("detail-123").
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	err = repo.DeleteScheduleDetail(context.Background(), sqlTx, "detail-123")
+
+	assert.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestDeleteScheduleDetail_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("DELETE FROM schedule_details").
+		WithArgs("detail-err").
+		WillReturnError(sql.ErrConnDone)
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	err = repo.DeleteScheduleDetail(context.Background(), sqlTx, "detail-err")
+
+	assert.Error(t, err)
+}
+
+func TestDeleteScheduleDetail_InvalidTransaction(t *testing.T) {
+	repo := &repository{}
+
+	err := repo.DeleteScheduleDetail(context.Background(), nil, "detail-123")
+
+	assert.Equal(t, domain.ErrInvalidTransaction, err)
 }
