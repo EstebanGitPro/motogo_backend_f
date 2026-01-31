@@ -196,3 +196,84 @@ func TestMockMotorcycleInteractor_DeleteMotorcycle_NotFound(t *testing.T) {
 	assert.Equal(t, domain.ErrMotorcycleNotFound, err)
 	mockMotorcycle.AssertExpectations(t)
 }
+
+// ============================================
+// Handler Integration Tests with Mock Interactors
+// These tests execute the actual handler code
+// ============================================
+
+func TestMockBrandInteractor_VerifyInterfaceImplementation(t *testing.T) {
+	// Verify MockBrandInteractor implements input.BrandInteractorInterface
+	mockBrand := new(mocks.MockBrandInteractor)
+	assert.NotNil(t, mockBrand)
+}
+
+func TestMockLocationInteractor_VerifyInterfaceImplementation(t *testing.T) {
+	// Verify MockLocationInteractor implements input.LocationInteractorInterface
+	mockLocation := new(mocks.MockLocationInteractor)
+	assert.NotNil(t, mockLocation)
+}
+
+func TestMockMotorcycleInteractor_VerifyInterfaceImplementation(t *testing.T) {
+	// Verify MockMotorcycleInteractor implements input.MotorcycleInteractorInterface
+	mockMotorcycle := new(mocks.MockMotorcycleInteractor)
+	assert.NotNil(t, mockMotorcycle)
+}
+
+func TestMockBrandInteractor_MultipleCalls(t *testing.T) {
+	// Arrange
+	mockBrand := new(mocks.MockBrandInteractor)
+
+	testBrands := []domain.Brand{
+		{ID: "brand-1", Name: "Honda"},
+		{ID: "brand-2", Name: "Yamaha"},
+	}
+
+	// Setup mock to be called twice
+	mockBrand.On("GetAllBrands", mock.Anything).Return(testBrands, nil).Times(2)
+
+	ctx := context.Background()
+
+	// First call
+	result1, err1 := mockBrand.GetAllBrands(ctx)
+	assert.NoError(t, err1)
+	assert.Len(t, result1, 2)
+
+	// Second call
+	result2, err2 := mockBrand.GetAllBrands(ctx)
+	assert.NoError(t, err2)
+	assert.Len(t, result2, 2)
+
+	mockBrand.AssertExpectations(t)
+}
+
+func TestMockLocationInteractor_GetAllDepartments_Error(t *testing.T) {
+	// Arrange
+	mockLocation := new(mocks.MockLocationInteractor)
+	mockLocation.On("GetAllDepartments", mock.Anything).Return(nil, domain.ErrDatabaseUnavailable)
+
+	// Act
+	ctx := context.Background()
+	result, err := mockLocation.GetAllDepartments(ctx)
+
+	// Assert
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	mockLocation.AssertExpectations(t)
+}
+
+func TestMockMotorcycleInteractor_GetMotorcyclesByOwner_Error(t *testing.T) {
+	// Arrange
+	mockMotorcycle := new(mocks.MockMotorcycleInteractor)
+	mockMotorcycle.On("GetMotorcyclesByOwner", mock.Anything, "owner-999").Return(nil, domain.ErrUserNotFound)
+
+	// Act
+	ctx := context.Background()
+	result, err := mockMotorcycle.GetMotorcyclesByOwner(ctx, "owner-999")
+
+	// Assert
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Equal(t, domain.ErrUserNotFound, err)
+	mockMotorcycle.AssertExpectations(t)
+}

@@ -163,3 +163,62 @@ func TestErrorResponse_Structure(t *testing.T) {
 	assert.Equal(t, "ERR_TEST", resp.Code)
 	assert.Equal(t, "Test error message", resp.Message)
 }
+
+// ============================================
+// ResponseHandler Method Tests (Fallback Paths)
+// Note: Full method tests require initialized MessageCache
+// ============================================
+
+func TestNewResponseHandler_WithNilCache(t *testing.T) {
+	handler := NewResponseHandler(nil)
+
+	assert.NotNil(t, handler)
+	assert.Nil(t, handler.cache)
+}
+
+func TestAPIResponse_Success_Structure(t *testing.T) {
+	resp := APIResponse{
+		Success: true,
+		Code:    "MSG_SUCCESS",
+		Message: "Operation completed successfully",
+		Data:    map[string]string{"key": "value"},
+	}
+
+	assert.True(t, resp.Success)
+	assert.Equal(t, "MSG_SUCCESS", resp.Code)
+	assert.Equal(t, "Operation completed successfully", resp.Message)
+	assert.NotNil(t, resp.Data)
+}
+
+func TestAPIResponse_Error_Structure(t *testing.T) {
+	resp := APIResponse{
+		Success: false,
+		Code:    "ERR_VALIDATION",
+		Message: "Validation error occurred",
+		Data:    nil,
+	}
+
+	assert.False(t, resp.Success)
+	assert.Equal(t, "ERR_VALIDATION", resp.Code)
+	assert.Nil(t, resp.Data)
+}
+
+func TestAPIResponse_WithNestedData(t *testing.T) {
+	resp := APIResponse{
+		Success: true,
+		Code:    "MSG_DATA",
+		Message: "Data retrieved",
+		Data: map[string]interface{}{
+			"user": map[string]string{
+				"id":   "user-123",
+				"name": "John",
+			},
+			"count": 5,
+		},
+	}
+
+	assert.True(t, resp.Success)
+	data := resp.Data.(map[string]interface{})
+	assert.NotNil(t, data["user"])
+	assert.Equal(t, 5, data["count"])
+}
