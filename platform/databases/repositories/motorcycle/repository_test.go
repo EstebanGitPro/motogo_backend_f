@@ -661,3 +661,92 @@ func TestGetByLicensePlate_DBError(t *testing.T) {
 	assert.Nil(t, motorcycle)
 	assert.Error(t, err)
 }
+
+// ============================================
+// ToDomain Additional Tests
+// ============================================
+
+func TestMotorcycle_ToDomain_WithPartialReference(t *testing.T) {
+	// Reference with only some fields valid
+	ref := &MotorcycleReference{
+		ID:                 sql.NullString{String: "ref-002", Valid: true},
+		BrandID:            sql.NullString{String: "brand-002", Valid: true},
+		BrandName:          sql.NullString{Valid: false}, // NULL
+		Model:              sql.NullString{Valid: false}, // NULL
+		Category:           sql.NullString{Valid: false}, // NULL
+		EngineDisplacement: sql.NullInt64{Valid: false},  // NULL
+	}
+
+	m := &Motorcycle{
+		ID:           "moto-partial",
+		LicensePlate: "PAR123",
+		OwnerID:      "owner-partial",
+		ReferenceID:  sql.NullString{String: "ref-002", Valid: true},
+	}
+
+	dm := m.ToDomain(ref)
+
+	assert.NotNil(t, dm.Reference)
+	assert.Equal(t, "ref-002", dm.Reference.ID)
+	assert.Equal(t, "brand-002", dm.Reference.BrandID)
+	assert.Equal(t, "", dm.Reference.BrandName) // Empty because NULL
+	assert.Equal(t, "", dm.Reference.Model)
+	assert.Equal(t, "", dm.Reference.Category)
+	assert.Equal(t, 0, dm.Reference.EngineDisplacement)
+}
+
+func TestMotorcycle_ToDomain_PreservesReferenceID(t *testing.T) {
+	m := &Motorcycle{
+		ID:          "moto-refid",
+		ReferenceID: sql.NullString{String: "some-reference-uuid", Valid: true},
+		OwnerID:     "owner-test",
+	}
+
+	dm := m.ToDomain(nil)
+
+	assert.Equal(t, "some-reference-uuid", dm.ReferenceID)
+	assert.Nil(t, dm.Reference)
+}
+
+func TestMotorcycle_ToDomain_AllOptionalFieldsSet(t *testing.T) {
+	m := &Motorcycle{
+		ID:             "moto-full",
+		LicensePlate:   "FUL999",
+		ReferenceID:    sql.NullString{String: "ref-full", Valid: true},
+		OwnerID:        "owner-full",
+		Year:           sql.NullInt64{Int64: 2023, Valid: true},
+		CurrentMileage: sql.NullInt64{Int64: 15000, Valid: true},
+		OwnerNotes:     sql.NullString{String: "Excellent condition", Valid: true},
+	}
+
+	dm := m.ToDomain(nil)
+
+	assert.Equal(t, "moto-full", dm.ID)
+	assert.Equal(t, "FUL999", dm.LicensePlate)
+	assert.Equal(t, "ref-full", dm.ReferenceID)
+	assert.NotNil(t, dm.Year)
+	assert.Equal(t, 2023, *dm.Year)
+	assert.NotNil(t, dm.CurrentMileage)
+	assert.Equal(t, 15000, *dm.CurrentMileage)
+	assert.NotNil(t, dm.OwnerNotes)
+	assert.Equal(t, "Excellent condition", *dm.OwnerNotes)
+}
+
+func TestMotorcycle_ToDomain_ReferenceWithNullID(t *testing.T) {
+	// Reference exists but ID is not valid - should not create domain reference
+	ref := &MotorcycleReference{
+		ID:        sql.NullString{Valid: false}, // NULL ID
+		BrandID:   sql.NullString{String: "brand-x", Valid: true},
+		BrandName: sql.NullString{String: "Honda", Valid: true},
+	}
+
+	m := &Motorcycle{
+		ID:           "moto-nullref",
+		LicensePlate: "NUL000",
+		OwnerID:      "owner-nullref",
+	}
+
+	dm := m.ToDomain(ref)
+
+	assert.Nil(t, dm.Reference) // Should be nil because ref.ID is not valid
+}
