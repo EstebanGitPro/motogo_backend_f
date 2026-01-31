@@ -60,6 +60,76 @@ func TestNewRepository_PrepareError(t *testing.T) {
 	assert.Contains(t, err.Error(), "error preparing stmtSaveFranchise")
 }
 
+func TestNewRepository_PrepareError_Update(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("INSERT INTO franchises")
+	mock.ExpectPrepare("UPDATE franchises").
+		WillReturnError(sql.ErrConnDone)
+
+	repo, err := NewRepository(db)
+
+	assert.Nil(t, repo)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "error preparing stmtUpdateFranchise")
+}
+
+func TestNewRepository_PrepareError_Delete(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("INSERT INTO franchises")
+	mock.ExpectPrepare("UPDATE franchises")
+	mock.ExpectPrepare("DELETE FROM franchises").
+		WillReturnError(sql.ErrConnDone)
+
+	repo, err := NewRepository(db)
+
+	assert.Nil(t, repo)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "error preparing stmtDeleteFranchise")
+}
+
+func TestNewRepository_PrepareError_GetByID(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("INSERT INTO franchises")
+	mock.ExpectPrepare("UPDATE franchises")
+	mock.ExpectPrepare("DELETE FROM franchises")
+	mock.ExpectPrepare("SELECT.*FROM franchises.*WHERE id").
+		WillReturnError(sql.ErrConnDone)
+
+	repo, err := NewRepository(db)
+
+	assert.Nil(t, repo)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "error preparing stmtGetFranchiseByID")
+}
+
+func TestNewRepository_PrepareError_GetByName(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("INSERT INTO franchises")
+	mock.ExpectPrepare("UPDATE franchises")
+	mock.ExpectPrepare("DELETE FROM franchises")
+	mock.ExpectPrepare("SELECT.*FROM franchises.*WHERE id")
+	mock.ExpectPrepare("SELECT.*FROM franchises.*WHERE name").
+		WillReturnError(sql.ErrConnDone)
+
+	repo, err := NewRepository(db)
+
+	assert.Nil(t, repo)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "error preparing stmtGetFranchiseByName")
+}
+
 // ============================================
 // BeginTx Tests
 // ============================================
