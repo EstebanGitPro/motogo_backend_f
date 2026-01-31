@@ -432,3 +432,232 @@ func TestGetAllReferences_DBError(t *testing.T) {
 	assert.Nil(t, refs)
 	assert.Error(t, err)
 }
+
+// ============================================
+// ValidateReferenceExists Tests
+// ============================================
+
+func TestValidateReferenceExists_True(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	rows := sqlmock.NewRows([]string{"exists"}).AddRow(true)
+	mock.ExpectQuery("SELECT EXISTS").
+		WithArgs("ref-valid").
+		WillReturnRows(rows)
+
+	repo := &repository{db: db}
+
+	exists, err := repo.ValidateReferenceExists(context.Background(), "ref-valid")
+
+	assert.NoError(t, err)
+	assert.True(t, exists)
+}
+
+func TestValidateReferenceExists_False(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	rows := sqlmock.NewRows([]string{"exists"}).AddRow(false)
+	mock.ExpectQuery("SELECT EXISTS").
+		WithArgs("ref-invalid").
+		WillReturnRows(rows)
+
+	repo := &repository{db: db}
+
+	exists, err := repo.ValidateReferenceExists(context.Background(), "ref-invalid")
+
+	assert.NoError(t, err)
+	assert.False(t, exists)
+}
+
+func TestValidateReferenceExists_DBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectQuery("SELECT EXISTS").
+		WithArgs("ref-error").
+		WillReturnError(sql.ErrConnDone)
+
+	repo := &repository{db: db}
+
+	exists, err := repo.ValidateReferenceExists(context.Background(), "ref-error")
+
+	assert.False(t, exists)
+	assert.Error(t, err)
+}
+
+// ============================================
+// CheckLicensePlateExists Tests
+// ============================================
+
+func TestCheckLicensePlateExists_True(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	rows := sqlmock.NewRows([]string{"exists"}).AddRow(true)
+	mock.ExpectQuery("SELECT EXISTS").
+		WithArgs("ABC123").
+		WillReturnRows(rows)
+
+	repo := &repository{db: db}
+
+	exists, err := repo.CheckLicensePlateExists(context.Background(), "ABC123")
+
+	assert.NoError(t, err)
+	assert.True(t, exists)
+}
+
+func TestCheckLicensePlateExists_False(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	rows := sqlmock.NewRows([]string{"exists"}).AddRow(false)
+	mock.ExpectQuery("SELECT EXISTS").
+		WithArgs("NEW123").
+		WillReturnRows(rows)
+
+	repo := &repository{db: db}
+
+	exists, err := repo.CheckLicensePlateExists(context.Background(), "NEW123")
+
+	assert.NoError(t, err)
+	assert.False(t, exists)
+}
+
+func TestCheckLicensePlateExists_DBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectQuery("SELECT EXISTS").
+		WithArgs("ERROR123").
+		WillReturnError(sql.ErrConnDone)
+
+	repo := &repository{db: db}
+
+	exists, err := repo.CheckLicensePlateExists(context.Background(), "ERROR123")
+
+	assert.False(t, exists)
+	assert.Error(t, err)
+}
+
+// ============================================
+// Motorcycle Model Tests
+// ============================================
+
+func TestMotorcycle_ToDomain(t *testing.T) {
+	year := 2021
+	mileage := 15000
+	notes := "Buen estado"
+
+	ref := &MotorcycleReference{
+		ID:                 sql.NullString{String: "ref-001", Valid: true},
+		BrandID:            sql.NullString{String: "brand-001", Valid: true},
+		BrandName:          sql.NullString{String: "Yamaha", Valid: true},
+		Model:              sql.NullString{String: "MT-07", Valid: true},
+		Category:           sql.NullString{String: "Naked", Valid: true},
+		EngineDisplacement: sql.NullInt64{Int64: 689, Valid: true},
+	}
+
+	m := &Motorcycle{
+		ID:             "moto-001",
+		LicensePlate:   "ABC123",
+		ReferenceID:    sql.NullString{String: "ref-001", Valid: true},
+		OwnerID:        "owner-001",
+		Year:           sql.NullInt64{Int64: int64(year), Valid: true},
+		CurrentMileage: sql.NullInt64{Int64: int64(mileage), Valid: true},
+		OwnerNotes:     sql.NullString{String: notes, Valid: true},
+	}
+
+	dm := m.ToDomain(ref)
+
+	assert.Equal(t, "moto-001", dm.ID)
+	assert.Equal(t, "ABC123", dm.LicensePlate)
+	assert.Equal(t, "ref-001", dm.ReferenceID)
+	assert.Equal(t, "owner-001", dm.OwnerID)
+	assert.NotNil(t, dm.Year)
+	assert.Equal(t, year, *dm.Year)
+	assert.NotNil(t, dm.CurrentMileage)
+	assert.Equal(t, mileage, *dm.CurrentMileage)
+	assert.NotNil(t, dm.OwnerNotes)
+	assert.Equal(t, notes, *dm.OwnerNotes)
+	assert.NotNil(t, dm.Reference)
+	assert.Equal(t, "Yamaha", dm.Reference.BrandName)
+}
+
+func TestMotorcycle_ToDomain_NullFields(t *testing.T) {
+	m := &Motorcycle{
+		ID:             "moto-002",
+		LicensePlate:   "XYZ789",
+		ReferenceID:    sql.NullString{Valid: false},
+		OwnerID:        "owner-002",
+		Year:           sql.NullInt64{Valid: false},
+		CurrentMileage: sql.NullInt64{Valid: false},
+		OwnerNotes:     sql.NullString{Valid: false},
+	}
+
+	dm := m.ToDomain(nil)
+
+	assert.Equal(t, "moto-002", dm.ID)
+	assert.Empty(t, dm.ReferenceID)
+	assert.Nil(t, dm.Year)
+	assert.Nil(t, dm.CurrentMileage)
+	assert.Nil(t, dm.OwnerNotes)
+	assert.Nil(t, dm.Reference)
+}
+
+func TestMotorcycle_ToDomain_WithReference(t *testing.T) {
+	ref := &MotorcycleReference{
+		ID:                 sql.NullString{String: "ref-001", Valid: true},
+		BrandID:            sql.NullString{String: "brand-001", Valid: true},
+		BrandName:          sql.NullString{String: "Yamaha", Valid: true},
+		Model:              sql.NullString{String: "MT-07", Valid: true},
+		Category:           sql.NullString{String: "Naked", Valid: true},
+		EngineDisplacement: sql.NullInt64{Int64: 689, Valid: true},
+	}
+
+	m := &Motorcycle{
+		ID:           "moto-003",
+		LicensePlate: "DEF456",
+		OwnerID:      "owner-003",
+	}
+
+	dm := m.ToDomain(ref)
+
+	assert.NotNil(t, dm.Reference)
+	assert.Equal(t, "ref-001", dm.Reference.ID)
+	assert.Equal(t, "brand-001", dm.Reference.BrandID)
+	assert.Equal(t, "Yamaha", dm.Reference.BrandName)
+	assert.Equal(t, "MT-07", dm.Reference.Model)
+	assert.Equal(t, "Naked", dm.Reference.Category)
+	assert.Equal(t, 689, dm.Reference.EngineDisplacement)
+}
+
+// ============================================
+// GetByLicensePlate Additional Tests
+// ============================================
+
+func TestGetByLicensePlate_DBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	stmt := mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	stmt.ExpectQuery().
+		WithArgs("ERROR-PLATE").
+		WillReturnError(sql.ErrConnDone)
+
+	repo := &repository{db: db}
+	repo.stmtGetByLicensePlate, _ = db.Prepare("SELECT m.id, m.license_plate FROM motorcycles m WHERE m.license_plate = ?")
+
+	motorcycle, err := repo.GetByLicensePlate(context.Background(), "ERROR-PLATE")
+
+	assert.Nil(t, motorcycle)
+	assert.Error(t, err)
+}

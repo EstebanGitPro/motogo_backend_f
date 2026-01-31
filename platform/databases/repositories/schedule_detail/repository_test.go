@@ -512,3 +512,263 @@ func TestGetExceptionsByScheduleID_DBError(t *testing.T) {
 	assert.Nil(t, exceptions)
 	assert.Error(t, err)
 }
+
+// ============================================
+// CheckDayIsClosed Tests
+// ============================================
+
+func TestCheckDayIsClosed_True(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	rows := sqlmock.NewRows([]string{"count"}).AddRow(1)
+
+	stmt := mock.ExpectPrepare("SELECT")
+	stmt.ExpectQuery().
+		WithArgs("schedule-123", 1, "00000000-0000-0000-0000-000000000000").
+		WillReturnRows(rows)
+
+	repo := &repository{db: db}
+	repo.stmtCheckDayIsClosed, _ = db.Prepare("SELECT COUNT(*) FROM schedule_details WHERE schedule_id = ?")
+
+	isClosed, err := repo.CheckDayIsClosed(context.Background(), "schedule-123", 1, "")
+
+	assert.NoError(t, err)
+	assert.True(t, isClosed)
+}
+
+func TestCheckDayIsClosed_False(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	rows := sqlmock.NewRows([]string{"count"}).AddRow(0)
+
+	stmt := mock.ExpectPrepare("SELECT")
+	stmt.ExpectQuery().
+		WithArgs("schedule-123", 1, "exclude-123").
+		WillReturnRows(rows)
+
+	repo := &repository{db: db}
+	repo.stmtCheckDayIsClosed, _ = db.Prepare("SELECT COUNT(*) FROM schedule_details WHERE schedule_id = ?")
+
+	isClosed, err := repo.CheckDayIsClosed(context.Background(), "schedule-123", 1, "exclude-123")
+
+	assert.NoError(t, err)
+	assert.False(t, isClosed)
+}
+
+func TestCheckDayIsClosed_DBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	stmt := mock.ExpectPrepare("SELECT")
+	stmt.ExpectQuery().
+		WithArgs("schedule-error", 1, "00000000-0000-0000-0000-000000000000").
+		WillReturnError(sql.ErrConnDone)
+
+	repo := &repository{db: db}
+	repo.stmtCheckDayIsClosed, _ = db.Prepare("SELECT COUNT(*) FROM schedule_details WHERE schedule_id = ?")
+
+	isClosed, err := repo.CheckDayIsClosed(context.Background(), "schedule-error", 1, "")
+
+	assert.False(t, isClosed)
+	assert.Error(t, err)
+}
+
+// ============================================
+// CheckDayHasTimeSlots Tests
+// ============================================
+
+func TestCheckDayHasTimeSlots_True(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	rows := sqlmock.NewRows([]string{"count"}).AddRow(2)
+
+	stmt := mock.ExpectPrepare("SELECT")
+	stmt.ExpectQuery().
+		WithArgs("schedule-123", 1, "00000000-0000-0000-0000-000000000000").
+		WillReturnRows(rows)
+
+	repo := &repository{db: db}
+	repo.stmtCheckDayHasTimeSlots, _ = db.Prepare("SELECT COUNT(*) FROM schedule_details WHERE schedule_id = ?")
+
+	hasSlots, err := repo.CheckDayHasTimeSlots(context.Background(), "schedule-123", 1, "")
+
+	assert.NoError(t, err)
+	assert.True(t, hasSlots)
+}
+
+func TestCheckDayHasTimeSlots_False(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	rows := sqlmock.NewRows([]string{"count"}).AddRow(0)
+
+	stmt := mock.ExpectPrepare("SELECT")
+	stmt.ExpectQuery().
+		WithArgs("schedule-123", 1, "exclude-456").
+		WillReturnRows(rows)
+
+	repo := &repository{db: db}
+	repo.stmtCheckDayHasTimeSlots, _ = db.Prepare("SELECT COUNT(*) FROM schedule_details WHERE schedule_id = ?")
+
+	hasSlots, err := repo.CheckDayHasTimeSlots(context.Background(), "schedule-123", 1, "exclude-456")
+
+	assert.NoError(t, err)
+	assert.False(t, hasSlots)
+}
+
+func TestCheckDayHasTimeSlots_DBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	stmt := mock.ExpectPrepare("SELECT")
+	stmt.ExpectQuery().
+		WithArgs("schedule-error", 2, "00000000-0000-0000-0000-000000000000").
+		WillReturnError(sql.ErrConnDone)
+
+	repo := &repository{db: db}
+	repo.stmtCheckDayHasTimeSlots, _ = db.Prepare("SELECT COUNT(*) FROM schedule_details WHERE schedule_id = ?")
+
+	hasSlots, err := repo.CheckDayHasTimeSlots(context.Background(), "schedule-error", 2, "")
+
+	assert.False(t, hasSlots)
+	assert.Error(t, err)
+}
+
+// ============================================
+// CheckExceptionIsRedundant Tests
+// ============================================
+
+func TestCheckExceptionIsRedundant_True(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	rows := sqlmock.NewRows([]string{"count"}).AddRow(1)
+
+	stmt := mock.ExpectPrepare("SELECT")
+	stmt.ExpectQuery().
+		WithArgs("schedule-123", 1).
+		WillReturnRows(rows)
+
+	repo := &repository{db: db}
+	repo.stmtCheckExceptionIsRedundant, _ = db.Prepare("SELECT COUNT(*) FROM schedule_details WHERE schedule_id = ?")
+
+	isRedundant, err := repo.CheckExceptionIsRedundant(context.Background(), "schedule-123", 1)
+
+	assert.NoError(t, err)
+	assert.True(t, isRedundant)
+}
+
+func TestCheckExceptionIsRedundant_False(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	rows := sqlmock.NewRows([]string{"count"}).AddRow(0)
+
+	stmt := mock.ExpectPrepare("SELECT")
+	stmt.ExpectQuery().
+		WithArgs("schedule-123", 1).
+		WillReturnRows(rows)
+
+	repo := &repository{db: db}
+	repo.stmtCheckExceptionIsRedundant, _ = db.Prepare("SELECT COUNT(*) FROM schedule_details WHERE schedule_id = ?")
+
+	isRedundant, err := repo.CheckExceptionIsRedundant(context.Background(), "schedule-123", 1)
+
+	assert.NoError(t, err)
+	assert.False(t, isRedundant)
+}
+
+func TestCheckExceptionIsRedundant_DBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	stmt := mock.ExpectPrepare("SELECT")
+	stmt.ExpectQuery().
+		WithArgs("schedule-error", 3).
+		WillReturnError(sql.ErrConnDone)
+
+	repo := &repository{db: db}
+	repo.stmtCheckExceptionIsRedundant, _ = db.Prepare("SELECT COUNT(*) FROM schedule_details WHERE schedule_id = ?")
+
+	isRedundant, err := repo.CheckExceptionIsRedundant(context.Background(), "schedule-error", 3)
+
+	assert.False(t, isRedundant)
+	assert.Error(t, err)
+}
+
+// ============================================
+// CheckExceptionDateConflict Tests
+// ============================================
+
+func TestCheckExceptionDateConflict_HasConflict(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	rows := sqlmock.NewRows([]string{"count"}).AddRow(1)
+
+	stmt := mock.ExpectPrepare("SELECT")
+	stmt.ExpectQuery().
+		WithArgs("schedule-123", "00000000-0000-0000-0000-000000000000", "2024-12-31", "2024-01-01").
+		WillReturnRows(rows)
+
+	repo := &repository{db: db}
+	repo.stmtCheckExceptionDateConflict, _ = db.Prepare("SELECT COUNT(*) FROM schedule_details WHERE schedule_id = ?")
+
+	hasConflict, err := repo.CheckExceptionDateConflict(context.Background(), "schedule-123", "", "2024-01-01", "2024-12-31")
+
+	assert.NoError(t, err)
+	assert.True(t, hasConflict)
+}
+
+func TestCheckExceptionDateConflict_NoConflict(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	rows := sqlmock.NewRows([]string{"count"}).AddRow(0)
+
+	stmt := mock.ExpectPrepare("SELECT")
+	stmt.ExpectQuery().
+		WithArgs("schedule-123", "exclude-789", "2024-12-31", "2024-01-01").
+		WillReturnRows(rows)
+
+	repo := &repository{db: db}
+	repo.stmtCheckExceptionDateConflict, _ = db.Prepare("SELECT COUNT(*) FROM schedule_details WHERE schedule_id = ?")
+
+	hasConflict, err := repo.CheckExceptionDateConflict(context.Background(), "schedule-123", "exclude-789", "2024-01-01", "2024-12-31")
+
+	assert.NoError(t, err)
+	assert.False(t, hasConflict)
+}
+
+func TestCheckExceptionDateConflict_DBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	stmt := mock.ExpectPrepare("SELECT")
+	stmt.ExpectQuery().
+		WithArgs("schedule-error", "00000000-0000-0000-0000-000000000000", "2024-12-31", "2024-01-01").
+		WillReturnError(sql.ErrConnDone)
+
+	repo := &repository{db: db}
+	repo.stmtCheckExceptionDateConflict, _ = db.Prepare("SELECT COUNT(*) FROM schedule_details WHERE schedule_id = ?")
+
+	hasConflict, err := repo.CheckExceptionDateConflict(context.Background(), "schedule-error", "", "2024-01-01", "2024-12-31")
+
+	assert.False(t, hasConflict)
+	assert.Error(t, err)
+}

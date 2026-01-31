@@ -213,6 +213,25 @@ func TestGetFranchiseByName_NotFound(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+func TestGetFranchiseByName_DBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	stmt := mock.ExpectPrepare("SELECT id, name, description FROM franchises WHERE name")
+	stmt.ExpectQuery().
+		WithArgs("Error Test").
+		WillReturnError(sql.ErrConnDone)
+
+	repo := &repository{db: db}
+	repo.stmtGetFranchiseByName, _ = db.Prepare("SELECT id, name, description FROM franchises WHERE name = ?")
+
+	franchise, err := repo.GetFranchiseByName(context.Background(), "Error Test")
+
+	assert.Nil(t, franchise)
+	assert.Error(t, err)
+}
+
 // ============================================
 // CountBranchesByFranchise Tests
 // ============================================

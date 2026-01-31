@@ -275,6 +275,25 @@ func TestCheckServiceAssociation_NotAssociated(t *testing.T) {
 	assert.False(t, associated)
 }
 
+func TestCheckServiceAssociation_DBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	stmt := mock.ExpectPrepare("SELECT COUNT")
+	stmt.ExpectQuery().
+		WithArgs("branch-error", "svc-error").
+		WillReturnError(sql.ErrConnDone)
+
+	repo := &repository{db: db}
+	repo.stmtCheckServiceAssociation, _ = db.Prepare("SELECT COUNT(*) FROM branch_services WHERE branch_id = ? AND service_id = ?")
+
+	associated, err := repo.CheckServiceAssociation(context.Background(), "branch-error", "svc-error")
+
+	assert.False(t, associated)
+	assert.Error(t, err)
+}
+
 // ============================================
 // GetServicesByType Tests
 // ============================================

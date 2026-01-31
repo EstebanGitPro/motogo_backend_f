@@ -334,3 +334,357 @@ func TestGetBranchByFranchiseAndName_DBError(t *testing.T) {
 	assert.Nil(t, branch)
 	assert.Error(t, err)
 }
+
+// ============================================
+// GetBranchesByRepresentative Tests
+// ============================================
+
+func TestGetBranchesByRepresentative_Empty(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	rows := sqlmock.NewRows([]string{
+		"id", "representative_id", "franchise_id", "name", "establishment_type", "profile_image_url", "status",
+		"location_id", "city_id", "address", "latitude", "longitude", "department_id",
+	})
+
+	stmt := mock.ExpectPrepare("SELECT b.id, b.representative_id")
+	stmt.ExpectQuery().
+		WithArgs("rep-no-branches").
+		WillReturnRows(rows)
+
+	repo := &repository{db: db}
+	repo.stmtGetBranchesByRepresentative, _ = db.Prepare("SELECT b.id, b.representative_id FROM branches WHERE b.representative_id = ?")
+
+	branches, err := repo.GetBranchesByRepresentative(context.Background(), "rep-no-branches")
+
+	assert.NoError(t, err)
+	assert.Empty(t, branches)
+}
+
+func TestGetBranchesByRepresentative_DBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	stmt := mock.ExpectPrepare("SELECT b.id, b.representative_id")
+	stmt.ExpectQuery().
+		WithArgs("rep-error").
+		WillReturnError(sql.ErrConnDone)
+
+	repo := &repository{db: db}
+	repo.stmtGetBranchesByRepresentative, _ = db.Prepare("SELECT b.id, b.representative_id FROM branches WHERE b.representative_id = ?")
+
+	branches, err := repo.GetBranchesByRepresentative(context.Background(), "rep-error")
+
+	assert.Nil(t, branches)
+	assert.Error(t, err)
+}
+
+// ============================================
+// GetBranchesNearby Tests
+// ============================================
+
+func TestGetBranchesNearby_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	rows := sqlmock.NewRows([]string{
+		"id", "name", "establishment_type", "profile_image_url", "status",
+		"address", "latitude", "longitude", "city_name", "department_name", "distance_km",
+	}).AddRow(
+		"branch-001", "Taller Central", "WORKSHOP", "http://example.com/img.jpg", "ACTIVE",
+		"Calle 123 #45-67", 4.7110, -74.0721, "Bogotá", "Cundinamarca", 1.5,
+	).AddRow(
+		"branch-002", "Tienda Norte", "STORE", nil, "ACTIVE",
+		"Carrera 15 #80-45", 4.7200, -74.0650, "Bogotá", "Cundinamarca", 2.3,
+	)
+
+	stmt := mock.ExpectPrepare("SELECT")
+	stmt.ExpectQuery().
+		WithArgs(4.7110, -74.0721, 4.7110, "", "", 4.6110, 4.8110, -74.1721, -73.9721, 5.0).
+		WillReturnRows(rows)
+
+	repo := &repository{db: db}
+	repo.stmtGetBranchesNearby, _ = db.Prepare("SELECT * FROM branches")
+
+	branches, err := repo.GetBranchesNearby(
+		context.Background(),
+		4.7110, -74.0721, 5.0,
+		"",
+		4.6110, 4.8110, -74.1721, -73.9721,
+	)
+
+	assert.NoError(t, err)
+	assert.Len(t, branches, 2)
+	assert.Equal(t, "branch-001", branches[0].ID)
+	assert.Equal(t, 1.5, branches[0].DistanceKm)
+	assert.NotNil(t, branches[0].ProfileImageURL)
+	assert.Nil(t, branches[1].ProfileImageURL)
+}
+
+func TestGetBranchesNearby_Empty(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	rows := sqlmock.NewRows([]string{
+		"id", "name", "establishment_type", "profile_image_url", "status",
+		"address", "latitude", "longitude", "city_name", "department_name", "distance_km",
+	})
+
+	stmt := mock.ExpectPrepare("SELECT")
+	stmt.ExpectQuery().
+		WithArgs(4.7110, -74.0721, 4.7110, "WORKSHOP", "WORKSHOP", 4.6110, 4.8110, -74.1721, -73.9721, 1.0).
+		WillReturnRows(rows)
+
+	repo := &repository{db: db}
+	repo.stmtGetBranchesNearby, _ = db.Prepare("SELECT * FROM branches")
+
+	branches, err := repo.GetBranchesNearby(
+		context.Background(),
+		4.7110, -74.0721, 1.0,
+		"WORKSHOP",
+		4.6110, 4.8110, -74.1721, -73.9721,
+	)
+
+	assert.NoError(t, err)
+	assert.Empty(t, branches)
+}
+
+func TestGetBranchesNearby_DBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	stmt := mock.ExpectPrepare("SELECT")
+	stmt.ExpectQuery().
+		WithArgs(4.7110, -74.0721, 4.7110, "", "", 4.6110, 4.8110, -74.1721, -73.9721, 5.0).
+		WillReturnError(sql.ErrConnDone)
+
+	repo := &repository{db: db}
+	repo.stmtGetBranchesNearby, _ = db.Prepare("SELECT * FROM branches")
+
+	branches, err := repo.GetBranchesNearby(
+		context.Background(),
+		4.7110, -74.0721, 5.0,
+		"",
+		4.6110, 4.8110, -74.1721, -73.9721,
+	)
+
+	assert.Nil(t, branches)
+	assert.Error(t, err)
+}
+
+// ============================================
+// getBranchBrands Tests
+// ============================================
+
+func TestGetBranchBrands_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	rows := sqlmock.NewRows([]string{"brand_id"}).
+		AddRow("brand-001").
+		AddRow("brand-002").
+		AddRow("brand-003")
+
+	stmt := mock.ExpectPrepare("SELECT brand_id FROM branch_brands")
+	stmt.ExpectQuery().
+		WithArgs("branch-001").
+		WillReturnRows(rows)
+
+	repo := &repository{db: db}
+	repo.stmtGetBranchBrands, _ = db.Prepare("SELECT brand_id FROM branch_brands WHERE branch_id = ?")
+
+	brands, err := repo.getBranchBrands(context.Background(), "branch-001")
+
+	assert.NoError(t, err)
+	assert.Len(t, brands, 3)
+	assert.Equal(t, "brand-001", brands[0])
+}
+
+func TestGetBranchBrands_Empty(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	rows := sqlmock.NewRows([]string{"brand_id"})
+
+	stmt := mock.ExpectPrepare("SELECT brand_id FROM branch_brands")
+	stmt.ExpectQuery().
+		WithArgs("branch-no-brands").
+		WillReturnRows(rows)
+
+	repo := &repository{db: db}
+	repo.stmtGetBranchBrands, _ = db.Prepare("SELECT brand_id FROM branch_brands WHERE branch_id = ?")
+
+	brands, err := repo.getBranchBrands(context.Background(), "branch-no-brands")
+
+	assert.NoError(t, err)
+	assert.Empty(t, brands)
+}
+
+func TestGetBranchBrands_DBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	stmt := mock.ExpectPrepare("SELECT brand_id FROM branch_brands")
+	stmt.ExpectQuery().
+		WithArgs("branch-error").
+		WillReturnError(sql.ErrConnDone)
+
+	repo := &repository{db: db}
+	repo.stmtGetBranchBrands, _ = db.Prepare("SELECT brand_id FROM branch_brands WHERE branch_id = ?")
+
+	brands, err := repo.getBranchBrands(context.Background(), "branch-error")
+
+	assert.Nil(t, brands)
+	assert.Error(t, err)
+}
+
+// ============================================
+// Branch Model Tests
+// ============================================
+
+func TestBranch_ToDomain(t *testing.T) {
+	b := &Branch{
+		ID:                "branch-001",
+		RepresentativeID:  "rep-123",
+		FranchiseID:       sql.NullString{String: "franchise-001", Valid: true},
+		Name:              "Sucursal Norte",
+		EstablishmentType: "WORKSHOP",
+		ProfileImageURL:   sql.NullString{String: "http://example.com/img.jpg", Valid: true},
+		Status:            "ACTIVE",
+	}
+
+	domain := b.ToDomain()
+
+	assert.Equal(t, "branch-001", domain.ID)
+	assert.Equal(t, "rep-123", domain.RepresentativeID)
+	assert.NotNil(t, domain.FranchiseID)
+	assert.Equal(t, "franchise-001", *domain.FranchiseID)
+	assert.NotNil(t, domain.ProfileImageURL)
+	assert.Equal(t, "http://example.com/img.jpg", *domain.ProfileImageURL)
+}
+
+func TestBranch_ToDomain_NullFields(t *testing.T) {
+	b := &Branch{
+		ID:                "branch-002",
+		RepresentativeID:  "rep-456",
+		FranchiseID:       sql.NullString{Valid: false},
+		Name:              "Sucursal Sin Franquicia",
+		EstablishmentType: "STORE",
+		ProfileImageURL:   sql.NullString{Valid: false},
+		Status:            "INACTIVE",
+	}
+
+	domain := b.ToDomain()
+
+	assert.Equal(t, "branch-002", domain.ID)
+	assert.Nil(t, domain.FranchiseID)
+	assert.Nil(t, domain.ProfileImageURL)
+}
+
+func TestFromDomain(t *testing.T) {
+	franchiseID := "franchise-001"
+	imageURL := "http://example.com/img.jpg"
+	domainBranch := domain.Branch{
+		ID:                "branch-001",
+		RepresentativeID:  "rep-123",
+		FranchiseID:       &franchiseID,
+		Name:              "Sucursal Norte",
+		EstablishmentType: "WORKSHOP",
+		ProfileImageURL:   &imageURL,
+		Status:            "ACTIVE",
+	}
+
+	b := FromDomain(domainBranch)
+
+	assert.Equal(t, "branch-001", b.ID)
+	assert.True(t, b.FranchiseID.Valid)
+	assert.Equal(t, "franchise-001", b.FranchiseID.String)
+	assert.True(t, b.ProfileImageURL.Valid)
+}
+
+func TestFromDomain_NilFields(t *testing.T) {
+	domainBranch := domain.Branch{
+		ID:                "branch-002",
+		RepresentativeID:  "rep-456",
+		FranchiseID:       nil,
+		Name:              "Sucursal Sin Franquicia",
+		EstablishmentType: "STORE",
+		ProfileImageURL:   nil,
+		Status:            "INACTIVE",
+	}
+
+	b := FromDomain(domainBranch)
+
+	assert.Equal(t, "branch-002", b.ID)
+	assert.False(t, b.FranchiseID.Valid)
+	assert.False(t, b.ProfileImageURL.Valid)
+}
+
+// ============================================
+// Location Model Tests
+// ============================================
+
+func TestLocation_ToDomain(t *testing.T) {
+	lat := 4.7110
+	lng := -74.0721
+	l := &Location{
+		ID:           sql.NullString{String: "loc-001", Valid: true},
+		DepartmentID: sql.NullString{String: "dept-001", Valid: true},
+		CityID:       sql.NullString{String: "city-001", Valid: true},
+		Address:      sql.NullString{String: "Calle 123 #45-67", Valid: true},
+		Latitude:     sql.NullFloat64{Float64: lat, Valid: true},
+		Longitude:    sql.NullFloat64{Float64: lng, Valid: true},
+	}
+
+	domainLoc := l.ToDomain("branch-001")
+
+	assert.NotNil(t, domainLoc)
+	assert.Equal(t, "loc-001", domainLoc.ID)
+	assert.Equal(t, "branch-001", domainLoc.BranchID)
+	assert.Equal(t, "dept-001", domainLoc.DepartmentID)
+	assert.Equal(t, "city-001", domainLoc.CityID)
+	assert.Equal(t, "Calle 123 #45-67", domainLoc.Address)
+	assert.NotNil(t, domainLoc.Latitude)
+	assert.Equal(t, lat, *domainLoc.Latitude)
+	assert.NotNil(t, domainLoc.Longitude)
+	assert.Equal(t, lng, *domainLoc.Longitude)
+}
+
+func TestLocation_ToDomain_InvalidID(t *testing.T) {
+	l := &Location{
+		ID: sql.NullString{Valid: false},
+	}
+
+	domainLoc := l.ToDomain("branch-001")
+
+	assert.Nil(t, domainLoc)
+}
+
+func TestLocation_ToDomain_PartialData(t *testing.T) {
+	l := &Location{
+		ID:           sql.NullString{String: "loc-002", Valid: true},
+		DepartmentID: sql.NullString{Valid: false},
+		CityID:       sql.NullString{Valid: false},
+		Address:      sql.NullString{Valid: false},
+		Latitude:     sql.NullFloat64{Valid: false},
+		Longitude:    sql.NullFloat64{Valid: false},
+	}
+
+	domainLoc := l.ToDomain("branch-002")
+
+	assert.NotNil(t, domainLoc)
+	assert.Equal(t, "loc-002", domainLoc.ID)
+	assert.Empty(t, domainLoc.DepartmentID)
+	assert.Empty(t, domainLoc.CityID)
+	assert.Nil(t, domainLoc.Latitude)
+	assert.Nil(t, domainLoc.Longitude)
+}
