@@ -94,7 +94,20 @@ func (h *handler) GetMotorcycle() gin.HandlerFunc {
 		// 5. Build response DTO
 		response := ToMotorcycleResponse(motorcycle)
 
-		// 6. Build HATEOAS links (owner sees edit/delete, others only see self)
+		// 6. Override IDs with encoded versions
+		response.ID = encodedID
+		if response.Reference != nil {
+			encodedRefID, err := h.EncodeID(motorcycle.Reference.ID)
+			if err == nil {
+				response.Reference.ID = encodedRefID
+			}
+			encodedBrandID, err := h.EncodeID(motorcycle.Reference.BrandID)
+			if err == nil {
+				response.Reference.BrandID = encodedBrandID
+			}
+		}
+
+		// 7. Build HATEOAS links (owner sees edit/delete, others only see self)
 		baseURL := GetBaseURL(c)
 		response.Links = BuildMotorcycleDetailLinks(baseURL, encodedID, true) // Owner validated above
 
@@ -213,6 +226,16 @@ func (h *handler) RegisterMotorcycle() gin.HandlerFunc {
 		response := ToMotorcycleResponse(createdMotorcycle)
 		response.ID = encodedID
 
+		// 7.1 Encode Reference IDs if present
+		if response.Reference != nil && createdMotorcycle.Reference != nil {
+			if encodedRefID, err := h.EncodeID(createdMotorcycle.Reference.ID); err == nil {
+				response.Reference.ID = encodedRefID
+			}
+			if encodedBrandID, err := h.EncodeID(createdMotorcycle.Reference.BrandID); err == nil {
+				response.Reference.BrandID = encodedBrandID
+			}
+		}
+
 		// 8. Build HATEOAS links (Richardson Maturity Level 3)
 		baseURL := GetBaseURL(c)
 		response.Links = BuildMotorcycleDetailLinks(baseURL, encodedID, true)
@@ -282,6 +305,17 @@ func (h *handler) ListMotorcycles() gin.HandlerFunc {
 
 			response := ToMotorcycleResponse(&moto)
 			response.ID = encodedID
+
+			// Encode Reference IDs if present
+			if response.Reference != nil && moto.Reference != nil {
+				if encodedRefID, err := h.EncodeID(moto.Reference.ID); err == nil {
+					response.Reference.ID = encodedRefID
+				}
+				if encodedBrandID, err := h.EncodeID(moto.Reference.BrandID); err == nil {
+					response.Reference.BrandID = encodedBrandID
+				}
+			}
+
 			response.Links = BuildMotorcycleDetailLinks(baseURL, encodedID, true) // Owner always true
 			responses = append(responses, response)
 		}
@@ -455,6 +489,16 @@ func (h *handler) UpdateMotorcycle() gin.HandlerFunc {
 		// 5. Build response DTO with HATEOAS links
 		response := ToMotorcycleResponse(motorcycle)
 		response.ID = encodedID
+
+		// 5.1 Encode Reference IDs if present
+		if response.Reference != nil && motorcycle.Reference != nil {
+			if encodedRefID, err := h.EncodeID(motorcycle.Reference.ID); err == nil {
+				response.Reference.ID = encodedRefID
+			}
+			if encodedBrandID, err := h.EncodeID(motorcycle.Reference.BrandID); err == nil {
+				response.Reference.BrandID = encodedBrandID
+			}
+		}
 
 		// 6. Build HATEOAS links (only implemented: self, update, list)
 		baseURL := GetBaseURL(c)
