@@ -130,6 +130,69 @@ func TestNewRepository_PrepareError_GetByName(t *testing.T) {
 	assert.Contains(t, err.Error(), "error preparing stmtGetFranchiseByName")
 }
 
+func TestNewRepository_PrepareError_GetByRep(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("INSERT INTO franchises")
+	mock.ExpectPrepare("UPDATE franchises")
+	mock.ExpectPrepare("DELETE FROM franchises")
+	mock.ExpectPrepare("SELECT.*FROM franchises.*WHERE id")
+	mock.ExpectPrepare("SELECT.*FROM franchises.*WHERE name")
+	mock.ExpectPrepare("SELECT.*franchises.*INNER JOIN branches").
+		WillReturnError(sql.ErrConnDone)
+
+	repo, err := NewRepository(db)
+
+	assert.Nil(t, repo)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "error preparing stmtGetFranchisesByRepresentative")
+}
+
+func TestNewRepository_PrepareError_CountBranches(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("INSERT INTO franchises")
+	mock.ExpectPrepare("UPDATE franchises")
+	mock.ExpectPrepare("DELETE FROM franchises")
+	mock.ExpectPrepare("SELECT.*FROM franchises.*WHERE id")
+	mock.ExpectPrepare("SELECT.*FROM franchises.*WHERE name")
+	mock.ExpectPrepare("SELECT.*franchises.*INNER JOIN branches")
+	mock.ExpectPrepare("SELECT COUNT.*FROM branches WHERE franchise_id").
+		WillReturnError(sql.ErrConnDone)
+
+	repo, err := NewRepository(db)
+
+	assert.Nil(t, repo)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "error preparing stmtCountBranchesByFranchise")
+}
+
+func TestNewRepository_PrepareError_AssociateBranch(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("INSERT INTO franchises")
+	mock.ExpectPrepare("UPDATE franchises")
+	mock.ExpectPrepare("DELETE FROM franchises")
+	mock.ExpectPrepare("SELECT.*FROM franchises.*WHERE id")
+	mock.ExpectPrepare("SELECT.*FROM franchises.*WHERE name")
+	mock.ExpectPrepare("SELECT.*franchises.*INNER JOIN branches")
+	mock.ExpectPrepare("SELECT COUNT.*FROM branches WHERE franchise_id")
+	mock.ExpectPrepare("UPDATE branches SET franchise_id.*WHERE id").
+		WillReturnError(sql.ErrConnDone)
+
+	repo, err := NewRepository(db)
+
+	assert.Nil(t, repo)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "error preparing stmtAssociateBranchToFranchise")
+}
+
 // ============================================
 // BeginTx Tests
 // ============================================
