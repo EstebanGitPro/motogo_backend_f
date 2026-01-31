@@ -357,3 +357,171 @@ func TestGetDepartmentByID_DBError(t *testing.T) {
 	assert.Nil(t, dept)
 	assert.Error(t, err)
 }
+
+// ============================================
+// Location ToDomain Tests
+// ============================================
+
+func TestLocation_ToDomain_WithCoordinates(t *testing.T) {
+	loc := Location{
+		ID:        "loc-001",
+		BranchID:  "branch-001",
+		CityID:    "city-001",
+		Address:   "Calle 123",
+		Latitude:  sql.NullFloat64{Float64: 4.6097, Valid: true},
+		Longitude: sql.NullFloat64{Float64: -74.0817, Valid: true},
+	}
+
+	result := loc.ToDomain()
+
+	assert.Equal(t, "loc-001", result.ID)
+	assert.Equal(t, "branch-001", result.BranchID)
+	assert.Equal(t, "city-001", result.CityID)
+	assert.Equal(t, "Calle 123", result.Address)
+	assert.NotNil(t, result.Latitude)
+	assert.Equal(t, 4.6097, *result.Latitude)
+	assert.NotNil(t, result.Longitude)
+	assert.Equal(t, -74.0817, *result.Longitude)
+}
+
+func TestLocation_ToDomain_WithoutCoordinates(t *testing.T) {
+	loc := Location{
+		ID:       "loc-002",
+		BranchID: "branch-002",
+		CityID:   "city-002",
+		Address:  "Carrera 45",
+	}
+
+	result := loc.ToDomain()
+
+	assert.Equal(t, "loc-002", result.ID)
+	assert.Nil(t, result.Latitude)
+	assert.Nil(t, result.Longitude)
+}
+
+func TestFromDomainLocation_WithCoordinates(t *testing.T) {
+	lat := 4.6097
+	lon := -74.0817
+	domainLoc := domain.Location{
+		ID:        "loc-001",
+		BranchID:  "branch-001",
+		CityID:    "city-001",
+		Address:   "Calle 123",
+		Latitude:  &lat,
+		Longitude: &lon,
+	}
+
+	result := FromDomainLocation(domainLoc)
+
+	assert.Equal(t, "loc-001", result.ID)
+	assert.Equal(t, "branch-001", result.BranchID)
+	assert.True(t, result.Latitude.Valid)
+	assert.Equal(t, 4.6097, result.Latitude.Float64)
+	assert.True(t, result.Longitude.Valid)
+	assert.Equal(t, -74.0817, result.Longitude.Float64)
+}
+
+func TestFromDomainLocation_WithoutCoordinates(t *testing.T) {
+	domainLoc := domain.Location{
+		ID:       "loc-002",
+		BranchID: "branch-002",
+		CityID:   "city-002",
+		Address:  "Carrera 45",
+	}
+
+	result := FromDomainLocation(domainLoc)
+
+	assert.Equal(t, "loc-002", result.ID)
+	assert.False(t, result.Latitude.Valid)
+	assert.False(t, result.Longitude.Valid)
+}
+
+// ============================================
+// Department ToDomain Tests
+// ============================================
+
+func TestDepartment_ToDomain(t *testing.T) {
+	dept := Department{
+		ID:   "dept-001",
+		Name: "Cundinamarca",
+	}
+
+	result := dept.ToDomain()
+
+	assert.Equal(t, "dept-001", result.ID)
+	assert.Equal(t, "Cundinamarca", result.Name)
+}
+
+// ============================================
+// City ToDomain Tests
+// ============================================
+
+func TestCity_ToDomain(t *testing.T) {
+	city := City{
+		ID:           "city-001",
+		Name:         "Bogotá",
+		DepartmentID: "dept-001",
+	}
+
+	result := city.ToDomain()
+
+	assert.Equal(t, "city-001", result.ID)
+	assert.Equal(t, "Bogotá", result.Name)
+	assert.Equal(t, "dept-001", result.DepartmentID)
+}
+
+// ============================================
+// CheckAddressExists Tests
+// ============================================
+
+func TestCheckAddressExists_Found(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	rows := sqlmock.NewRows([]string{"1"}).AddRow(1)
+	mock.ExpectQuery("SELECT 1 FROM locations").
+		WithArgs("Calle 123").
+		WillReturnRows(rows)
+
+	repo := &repository{db: db}
+
+	exists, err := repo.CheckAddressExists(context.Background(), "Calle 123")
+
+	assert.NoError(t, err)
+	assert.True(t, exists)
+}
+
+func TestCheckAddressExists_NotFound(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectQuery("SELECT 1 FROM locations").
+		WithArgs("Nonexistent Address").
+		WillReturnError(sql.ErrNoRows)
+
+	repo := &repository{db: db}
+
+	exists, err := repo.CheckAddressExists(context.Background(), "Nonexistent Address")
+
+	assert.NoError(t, err)
+	assert.False(t, exists)
+}
+
+func TestCheckAddressExists_DBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectQuery("SELECT 1 FROM locations").
+		WithArgs("Error Address").
+		WillReturnError(sql.ErrConnDone)
+
+	repo := &repository{db: db}
+
+	exists, err := repo.CheckAddressExists(context.Background(), "Error Address")
+
+	assert.Error(t, err)
+	assert.False(t, exists)
+}
