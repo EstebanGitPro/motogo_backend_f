@@ -267,3 +267,70 @@ func TestValidateBrands_DBError(t *testing.T) {
 
 	assert.Error(t, err)
 }
+
+// ============================================
+// GetBranchByFranchiseAndName Tests
+// ============================================
+
+func TestGetBranchByFranchiseAndName_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	rows := sqlmock.NewRows([]string{
+		"id", "representative_id", "franchise_id", "name", "establishment_type", "profile_image_url", "status",
+	}).AddRow("branch-001", "rep-123", "franchise-001", "Sucursal Norte", "WORKSHOP", "http://example.com/img.jpg", "ACTIVE")
+
+	stmt := mock.ExpectPrepare("SELECT")
+	stmt.ExpectQuery().
+		WithArgs("franchise-001", "Sucursal Norte").
+		WillReturnRows(rows)
+
+	repo := &repository{db: db}
+	repo.stmtGetBranchByFranchiseAndName, _ = db.Prepare("SELECT * FROM branches WHERE franchise_id = ? AND name = ?")
+
+	branch, err := repo.GetBranchByFranchiseAndName(context.Background(), "franchise-001", "Sucursal Norte")
+
+	assert.NoError(t, err)
+	assert.NotNil(t, branch)
+	assert.Equal(t, "branch-001", branch.ID)
+	assert.Equal(t, "Sucursal Norte", branch.Name)
+}
+
+func TestGetBranchByFranchiseAndName_NotFound(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	stmt := mock.ExpectPrepare("SELECT")
+	stmt.ExpectQuery().
+		WithArgs("franchise-001", "No Existe").
+		WillReturnError(sql.ErrNoRows)
+
+	repo := &repository{db: db}
+	repo.stmtGetBranchByFranchiseAndName, _ = db.Prepare("SELECT * FROM branches WHERE franchise_id = ? AND name = ?")
+
+	branch, err := repo.GetBranchByFranchiseAndName(context.Background(), "franchise-001", "No Existe")
+
+	assert.Nil(t, branch)
+	assert.Equal(t, domain.ErrBranchNotFound, err)
+}
+
+func TestGetBranchByFranchiseAndName_DBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	stmt := mock.ExpectPrepare("SELECT")
+	stmt.ExpectQuery().
+		WithArgs("franchise-error", "Test").
+		WillReturnError(sql.ErrConnDone)
+
+	repo := &repository{db: db}
+	repo.stmtGetBranchByFranchiseAndName, _ = db.Prepare("SELECT * FROM branches WHERE franchise_id = ? AND name = ?")
+
+	branch, err := repo.GetBranchByFranchiseAndName(context.Background(), "franchise-error", "Test")
+
+	assert.Nil(t, branch)
+	assert.Error(t, err)
+}

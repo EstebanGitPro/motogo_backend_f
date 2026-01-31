@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -359,5 +360,155 @@ func TestGetDetailsByScheduleID_DBError(t *testing.T) {
 	details, err := repo.GetDetailsByScheduleID(context.Background(), "schedule-error")
 
 	assert.Nil(t, details)
+	assert.Error(t, err)
+}
+
+// ============================================
+// GetExceptionByID Tests
+// ============================================
+
+func TestGetExceptionByID_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	now := time.Now()
+	rows := sqlmock.NewRows([]string{
+		"id", "schedule_id", "entry_type", "day_of_week",
+		"exception_start_date", "exception_end_date",
+		"opening_time", "closing_time", "is_closed", "active",
+		"created_at", "updated_at",
+	}).AddRow("exc-001", "schedule-123", "EXCEPTION", nil, now, now.Add(24*time.Hour), nil, nil, true, true, now, now)
+
+	stmt := mock.ExpectPrepare("SELECT")
+	stmt.ExpectQuery().
+		WithArgs("exc-001").
+		WillReturnRows(rows)
+
+	repo := &repository{db: db}
+	repo.stmtGetExceptionByID, _ = db.Prepare("SELECT * FROM schedule_details WHERE id = ?")
+
+	exception, err := repo.GetExceptionByID(context.Background(), "exc-001")
+
+	assert.NoError(t, err)
+	assert.NotNil(t, exception)
+	assert.Equal(t, "exc-001", exception.ID)
+	assert.Equal(t, domain.EntryType("EXCEPTION"), exception.EntryType)
+}
+
+func TestGetExceptionByID_NotFound(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	stmt := mock.ExpectPrepare("SELECT")
+	stmt.ExpectQuery().
+		WithArgs("not-found").
+		WillReturnError(sql.ErrNoRows)
+
+	repo := &repository{db: db}
+	repo.stmtGetExceptionByID, _ = db.Prepare("SELECT * FROM schedule_details WHERE id = ?")
+
+	exception, err := repo.GetExceptionByID(context.Background(), "not-found")
+
+	assert.NoError(t, err)
+	assert.Nil(t, exception)
+}
+
+func TestGetExceptionByID_DBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	stmt := mock.ExpectPrepare("SELECT")
+	stmt.ExpectQuery().
+		WithArgs("exc-error").
+		WillReturnError(sql.ErrConnDone)
+
+	repo := &repository{db: db}
+	repo.stmtGetExceptionByID, _ = db.Prepare("SELECT * FROM schedule_details WHERE id = ?")
+
+	exception, err := repo.GetExceptionByID(context.Background(), "exc-error")
+
+	assert.Nil(t, exception)
+	assert.Error(t, err)
+}
+
+// ============================================
+// GetExceptionsByScheduleID Tests
+// ============================================
+
+func TestGetExceptionsByScheduleID_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	now := time.Now()
+	rows := sqlmock.NewRows([]string{
+		"id", "schedule_id", "entry_type", "day_of_week",
+		"exception_start_date", "exception_end_date",
+		"opening_time", "closing_time", "is_closed", "active",
+		"created_at", "updated_at",
+	}).
+		AddRow("exc-001", "schedule-123", "EXCEPTION", nil, now, now.Add(24*time.Hour), nil, nil, true, true, now, now).
+		AddRow("exc-002", "schedule-123", "EXCEPTION", nil, now.Add(48*time.Hour), now.Add(72*time.Hour), nil, nil, true, true, now, now)
+
+	stmt := mock.ExpectPrepare("SELECT")
+	stmt.ExpectQuery().
+		WithArgs("schedule-123").
+		WillReturnRows(rows)
+
+	repo := &repository{db: db}
+	repo.stmtGetExceptionsByScheduleID, _ = db.Prepare("SELECT * FROM schedule_details WHERE schedule_id = ?")
+
+	exceptions, err := repo.GetExceptionsByScheduleID(context.Background(), "schedule-123")
+
+	assert.NoError(t, err)
+	assert.Len(t, exceptions, 2)
+	assert.Equal(t, "exc-001", exceptions[0].ID)
+}
+
+func TestGetExceptionsByScheduleID_Empty(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	rows := sqlmock.NewRows([]string{
+		"id", "schedule_id", "entry_type", "day_of_week",
+		"exception_start_date", "exception_end_date",
+		"opening_time", "closing_time", "is_closed", "active",
+		"created_at", "updated_at",
+	})
+
+	stmt := mock.ExpectPrepare("SELECT")
+	stmt.ExpectQuery().
+		WithArgs("schedule-empty").
+		WillReturnRows(rows)
+
+	repo := &repository{db: db}
+	repo.stmtGetExceptionsByScheduleID, _ = db.Prepare("SELECT * FROM schedule_details WHERE schedule_id = ?")
+
+	exceptions, err := repo.GetExceptionsByScheduleID(context.Background(), "schedule-empty")
+
+	assert.NoError(t, err)
+	assert.Empty(t, exceptions)
+}
+
+func TestGetExceptionsByScheduleID_DBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	stmt := mock.ExpectPrepare("SELECT")
+	stmt.ExpectQuery().
+		WithArgs("schedule-error").
+		WillReturnError(sql.ErrConnDone)
+
+	repo := &repository{db: db}
+	repo.stmtGetExceptionsByScheduleID, _ = db.Prepare("SELECT * FROM schedule_details WHERE schedule_id = ?")
+
+	exceptions, err := repo.GetExceptionsByScheduleID(context.Background(), "schedule-error")
+
+	assert.Nil(t, exceptions)
 	assert.Error(t, err)
 }

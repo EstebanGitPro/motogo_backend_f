@@ -366,3 +366,69 @@ func TestGetReferencesByBrandID_DBError(t *testing.T) {
 	assert.Nil(t, refs)
 	assert.Error(t, err)
 }
+
+// ============================================
+// GetAllReferences Tests
+// ============================================
+
+func TestGetAllReferences_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	rows := sqlmock.NewRows([]string{"id", "brand_id", "brand_name", "model", "category", "engine_displacement"}).
+		AddRow("ref-001", "brand-001", "Yamaha", "YZF-R3", "Sport", 321).
+		AddRow("ref-002", "brand-002", "Honda", "CBR500R", "Sport", 500)
+
+	stmt := mock.ExpectPrepare("SELECT")
+	stmt.ExpectQuery().
+		WillReturnRows(rows)
+
+	repo := &repository{db: db}
+	repo.stmtGetAllReferences, _ = db.Prepare("SELECT * FROM motorcycle_references")
+
+	refs, err := repo.GetAllReferences(context.Background())
+
+	assert.NoError(t, err)
+	assert.Len(t, refs, 2)
+	assert.Equal(t, "ref-001", refs[0].ID)
+	assert.Equal(t, "Yamaha", refs[0].BrandName)
+}
+
+func TestGetAllReferences_Empty(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	rows := sqlmock.NewRows([]string{"id", "brand_id", "brand_name", "model", "category", "engine_displacement"})
+
+	stmt := mock.ExpectPrepare("SELECT")
+	stmt.ExpectQuery().
+		WillReturnRows(rows)
+
+	repo := &repository{db: db}
+	repo.stmtGetAllReferences, _ = db.Prepare("SELECT * FROM motorcycle_references")
+
+	refs, err := repo.GetAllReferences(context.Background())
+
+	assert.NoError(t, err)
+	assert.Empty(t, refs)
+}
+
+func TestGetAllReferences_DBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	stmt := mock.ExpectPrepare("SELECT")
+	stmt.ExpectQuery().
+		WillReturnError(sql.ErrConnDone)
+
+	repo := &repository{db: db}
+	repo.stmtGetAllReferences, _ = db.Prepare("SELECT * FROM motorcycle_references")
+
+	refs, err := repo.GetAllReferences(context.Background())
+
+	assert.Nil(t, refs)
+	assert.Error(t, err)
+}
