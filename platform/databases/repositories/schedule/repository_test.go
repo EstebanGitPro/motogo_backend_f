@@ -8,6 +8,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
+	"github.com/EstebanGitPro/motogo-backend/platform/databases/common"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -317,4 +318,239 @@ func TestGetScheduleByBranchID_DBError(t *testing.T) {
 
 	assert.Nil(t, schedule)
 	assert.Error(t, err)
+}
+
+// ============================================
+// SaveSchedule Tests
+// ============================================
+
+func TestSaveSchedule_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	startDate := time.Now()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("INSERT INTO branch_schedules").
+		WithArgs("schedule-123", "branch-123", true, startDate, nil).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	schedule := domain.BranchSchedule{
+		ID:        "schedule-123",
+		BranchID:  "branch-123",
+		Active:    true,
+		StartDate: startDate,
+	}
+
+	err = repo.SaveSchedule(context.Background(), sqlTx, schedule)
+
+	assert.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestSaveSchedule_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("INSERT INTO branch_schedules").
+		WillReturnError(sql.ErrConnDone)
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	err = repo.SaveSchedule(context.Background(), sqlTx, domain.BranchSchedule{})
+
+	assert.Error(t, err)
+}
+
+func TestSaveSchedule_InvalidTransaction(t *testing.T) {
+	repo := &repository{}
+
+	err := repo.SaveSchedule(context.Background(), nil, domain.BranchSchedule{})
+
+	assert.Equal(t, domain.ErrInvalidTransaction, err)
+}
+
+// ============================================
+// UpdateSchedule Tests
+// ============================================
+
+func TestUpdateSchedule_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	startDate := time.Now()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE branch_schedules").
+		WithArgs(true, startDate, nil, "schedule-123").
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	schedule := domain.BranchSchedule{
+		ID:        "schedule-123",
+		Active:    true,
+		StartDate: startDate,
+	}
+
+	err = repo.UpdateSchedule(context.Background(), sqlTx, schedule)
+
+	assert.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestUpdateSchedule_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE branch_schedules").
+		WillReturnError(sql.ErrConnDone)
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	err = repo.UpdateSchedule(context.Background(), sqlTx, domain.BranchSchedule{})
+
+	assert.Error(t, err)
+}
+
+func TestUpdateSchedule_InvalidTransaction(t *testing.T) {
+	repo := &repository{}
+
+	err := repo.UpdateSchedule(context.Background(), nil, domain.BranchSchedule{})
+
+	assert.Equal(t, domain.ErrInvalidTransaction, err)
+}
+
+// ============================================
+// DeleteSchedule Tests
+// ============================================
+
+func TestDeleteSchedule_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("DELETE FROM branch_schedules").
+		WithArgs("schedule-123").
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	err = repo.DeleteSchedule(context.Background(), sqlTx, "schedule-123")
+
+	assert.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestDeleteSchedule_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("DELETE FROM branch_schedules").
+		WithArgs("schedule-err").
+		WillReturnError(sql.ErrConnDone)
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	err = repo.DeleteSchedule(context.Background(), sqlTx, "schedule-err")
+
+	assert.Error(t, err)
+}
+
+func TestDeleteSchedule_InvalidTransaction(t *testing.T) {
+	repo := &repository{}
+
+	err := repo.DeleteSchedule(context.Background(), nil, "schedule-123")
+
+	assert.Equal(t, domain.ErrInvalidTransaction, err)
+}
+
+// ============================================
+// SetActive Tests
+// ============================================
+
+func TestSetActive_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE branch_schedules").
+		WithArgs(true, "schedule-123").
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	err = repo.SetActive(context.Background(), sqlTx, "schedule-123", true)
+
+	assert.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestSetActive_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE branch_schedules").
+		WithArgs(false, "schedule-err").
+		WillReturnError(sql.ErrConnDone)
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	err = repo.SetActive(context.Background(), sqlTx, "schedule-err", false)
+
+	assert.Error(t, err)
+}
+
+func TestSetActive_InvalidTransaction(t *testing.T) {
+	repo := &repository{}
+
+	err := repo.SetActive(context.Background(), nil, "schedule-123", true)
+
+	assert.Equal(t, domain.ErrInvalidTransaction, err)
 }

@@ -10,10 +10,12 @@ import (
 )
 
 func (r *repository) UpdateSchedule(ctx context.Context, tx output.Tx, schedule domain.BranchSchedule) error {
-	sqlTx := tx.(*common.SQLTx)
-	stmt := sqlTx.StmtContext(ctx, r.stmtUpdateSchedule)
+	sqlTx, ok := tx.(*common.SQLTx)
+	if !ok {
+		return domain.ErrInvalidTransaction
+	}
 
-	_, err := stmt.ExecContext(ctx,
+	_, err := sqlTx.ExecContext(ctx, queryUpdateSchedule,
 		schedule.Active,
 		schedule.StartDate,
 		schedule.EndDate, // nullable

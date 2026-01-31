@@ -10,10 +10,12 @@ import (
 )
 
 func (r *repository) SaveSchedule(ctx context.Context, tx output.Tx, schedule domain.BranchSchedule) error {
-	sqlTx := tx.(*common.SQLTx)
-	stmt := sqlTx.StmtContext(ctx, r.stmtSaveSchedule)
+	sqlTx, ok := tx.(*common.SQLTx)
+	if !ok {
+		return domain.ErrInvalidTransaction
+	}
 
-	_, err := stmt.ExecContext(ctx,
+	_, err := sqlTx.ExecContext(ctx, querySaveSchedule,
 		schedule.ID,
 		schedule.BranchID,
 		schedule.Active,
