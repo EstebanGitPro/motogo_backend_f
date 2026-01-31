@@ -10,9 +10,12 @@ import (
 )
 
 func (r *repository) UpdateBranch(ctx context.Context, tx output.Tx, branch domain.Branch) error {
-	sqlTx := tx.(*common.SQLTx)
+	sqlTx, ok := tx.(*common.SQLTx)
+	if !ok {
+		return domain.ErrInvalidTransaction
+	}
 
-	_, err := sqlTx.StmtContext(ctx, r.stmtUpdateBranch).ExecContext(ctx,
+	_, err := sqlTx.ExecContext(ctx, queryUpdateBranch,
 		branch.FranchiseID,
 		branch.Name,
 		branch.EstablishmentType,

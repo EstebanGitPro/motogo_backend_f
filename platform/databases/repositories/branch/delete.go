@@ -10,9 +10,12 @@ import (
 )
 
 func (r *repository) DeleteBranch(ctx context.Context, tx output.Tx, branchID string) error {
-	sqlTx := tx.(*common.SQLTx)
+	sqlTx, ok := tx.(*common.SQLTx)
+	if !ok {
+		return domain.ErrInvalidTransaction
+	}
 
-	_, err := sqlTx.StmtContext(ctx, r.stmtDeleteBranch).ExecContext(ctx, branchID)
+	_, err := sqlTx.ExecContext(ctx, queryDeleteBranch, branchID)
 	if err != nil {
 		log.Error(logger.LogBranchRepoDeleteError, "error", err, "branch_id", branchID)
 		return domain.ErrBranchCannotDelete
