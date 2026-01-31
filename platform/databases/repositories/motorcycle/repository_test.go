@@ -57,6 +57,76 @@ func TestNewRepository_PrepareError(t *testing.T) {
 	assert.Contains(t, err.Error(), "error preparing stmtGetByID")
 }
 
+func TestNewRepository_PrepareError_GetByOwnerID(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("SELECT m.id, m.license_plate.*WHERE m.id")
+	mock.ExpectPrepare("SELECT m.id.*WHERE m.owner_id").
+		WillReturnError(sql.ErrConnDone)
+
+	repo, err := NewRepository(db)
+
+	assert.Nil(t, repo)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "error preparing stmtGetByOwnerID")
+}
+
+func TestNewRepository_PrepareError_GetByLicensePlate(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("SELECT m.id, m.license_plate.*WHERE m.id")
+	mock.ExpectPrepare("SELECT m.id.*WHERE m.owner_id")
+	mock.ExpectPrepare("SELECT m.id.*WHERE m.license_plate").
+		WillReturnError(sql.ErrConnDone)
+
+	repo, err := NewRepository(db)
+
+	assert.Nil(t, repo)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "error preparing stmtGetByLicensePlate")
+}
+
+func TestNewRepository_PrepareError_Update(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("SELECT m.id, m.license_plate.*WHERE m.id")
+	mock.ExpectPrepare("SELECT m.id.*WHERE m.owner_id")
+	mock.ExpectPrepare("SELECT m.id.*WHERE m.license_plate")
+	mock.ExpectPrepare("UPDATE motorcycles").
+		WillReturnError(sql.ErrConnDone)
+
+	repo, err := NewRepository(db)
+
+	assert.Nil(t, repo)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "error preparing stmtUpdate")
+}
+
+func TestNewRepository_PrepareError_Delete(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("SELECT m.id, m.license_plate.*WHERE m.id")
+	mock.ExpectPrepare("SELECT m.id.*WHERE m.owner_id")
+	mock.ExpectPrepare("SELECT m.id.*WHERE m.license_plate")
+	mock.ExpectPrepare("UPDATE motorcycles.*SET reference_id")
+	mock.ExpectPrepare("UPDATE motorcycles.*SET deleted_at").
+		WillReturnError(sql.ErrConnDone)
+
+	repo, err := NewRepository(db)
+
+	assert.Nil(t, repo)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "error preparing stmtDelete")
+}
+
 // ============================================
 // BeginTx Tests
 // ============================================
