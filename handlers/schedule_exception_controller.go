@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"time"
 
 	"github.com/EstebanGitPro/motogo-backend/core/interactor"
@@ -170,12 +171,12 @@ func (h *handler) CreateScheduleException(
 		schedule, err := scheduleInteractor.GetScheduleByBranchID(c.Request.Context(), branchID, person.ID)
 		if err != nil {
 			log.Error(logger.LogScheduleDetailControllerCreateError, "error", err, "branch_id", branchID)
-			switch err {
-			case domain.ErrScheduleNotFound:
+			switch {
+			case errors.Is(err, domain.ErrScheduleNotFound):
 				h.Response.Error(c, domain.MsgScheduleNotFound)
-			case domain.ErrBranchNotFound:
+			case errors.Is(err, domain.ErrBranchNotFound):
 				h.Response.Error(c, domain.MsgBranchNotFound)
-			case domain.ErrForbidden:
+			case errors.Is(err, domain.ErrForbidden):
 				h.Response.Error(c, domain.MsgForbidden)
 			default:
 				h.Response.Error(c, domain.MsgServerError)
@@ -218,18 +219,18 @@ func (h *handler) CreateScheduleException(
 		createdException, err := exceptionInteractor.CreateException(c.Request.Context(), exception, person.ID, branchID)
 		if err != nil {
 			log.Error(logger.LogScheduleDetailControllerCreateError, "error", err, "schedule_id", schedule.ID)
-			switch err {
-			case domain.ErrScheduleNotFound:
+			switch {
+			case errors.Is(err, domain.ErrScheduleNotFound):
 				h.Response.Error(c, domain.MsgScheduleNotFound)
-			case domain.ErrScheduleExceptionDatePast:
+			case errors.Is(err, domain.ErrScheduleExceptionDatePast):
 				h.Response.Error(c, domain.MsgScheduleExceptionDatePast)
-			case domain.ErrScheduleExceptionDateConflict:
+			case errors.Is(err, domain.ErrScheduleExceptionDateConflict):
 				h.Response.Error(c, domain.MsgScheduleExceptionDateConflict)
-			case domain.ErrScheduleExceptionInvalidTime:
+			case errors.Is(err, domain.ErrScheduleExceptionInvalidTime):
 				h.Response.Error(c, domain.MsgScheduleExceptionInvalidTime)
-			case domain.ErrScheduleExceptionRedundant:
+			case errors.Is(err, domain.ErrScheduleExceptionRedundant):
 				h.Response.Error(c, domain.MsgScheduleExceptionRedundant)
-			case domain.ErrForbidden:
+			case errors.Is(err, domain.ErrForbidden):
 				h.Response.Error(c, domain.MsgForbidden)
 			default:
 				h.Response.Error(c, domain.MsgServerError)
@@ -296,12 +297,12 @@ func (h *handler) ListScheduleExceptions(
 		schedule, err := scheduleInteractor.GetScheduleByBranchID(c.Request.Context(), branchID, person.ID)
 		if err != nil {
 			log.Error(logger.LogScheduleDetailControllerListError, "error", err, "branch_id", branchID)
-			switch err {
-			case domain.ErrScheduleNotFound:
+			switch {
+			case errors.Is(err, domain.ErrScheduleNotFound):
 				h.Response.Error(c, domain.MsgScheduleNotFound)
-			case domain.ErrBranchNotFound:
+			case errors.Is(err, domain.ErrBranchNotFound):
 				h.Response.Error(c, domain.MsgBranchNotFound)
-			case domain.ErrForbidden:
+			case errors.Is(err, domain.ErrForbidden):
 				h.Response.Error(c, domain.MsgForbidden)
 			default:
 				h.Response.Error(c, domain.MsgServerError)
@@ -389,12 +390,12 @@ func (h *handler) UpdateScheduleException(
 		// 5. Update exception
 		if err := exceptionInteractor.UpdateException(c.Request.Context(), exception, person.ID); err != nil {
 			log.Error(logger.LogScheduleDetailControllerUpdateError, "error", err, "exception_id", exceptionID)
-			switch err {
-			case domain.ErrScheduleExceptionNotFound:
+			switch {
+			case errors.Is(err, domain.ErrScheduleExceptionNotFound):
 				h.Response.Error(c, domain.MsgScheduleExceptionNotFound)
-			case domain.ErrScheduleExceptionInvalidTime:
+			case errors.Is(err, domain.ErrScheduleExceptionInvalidTime):
 				h.Response.Error(c, domain.MsgScheduleExceptionInvalidTime)
-			case domain.ErrForbidden:
+			case errors.Is(err, domain.ErrForbidden):
 				h.Response.Error(c, domain.MsgForbidden)
 			default:
 				h.Response.Error(c, domain.MsgServerError)
@@ -435,10 +436,10 @@ func (h *handler) DeleteScheduleException(
 		// 3. Delete exception
 		if err := exceptionInteractor.DeleteException(c.Request.Context(), exceptionID, person.ID); err != nil {
 			log.Error(logger.LogScheduleDetailControllerDeleteError, "error", err, "exception_id", exceptionID)
-			switch err {
-			case domain.ErrScheduleExceptionNotFound:
+			switch {
+			case errors.Is(err, domain.ErrScheduleExceptionNotFound):
 				h.Response.Error(c, domain.MsgScheduleExceptionNotFound)
-			case domain.ErrForbidden:
+			case errors.Is(err, domain.ErrForbidden):
 				h.Response.Error(c, domain.MsgForbidden)
 			default:
 				h.Response.Error(c, domain.MsgServerError)
@@ -479,10 +480,10 @@ func (h *handler) ActivateScheduleException(
 		// 3. Activate exception
 		if err := exceptionInteractor.ActivateException(c.Request.Context(), exceptionID, person.ID); err != nil {
 			log.Error(logger.LogScheduleDetailControllerUpdateError, "error", err, "exception_id", exceptionID)
-			switch err {
-			case domain.ErrScheduleExceptionNotFound:
+			switch {
+			case errors.Is(err, domain.ErrScheduleExceptionNotFound):
 				h.Response.Error(c, domain.MsgScheduleExceptionNotFound)
-			case domain.ErrForbidden:
+			case errors.Is(err, domain.ErrForbidden):
 				h.Response.Error(c, domain.MsgForbidden)
 			default:
 				h.Response.Error(c, domain.MsgServerError)
@@ -523,10 +524,10 @@ func (h *handler) DeactivateScheduleException(
 		// 3. Deactivate exception
 		if err := exceptionInteractor.DeactivateException(c.Request.Context(), exceptionID, person.ID); err != nil {
 			log.Error(logger.LogScheduleDetailControllerUpdateError, "error", err, "exception_id", exceptionID)
-			switch err {
-			case domain.ErrScheduleExceptionNotFound:
+			switch {
+			case errors.Is(err, domain.ErrScheduleExceptionNotFound):
 				h.Response.Error(c, domain.MsgScheduleExceptionNotFound)
-			case domain.ErrForbidden:
+			case errors.Is(err, domain.ErrForbidden):
 				h.Response.Error(c, domain.MsgForbidden)
 			default:
 				h.Response.Error(c, domain.MsgServerError)

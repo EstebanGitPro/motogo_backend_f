@@ -39,7 +39,7 @@ func (h *handler) GetBrands() gin.HandlerFunc {
 		links := BuildBrandListLinks(baseURL)
 
 		// Build response DTO
-		response := NewBrandListResponse(brands, links)
+		response := NewBrandListResponse(brands, links, h.IDEncoder)
 
 		log.Success(logger.LogBrandInteractorGetAllOK,
 			"brands_count", len(brands),

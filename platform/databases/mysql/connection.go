@@ -55,7 +55,6 @@ func GetDB(dbConfig config.Database, log logger.Logger) (*sql.DB, error) {
 
 	log.Info(logger.LogDBPinging)
 
-	// Crear contexto con timeout para el ping (5 segundos)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 

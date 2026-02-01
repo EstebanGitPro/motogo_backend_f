@@ -7,14 +7,13 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// GetExceptionsByScheduleID retrieves all exceptions for a schedule (HU23)
 func (r *repository) GetExceptionsByScheduleID(ctx context.Context, scheduleID string) ([]domain.ScheduleDetail, error) {
 	rows, err := r.stmtGetExceptionsByScheduleID.QueryContext(ctx, scheduleID)
 	if err != nil {
 		log.Error(logger.LogScheduleDetailRepoGetBySchedError, "schedule_id", scheduleID, "error", err)
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }() // Rows close error intentionally ignored
 
 	var exceptions []domain.ScheduleDetail
 	for rows.Next() {

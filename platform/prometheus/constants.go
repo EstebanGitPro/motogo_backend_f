@@ -20,7 +20,6 @@ const (
 	MetricMessagesCreatedTotal   = "motogo_messages_created_total"
 )
 
-
 // ============================================
 // METRIC DESCRIPTIONS
 // ============================================

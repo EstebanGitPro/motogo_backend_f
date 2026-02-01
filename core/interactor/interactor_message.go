@@ -34,7 +34,7 @@ func (i *MessageInteractor) CreateMessage(ctx context.Context, message domain.Me
 	// PASO 1: Validate message
 	if err = i.service.ValidateMessage(ctx, message); err != nil {
 		log.Error(logger.LogMessageInteractorCreateStep1Error, "error", err)
-		return
+		return result, err
 	}
 	log.Success(logger.LogMessageInteractorCreateStep1OK)
 
@@ -42,7 +42,7 @@ func (i *MessageInteractor) CreateMessage(ctx context.Context, message domain.Me
 	tx, err := i.service.BeginTx(ctx)
 	if err != nil {
 		log.Error(logger.LogMessageInteractorCreateStep2Error, "error", err)
-		return
+		return result, err
 	}
 	log.Success(logger.LogMessageInteractorCreateStep2OK)
 
@@ -61,14 +61,14 @@ func (i *MessageInteractor) CreateMessage(ctx context.Context, message domain.Me
 	// PASO 3: Save message to DB
 	if err = i.service.SaveMessageToDB(ctx, tx, message); err != nil {
 		log.Error(logger.LogMessageInteractorCreateStep3Error, "error", err)
-		return
+		return result, err
 	}
 	log.Success(logger.LogMessageInteractorCreateStep3OK)
 
 	// COMMIT: Confirm transaction
 	if err = tx.Commit(); err != nil {
 		log.Error(logger.LogMessageInteractorCreateCommitErr, "error", err)
-		return
+		return result, err
 	}
 	log.Success(logger.LogMessageInteractorCreateCommitOK)
 
@@ -76,7 +76,7 @@ func (i *MessageInteractor) CreateMessage(ctx context.Context, message domain.Me
 	log.Success(logger.LogMessageInteractorCreateComplete, message.ToLogger())
 
 	err = nil // ensure defer does NOT execute rollback
-	return
+	return result, err
 }
 
 // UpdateMessage updates an existing system message with transaction handling
@@ -98,7 +98,7 @@ func (i *MessageInteractor) UpdateMessage(ctx context.Context, message domain.Me
 	// PASO 2: Validate message data
 	if err = i.service.ValidateMessage(ctx, message); err != nil {
 		log.Error(logger.LogMessageInteractorUpdateStep2Error, "error", err)
-		return
+		return result, err
 	}
 	log.Success(logger.LogMessageInteractorUpdateStep2OK)
 
@@ -106,7 +106,7 @@ func (i *MessageInteractor) UpdateMessage(ctx context.Context, message domain.Me
 	tx, err := i.service.BeginTx(ctx)
 	if err != nil {
 		log.Error(logger.LogMessageInteractorUpdateStep3Error, "error", err)
-		return
+		return result, err
 	}
 	log.Success(logger.LogMessageInteractorUpdateStep3OK)
 
@@ -125,14 +125,14 @@ func (i *MessageInteractor) UpdateMessage(ctx context.Context, message domain.Me
 	// PASO 4: Update message in DB
 	if err = i.service.UpdateMessageInDB(ctx, tx, message); err != nil {
 		log.Error(logger.LogMessageInteractorUpdateStep4Error, "error", err)
-		return
+		return result, err
 	}
 	log.Success(logger.LogMessageInteractorUpdateStep4OK)
 
 	// COMMIT: Confirm transaction
 	if err = tx.Commit(); err != nil {
 		log.Error(logger.LogMessageInteractorUpdateCommitErr, "error", err)
-		return
+		return result, err
 	}
 	log.Success(logger.LogMessageInteractorUpdateCommitOK)
 
@@ -143,7 +143,7 @@ func (i *MessageInteractor) UpdateMessage(ctx context.Context, message domain.Me
 	log.Info(logger.LogMessageCacheRefresh)
 
 	err = nil // ensure defer does NOT execute rollback
-	return
+	return result, err
 }
 
 // DeleteMessage deletes a system message with transaction handling
@@ -202,7 +202,7 @@ func (i *MessageInteractor) DeleteMessage(ctx context.Context, id string) (err e
 	log.Info(logger.LogMessageCacheRefresh)
 
 	err = nil // ensure defer does NOT execute rollback
-	return
+	return err
 }
 
 // GetMessageByID retrieves a message by ID (read-only, no transaction)

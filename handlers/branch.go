@@ -165,3 +165,54 @@ func NewBranchListItemResponse(branch domain.Branch, encodedID string, encodedFr
 
 	return item
 }
+
+// NearbyBranchResponse represents a branch in nearby search results (HU89)
+type NearbyBranchResponse struct {
+	ID                     string  `json:"id"`
+	Name                   string  `json:"name"`
+	EstablishmentType      string  `json:"establishment_type"`
+	EstablishmentTypeLabel string  `json:"establishment_type_label"`
+	ProfileImageURL        *string `json:"profile_image_url,omitempty"`
+	Address                string  `json:"address"`
+	CityName               string  `json:"city_name"`
+	DepartmentName         string  `json:"department_name"`
+	Latitude               float64 `json:"latitude"`
+	Longitude              float64 `json:"longitude"`
+	DistanceKm             float64 `json:"distance_km"`
+	Links                  []Link  `json:"_links"`
+}
+
+// NewNearbyBranchResponse creates a NearbyBranchResponse from domain.NearbyBranch
+func NewNearbyBranchResponse(branch domain.NearbyBranch, encodedID string, baseURL string) NearbyBranchResponse {
+	resp := NearbyBranchResponse{
+		ID:                     encodedID,
+		Name:                   branch.Name,
+		EstablishmentType:      branch.EstablishmentType,
+		EstablishmentTypeLabel: domain.GetEstablishmentTypeLabel(branch.EstablishmentType),
+		ProfileImageURL:        branch.ProfileImageURL,
+		DistanceKm:             branch.DistanceKm,
+		Links:                  BuildBranchDetailLinks(baseURL, encodedID, false),
+	}
+
+	if branch.Location != nil {
+		resp.Address = branch.Location.Address
+		resp.CityName = branch.Location.CityName
+		resp.DepartmentName = branch.Location.DepartmentName
+		resp.Latitude = branch.Location.Latitude
+		resp.Longitude = branch.Location.Longitude
+	}
+
+	return resp
+}
+
+// NearbyBranchesResponse is the collection response for nearby search (HU89)
+type NearbyBranchesResponse struct {
+	Branches []NearbyBranchResponse `json:"branches"`
+	Count    int                    `json:"count"`
+	Center   struct {
+		Latitude  float64 `json:"latitude"`
+		Longitude float64 `json:"longitude"`
+	} `json:"center"`
+	RadiusKm float64 `json:"radius_km"`
+	Links    []Link  `json:"_links"`
+}

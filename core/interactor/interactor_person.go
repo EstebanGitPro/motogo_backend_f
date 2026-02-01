@@ -2,6 +2,7 @@ package interactor
 
 import (
 	"context"
+	"errors"
 
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/dto"
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
@@ -33,7 +34,7 @@ func (i *Interactor) RegisterPerson(ctx context.Context, person domain.Person) (
 	result, err = i.service.RegisterPerson(ctx, person)
 	if err != nil {
 		// Si es un registro incompleto, ejecutar limpieza automática
-		if err == domain.ErrIncompleteRegistration {
+		if errors.Is(err, domain.ErrIncompleteRegistration) {
 			log.Warn(logger.LogPersonInteractorIncompleteDetected, "email", person.Email)
 
 			// Intentar limpiar el estado inconsistente
@@ -49,17 +50,17 @@ func (i *Interactor) RegisterPerson(ctx context.Context, person domain.Person) (
 		}
 
 		log.Error(logger.LogPersonInteractorStep1_Error, "error", err)
-		return
+		return result, err
 	}
 	log.Success(logger.LogPersonInteractorStep1_OK)
 
 	person.SetID()
 	log.Debug(logger.LogPersonInteractorIDGenerated, "person_id", person.ID)
 
-	// PASO 1.5: Verificar estado consistente (ya no debería haber inconsistencias)
+	// PASO 1.5: Verificar estado consistente (ya no debería haber inconsistencies)
 	if err = i.service.CheckAndCleanInconsistentState(ctx, person.Email); err != nil {
 		log.Error(logger.LogPersonInteractorStep15_Error, "error", err)
-		return
+		return result, err
 	}
 	log.Success(logger.LogPersonInteractorStep15_OK)
 
@@ -67,7 +68,7 @@ func (i *Interactor) RegisterPerson(ctx context.Context, person domain.Person) (
 	tx, err := i.service.BeginTx(ctx)
 	if err != nil {
 		log.Error(logger.LogPersonInteractorStep2_Error, "error", err)
-		return
+		return result, err
 	}
 	log.Success(logger.LogPersonInteractorStep2_OK)
 
@@ -76,7 +77,6 @@ func (i *Interactor) RegisterPerson(ctx context.Context, person domain.Person) (
 
 	defer func() {
 		if err != nil {
-
 			if rbErr := tx.Rollback(); rbErr != nil {
 				log.Error(logger.LogPersonInteractorRollbackDB_Error,
 					"rollback_error", rbErr,
@@ -100,7 +100,7 @@ func (i *Interactor) RegisterPerson(ctx context.Context, person domain.Person) (
 	// PASO 3: Guardar persona en BD
 	if err = i.service.SavePersonToDB(ctx, tx, person); err != nil {
 		log.Error(logger.LogPersonInteractorStep3_Error, "error", err)
-		return
+		return result, err
 	}
 	log.Success(logger.LogPersonInteractorStep3_OK)
 
@@ -110,34 +110,34 @@ func (i *Interactor) RegisterPerson(ctx context.Context, person domain.Person) (
 		log.Error(logger.LogPersonInteractorStep4_Error, "error", err)
 		// Wrap error to indicate Keycloak creation failure
 		err = domain.ErrKeycloakUserCreationFailed
-		return
+		return result, err
 	}
 	keycloakCreated = true // Marcar para compensación en defer
 	log.Success(logger.LogPersonInteractorStep4_OK, "keycloak_user_id", keycloakUserID)
 
 	if err = i.service.SetUserPassword(ctx, keycloakUserID, person.Password); err != nil {
 		log.Error(logger.LogPersonInteractorStep5_Error, "error", err)
-		return
+		return result, err
 	}
 	log.Success(logger.LogPersonInteractorStep5_OK)
 
 	if err = i.service.AssignUserRole(ctx, keycloakUserID, person.Role); err != nil {
 		log.Error(logger.LogPersonInteractorStep6_Error, "error", err)
-		return
+		return result, err
 	}
 	log.Success(logger.LogPersonInteractorStep6_OK, "role", person.Role)
 
 	// PASO 7: Actualizar BD con keycloak_user_id
 	if err = i.service.UpdatePersonKeycloakID(ctx, tx, person.ID, keycloakUserID); err != nil {
 		log.Error(logger.LogPersonInteractorStep7_Error, "error", err)
-		return
+		return result, err
 	}
 	log.Success(logger.LogPersonInteractorStep7_OK)
 
 	// PASO 8: Confirmar toda la transacción
 	if err = tx.Commit(); err != nil {
 		log.Error(logger.LogPersonInteractorCommit_Error, "error", err)
-		return
+		return result, err
 	}
 	log.Success(logger.LogPersonInteractorCommit_OK)
 
@@ -163,8 +163,8 @@ func (i *Interactor) RegisterPerson(ctx context.Context, person domain.Person) (
 		person.ToLogger(),
 		"keycloak_user_id", keycloakUserID)
 
-	err = nil //asegurar que defer NO ejecute rollback
-	return
+	err = nil // asegurar que defer NO ejecute rollback
+	return result, err
 }
 
 // ResendVerificationEmail reenvía el email de verificación a un usuario
@@ -228,12 +228,12 @@ func (i *Interactor) VerifyEmailByToken(ctx context.Context, token string) (stri
 	// Delegar toda la lógica al Service (parsing del token + verificación en Keycloak)
 	email, err := i.service.VerifyEmailByToken(ctx, token)
 	if err != nil {
-		switch err {
-		case domain.ErrInvalidToken:
+		switch {
+		case errors.Is(err, domain.ErrInvalidToken):
 			log.Error(logger.LogKeycloakEmailVerifyError, "error", err, "reason", "invalid token")
-		case domain.ErrUserNotFound:
+		case errors.Is(err, domain.ErrUserNotFound):
 			log.Warn(logger.LogKeycloakUserNotFound, "email", email)
-		case domain.ErrEmailAlreadyVerified:
+		case errors.Is(err, domain.ErrEmailAlreadyVerified):
 			log.Warn(logger.LogKeycloakEmailAlreadyVerified, "email", email)
 		default:
 			log.Error(logger.LogKeycloakEmailVerifyError, "email", email, "error", err)
@@ -256,12 +256,12 @@ func (i *Interactor) ResetPasswordWithToken(ctx context.Context, token string, n
 	// Delegar toda la lógica al Service (parsing del token + actualización de contraseña en Keycloak)
 	err := i.service.ResetPasswordWithToken(ctx, token, newPassword)
 	if err != nil {
-		switch err {
-		case domain.ErrInvalidToken:
+		switch {
+		case errors.Is(err, domain.ErrInvalidToken):
 			log.Error(logger.LogPasswordResetTokenError, "error", err)
-		case domain.ErrUserNotFound:
+		case errors.Is(err, domain.ErrUserNotFound):
 			log.Error(logger.LogPasswordResetUserNotFound, "error", err)
-		case domain.ErrPasswordUpdateFailed:
+		case errors.Is(err, domain.ErrPasswordUpdateFailed):
 			log.Error(logger.LogPasswordResetUpdateError, "error", err)
 		default:
 			log.Error(logger.LogPasswordResetUpdateError, "error", err)
@@ -330,14 +330,14 @@ func (i *Interactor) ChangePassword(ctx context.Context, keycloakUserID, current
 	// Delegate to service
 	err := i.service.ChangePassword(ctx, keycloakUserID, currentPassword, newPassword)
 	if err != nil {
-		switch err {
-		case domain.ErrUserNotFound:
+		switch {
+		case errors.Is(err, domain.ErrUserNotFound):
 			log.Error(logger.LogChangePasswordUserNotFound, "error", err)
-		case domain.ErrInvalidCredentials:
+		case errors.Is(err, domain.ErrInvalidCredentials):
 			log.Warn(logger.LogChangePasswordInvalidCurrent, "error", err)
-		case domain.ErrPasswordUpdateFailed:
+		case errors.Is(err, domain.ErrPasswordUpdateFailed):
 			log.Error(logger.LogChangePasswordUpdateError, "error", err)
-		case domain.ErrKeycloakUnavailable:
+		case errors.Is(err, domain.ErrKeycloakUnavailable):
 			log.Error(logger.LogKeycloakUnavailable, "error", err)
 		default:
 			log.Error(logger.LogChangePasswordUpdateError, "error", err)

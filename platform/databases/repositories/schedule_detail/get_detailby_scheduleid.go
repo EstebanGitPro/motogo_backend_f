@@ -7,14 +7,13 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// GetDetailsByScheduleID retrieves all schedule details for a schedule (HU9)
 func (r *repository) GetDetailsByScheduleID(ctx context.Context, scheduleID string) ([]domain.ScheduleDetail, error) {
 	rows, err := r.stmtGetDetailsByScheduleID.QueryContext(ctx, scheduleID)
 	if err != nil {
 		log.Error(logger.LogScheduleDetailRepoGetBySchedError, "schedule_id", scheduleID, "error", err)
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }() // Rows close error intentionally ignored
 
 	var details []domain.ScheduleDetail
 	for rows.Next() {

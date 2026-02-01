@@ -9,41 +9,27 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// queryGetExceptionsForUpdate retrieves all exceptions for a schedule with FOR UPDATE lock
-// This prevents race conditions during concurrent exception creation
-const queryGetExceptionsForUpdate = `
-	SELECT id, schedule_id, entry_type, day_of_week, exception_start_date, exception_end_date,
-		opening_time, closing_time, is_closed, active, created_at, updated_at
-	FROM schedule_details
-	WHERE schedule_id = ? AND entry_type = 'EXCEPTION'
-	FOR UPDATE
-`
-
-// GetExceptionsByScheduleIDForUpdate retrieves all exceptions with a row-level lock.
-// This must be called within a transaction to prevent race conditions during concurrent creation.
 func (r *repository) GetExceptionsByScheduleIDForUpdate(
 	ctx context.Context,
 	tx output.Tx,
 	scheduleID string,
 ) ([]domain.ScheduleDetail, error) {
-	// Get the underlying SQL transaction
 	sqlTx, ok := tx.(*common.SQLTx)
 	if !ok {
-		log.Error(logger.LogScheduleDetailRepoGetBySchedError, 
-			"schedule_id", scheduleID, 
+		log.Error(logger.LogScheduleDetailRepoGetBySchedError,
+			"schedule_id", scheduleID,
 			"error", "invalid transaction type")
 		return nil, domain.ErrInternalServer
 	}
 
-	// Execute query within transaction with FOR UPDATE lock
 	rows, err := sqlTx.QueryContext(ctx, queryGetExceptionsForUpdate, scheduleID)
 	if err != nil {
-		log.Error(logger.LogScheduleDetailRepoGetBySchedError, 
-			"schedule_id", scheduleID, 
+		log.Error(logger.LogScheduleDetailRepoGetBySchedError,
+			"schedule_id", scheduleID,
 			"error", err)
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }() // Rows close error intentionally ignored
 
 	var exceptions []domain.ScheduleDetail
 	for rows.Next() {

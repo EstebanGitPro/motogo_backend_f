@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"errors"
+
 	domain "github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/middleware"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
@@ -100,10 +102,10 @@ func (h handler) ResendVerificationEmail() gin.HandlerFunc {
 		err := h.Interactor.ResendVerificationEmail(c, req.Email)
 		if err != nil {
 			// Manejar diferentes tipos de errores
-			switch err {
-			case domain.ErrUserNotFound:
+			switch {
+			case errors.Is(err, domain.ErrUserNotFound):
 				h.Response.Error(c, "MOD_KC_USER_NOT_FOUND_ERR_00001")
-			case domain.ErrEmailAlreadyVerified:
+			case errors.Is(err, domain.ErrEmailAlreadyVerified):
 				h.Response.Warning(c, "MOD_KC_EMAIL_ALREADY_VERIFIED_WARN_00001")
 			default:
 				h.Response.Error(c, "MOD_KC_VERIF_EMAIL_ERROR_ERR_00001")
@@ -179,15 +181,12 @@ func (h handler) Login() gin.HandlerFunc {
 			log.Error(logger.LogKeycloakUserLoginError, "email", req.Email, "error", err, "client_ip", c.ClientIP())
 
 			// Map specific errors to appropriate messages
-			switch err {
-			case domain.ErrorEmailNotVerified:
-				// Email not verified - auto-resend was triggered
+			switch {
+			case errors.Is(err, domain.ErrorEmailNotVerified):
 				h.Response.Error(c, domain.MsgUserEmailNotVerified)
-			case domain.ErrUserNotFound:
-				// User not found - use generic unauthorized message for security
+			case errors.Is(err, domain.ErrUserNotFound):
 				h.Response.Error(c, domain.MsgUnauthorized)
 			default:
-				// All other errors (wrong password, etc) - generic message
 				h.Response.Error(c, domain.MsgUnauthorized)
 			}
 			return
@@ -290,12 +289,12 @@ func (h handler) VerifyEmailByToken() gin.HandlerFunc {
 		// Pasar el token al Interactor - la extracción del email se hace en la capa de negocio
 		email, err := h.Interactor.VerifyEmailByToken(c, req.Token)
 		if err != nil {
-			switch err {
-			case domain.ErrInvalidToken:
+			switch {
+			case errors.Is(err, domain.ErrInvalidToken):
 				h.Response.Error(c, domain.MsgKCInvalidToken)
-			case domain.ErrUserNotFound:
+			case errors.Is(err, domain.ErrUserNotFound):
 				h.Response.Error(c, domain.MsgKCUserNotFound)
-			case domain.ErrEmailAlreadyVerified:
+			case errors.Is(err, domain.ErrEmailAlreadyVerified):
 				h.Response.Warning(c, domain.MsgKCEmailAlreadyVerified)
 			default:
 				h.Response.Error(c, domain.MsgKCEmailVerifyError)
@@ -341,16 +340,16 @@ func (h handler) ResetPasswordWithToken() gin.HandlerFunc {
 		// Llamar al servicio para reset de contraseña
 		err := h.Interactor.ResetPasswordWithToken(c, req.Token, req.NewPassword)
 		if err != nil {
-			switch err {
-			case domain.ErrInvalidToken:
+			switch {
+			case errors.Is(err, domain.ErrInvalidToken):
 				log.Error(logger.LogPasswordResetTokenError, "error", err, "client_ip", c.ClientIP())
 				h.Response.Error(c, "MOD_P_RESET_ERR_00001")
-			case domain.ErrUserNotFound:
+			case errors.Is(err, domain.ErrUserNotFound):
 				log.Error(logger.LogPasswordResetUserNotFound, "error", err, "client_ip", c.ClientIP())
 				h.Response.Error(c, "MOD_P_RESET_ERR_00002")
-			case domain.ErrPasswordUpdateFailed:
+			case errors.Is(err, domain.ErrPasswordUpdateFailed):
 				log.Error(logger.LogPasswordResetUpdateError, "error", err, "client_ip", c.ClientIP())
-			case domain.ErrPasswordPolicyViolation:
+			case errors.Is(err, domain.ErrPasswordPolicyViolation):
 				h.Response.Error(c, domain.MsgChangePasswordPolicyError)
 				h.Response.Error(c, "MOD_P_RESET_ERR_00003")
 			default:
@@ -459,16 +458,16 @@ func (h handler) ChangePassword() gin.HandlerFunc {
 		if err != nil {
 			log.Error(logger.LogChangePasswordUpdateError, "user_id", person.KeycloakUserID, "error", err, "client_ip", c.ClientIP())
 
-			switch err {
-			case domain.ErrInvalidCredentials:
+			switch {
+			case errors.Is(err, domain.ErrInvalidCredentials):
 				h.Response.Error(c, domain.MsgChangePasswordInvalidCurrent)
-			case domain.ErrUserNotFound:
+			case errors.Is(err, domain.ErrUserNotFound):
 				h.Response.Error(c, domain.MsgKCUserNotFound)
-			case domain.ErrPasswordUpdateFailed:
+			case errors.Is(err, domain.ErrPasswordUpdateFailed):
 				h.Response.Error(c, domain.MsgChangePasswordUpdateError)
-			case domain.ErrPasswordPolicyViolation:
+			case errors.Is(err, domain.ErrPasswordPolicyViolation):
 				h.Response.Error(c, domain.MsgChangePasswordPolicyError)
-			case domain.ErrKeycloakUnavailable:
+			case errors.Is(err, domain.ErrKeycloakUnavailable):
 				h.Response.Error(c, domain.MsgKeycloakUnavailable)
 			default:
 				h.Response.Error(c, domain.MsgChangePasswordUpdateError)
@@ -551,8 +550,8 @@ func (h handler) UpdateProfile() gin.HandlerFunc {
 		if err != nil {
 			log.Error(logger.LogUpdateProfileError, "user_id", person.ID, "error", err, "client_ip", c.ClientIP())
 
-			switch err {
-			case domain.ErrDuplicateUser:
+			switch {
+			case errors.Is(err, domain.ErrDuplicateUser):
 				h.Response.Error(c, domain.MsgUserDuplicate)
 			default:
 				h.Response.Error(c, domain.MsgPersonUpdated)

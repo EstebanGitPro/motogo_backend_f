@@ -418,7 +418,7 @@ const docTemplate = `{
         },
         "/messages/cache/reload": {
             "post": {
-                "description": "Fuerza la recarga del caché de mensajes desde la base de datos. Útil después de actualizaciones o eliminaciones manuales.",
+                "description": "Fuerza la recarga del caché de mensajes desde la base de datos. Útil después de actualizaciones o eliminaciones manuals.",
                 "consumes": [
                     "application/json"
                 ],

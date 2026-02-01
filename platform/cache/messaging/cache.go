@@ -223,6 +223,7 @@ var messageCodeToHTTPStatus = map[string]int{
 	"MOD_U_EMAIL_NV_ERR_00006":   http.StatusForbidden,    // 403 - Email no verificado
 	"MOD_U_TOKEN_EXP_ERR_00008":  http.StatusUnauthorized, // 401 - Token expirado
 	"MOD_U_TOKEN_USED_ERR_00009": http.StatusUnauthorized, // 401 - Token ya usado
+	"MOD_U_ROLE_REQ_ERR_00011":   http.StatusUnauthorized, // 401 - Rol requerido
 
 	// ========================================
 	// Person Module (MOD_P_*)
@@ -411,6 +412,43 @@ var messageCodeToHTTPStatus = map[string]int{
 	"MOD_EH_DATE_PAST_ERR_00001":     http.StatusBadRequest, // 400 - Fecha pasada
 	"MOD_EH_TIME_ERR_00001":          http.StatusBadRequest, // 400 - Formato hora inválido
 	"MOD_EH_REDUNDANT_ERR_00001":     http.StatusConflict,   // 409 - Excepción redundante
+
+	// ========================================
+	// Motorcycle Module (MOD_MOT_*) - HU43-47
+	// ========================================
+	// Success messages
+	"MOD_MOT_CREATE_EXI_00001":   http.StatusCreated, // 201 - Motocicleta registrada (HU43)
+	"MOD_MOT_GET_EXI_00001":      http.StatusOK,      // 200 - Motocicleta consultada (HU46)
+	"MOD_MOT_UPDATE_EXI_00001":   http.StatusOK,      // 200 - Motocicleta actualizada (HU44)
+	"MOD_MOT_DELETE_EXI_00001":   http.StatusOK,      // 200 - Motocicleta eliminada (HU45)
+	"MOD_MOT_LIST_EXI_00001":     http.StatusOK,      // 200 - Motocicletas listadas (HU47)
+	"MOD_MOT_REF_LIST_EXI_00001": http.StatusOK,      // 200 - Referencias listadas (HU50)
+	// Error messages
+	"MOD_MOT_NOT_FOUND_ERR_00001":     http.StatusNotFound,   // 404 - Motocicleta no encontrada
+	"MOD_MOT_CREATE_ERR_00001":        http.StatusBadRequest, // 400 - Error al registrar
+	"MOD_MOT_UPDATE_ERR_00001":        http.StatusBadRequest, // 400 - Error al actualizar
+	"MOD_MOT_DELETE_ERR_00001":        http.StatusBadRequest, // 400 - Error al eliminar
+	"MOD_MOT_DUP_PLATE_ERR_00001":     http.StatusConflict,   // 409 - Placa duplicada
+	"MOD_MOT_REF_NOT_FOUND_ERR_00001": http.StatusNotFound,   // 404 - Referencia no encontrada
+	"MOD_MOT_REF_REQ_ERR_00001":       http.StatusBadRequest, // 400 - Referencia requerida
+	"MOD_MOT_HAS_ASSOC_ERR_00001":     http.StatusConflict,   // 409 - Tiene registros asociados
+	"MOD_MOT_FORBIDDEN_ERR_00001":     http.StatusForbidden,  // 403 - Acceso denegado
+	"MOD_MOT_LIST_ERR_00001":          http.StatusBadRequest, // 400 - Error al listar
+	"MOD_MOT_PLATE_REQ_ERR_00001":     http.StatusBadRequest, // 400 - Placa requerida
+
+	// ========================================
+	// Geolocation Validation (MOD_V_GEO_*) - HU89
+	// ========================================
+	"MOD_V_GEO_LAT_REQ_ERR_00001": http.StatusBadRequest, // 400 - Latitud requerida
+	"MOD_V_GEO_LAT_INV_ERR_00001": http.StatusBadRequest, // 400 - Latitud inválida (-90 a 90)
+	"MOD_V_GEO_LNG_REQ_ERR_00001": http.StatusBadRequest, // 400 - Longitud requerida
+	"MOD_V_GEO_LNG_INV_ERR_00001": http.StatusBadRequest, // 400 - Longitud inválida (-180 a 180)
+	"MOD_V_GEO_RAD_INV_ERR_00001": http.StatusBadRequest, // 400 - Radio inválido (0-50km)
+
+	// ========================================
+	// Nearby Branches (MOD_B_NEARBY_*) - HU89
+	// ========================================
+	"MOD_B_NEARBY_EXI_00001": http.StatusOK, // 200 - Sedes cercanas encontradas
 
 }
 

@@ -27,11 +27,11 @@
       "properties": {
         "department_id": {
           "type": "string",
-          "format": "uuid"
+          "minLength": 1
         },
         "city_id": {
           "type": "string",
-          "format": "uuid"
+          "minLength": 1
         },
         "city_name": {
           "type": "string",

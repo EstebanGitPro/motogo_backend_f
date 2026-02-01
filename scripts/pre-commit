@@ -1,0 +1,56 @@
+#!/bin/sh
+#
+# Pre-commit hook for MotoGo Backend
+# Runs linters and tests before allowing commits
+#
+# Install with: make setup-hooks
+# Or manually: cp scripts/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+
+set -e
+
+echo "🔍 Running pre-commit checks..."
+
+# Colors
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+YELLOW='\033[0;33m'
+NC='\033[0m'
+
+# 1. Format check
+echo "${YELLOW}→ Checking code formatting...${NC}"
+UNFORMATTED=$(gofmt -l .)
+if [ -n "$UNFORMATTED" ]; then
+    echo "${RED}✗ The following files are not formatted:${NC}"
+    echo "$UNFORMATTED"
+    echo ""
+    echo "Run 'go fmt ./...' to fix"
+    exit 1
+fi
+echo "${GREEN}✓ Formatting OK${NC}"
+
+# 2. Go vet
+echo "${YELLOW}→ Running go vet...${NC}"
+go vet ./...
+echo "${GREEN}✓ go vet OK${NC}"
+
+# 3. Staticcheck (if available)
+echo "${YELLOW}→ Running staticcheck...${NC}"
+if command -v staticcheck >/dev/null 2>&1; then
+    staticcheck ./...
+    echo "${GREEN}✓ staticcheck OK${NC}"
+else
+    echo "${YELLOW}⚠ staticcheck not installed, skipping${NC}"
+fi
+
+# 4. Build check
+echo "${YELLOW}→ Checking build...${NC}"
+go build ./...
+echo "${GREEN}✓ Build OK${NC}"
+
+# 5. Run tests (short mode for speed)
+echo "${YELLOW}→ Running tests...${NC}"
+go test -short ./...
+echo "${GREEN}✓ Tests OK${NC}"
+
+echo ""
+echo "${GREEN}✅ All pre-commit checks passed!${NC}"

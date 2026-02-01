@@ -8,7 +8,6 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// GetScheduleByBranchID retrieves a schedule by branch ID
 func (r *repository) GetScheduleByBranchID(ctx context.Context, branchID string) (*domain.BranchSchedule, error) {
 	var schedule domain.BranchSchedule
 

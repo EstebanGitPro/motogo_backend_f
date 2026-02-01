@@ -11,7 +11,6 @@ import (
 func (r *repository) UpdatePerson(ctx context.Context, tx output.Tx, person domain.Person) error {
 	personToUpdate := FromDomain(person)
 
-	// Type assertion segura
 	dbTx, ok := tx.(*common.SQLTx)
 	if !ok {
 		return domain.ErrInvalidTransaction

@@ -6,7 +6,6 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// CheckTimeConflict checks if a proposed time slot conflicts with existing slots
 func (r *repository) CheckTimeConflict(
 	ctx context.Context,
 	scheduleID string,

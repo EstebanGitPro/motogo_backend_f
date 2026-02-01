@@ -10,13 +10,15 @@ import (
 	uuid "github.com/EstebanGitPro/motogo-backend/tools/utils"
 )
 
-// SaveLocation saves a location for a branch
 func (r *repository) SaveLocation(ctx context.Context, tx output.Tx, location domain.Location) error {
-	sqlTx := tx.(*common.SQLTx)
+	sqlTx, ok := tx.(*common.SQLTx)
+	if !ok {
+		return domain.ErrInvalidTransaction
+	}
 
 	locationID := uuid.Generate()
 
-	_, err := sqlTx.StmtContext(ctx, r.stmtSaveLocation).ExecContext(ctx,
+	_, err := sqlTx.ExecContext(ctx, querySaveLocation,
 		locationID,
 		location.BranchID,
 		location.CityID,
