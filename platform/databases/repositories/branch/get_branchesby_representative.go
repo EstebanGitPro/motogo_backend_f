@@ -8,14 +8,13 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// GetBranchesByRepresentative retrieves all branches for a representative including location and brands
 func (r *repository) GetBranchesByRepresentative(ctx context.Context, representativeID string) ([]domain.Branch, error) {
 	rows, err := r.stmtGetBranchesByRepresentative.QueryContext(ctx, representativeID)
 	if err != nil {
 		log.Error(logger.LogBranchRepoGetByRepError, "error", err, "representative_id", representativeID)
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }() // Rows close error intentionally ignored
 
 	var branches []domain.Branch
 	for rows.Next() {
@@ -52,7 +51,6 @@ func (r *repository) GetBranchesByRepresentative(ctx context.Context, representa
 			branch.ProfileImageURL = &profileImageURL.String
 		}
 
-		// Parse location if exists
 		if locationID.Valid {
 			branch.Location = &domain.Location{
 				ID:       locationID.String,
@@ -71,7 +69,6 @@ func (r *repository) GetBranchesByRepresentative(ctx context.Context, representa
 			}
 		}
 
-		// Get brands for this branch
 		brands, err := r.getBranchBrands(ctx, branch.ID)
 		if err != nil {
 			log.Error(logger.LogBranchRepoBrandGetError, "error", err, "branch_id", branch.ID)

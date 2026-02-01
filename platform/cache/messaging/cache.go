@@ -223,6 +223,7 @@ var messageCodeToHTTPStatus = map[string]int{
 	"MOD_U_EMAIL_NV_ERR_00006":   http.StatusForbidden,    // 403 - Email no verificado
 	"MOD_U_TOKEN_EXP_ERR_00008":  http.StatusUnauthorized, // 401 - Token expirado
 	"MOD_U_TOKEN_USED_ERR_00009": http.StatusUnauthorized, // 401 - Token ya usado
+	"MOD_U_ROLE_REQ_ERR_00011":   http.StatusUnauthorized, // 401 - Rol requerido
 
 	// ========================================
 	// Person Module (MOD_P_*)
@@ -387,10 +388,67 @@ var messageCodeToHTTPStatus = map[string]int{
 	"MOD_HD_DELETE_EXI_00001": http.StatusOK,      // 200 - Detalle horario eliminado (HU8)
 	"MOD_HD_LIST_EXI_00001":   http.StatusOK,      // 200 - Detalles horario listados (HU9)
 	// Error messages
-	"MOD_HD_NOT_FOUND_ERR_00001": http.StatusNotFound,   // 404 - Detalle horario no encontrado
-	"MOD_HD_CONFLICT_ERR_00001":  http.StatusConflict,   // 409 - Conflicto de horario
-	"MOD_HD_TIME_ERR_00001":      http.StatusBadRequest, // 400 - Formato hora inválido
-	"MOD_HD_DAY_ERR_00001":       http.StatusBadRequest, // 400 - Día de la semana inválido
+	"MOD_HD_NOT_FOUND_ERR_00001":     http.StatusNotFound,   // 404 - Detalle horario no encontrado
+	"MOD_HD_CONFLICT_ERR_00001":      http.StatusConflict,   // 409 - Conflicto de horario
+	"MOD_HD_TIME_ERR_00001":          http.StatusBadRequest, // 400 - Formato hora inválido
+	"MOD_HD_DAY_ERR_00001":           http.StatusBadRequest, // 400 - Día de la semana inválido
+	"MOD_HD_DAY_CLOSED_ERR_00001":    http.StatusConflict,   // 409 - Día ya cerrado (no duplicar)
+	"MOD_HD_DAY_HAS_SLOTS_ERR_00001": http.StatusConflict,   // 409 - Día tiene franjas (no cerrar)
+
+	// ========================================
+	// Schedule Exception Module (MOD_EH_*) - HU20-25
+	// ========================================
+	// Success messages
+	"MOD_EH_CREATE_EXI_00001":     http.StatusCreated, // 201 - Excepción creada
+	"MOD_EH_GET_EXI_00001":        http.StatusOK,      // 200 - Excepción consultada
+	"MOD_EH_LIST_EXI_00001":       http.StatusOK,      // 200 - Excepciones listadas
+	"MOD_EH_UPDATE_EXI_00001":     http.StatusOK,      // 200 - Excepción actualizada
+	"MOD_EH_DELETE_EXI_00001":     http.StatusOK,      // 200 - Excepción eliminada
+	"MOD_EH_ACTIVATE_EXI_00001":   http.StatusOK,      // 200 - Excepción activada
+	"MOD_EH_DEACTIVATE_EXI_00001": http.StatusOK,      // 200 - Excepción desactivada
+	// Error messages
+	"MOD_EH_NOT_FOUND_ERR_00001":     http.StatusNotFound,   // 404 - Excepción no encontrada
+	"MOD_EH_DATE_CONFLICT_ERR_00001": http.StatusConflict,   // 409 - Fecha duplicada/solapada
+	"MOD_EH_DATE_PAST_ERR_00001":     http.StatusBadRequest, // 400 - Fecha pasada
+	"MOD_EH_TIME_ERR_00001":          http.StatusBadRequest, // 400 - Formato hora inválido
+	"MOD_EH_REDUNDANT_ERR_00001":     http.StatusConflict,   // 409 - Excepción redundante
+
+	// ========================================
+	// Motorcycle Module (MOD_MOT_*) - HU43-47
+	// ========================================
+	// Success messages
+	"MOD_MOT_CREATE_EXI_00001":   http.StatusCreated, // 201 - Motocicleta registrada (HU43)
+	"MOD_MOT_GET_EXI_00001":      http.StatusOK,      // 200 - Motocicleta consultada (HU46)
+	"MOD_MOT_UPDATE_EXI_00001":   http.StatusOK,      // 200 - Motocicleta actualizada (HU44)
+	"MOD_MOT_DELETE_EXI_00001":   http.StatusOK,      // 200 - Motocicleta eliminada (HU45)
+	"MOD_MOT_LIST_EXI_00001":     http.StatusOK,      // 200 - Motocicletas listadas (HU47)
+	"MOD_MOT_REF_LIST_EXI_00001": http.StatusOK,      // 200 - Referencias listadas (HU50)
+	// Error messages
+	"MOD_MOT_NOT_FOUND_ERR_00001":     http.StatusNotFound,   // 404 - Motocicleta no encontrada
+	"MOD_MOT_CREATE_ERR_00001":        http.StatusBadRequest, // 400 - Error al registrar
+	"MOD_MOT_UPDATE_ERR_00001":        http.StatusBadRequest, // 400 - Error al actualizar
+	"MOD_MOT_DELETE_ERR_00001":        http.StatusBadRequest, // 400 - Error al eliminar
+	"MOD_MOT_DUP_PLATE_ERR_00001":     http.StatusConflict,   // 409 - Placa duplicada
+	"MOD_MOT_REF_NOT_FOUND_ERR_00001": http.StatusNotFound,   // 404 - Referencia no encontrada
+	"MOD_MOT_REF_REQ_ERR_00001":       http.StatusBadRequest, // 400 - Referencia requerida
+	"MOD_MOT_HAS_ASSOC_ERR_00001":     http.StatusConflict,   // 409 - Tiene registros asociados
+	"MOD_MOT_FORBIDDEN_ERR_00001":     http.StatusForbidden,  // 403 - Acceso denegado
+	"MOD_MOT_LIST_ERR_00001":          http.StatusBadRequest, // 400 - Error al listar
+	"MOD_MOT_PLATE_REQ_ERR_00001":     http.StatusBadRequest, // 400 - Placa requerida
+
+	// ========================================
+	// Geolocation Validation (MOD_V_GEO_*) - HU89
+	// ========================================
+	"MOD_V_GEO_LAT_REQ_ERR_00001": http.StatusBadRequest, // 400 - Latitud requerida
+	"MOD_V_GEO_LAT_INV_ERR_00001": http.StatusBadRequest, // 400 - Latitud inválida (-90 a 90)
+	"MOD_V_GEO_LNG_REQ_ERR_00001": http.StatusBadRequest, // 400 - Longitud requerida
+	"MOD_V_GEO_LNG_INV_ERR_00001": http.StatusBadRequest, // 400 - Longitud inválida (-180 a 180)
+	"MOD_V_GEO_RAD_INV_ERR_00001": http.StatusBadRequest, // 400 - Radio inválido (0-50km)
+
+	// ========================================
+	// Nearby Branches (MOD_B_NEARBY_*) - HU89
+	// ========================================
+	"MOD_B_NEARBY_EXI_00001": http.StatusOK, // 200 - Sedes cercanas encontradas
 
 }
 

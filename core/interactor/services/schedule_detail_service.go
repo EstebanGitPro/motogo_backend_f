@@ -14,8 +14,8 @@ import (
 
 var scheduleDetailLog logger.Logger = logger.NewSlogLogger()
 
-// timeRegex validates HH:MM format (24-hour)
-var timeRegex = regexp.MustCompile(`^([01]?[0-9]|2[0-3]):[0-5][0-9]$`)
+// timeRegex validates HH:MM or HH:MM:SS format (24-hour, optional seconds)
+var timeRegex = regexp.MustCompile(`^([01]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$`)
 
 // scheduleDetailService implements input.ScheduleDetailService
 type scheduleDetailService struct {
@@ -67,13 +67,41 @@ func (s *scheduleDetailService) CreateDetail(
 		return nil, domain.ErrScheduleDetailInvalidDay
 	}
 
-	// 3. Validate time format and range if not closed
+	// 3. Validation R1/R2: Check if day is already marked as closed
+	dayIsClosed, err := s.detailRepo.CheckDayIsClosed(ctx, detail.ScheduleID, *detail.DayOfWeek, "")
+	if err != nil {
+		return nil, err
+	}
+	if dayIsClosed {
+		scheduleDetailLog.Warn(logger.LogScheduleDetailServiceTimeConflict,
+			"schedule_id", detail.ScheduleID,
+			"day_of_week", *detail.DayOfWeek,
+			"reason", "day_already_closed")
+		return nil, domain.ErrScheduleDetailDayAlreadyClosed
+	}
+
+	// 4. Validation R3: If trying to set is_closed=true, check if day has time slots
+	if detail.IsClosed {
+		dayHasSlots, err := s.detailRepo.CheckDayHasTimeSlots(ctx, detail.ScheduleID, *detail.DayOfWeek, "")
+		if err != nil {
+			return nil, err
+		}
+		if dayHasSlots {
+			scheduleDetailLog.Warn(logger.LogScheduleDetailServiceTimeConflict,
+				"schedule_id", detail.ScheduleID,
+				"day_of_week", *detail.DayOfWeek,
+				"reason", "day_has_time_slots")
+			return nil, domain.ErrScheduleDetailDayHasSlots
+		}
+	}
+
+	// 5. Validate time format and range if not closed
 	if !detail.IsClosed {
 		if err := s.ValidateTimeRange(*detail.OpeningTime, *detail.ClosingTime); err != nil {
 			return nil, err
 		}
 
-		// 4. Check for time conflicts
+		// 6. Check for time conflicts
 		hasConflict, err := s.detailRepo.CheckTimeConflict(
 			ctx,
 			detail.ScheduleID,
@@ -165,17 +193,22 @@ func (s *scheduleDetailService) UpdateDetail(
 		return domain.ErrScheduleDetailNotFound
 	}
 
-	// 2. Validate time range if not closed
+	// 2. Preserve immutable fields from existing (not provided in update request)
+	detail.ScheduleID = existing.ScheduleID
+	detail.DayOfWeek = existing.DayOfWeek
+	detail.EntryType = existing.EntryType
+
+	// 3. Validate time range if not closed
 	if !detail.IsClosed {
 		if err := s.ValidateTimeRange(*detail.OpeningTime, *detail.ClosingTime); err != nil {
 			return err
 		}
 
-		// 3. Check for time conflicts (excluding this detail)
+		// 4. Check for time conflicts (excluding this detail)
 		hasConflict, err := s.detailRepo.CheckTimeConflict(
 			ctx,
-			detail.ScheduleID,
-			*detail.DayOfWeek,
+			existing.ScheduleID,
+			*existing.DayOfWeek,
 			*detail.OpeningTime,
 			*detail.ClosingTime,
 			detail.ID, // Exclude this detail from conflict check
@@ -188,7 +221,7 @@ func (s *scheduleDetailService) UpdateDetail(
 		}
 	}
 
-	// 4. Update detail
+	// 5. Update detail
 	detail.UpdatedAt = time.Now()
 	if err := s.detailRepo.UpdateScheduleDetail(ctx, tx, detail); err != nil {
 		scheduleDetailLog.Error(logger.LogScheduleDetailServiceUpdateError,
@@ -241,9 +274,9 @@ func (s *scheduleDetailService) ValidateTimeRange(openingTime, closingTime strin
 		return domain.ErrScheduleDetailInvalidTime
 	}
 
-	// Parse times and validate range
-	opening, _ := time.Parse("15:04", openingTime)
-	closing, _ := time.Parse("15:04", closingTime)
+	// Parse times and validate range (try HH:mm:ss first, then HH:mm)
+	opening := parseTime(openingTime)
+	closing := parseTime(closingTime)
 
 	if !closing.After(opening) {
 		scheduleDetailLog.Warn(logger.LogScheduleDetailServiceInvalidTimeRange,
@@ -252,6 +285,18 @@ func (s *scheduleDetailService) ValidateTimeRange(openingTime, closingTime strin
 	}
 
 	return nil
+}
+
+// parseTime tries to parse time in HH:mm:ss format first, then HH:mm
+func parseTime(timeStr string) time.Time {
+	// Try HH:mm:ss format first (from DB)
+	t, err := time.Parse("15:04:05", timeStr)
+	if err == nil {
+		return t
+	}
+	// Fallback to HH:mm format (from API)
+	t, _ = time.Parse("15:04", timeStr)
+	return t
 }
 
 // CheckTimeConflict checks if a time slot conflicts with existing slots for the same day
@@ -263,4 +308,271 @@ func (s *scheduleDetailService) CheckTimeConflict(
 	excludeDetailID string,
 ) (bool, error) {
 	return s.detailRepo.CheckTimeConflict(ctx, scheduleID, dayOfWeek, openingTime, closingTime, excludeDetailID)
+}
+
+// ============================================
+// Schedule Exception Methods (HU20-25)
+// ============================================
+
+// CreateException creates a new schedule exception (HU20)
+func (s *scheduleDetailService) CreateException(
+	ctx context.Context,
+	tx output.Tx,
+	exception domain.ScheduleDetail,
+) (*domain.ScheduleDetail, error) {
+	scheduleDetailLog.Info(logger.LogScheduleDetailServiceCreateStart,
+		"schedule_id", exception.ScheduleID,
+		"exception_start_date", exception.ExceptionStartDate)
+
+	// 1. Verify schedule exists
+	schedule, err := s.scheduleRepo.GetScheduleByID(ctx, exception.ScheduleID)
+	if err != nil {
+		scheduleDetailLog.Error(logger.LogScheduleDetailServiceScheduleNotFound,
+			"schedule_id", exception.ScheduleID, "error", err)
+		return nil, domain.ErrScheduleNotFound
+	}
+	if schedule == nil {
+		return nil, domain.ErrScheduleNotFound
+	}
+
+	// 2. Validate exception start date is provided
+	if exception.ExceptionStartDate == nil {
+		return nil, domain.ErrScheduleExceptionDatePast
+	}
+
+	// 3. Validate exception start date is not in the past
+	today := time.Now().Truncate(24 * time.Hour)
+	exceptionDay := exception.ExceptionStartDate.Truncate(24 * time.Hour)
+	if exceptionDay.Before(today) {
+		scheduleDetailLog.Warn(logger.LogScheduleDetailServiceInvalidDay,
+			"exception_start_date", exception.ExceptionStartDate)
+		return nil, domain.ErrScheduleExceptionDatePast
+	}
+
+	// 4. If end date not set, use start date
+	if exception.ExceptionEndDate == nil {
+		exception.ExceptionEndDate = exception.ExceptionStartDate
+	}
+
+	// 5. Check for date conflict (overlapping dates) - using FOR UPDATE lock to prevent race conditions
+	// The tx parameter ensures this query runs within the transaction context
+	existingExceptions, err := s.detailRepo.GetExceptionsByScheduleIDForUpdate(ctx, tx, exception.ScheduleID)
+	if err != nil {
+		scheduleDetailLog.Error("DEBUG_GetExceptions_ERROR", "error", err)
+		return nil, err
+	}
+
+	scheduleDetailLog.Info("DEBUG_CheckExceptionDateConflict_EXPLICIT",
+		"schedule_id", exception.ScheduleID,
+		"new_start_date", exception.ExceptionStartDate.Format("2006-01-02"),
+		"new_end_date", exception.ExceptionEndDate.Format("2006-01-02"),
+		"new_is_closed", exception.IsClosed,
+		"existing_exceptions_count", len(existingExceptions))
+
+	// Check for overlapping dates with any existing exception
+	for _, existing := range existingExceptions {
+		if existing.ExceptionStartDate == nil || existing.ExceptionEndDate == nil {
+			continue
+		}
+
+		// Use date-only strings to compare (YYYY-MM-DD) - avoids timezone truncation issues
+		existingStartStr := existing.ExceptionStartDate.Format("2006-01-02")
+		existingEndStr := existing.ExceptionEndDate.Format("2006-01-02")
+		newStartStr := exception.ExceptionStartDate.Format("2006-01-02")
+		newEndStr := exception.ExceptionEndDate.Format("2006-01-02")
+
+		// Overlap condition: existing.start <= new.end AND existing.end >= new.start
+		hasOverlap := existingStartStr <= newEndStr && existingEndStr >= newStartStr
+
+		scheduleDetailLog.Info("DEBUG_CheckOverlap",
+			"existing_id", existing.ID,
+			"existing_start", existingStartStr,
+			"existing_end", existingEndStr,
+			"new_start", newStartStr,
+			"new_end", newEndStr,
+			"existing_is_closed", existing.IsClosed,
+			"has_overlap", hasOverlap)
+
+		if hasOverlap {
+			scheduleDetailLog.Warn(logger.LogScheduleDetailServiceTimeConflict,
+				"schedule_id", exception.ScheduleID,
+				"exception_start_date", exception.ExceptionStartDate,
+				"conflicting_exception_id", existing.ID)
+			return nil, domain.ErrScheduleExceptionDateConflict
+		}
+	}
+
+	// 6. Validation E1: If is_closed=true, check if day is already closed in REGULAR schedule (redundant)
+	if exception.IsClosed {
+		// Get day of week from exception date
+		dayOfWeek := int(exception.ExceptionStartDate.Weekday())
+		if dayOfWeek == 0 {
+			dayOfWeek = 7 // Sunday is 7 in ISO format
+		}
+
+		isRedundant, err := s.detailRepo.CheckExceptionIsRedundant(ctx, exception.ScheduleID, dayOfWeek)
+		if err != nil {
+			return nil, err
+		}
+		if isRedundant {
+			scheduleDetailLog.Warn(logger.LogScheduleDetailServiceTimeConflict,
+				"schedule_id", exception.ScheduleID,
+				"exception_start_date", exception.ExceptionStartDate,
+				"reason", "exception_redundant_day_already_closed")
+			return nil, domain.ErrScheduleExceptionRedundant
+		}
+	}
+
+	// 7. Validate time format if not closed
+	if !exception.IsClosed {
+		if exception.OpeningTime == nil || exception.ClosingTime == nil {
+			return nil, domain.ErrScheduleExceptionInvalidTime
+		}
+		if err := s.ValidateTimeRange(*exception.OpeningTime, *exception.ClosingTime); err != nil {
+			return nil, domain.ErrScheduleExceptionInvalidTime
+		}
+	}
+
+	// 7. Generate ID and set defaults
+	exception.ID = uuid.New().String()
+	exception.EntryType = domain.EntryTypeException
+	exception.DayOfWeek = nil // Exceptions don't use day_of_week
+	exception.Active = true
+	exception.CreatedAt = time.Now()
+	exception.UpdatedAt = time.Now()
+
+	// 7.5 Validation: If is_closed=true, clear time fields to prevent inconsistent data
+	if exception.IsClosed {
+		exception.OpeningTime = nil
+		exception.ClosingTime = nil
+	}
+
+	// 8. Save exception
+	if err := s.detailRepo.SaveScheduleDetail(ctx, tx, exception); err != nil {
+		scheduleDetailLog.Error(logger.LogScheduleDetailServiceSaveError,
+			"schedule_id", exception.ScheduleID, "error", err)
+		return nil, err
+	}
+
+	scheduleDetailLog.Info(logger.LogScheduleDetailServiceCreateOK,
+		"exception_id", exception.ID,
+		"schedule_id", exception.ScheduleID,
+		"exception_start_date", exception.ExceptionStartDate)
+
+	return &exception, nil
+}
+
+// GetExceptionsByScheduleID retrieves all exceptions for a schedule (HU23)
+func (s *scheduleDetailService) GetExceptionsByScheduleID(
+	ctx context.Context,
+	scheduleID string,
+) ([]domain.ScheduleDetail, error) {
+	exceptions, err := s.detailRepo.GetExceptionsByScheduleID(ctx, scheduleID)
+	if err != nil {
+		scheduleDetailLog.Error(logger.LogScheduleDetailServiceListError,
+			"schedule_id", scheduleID, "error", err)
+		return nil, err
+	}
+
+	scheduleDetailLog.Info(logger.LogScheduleDetailServiceListOK,
+		"schedule_id", scheduleID,
+		"exceptions_count", len(exceptions))
+
+	return exceptions, nil
+}
+
+// GetExceptionByID retrieves a specific exception by ID
+func (s *scheduleDetailService) GetExceptionByID(ctx context.Context, exceptionID string) (*domain.ScheduleDetail, error) {
+	exception, err := s.detailRepo.GetExceptionByID(ctx, exceptionID)
+	if err != nil {
+		scheduleDetailLog.Error(logger.LogScheduleDetailServiceGetError,
+			"exception_id", exceptionID, "error", err)
+		return nil, err
+	}
+	if exception == nil {
+		return nil, domain.ErrScheduleExceptionNotFound
+	}
+	return exception, nil
+}
+
+// UpdateException updates an existing schedule exception (HU21)
+func (s *scheduleDetailService) UpdateException(
+	ctx context.Context,
+	tx output.Tx,
+	exception domain.ScheduleDetail,
+) error {
+	// 1. Verify exception exists
+	existing, err := s.detailRepo.GetExceptionByID(ctx, exception.ID)
+	if err != nil {
+		return err
+	}
+	if existing == nil {
+		return domain.ErrScheduleExceptionNotFound
+	}
+
+	// 2. Validate time range if not closed
+	if !exception.IsClosed {
+		if exception.OpeningTime == nil || exception.ClosingTime == nil {
+			return domain.ErrScheduleExceptionInvalidTime
+		}
+		if err := s.ValidateTimeRange(*exception.OpeningTime, *exception.ClosingTime); err != nil {
+			return domain.ErrScheduleExceptionInvalidTime
+		}
+	}
+
+	// 3. Update exception (preserve existing exception dates and schedule_id)
+	exception.ScheduleID = existing.ScheduleID
+	exception.ExceptionStartDate = existing.ExceptionStartDate
+	exception.ExceptionEndDate = existing.ExceptionEndDate
+	exception.EntryType = domain.EntryTypeException
+	exception.UpdatedAt = time.Now()
+
+	// 3.5 Validation: If is_closed=true, clear time fields to prevent inconsistent data
+	if exception.IsClosed {
+		exception.OpeningTime = nil
+		exception.ClosingTime = nil
+	}
+
+	if err := s.detailRepo.UpdateScheduleDetail(ctx, tx, exception); err != nil {
+		scheduleDetailLog.Error(logger.LogScheduleDetailServiceUpdateError,
+			"exception_id", exception.ID, "error", err)
+		return err
+	}
+
+	scheduleDetailLog.Info(logger.LogScheduleDetailServiceUpdateOK, "exception_id", exception.ID)
+	return nil
+}
+
+// DeleteException deletes a schedule exception (HU22)
+func (s *scheduleDetailService) DeleteException(
+	ctx context.Context,
+	tx output.Tx,
+	exceptionID string,
+) error {
+	// 1. Verify exception exists
+	existing, err := s.detailRepo.GetExceptionByID(ctx, exceptionID)
+	if err != nil {
+		return err
+	}
+	if existing == nil {
+		return domain.ErrScheduleExceptionNotFound
+	}
+
+	// 2. Delete exception
+	if err := s.detailRepo.DeleteScheduleDetail(ctx, tx, exceptionID); err != nil {
+		scheduleDetailLog.Error(logger.LogScheduleDetailServiceDeleteError,
+			"exception_id", exceptionID, "error", err)
+		return err
+	}
+
+	scheduleDetailLog.Info(logger.LogScheduleDetailServiceDeleteOK, "exception_id", exceptionID)
+	return nil
+}
+
+// CheckExceptionDateConflict checks if an exception already exists for the given date range
+func (s *scheduleDetailService) CheckExceptionDateConflict(
+	ctx context.Context,
+	scheduleID, excludeExceptionID, startDate, endDate string,
+) (bool, error) {
+	return s.detailRepo.CheckExceptionDateConflict(ctx, scheduleID, excludeExceptionID, startDate, endDate)
 }

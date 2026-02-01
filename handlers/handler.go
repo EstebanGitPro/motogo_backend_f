@@ -3,6 +3,7 @@ package handlers
 import (
 	"github.com/EstebanGitPro/motogo-backend/core/interactor"
 	domain "github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
+	"github.com/EstebanGitPro/motogo-backend/core/ports/input"
 	"github.com/EstebanGitPro/motogo-backend/middleware"
 	messagingCache "github.com/EstebanGitPro/motogo-backend/platform/cache/messaging"
 	"github.com/EstebanGitPro/motogo-backend/platform/firebase"
@@ -12,17 +13,18 @@ import (
 )
 
 type handler struct {
-	Interactor          *interactor.Interactor
-	MessageInteractor   *interactor.MessageInteractor
-	BranchInteractor    *interactor.BranchInteractor    // HU59
-	BrandInteractor     *interactor.BrandInteractor     // Brands catalog
-	LocationInteractor  *interactor.LocationInteractor  // Geographic catalogs
-	ServiceInteractor   *interactor.ServiceInteractor   // Services catalog (HU63, HU75)
-	FranchiseInteractor *interactor.FranchiseInteractor // Franchise CRUD (HU26-29)
-	FirebaseClient      *firebase.Client                // Firebase Auth
-	MessagingCache      *messagingCache.MessageCache
-	IDEncoder           *idencoder.HashidsEncoder
-	Response            *middleware.ResponseHandler
+	Interactor           *interactor.Interactor
+	MessageInteractor    *interactor.MessageInteractor
+	BranchInteractor     *interactor.BranchInteractor        // HU59
+	BrandInteractor      input.BrandInteractorInterface      // Brands catalog (interface for testing)
+	LocationInteractor   input.LocationInteractorInterface   // Geographic catalogs (interface for testing)
+	ServiceInteractor    *interactor.ServiceInteractor       // Services catalog (HU63, HU75)
+	FranchiseInteractor  *interactor.FranchiseInteractor     // Franchise CRUD (HU26-29)
+	MotorcycleInteractor input.MotorcycleInteractorInterface // Motorcycle CRUD (interface for testing)
+	FirebaseClient       *firebase.Client                    // Firebase Auth
+	MessagingCache       *messagingCache.MessageCache
+	IDEncoder            *idencoder.HashidsEncoder
+	Response             *middleware.ResponseHandler
 }
 
 func New(
@@ -33,23 +35,25 @@ func New(
 	locationInteractor *interactor.LocationInteractor,
 	serviceInteractor *interactor.ServiceInteractor,
 	franchiseInteractor *interactor.FranchiseInteractor,
+	motorcycleInteractor *interactor.MotorcycleInteractor,
 	firebaseClient *firebase.Client,
 	messageCache *messagingCache.MessageCache,
 	encoder *idencoder.HashidsEncoder,
 	responseHandler *middleware.ResponseHandler,
 ) *handler {
 	return &handler{
-		Interactor:          personInteractor,
-		MessageInteractor:   messageInteractor,
-		BranchInteractor:    branchInteractor,
-		BrandInteractor:     brandInteractor,
-		LocationInteractor:  locationInteractor,
-		ServiceInteractor:   serviceInteractor,
-		FranchiseInteractor: franchiseInteractor,
-		FirebaseClient:      firebaseClient,
-		MessagingCache:      messageCache,
-		IDEncoder:           encoder,
-		Response:            responseHandler,
+		Interactor:           personInteractor,
+		MessageInteractor:    messageInteractor,
+		BranchInteractor:     branchInteractor,
+		BrandInteractor:      brandInteractor,
+		LocationInteractor:   locationInteractor,
+		ServiceInteractor:    serviceInteractor,
+		FranchiseInteractor:  franchiseInteractor,
+		MotorcycleInteractor: motorcycleInteractor,
+		FirebaseClient:       firebaseClient,
+		MessagingCache:       messageCache,
+		IDEncoder:            encoder,
+		Response:             responseHandler,
 	}
 }
 

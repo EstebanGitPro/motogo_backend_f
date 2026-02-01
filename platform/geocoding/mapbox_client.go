@@ -100,7 +100,7 @@ func (c *mapboxClient) Geocode(ctx context.Context, address, city, department st
 		log.Error(logger.LogGeocodingError, "error", err, "provider", "mapbox")
 		return nil, fmt.Errorf("geocoding request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }() // Body close error intentionally ignored
 
 	// Check HTTP status
 	if resp.StatusCode != http.StatusOK {

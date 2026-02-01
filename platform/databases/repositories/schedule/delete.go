@@ -3,17 +3,19 @@ package schedule
 import (
 	"context"
 
+	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
 	"github.com/EstebanGitPro/motogo-backend/platform/databases/common"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// DeleteSchedule removes a branch schedule by ID
 func (r *repository) DeleteSchedule(ctx context.Context, tx output.Tx, scheduleID string) error {
-	sqlTx := tx.(*common.SQLTx)
-	stmt := sqlTx.StmtContext(ctx, r.stmtDeleteSchedule)
+	sqlTx, ok := tx.(*common.SQLTx)
+	if !ok {
+		return domain.ErrInvalidTransaction
+	}
 
-	_, err := stmt.ExecContext(ctx, scheduleID)
+	_, err := sqlTx.ExecContext(ctx, queryDeleteSchedule, scheduleID)
 	if err != nil {
 		log.Error(logger.LogScheduleRepoDeleteError, "schedule_id", scheduleID, "error", err)
 		return err

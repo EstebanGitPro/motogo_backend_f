@@ -9,12 +9,13 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// SaveFranchise inserts a new franchise
 func (r *repository) SaveFranchise(ctx context.Context, tx output.Tx, franchise domain.Franchise) error {
-	sqlTx := tx.(*common.SQLTx)
-	stmt := sqlTx.StmtContext(ctx, r.stmtSaveFranchise)
+	sqlTx, ok := tx.(*common.SQLTx)
+	if !ok {
+		return domain.ErrInvalidTransaction
+	}
 
-	_, err := stmt.ExecContext(ctx, franchise.ID, franchise.Name, franchise.Description)
+	_, err := sqlTx.ExecContext(ctx, querySaveFranchise, franchise.ID, franchise.Name, franchise.Description)
 	if err != nil {
 		log.Error(logger.LogFranchiseRepoSaveError, "error", err, franchise.ToLogger())
 		return err

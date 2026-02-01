@@ -1,0 +1,64 @@
+# golangci-lint v2 configuration
+version: "2"
+
+run:
+  timeout: 5m
+  tests: false
+
+output:
+  formats:
+    text:
+      path: stdout
+
+linters:
+  default: standard
+  enable:
+    - bodyclose
+    - errname
+    - errorlint
+    - gocognit
+    - goconst
+    - gocritic
+    - gocyclo
+    - gosec
+    - misspell
+    - nakedret
+    - nilerr
+    - prealloc
+    - predeclared
+    - revive
+    - unconvert
+    - unparam
+    - whitespace
+  settings:
+    errcheck:
+      check-type-assertions: true
+      check-blank: false
+    gocognit:
+      min-complexity: 30
+    gocyclo:
+      min-complexity: 20
+    goconst:
+      min-len: 3
+      min-occurrences: 4
+    gocritic:
+      disabled-checks:
+        - hugeParam
+        - rangeValCopy
+    gosec:
+      excludes:
+        - G104
+        - G304
+        - G101
+        - G301
+    revive:
+      rules:
+        - name: exported
+          disabled: true
+        - name: package-comments
+          disabled: true
+
+formatters:
+  enable:
+    - gofmt
+    - goimports

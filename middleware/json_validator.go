@@ -19,10 +19,80 @@ type Builder struct {
 }
 
 func NewMiddlewareValidator(validators *json_schema.Validators) *Builder {
-
 	return &Builder{
 		Validators: validators,
 	}
+}
+
+// fieldNameMapping maps JSON field names to Spanish labels for user-friendly error messages
+var fieldNameMapping = map[string]string{
+	// Schedule Exceptions (HU20-25)
+	"exception_date": "Fecha de excepción",
+	"opening_time":   "Hora de apertura",
+	"closing_time":   "Hora de cierre",
+	"is_closed":      "Cerrado",
+
+	// Schedule Details (HU6-9)
+	"day_of_week": "Día de la semana",
+	"entry_type":  "Tipo de entrada",
+
+	// Person/Register
+	"email":            "Correo electrónico",
+	"password":         "Contraseña",
+	"first_name":       "Nombre",
+	"last_name":        "Apellido",
+	"phone":            "Teléfono",
+	"role":             "Rol",
+	"current_password": "Contraseña actual",
+	"new_password":     "Nueva contraseña",
+	"confirm_password": "Confirmar contraseña",
+	"token":            "Token",
+
+	// Branch (HU59)
+	"name":          "Nombre",
+	"address":       "Dirección",
+	"branch_type":   "Tipo de establecimiento",
+	"latitude":      "Latitud",
+	"longitude":     "Longitud",
+	"department_id": "Departamento",
+	"city_id":       "Ciudad",
+	"brands":        "Marcas",
+
+	// Franchise (HU26-29)
+	"branches": "Sedes",
+
+	// Schedule (HU30-35)
+	"start_date": "Fecha de inicio",
+	"end_date":   "Fecha de fin",
+	"active":     "Activo",
+
+	// Messages
+	"code":     "Código",
+	"title":    "Título",
+	"content":  "Contenido",
+	"module":   "Módulo",
+	"category": "Categoría",
+	"type":     "Tipo",
+
+	// Motorcycles (HU43-47)
+	"license_plate":   "Placa",
+	"reference_id":    "Referencia de motocicleta",
+	"year":            "Año del modelo",
+	"current_mileage": "Kilometraje actual",
+	"owner_notes":     "Notas del propietario",
+}
+
+// translateFieldNames converts technical field names to Spanish labels
+func translateFieldNames(fields []string) []string {
+	translated := make([]string, len(fields))
+	for i, field := range fields {
+		if label, exists := fieldNameMapping[field]; exists {
+			translated[i] = label
+		} else {
+			translated[i] = field // Keep original if no mapping
+		}
+	}
+	return translated
 }
 
 func (b *Builder) WithValidateRegister() gin.HandlerFunc {
@@ -69,6 +139,26 @@ func (b *Builder) WithValidateUpdateSchedule() gin.HandlerFunc {
 	return b.jsonValidator(b.Validators.UpdateScheduleValidator)
 }
 
+// WithValidateScheduleException validates schedule exception request (HU20-25)
+func (b *Builder) WithValidateScheduleException() gin.HandlerFunc {
+	return b.jsonValidator(b.Validators.ScheduleExceptionValidator)
+}
+
+// WithValidateUpdateScheduleException validates update schedule exception request (HU21)
+func (b *Builder) WithValidateUpdateScheduleException() gin.HandlerFunc {
+	return b.jsonValidator(b.Validators.UpdateScheduleExceptionValidator)
+}
+
+// WithValidateFranchise validates franchise creation/update request (HU26-29)
+func (b *Builder) WithValidateFranchise() gin.HandlerFunc {
+	return b.jsonValidator(b.Validators.FranchiseValidator)
+}
+
+// WithValidateRegisterMotorcycle validates motorcycle registration request (HU43)
+func (b *Builder) WithValidateRegisterMotorcycle() gin.HandlerFunc {
+	return b.jsonValidator(b.Validators.RegisterMotorcycleValidator)
+}
+
 func (b *Builder) jsonValidator(schema *jsonschema.Schema) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Get request ID for trace correlation
@@ -80,7 +170,7 @@ func (b *Builder) jsonValidator(schema *jsonschema.Schema) gin.HandlerFunc {
 			if log != nil {
 				log.Error(logger.LogMiddlewareBodyReadError, "error", err, "path", c.Request.URL.Path)
 			}
-			c.Error(json_schema.ErrBodyReadFailed)
+			_ = c.Error(json_schema.ErrBodyReadFailed)
 			c.Abort()
 			return
 		}
@@ -92,7 +182,7 @@ func (b *Builder) jsonValidator(schema *jsonschema.Schema) gin.HandlerFunc {
 			if log != nil {
 				log.Error(logger.LogMiddlewareJSONParseError, "error", err, "path", c.Request.URL.Path)
 			}
-			c.Error(json_schema.ErrBadRequest)
+			_ = c.Error(json_schema.ErrBadRequest)
 			c.Abort()
 			return
 		}
@@ -161,14 +251,15 @@ func (b *Builder) jsonValidator(schema *jsonschema.Schema) gin.HandlerFunc {
 			}
 
 			// Store field names in context for error_handler to use in message parameters
+			// Translate technical names to Spanish labels
 			if len(fieldNames) > 0 {
-				c.Set("validation_fields", fieldNames)
+				c.Set("validation_fields", translateFieldNames(fieldNames))
 			}
 
 			if log != nil {
 				log.Warn(logger.LogMiddlewareValidationFailed, "path", c.Request.URL.Path, "fields", fieldNames)
 			}
-			c.Error(validationError)
+			_ = c.Error(validationError)
 			c.Abort()
 			return
 		}

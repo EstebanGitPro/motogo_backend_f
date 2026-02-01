@@ -11,7 +11,7 @@ func (r *repository) GetByModule(ctx context.Context, module string) ([]domain.M
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }() // Rows close error intentionally ignored
 
 	var messages []domain.Message
 	for rows.Next() {

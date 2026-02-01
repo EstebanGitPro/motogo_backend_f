@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/input"
@@ -60,7 +61,7 @@ func (s *franchiseService) CreateFranchise(ctx context.Context, tx output.Tx, fr
 func (s *franchiseService) GetFranchiseByID(ctx context.Context, franchiseID string) (*domain.Franchise, error) {
 	franchise, err := s.repository.GetFranchiseByID(ctx, franchiseID)
 	if err != nil {
-		if err == domain.ErrFranchiseNotFound {
+		if errors.Is(err, domain.ErrFranchiseNotFound) {
 			return nil, err
 		}
 		log.Error(logger.LogDatabaseUnavailable, "error getting franchise", err, "franchise_id", franchiseID)

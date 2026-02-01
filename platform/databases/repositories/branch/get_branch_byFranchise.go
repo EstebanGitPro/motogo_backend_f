@@ -8,7 +8,6 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// GetBranchByFranchiseAndName retrieves a branch by franchise and name (for duplicate validation)
 func (r *repository) GetBranchByFranchiseAndName(ctx context.Context, franchiseID, name string) (*domain.Branch, error) {
 	var branch domain.Branch
 	var franchiseIDVal, profileImageURL sql.NullString

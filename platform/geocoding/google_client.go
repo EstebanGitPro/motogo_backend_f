@@ -90,7 +90,7 @@ func (c *googleMapsClient) Geocode(ctx context.Context, address, city, departmen
 		log.Error(logger.LogGeocodingError, "error", err, "provider", "google")
 		return nil, fmt.Errorf("geocoding request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }() // Body close error intentionally ignored
 
 	// Parse response
 	var result GoogleMapsResponse

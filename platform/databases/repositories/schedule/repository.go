@@ -5,14 +5,12 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
 	"github.com/EstebanGitPro/motogo-backend/platform/databases/common"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
 const (
-	// Schedule queries
 	querySaveSchedule = `
 		INSERT INTO branch_schedules (id, branch_id, active, start_date, end_date, created_at, updated_at)
 		VALUES (?, ?, ?, ?, ?, NOW(), NOW())
@@ -54,7 +52,6 @@ type repository struct {
 	stmtSetActive             *sql.Stmt
 }
 
-// NewRepository creates a new ScheduleRepository with prepared statements (fail-fast pattern)
 func NewRepository(db *sql.DB) (output.ScheduleRepository, error) {
 	if db == nil {
 		return nil, sql.ErrConnDone
@@ -107,61 +104,10 @@ func NewRepository(db *sql.DB) (output.ScheduleRepository, error) {
 	}, nil
 }
 
-// BeginTx starts a new database transaction
 func (r *repository) BeginTx(ctx context.Context) (output.Tx, error) {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 	return common.NewSQLTx(tx), nil
-}
-
-// GetScheduleByID retrieves a schedule by its ID
-func (r *repository) GetScheduleByID(ctx context.Context, scheduleID string) (*domain.BranchSchedule, error) {
-	var schedule domain.BranchSchedule
-
-	err := r.stmtGetScheduleByID.QueryRowContext(ctx, scheduleID).Scan(
-		&schedule.ID,
-		&schedule.BranchID,
-		&schedule.Active,
-		&schedule.StartDate,
-		&schedule.EndDate,
-		&schedule.CreatedAt,
-		&schedule.UpdatedAt,
-	)
-
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, domain.ErrScheduleNotFound
-		}
-		log.Error(logger.LogScheduleRepoGetByIDError, "schedule_id", scheduleID, "error", err)
-		return nil, err
-	}
-
-	return &schedule, nil
-}
-
-// GetScheduleByBranchID retrieves a schedule by branch ID
-func (r *repository) GetScheduleByBranchID(ctx context.Context, branchID string) (*domain.BranchSchedule, error) {
-	var schedule domain.BranchSchedule
-
-	err := r.stmtGetScheduleByBranchID.QueryRowContext(ctx, branchID).Scan(
-		&schedule.ID,
-		&schedule.BranchID,
-		&schedule.Active,
-		&schedule.StartDate,
-		&schedule.EndDate,
-		&schedule.CreatedAt,
-		&schedule.UpdatedAt,
-	)
-
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil // Not found is not an error - branch simply doesn't have a schedule
-		}
-		log.Error(logger.LogScheduleRepoGetByBranchError, "branch_id", branchID, "error", err)
-		return nil, err
-	}
-
-	return &schedule, nil
 }

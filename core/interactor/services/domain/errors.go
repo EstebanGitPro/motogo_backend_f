@@ -118,6 +118,12 @@ var (
 	ErrCityNotInDepartment = errors.New("ERR_CITY_NOT_IN_DEPARTMENT")
 )
 
+// Location Module (MOD_L_*) - Geographic Catalogs
+const (
+	MsgDepartmentsRetrieved = "MOD_L_DEP_EXI_00001"
+	MsgCitiesRetrieved      = "MOD_L_CIT_EXI_00001"
+)
+
 // Franchise Errors (MOD_F_*) - HU26-29
 var (
 	ErrFranchiseNotFound       = errors.New("ERR_FRANCHISE_NOT_FOUND")
@@ -283,6 +289,17 @@ const (
 	MsgBranchListFound     = "MOD_B_LIST_EXI_00001"      // HU62: Branch list found
 	MsgBranchCannotDelete  = "MOD_B_DEL_ERR_00001"       // HU61: Delete error
 	MsgBranchHasAssoc      = "MOD_B_HAS_ASSOC_ERR_00001" // HU61: Has associations
+	MsgBrandsRetrieved     = "MOD_B_BRD_EXI_00001"       // Brand catalog retrieved
+	MsgBranchNearbyFound   = "MOD_B_NEARBY_EXI_00001"    // HU89: Nearby branches found
+)
+
+// Validation Module - Geolocation (MOD_V_GEO_*)
+const (
+	MsgValLatitudeRequired  = "MOD_V_GEO_LAT_REQ_ERR_00001"
+	MsgValLatitudeInvalid   = "MOD_V_GEO_LAT_INV_ERR_00001"
+	MsgValLongitudeRequired = "MOD_V_GEO_LNG_REQ_ERR_00001"
+	MsgValLongitudeInvalid  = "MOD_V_GEO_LNG_INV_ERR_00001"
+	MsgValRadiusInvalid     = "MOD_V_GEO_RAD_INV_ERR_00001"
 )
 
 // Franchise Module (MOD_F_*) - HU26-29
@@ -364,10 +381,12 @@ const (
 
 // Schedule Detail Errors (MOD_HD_*) - HU6-9
 var (
-	ErrScheduleDetailNotFound     = errors.New("ERR_SCHEDULE_DETAIL_NOT_FOUND")
-	ErrScheduleDetailTimeConflict = errors.New("ERR_SCHEDULE_DETAIL_TIME_CONFLICT")
-	ErrScheduleDetailInvalidTime  = errors.New("ERR_SCHEDULE_DETAIL_INVALID_TIME")
-	ErrScheduleDetailInvalidDay   = errors.New("ERR_SCHEDULE_DETAIL_INVALID_DAY")
+	ErrScheduleDetailNotFound         = errors.New("ERR_SCHEDULE_DETAIL_NOT_FOUND")
+	ErrScheduleDetailTimeConflict     = errors.New("ERR_SCHEDULE_DETAIL_TIME_CONFLICT")
+	ErrScheduleDetailInvalidTime      = errors.New("ERR_SCHEDULE_DETAIL_INVALID_TIME")
+	ErrScheduleDetailInvalidDay       = errors.New("ERR_SCHEDULE_DETAIL_INVALID_DAY")
+	ErrScheduleDetailDayAlreadyClosed = errors.New("ERR_SCHEDULE_DETAIL_DAY_CLOSED")
+	ErrScheduleDetailDayHasSlots      = errors.New("ERR_SCHEDULE_DETAIL_DAY_HAS_SLOTS")
 )
 
 // Schedule Detail Module (MOD_HD_*) - HU6-9
@@ -380,10 +399,12 @@ const (
 	MsgScheduleDetailsListed   = "MOD_HD_LIST_EXI_00001"
 
 	// Error messages
-	MsgScheduleDetailNotFound     = "MOD_HD_NOT_FOUND_ERR_00001"
-	MsgScheduleDetailTimeConflict = "MOD_HD_CONFLICT_ERR_00001"
-	MsgScheduleDetailInvalidTime  = "MOD_HD_TIME_ERR_00001"
-	MsgScheduleDetailInvalidDay   = "MOD_HD_DAY_ERR_00001"
+	MsgScheduleDetailNotFound         = "MOD_HD_NOT_FOUND_ERR_00001"
+	MsgScheduleDetailTimeConflict     = "MOD_HD_CONFLICT_ERR_00001"
+	MsgScheduleDetailInvalidTime      = "MOD_HD_TIME_ERR_00001"
+	MsgScheduleDetailInvalidDay       = "MOD_HD_DAY_ERR_00001"
+	MsgScheduleDetailDayAlreadyClosed = "MOD_HD_DAY_CLOSED_ERR_00001"
+	MsgScheduleDetailDayHasSlots      = "MOD_HD_DAY_HAS_SLOTS_ERR_00001"
 )
 
 // Schedule Exception Errors (MOD_EH_*) - HU20-25
@@ -392,6 +413,7 @@ var (
 	ErrScheduleExceptionDateConflict = errors.New("ERR_SCHEDULE_EXCEPTION_DATE_CONFLICT")
 	ErrScheduleExceptionDatePast     = errors.New("ERR_SCHEDULE_EXCEPTION_DATE_PAST")
 	ErrScheduleExceptionInvalidTime  = errors.New("ERR_SCHEDULE_EXCEPTION_INVALID_TIME")
+	ErrScheduleExceptionRedundant    = errors.New("ERR_SCHEDULE_EXCEPTION_REDUNDANT")
 )
 
 // Schedule Exception Module (MOD_EH_*) - HU20-25
@@ -410,4 +432,38 @@ const (
 	MsgScheduleExceptionDateConflict = "MOD_EH_DATE_CONFLICT_ERR_00001"
 	MsgScheduleExceptionDatePast     = "MOD_EH_DATE_PAST_ERR_00001"
 	MsgScheduleExceptionInvalidTime  = "MOD_EH_TIME_ERR_00001"
+	MsgScheduleExceptionRedundant    = "MOD_EH_REDUNDANT_ERR_00001"
+)
+
+// Motorcycle Errors (MOD_MOT_*) - HU43-47
+var (
+	ErrMotorcycleNotFound     = errors.New("ERR_MOTORCYCLE_NOT_FOUND")
+	ErrMotorcycleCannotSave   = errors.New("ERR_MOTORCYCLE_CANNOT_SAVE")
+	ErrMotorcycleCannotUpdate = errors.New("ERR_MOTORCYCLE_CANNOT_UPDATE")
+	ErrMotorcycleCannotDelete = errors.New("ERR_MOTORCYCLE_CANNOT_DELETE")
+	ErrDuplicateLicensePlate  = errors.New("ERR_DUPLICATE_LICENSE_PLATE")
+	ErrReferenceNotFound      = errors.New("ERR_REFERENCE_NOT_FOUND")
+	ErrReferenceRequired      = errors.New("ERR_REFERENCE_REQUIRED")
+)
+
+// Motorcycle Module (MOD_MOT_*) - HU43-47
+const (
+	// Success messages
+	MsgMotorcycleCreated          = "MOD_MOT_CREATE_EXI_00001"
+	MsgMotorcycleRetrieved        = "MOD_MOT_GET_EXI_00001"
+	MsgMotorcycleUpdated          = "MOD_MOT_UPDATE_EXI_00001"
+	MsgMotorcycleDeleted          = "MOD_MOT_DELETE_EXI_00001"
+	MsgMotorcyclesListed          = "MOD_MOT_LIST_EXI_00001"
+	MsgMotorcycleReferencesListed = "MOD_MOT_REF_LIST_EXI_00001"    // HU50
+	MsgBrandLinesRetrieved        = "MOD_MOT_BRAND_LINES_EXI_00001" // HU40
+
+	// Error messages
+	MsgMotorcycleNotFound          = "MOD_MOT_NOT_FOUND_ERR_00001"
+	MsgMotorcycleCannotSave        = "MOD_MOT_CREATE_ERR_00001"
+	MsgMotorcycleCannotUpdate      = "MOD_MOT_UPDATE_ERR_00001"
+	MsgMotorcycleCannotDelete      = "MOD_MOT_DELETE_ERR_00001"
+	MsgDuplicateLicensePlate       = "MOD_MOT_DUP_PLATE_ERR_00001"
+	MsgMotorcycleReferenceNotFound = "MOD_MOT_REF_NOT_FOUND_ERR_00001"
+	MsgReferenceRequired           = "MOD_MOT_REF_REQ_ERR_00001"
+	MsgMissingPlateParam           = "MOD_MOT_PLATE_REQ_ERR_00001"
 )

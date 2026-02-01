@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Franchise Schema",
+  "description": "Validates franchise creation/update for HU26-29",
+  "type": "object",
+  "required": ["name"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 100,
+      "description": "Franchise name"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 500,
+      "description": "Optional franchise description"
+    },
+    "branch_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Array of branch IDs to associate"
+    }
+  }
+}

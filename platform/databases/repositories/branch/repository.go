@@ -11,7 +11,6 @@ import (
 )
 
 const (
-	// Branch queries (branches table)
 	querySaveBranch = `
 		INSERT INTO branches (id, representative_id, franchise_id, name, establishment_type, profile_image_url, status, created_at, updated_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
@@ -45,8 +44,6 @@ const (
 		LEFT JOIN cities c ON l.city_id = c.id
 		WHERE b.representative_id = ?
 	`
-
-	// Branch brands queries
 	querySaveBranchBrand = `
 		INSERT INTO branch_brands (id, branch_id, brand_id, active, created_at, updated_at)
 		VALUES (?, ?, ?, TRUE, NOW(), NOW())
@@ -54,9 +51,35 @@ const (
 	queryDeleteBranchBrands = "DELETE FROM branch_brands WHERE branch_id = ?"
 	queryGetBranchBrands    = "SELECT brand_id FROM branch_brands WHERE branch_id = ? AND active = TRUE"
 
-	// Brand validation query - checks against brands table (normalized catalog)
 	queryValidateBrands = `
 		SELECT id FROM brands WHERE id IN (%s)
+	`
+	queryHasBranchesByRepresentative = "SELECT EXISTS(SELECT 1 FROM branches WHERE representative_id = ? LIMIT 1)"
+
+	// HU89: Nearby branches search with Haversine formula and bounding box optimization
+	queryGetBranchesNearby = `
+		SELECT 
+			b.id, b.name, b.establishment_type, b.profile_image_url, b.status,
+			l.address, l.latitude, l.longitude,
+			ci.name AS city_name, d.name AS department_name,
+			(6371 * ACOS(
+				COS(RADIANS(?)) * COS(RADIANS(l.latitude)) *
+				COS(RADIANS(l.longitude) - RADIANS(?)) +
+				SIN(RADIANS(?)) * SIN(RADIANS(l.latitude))
+			)) AS distance_km
+		FROM branches b
+		INNER JOIN locations l ON b.id = l.branch_id
+		INNER JOIN cities ci ON l.city_id = ci.id
+		INNER JOIN departments d ON ci.department_id = d.id
+		WHERE b.status = 'ACTIVE'
+		  AND l.latitude IS NOT NULL
+		  AND l.longitude IS NOT NULL
+		  AND (? = '' OR b.establishment_type = ?)
+		  AND l.latitude BETWEEN ? AND ?
+		  AND l.longitude BETWEEN ? AND ?
+		HAVING distance_km <= ?
+		ORDER BY distance_km ASC
+		LIMIT 50
 	`
 )
 
@@ -73,6 +96,7 @@ type repository struct {
 	stmtSaveBranchBrand             *sql.Stmt
 	stmtDeleteBranchBrands          *sql.Stmt
 	stmtGetBranchBrands             *sql.Stmt
+	stmtGetBranchesNearby           *sql.Stmt // HU89
 }
 
 // NewRepository creates a new BranchRepository with prepared statements (fail-fast pattern)
@@ -135,6 +159,12 @@ func NewRepository(db *sql.DB) (output.BranchRepository, error) {
 		return nil, fmt.Errorf("error preparing stmtGetBranchBrands: %w", err)
 	}
 
+	stmtGetBranchesNearby, err := db.Prepare(queryGetBranchesNearby)
+	if err != nil {
+		log.Error(logger.LogDatabaseUnavailable, "error preparing stmtGetBranchesNearby", err)
+		return nil, fmt.Errorf("error preparing stmtGetBranchesNearby: %w", err)
+	}
+
 	return &repository{
 		db:                              db,
 		stmtSaveBranch:                  stmtSaveBranch,
@@ -146,10 +176,10 @@ func NewRepository(db *sql.DB) (output.BranchRepository, error) {
 		stmtSaveBranchBrand:             stmtSaveBranchBrand,
 		stmtDeleteBranchBrands:          stmtDeleteBranchBrands,
 		stmtGetBranchBrands:             stmtGetBranchBrands,
+		stmtGetBranchesNearby:           stmtGetBranchesNearby,
 	}, nil
 }
 
-// BeginTx starts a new database transaction
 func (r *repository) BeginTx(ctx context.Context) (output.Tx, error) {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {

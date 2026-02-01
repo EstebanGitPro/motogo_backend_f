@@ -8,14 +8,13 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// GetFranchisesByRepresentative lists all franchises owned by a representative
 func (r *repository) GetFranchisesByRepresentative(ctx context.Context, representativeID string) ([]domain.Franchise, error) {
 	rows, err := r.stmtGetFranchisesByRepresentative.QueryContext(ctx, representativeID)
 	if err != nil {
 		log.Error(logger.LogFranchiseRepoGetByRepError, "representative_id", representativeID, "error", err)
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }() // Rows close error intentionally ignored
 
 	var franchises []domain.Franchise
 	for rows.Next() {
