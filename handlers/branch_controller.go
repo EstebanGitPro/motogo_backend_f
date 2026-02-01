@@ -87,9 +87,22 @@ func (h *handler) RegisterBranch() gin.HandlerFunc {
 			return
 		}
 
+		// 3.2 Decode franchise_id if provided (comes encoded from frontend)
+		var decodedFranchiseID *string
+		if req.FranchiseID != nil && *req.FranchiseID != "" {
+			decoded, err := h.DecodeID(*req.FranchiseID)
+			if err != nil {
+				log.Warn(logger.LogBranchControllerIDDecodeError, "encoded_id", *req.FranchiseID, "error", err)
+				h.Response.Error(c, domain.MsgValIDInvalid)
+				return
+			}
+			decodedFranchiseID = &decoded
+		}
+
 		// 4. Map DTO to domain model (using mapper in branch.go)
 		branch := req.ToDomain(person.ID)
-		branch.Brands = decodedBrands // Override with decoded brand IDs
+		branch.Brands = decodedBrands           // Override with decoded brand IDs
+		branch.FranchiseID = decodedFranchiseID // Override with decoded franchise ID
 		// Override location IDs with decoded values
 		if branch.Location != nil {
 			branch.Location.DepartmentID = decodedDepartmentID
@@ -525,9 +538,22 @@ func (h *handler) UpdateBranch() gin.HandlerFunc {
 			return
 		}
 
+		// 4.2 Decode franchise_id if provided (comes encoded from frontend)
+		var decodedFranchiseID *string
+		if req.FranchiseID != nil && *req.FranchiseID != "" {
+			decoded, err := h.DecodeID(*req.FranchiseID)
+			if err != nil {
+				log.Warn(logger.LogBranchControllerIDDecodeError, "encoded_id", *req.FranchiseID, "error", err)
+				h.Response.Error(c, domain.MsgValIDInvalid)
+				return
+			}
+			decodedFranchiseID = &decoded
+		}
+
 		// 5. Map DTO to domain model
 		branch := req.ToDomain(person.ID)
 		branch.Brands = decodedBrands
+		branch.FranchiseID = decodedFranchiseID // Override with decoded franchise ID
 		if branch.Location != nil {
 			branch.Location.DepartmentID = decodedDepartmentID
 			branch.Location.CityID = decodedCityID
