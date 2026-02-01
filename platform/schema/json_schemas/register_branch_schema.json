@@ -14,7 +14,7 @@
     },
     "franchise_id": {
       "type": "string",
-      "format": "uuid"
+      "minLength": 1
     },
     "profile_image_url": {
       "type": "string",
