@@ -6,7 +6,6 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// CheckDayIsClosed checks if a day already has a closed entry (R1, R2)
 func (r *repository) CheckDayIsClosed(
 	ctx context.Context,
 	scheduleID string,
@@ -32,7 +31,6 @@ func (r *repository) CheckDayIsClosed(
 	return count > 0, nil
 }
 
-// CheckDayHasTimeSlots checks if a day has time slot entries (not closed) (R3)
 func (r *repository) CheckDayHasTimeSlots(
 	ctx context.Context,
 	scheduleID string,
@@ -58,7 +56,6 @@ func (r *repository) CheckDayHasTimeSlots(
 	return count > 0, nil
 }
 
-// CheckExceptionIsRedundant checks if exception is redundant because day is already closed in REGULAR (E1)
 func (r *repository) CheckExceptionIsRedundant(
 	ctx context.Context,
 	scheduleID string,

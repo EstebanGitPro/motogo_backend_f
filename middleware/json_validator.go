@@ -19,7 +19,6 @@ type Builder struct {
 }
 
 func NewMiddlewareValidator(validators *json_schema.Validators) *Builder {
-
 	return &Builder{
 		Validators: validators,
 	}
@@ -74,6 +73,13 @@ var fieldNameMapping = map[string]string{
 	"module":   "Módulo",
 	"category": "Categoría",
 	"type":     "Tipo",
+
+	// Motorcycles (HU43-47)
+	"license_plate":   "Placa",
+	"reference_id":    "Referencia de motocicleta",
+	"year":            "Año del modelo",
+	"current_mileage": "Kilometraje actual",
+	"owner_notes":     "Notas del propietario",
 }
 
 // translateFieldNames converts technical field names to Spanish labels
@@ -148,6 +154,11 @@ func (b *Builder) WithValidateFranchise() gin.HandlerFunc {
 	return b.jsonValidator(b.Validators.FranchiseValidator)
 }
 
+// WithValidateRegisterMotorcycle validates motorcycle registration request (HU43)
+func (b *Builder) WithValidateRegisterMotorcycle() gin.HandlerFunc {
+	return b.jsonValidator(b.Validators.RegisterMotorcycleValidator)
+}
+
 func (b *Builder) jsonValidator(schema *jsonschema.Schema) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Get request ID for trace correlation
@@ -159,7 +170,7 @@ func (b *Builder) jsonValidator(schema *jsonschema.Schema) gin.HandlerFunc {
 			if log != nil {
 				log.Error(logger.LogMiddlewareBodyReadError, "error", err, "path", c.Request.URL.Path)
 			}
-			c.Error(json_schema.ErrBodyReadFailed)
+			_ = c.Error(json_schema.ErrBodyReadFailed)
 			c.Abort()
 			return
 		}
@@ -171,7 +182,7 @@ func (b *Builder) jsonValidator(schema *jsonschema.Schema) gin.HandlerFunc {
 			if log != nil {
 				log.Error(logger.LogMiddlewareJSONParseError, "error", err, "path", c.Request.URL.Path)
 			}
-			c.Error(json_schema.ErrBadRequest)
+			_ = c.Error(json_schema.ErrBadRequest)
 			c.Abort()
 			return
 		}
@@ -248,7 +259,7 @@ func (b *Builder) jsonValidator(schema *jsonschema.Schema) gin.HandlerFunc {
 			if log != nil {
 				log.Warn(logger.LogMiddlewareValidationFailed, "path", c.Request.URL.Path, "fields", fieldNames)
 			}
-			c.Error(validationError)
+			_ = c.Error(validationError)
 			c.Abort()
 			return
 		}

@@ -86,6 +86,14 @@ var errorToMessageCode = map[error]string{
 	domain.ErrInvalidCredentials: domain.MsgUnauthorized,
 	domain.ErrTokenExpired:       domain.MsgUserTokenExpired,
 
+	// Motorcycle errors (MOD_MOT_*)
+	domain.ErrMotorcycleNotFound:     domain.MsgMotorcycleNotFound,
+	domain.ErrMotorcycleCannotSave:   domain.MsgMotorcycleCannotSave,
+	domain.ErrMotorcycleCannotUpdate: domain.MsgMotorcycleCannotUpdate,
+	domain.ErrMotorcycleCannotDelete: domain.MsgMotorcycleCannotDelete,
+	domain.ErrDuplicateLicensePlate:  domain.MsgDuplicateLicensePlate,
+	domain.ErrReferenceNotFound:      domain.MsgMotorcycleReferenceNotFound,
+
 	// General errors
 	domain.ErrInternalServer: domain.MsgServerError,
 }

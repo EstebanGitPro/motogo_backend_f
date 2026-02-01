@@ -1,0 +1,137 @@
+meta {
+  name: Get Brand Lines (HU40) - Admin
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/admin/brands/{{brand_id}}/lines
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+vars:pre-request {
+  brand_id: wjzQv367kYuLWbCYEYFEG4CKnespTYTZrGEB
+}
+
+script:pre-request {
+  var brandId = bru.getVar("brand_id");
+  if (!brandId || brandId === "REPLACE_WITH_BRAND_ID") {
+    console.log("⚠️ brand_id not set. Get a valid brand ID from /brands endpoint!");
+    console.log("💡 Tip: Set brand_id variable with an encoded brand ID");
+  } else {
+    console.log("Using brand_id:", brandId);
+  }
+}
+
+script:post-response {
+  if (res.status === 200) {
+    var lines = res.body.data?.lines || [];
+    console.log("✅ Retrieved", lines.length, "lines for the brand");
+    if (lines.length > 0) {
+      console.log("First line:", lines[0].model, "-", lines[0].category);
+    }
+  } else if (res.status === 403) {
+    console.log("❌ Access denied - requires ADMIN role");
+  } else {
+    console.log("❌ Request failed:", res.status, res.body);
+  }
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.getBody().success).to.be.true;
+  });
+  
+  test("Response has lines array", function() {
+    expect(res.getBody().data.lines).to.be.an('array');
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.getBody().data._links).to.be.an('array');
+  });
+  
+  test("Has self link", function() {
+    const links = res.getBody().data._links;
+    const selfLink = links.find(link => link.rel === 'self');
+    expect(selfLink).to.exist;
+    expect(selfLink.method).to.equal('GET');
+  });
+  
+  test("Lines have required fields (if any)", function() {
+    const lines = res.getBody().data.lines;
+    if (lines.length > 0) {
+      expect(lines[0].id).to.exist;
+      expect(lines[0].brand_id).to.exist;
+      expect(lines[0].model).to.exist;
+      expect(lines[0].category).to.exist;
+    }
+  });
+}
+
+docs {
+  # Get Brand Lines (HU40) - Admin Only
+  
+  Consulta las líneas de motocicletas para una marca específica.
+  
+  ## Requisitos:
+  1. **Autenticación requerida**: Token JWT válido
+  2. **Rol ADMIN requerido**: Solo administradores pueden acceder
+  3. **brand_id**: ID codificado de la marca (hashid)
+  
+  ## Endpoint:
+  `GET /motogo/api/v1/admin/brands/:brandId/lines`
+  
+  ## Path Parameters:
+  | Parámetro | Tipo | Descripción |
+  |-----------|------|-------------|
+  | `brandId` | string | ID codificado de la marca |
+  
+  ## Respuestas:
+  - **200 OK**: Líneas obtenidas exitosamente
+  - **401 Unauthorized**: Token inválido/ausente
+  - **403 Forbidden**: Requiere rol ADMIN
+  - **500 Internal Server Error**: Error del servidor
+  
+  ## Ejemplo de respuesta exitosa:
+  ```json
+  {
+    "success": true,
+    "code": "MOD_MOT_BRAND_LINES_EXI_00001",
+    "message": "Las líneas de motocicletas se obtuvieron correctamente.",
+    "data": {
+      "lines": [
+        {
+          "id": "encoded_ref_id",
+          "brand_id": "encoded_brand_id",
+          "brand_name": "Honda",
+          "model": "CB 190R",
+          "category": "Sport",
+          "engine_displacement": 190
+        }
+      ],
+      "_links": [
+        {"href": ".../admin/brands/{id}/lines", "rel": "self", "method": "GET"},
+        {"href": ".../brands", "rel": "brands", "method": "GET"}
+      ]
+    }
+  }
+  ```
+  
+  ## HATEOAS Links:
+  - `self`: URL del recurso actual
+  - `brands`: Enlace al catálogo de marcas
+  - `references`: Enlace al catálogo completo de referencias
+}

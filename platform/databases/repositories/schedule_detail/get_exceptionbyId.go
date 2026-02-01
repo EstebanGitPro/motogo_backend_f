@@ -8,7 +8,6 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// GetExceptionByID retrieves a specific exception by ID (HU21, HU22, HU24, HU25)
 func (r *repository) GetExceptionByID(ctx context.Context, exceptionID string) (*domain.ScheduleDetail, error) {
 	var exception domain.ScheduleDetail
 	var entryType string

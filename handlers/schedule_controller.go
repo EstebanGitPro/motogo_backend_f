@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"time"
 
 	"github.com/EstebanGitPro/motogo-backend/core/interactor"
@@ -53,12 +54,12 @@ func (h *handler) CreateBranchSchedule(scheduleInteractor *interactor.ScheduleIn
 		schedule, err := scheduleInteractor.CreateSchedule(c.Request.Context(), branchID, person.ID)
 		if err != nil {
 			log.Error(logger.LogScheduleControllerCreateError, "error", err, "branch_id", branchID)
-			switch err {
-			case domain.ErrScheduleAlreadyExists:
+			switch {
+			case errors.Is(err, domain.ErrScheduleAlreadyExists):
 				h.Response.Error(c, domain.MsgScheduleAlreadyExists)
-			case domain.ErrBranchNotFound:
+			case errors.Is(err, domain.ErrBranchNotFound):
 				h.Response.Error(c, domain.MsgBranchNotFound)
-			case domain.ErrForbidden:
+			case errors.Is(err, domain.ErrForbidden):
 				h.Response.Error(c, domain.MsgForbidden)
 			default:
 				h.Response.Error(c, domain.MsgServerError)
@@ -119,7 +120,7 @@ func (h *handler) GetBranchSchedule(scheduleInteractor *interactor.ScheduleInter
 		schedule, err := scheduleInteractor.GetScheduleByBranchIDPublic(c.Request.Context(), branchID)
 		if err != nil {
 			log.Error(logger.LogScheduleControllerGetError, "error", err, "branch_id", branchID)
-			if err == domain.ErrScheduleNotFound {
+			if errors.Is(err, domain.ErrScheduleNotFound) {
 				h.Response.Error(c, domain.MsgScheduleNotFound)
 			} else {
 				h.Response.Error(c, domain.MsgServerError)
@@ -193,7 +194,7 @@ func (h *handler) UpdateBranchSchedule(scheduleInteractor *interactor.ScheduleIn
 		// 4. Get existing schedule
 		schedule, err := scheduleInteractor.GetScheduleByBranchIDPublic(c.Request.Context(), branchID)
 		if err != nil {
-			if err == domain.ErrScheduleNotFound {
+			if errors.Is(err, domain.ErrScheduleNotFound) {
 				h.Response.Error(c, domain.MsgScheduleNotFound)
 			} else {
 				h.Response.Error(c, domain.MsgServerError)
@@ -234,10 +235,10 @@ func (h *handler) UpdateBranchSchedule(scheduleInteractor *interactor.ScheduleIn
 		// 7. Update schedule
 		if err := scheduleInteractor.UpdateSchedule(c.Request.Context(), *schedule, person.ID); err != nil {
 			log.Error(logger.LogScheduleControllerUpdateError, "error", err, "schedule_id", schedule.ID)
-			switch err {
-			case domain.ErrScheduleNotFound:
+			switch {
+			case errors.Is(err, domain.ErrScheduleNotFound):
 				h.Response.Error(c, domain.MsgScheduleNotFound)
-			case domain.ErrForbidden:
+			case errors.Is(err, domain.ErrForbidden):
 				h.Response.Error(c, domain.MsgForbidden)
 			default:
 				h.Response.Error(c, domain.MsgServerError)
@@ -294,7 +295,7 @@ func (h *handler) DeleteBranchSchedule(scheduleInteractor *interactor.ScheduleIn
 		// 3. Get schedule first to get its ID
 		schedule, err := scheduleInteractor.GetScheduleByBranchIDPublic(c.Request.Context(), branchID)
 		if err != nil {
-			if err == domain.ErrScheduleNotFound {
+			if errors.Is(err, domain.ErrScheduleNotFound) {
 				h.Response.Error(c, domain.MsgScheduleNotFound)
 			} else {
 				h.Response.Error(c, domain.MsgServerError)
@@ -305,10 +306,10 @@ func (h *handler) DeleteBranchSchedule(scheduleInteractor *interactor.ScheduleIn
 		// 4. Delete schedule
 		if err := scheduleInteractor.DeleteSchedule(c.Request.Context(), schedule.ID, person.ID); err != nil {
 			log.Error(logger.LogScheduleControllerDeleteError, "error", err, "schedule_id", schedule.ID)
-			switch err {
-			case domain.ErrScheduleNotFound:
+			switch {
+			case errors.Is(err, domain.ErrScheduleNotFound):
 				h.Response.Error(c, domain.MsgScheduleNotFound)
-			case domain.ErrForbidden:
+			case errors.Is(err, domain.ErrForbidden):
 				h.Response.Error(c, domain.MsgForbidden)
 			default:
 				h.Response.Error(c, domain.MsgServerError)
@@ -357,7 +358,7 @@ func (h *handler) ActivateBranchSchedule(scheduleInteractor *interactor.Schedule
 		// 3. Get schedule to get its ID
 		schedule, err := scheduleInteractor.GetScheduleByBranchIDPublic(c.Request.Context(), branchID)
 		if err != nil {
-			if err == domain.ErrScheduleNotFound {
+			if errors.Is(err, domain.ErrScheduleNotFound) {
 				h.Response.Error(c, domain.MsgScheduleNotFound)
 			} else {
 				h.Response.Error(c, domain.MsgServerError)
@@ -368,10 +369,10 @@ func (h *handler) ActivateBranchSchedule(scheduleInteractor *interactor.Schedule
 		// 4. Activate schedule
 		if err := scheduleInteractor.ActivateSchedule(c.Request.Context(), schedule.ID, person.ID); err != nil {
 			log.Error(logger.LogScheduleControllerActivateError, "error", err, "schedule_id", schedule.ID)
-			switch err {
-			case domain.ErrScheduleNotFound:
+			switch {
+			case errors.Is(err, domain.ErrScheduleNotFound):
 				h.Response.Error(c, domain.MsgScheduleNotFound)
-			case domain.ErrForbidden:
+			case errors.Is(err, domain.ErrForbidden):
 				h.Response.Error(c, domain.MsgForbidden)
 			default:
 				h.Response.Error(c, domain.MsgServerError)
@@ -427,7 +428,7 @@ func (h *handler) DeactivateBranchSchedule(scheduleInteractor *interactor.Schedu
 		// 3. Get schedule to get its ID
 		schedule, err := scheduleInteractor.GetScheduleByBranchIDPublic(c.Request.Context(), branchID)
 		if err != nil {
-			if err == domain.ErrScheduleNotFound {
+			if errors.Is(err, domain.ErrScheduleNotFound) {
 				h.Response.Error(c, domain.MsgScheduleNotFound)
 			} else {
 				h.Response.Error(c, domain.MsgServerError)
@@ -438,10 +439,10 @@ func (h *handler) DeactivateBranchSchedule(scheduleInteractor *interactor.Schedu
 		// 4. Deactivate schedule
 		if err := scheduleInteractor.DeactivateSchedule(c.Request.Context(), schedule.ID, person.ID); err != nil {
 			log.Error(logger.LogScheduleControllerDeactivateErr, "error", err, "schedule_id", schedule.ID)
-			switch err {
-			case domain.ErrScheduleNotFound:
+			switch {
+			case errors.Is(err, domain.ErrScheduleNotFound):
 				h.Response.Error(c, domain.MsgScheduleNotFound)
-			case domain.ErrForbidden:
+			case errors.Is(err, domain.ErrForbidden):
 				h.Response.Error(c, domain.MsgForbidden)
 			default:
 				h.Response.Error(c, domain.MsgServerError)

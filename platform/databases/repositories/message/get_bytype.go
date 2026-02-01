@@ -11,7 +11,7 @@ func (r *repository) GetByType(ctx context.Context, msgType string) ([]domain.Me
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }() // Rows close error intentionally ignored
 
 	var messages []domain.Message
 	for rows.Next() {

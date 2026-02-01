@@ -4,13 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+
 	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
 	"github.com/EstebanGitPro/motogo-backend/platform/databases/common"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
 const (
-	// Franchise queries
 	querySaveFranchise = `
 		INSERT INTO franchises (id, name, description, created_at, updated_at)
 		VALUES (?, ?, ?, NOW(), NOW())
@@ -43,7 +43,6 @@ const (
 		SELECT COUNT(*) FROM branches WHERE franchise_id = ?
 	`
 
-	// Branch association queries
 	queryAssociateBranchToFranchise = `
 		UPDATE branches SET franchise_id = ?, updated_at = NOW() WHERE id = ?
 	`
@@ -71,7 +70,6 @@ type repository struct {
 	stmtDissociateSingleBranch          *sql.Stmt
 }
 
-// NewRepository creates a new FranchiseRepository with prepared statements (fail-fast pattern)
 func NewRepository(db *sql.DB) (output.FranchiseRepository, error) {
 	if db == nil {
 		return nil, sql.ErrConnDone
@@ -152,7 +150,6 @@ func NewRepository(db *sql.DB) (output.FranchiseRepository, error) {
 	}, nil
 }
 
-// BeginTx starts a new database transaction
 func (r *repository) BeginTx(ctx context.Context) (output.Tx, error) {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -160,11 +157,3 @@ func (r *repository) BeginTx(ctx context.Context) (output.Tx, error) {
 	}
 	return common.NewSQLTx(tx), nil
 }
-
-
-
-
-
-
-
-

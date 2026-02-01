@@ -9,11 +9,13 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// UpdateScheduleDetail updates an existing schedule detail (HU7)
 func (r *repository) UpdateScheduleDetail(ctx context.Context, tx output.Tx, detail domain.ScheduleDetail) error {
-	sqlTx := tx.(*common.SQLTx)
+	sqlTx, ok := tx.(*common.SQLTx)
+	if !ok {
+		return domain.ErrInvalidTransaction
+	}
 
-	_, err := sqlTx.StmtContext(ctx, r.stmtUpdateDetail).ExecContext(ctx,
+	_, err := sqlTx.ExecContext(ctx, queryUpdateDetail,
 		detail.DayOfWeek,
 		detail.OpeningTime,
 		detail.ClosingTime,

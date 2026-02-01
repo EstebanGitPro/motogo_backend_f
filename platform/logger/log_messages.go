@@ -242,9 +242,9 @@ const (
 // DEPENDENCY INJECTION
 // ============================================
 const (
-	LogDepInit          = "Inicializando dependencias"
-	LogDepInitComplete  = "Dependencias inicializadas completamente"
-	LogDepInitError     = "Error inicializando dependencias"
+	LogDepInit          = "Inicializando dependencies"
+	LogDepInitComplete  = "Dependencies inicializadas completamente"
+	LogDepInitError     = "Error inicializando dependencies"
 	LogDepWiringService = "Inyectando servicio"
 )
 
@@ -532,6 +532,10 @@ const (
 	LogBranchInteractorDeleteError    = "Error deleting branch"
 	LogBranchInteractorDeleteComplete = "Branch deleted successfully"
 	LogBranchInteractorHasAssocError  = "Branch has associations that prevent deletion"
+	// HU89: Search nearby branches
+	LogBranchInteractorNearbyStart    = "Searching branches near location"
+	LogBranchInteractorNearbyError    = "Error searching nearby branches"
+	LogBranchInteractorNearbyComplete = "Nearby branches search completed"
 )
 
 // ============================================
@@ -1007,7 +1011,7 @@ const (
 	LogScheduleDetailServiceInvalidDay       = "Día de la semana inválido"
 	LogScheduleDetailServiceInvalidTime      = "Formato de hora inválido"
 	LogScheduleDetailServiceInvalidTimeRange = "Hora de cierre anterior a apertura"
-	LogScheduleDetailServiceConflictCheck    = "Error verificando conflictos de horario"
+	LogScheduleDetailServiceConflictCheck    = "Error verificando conflicts de horario"
 	LogScheduleDetailServiceTimeConflict     = "Conflicto de horario detectado"
 	LogScheduleDetailServiceSaveError        = "Error guardando detalle horario"
 	LogScheduleDetailServiceCreateOK         = "Detalle horario creado exitosamente"
@@ -1046,7 +1050,7 @@ const (
 	LogScheduleDetailRepoDeleteError     = "Error eliminando detalle horario de BD"
 	LogScheduleDetailRepoGetByIDError    = "Error obteniendo detalle horario por ID"
 	LogScheduleDetailRepoGetBySchedError = "Error obteniendo detalles por horario"
-	LogScheduleDetailRepoConflictCheck   = "Error verificando conflictos de horario"
+	LogScheduleDetailRepoConflictCheck   = "Error verificando conflicts de horario"
 	LogScheduleDetailRepoScanError       = "Error escaneando fila de detalle horario"
 )
 
@@ -1071,4 +1075,139 @@ const (
 	LogScheduleDetailControllerDeleteOK      = "Detalle horario eliminado exitosamente"
 	LogScheduleDetailControllerBindError     = "Error parseando JSON de detalle horario"
 	LogScheduleDetailControllerIDDecodeError = "Error decodificando ID de detalle horario"
+)
+
+// ============================================
+// MOTORCYCLE MODULE (HU43-47)
+// ============================================
+const (
+	// Motorcycle Controller - GET (HU46)
+	LogMotorcycleControllerGetRequest      = "Motorcycle get request received"
+	LogMotorcycleControllerIDDecodeError   = "Error decoding motorcycle ID"
+	LogMotorcycleControllerGetByID         = "Searching motorcycle by ID"
+	LogMotorcycleControllerGetError        = "Error getting motorcycle"
+	LogMotorcycleControllerGetSuccess      = "Motorcycle retrieved successfully"
+	LogMotorcycleControllerOwnershipDenied = "Ownership denied - motorcycle belongs to another user"
+
+	// Motorcycle Controller - POST (HU43)
+	LogMotorcycleControllerRegRequest  = "Motorcycle registration request received"
+	LogMotorcycleControllerRegBody     = "Motorcycle registration body parsed"
+	LogMotorcycleControllerAuthError   = "Motorcycle registration auth error"
+	LogMotorcycleControllerBindError   = "Error binding motorcycle request body"
+	LogMotorcycleControllerRefDecError = "Error decoding motorcycle reference ID"
+	LogMotorcycleControllerRegError    = "Error registering motorcycle"
+	LogMotorcycleControllerIDEncError  = "Error encoding motorcycle ID"
+	LogMotorcycleControllerRegSuccess  = "Motorcycle registered successfully"
+
+	// Motorcycle Controller - LIST (HU47)
+	LogMotorcycleControllerListRequest = "Motorcycle list request received"
+	LogMotorcycleControllerListError   = "Error listing motorcycles"
+	LogMotorcycleControllerListSuccess = "Motorcycles listed successfully"
+
+	// Motorcycle Interactor (HU43-47)
+	LogMotorcycleInteractorRegStart        = "Motorcycle registration started"
+	LogMotorcycleInteractorValidateRef     = "Validating motorcycle reference exists"
+	LogMotorcycleInteractorRefError        = "Error validating motorcycle reference"
+	LogMotorcycleInteractorRefNotFound     = "Motorcycle reference not found"
+	LogMotorcycleInteractorRefRequired     = "Motorcycle reference_id is required"
+	LogMotorcycleInteractorCheckPlate      = "Checking license plate uniqueness"
+	LogMotorcycleInteractorCheckPlateErr   = "Error checking license plate uniqueness"
+	LogMotorcycleInteractorDupPlate        = "Duplicate license plate detected"
+	LogMotorcycleInteractorIDGenerated     = "Motorcycle ID generated"
+	LogMotorcycleInteractorBeginTxError    = "Error beginning transaction for motorcycle"
+	LogMotorcycleInteractorSaveError       = "Error saving motorcycle"
+	LogMotorcycleInteractorCommitError     = "Error committing motorcycle transaction"
+	LogMotorcycleInteractorRegSuccess      = "Motorcycle registered successfully"
+	LogMotorcycleInteractorGetStart        = "Motorcycle get by ID started"
+	LogMotorcycleInteractorGetError        = "Error getting motorcycle by ID"
+	LogMotorcycleInteractorGetSuccess      = "Motorcycle get by ID success"
+	LogMotorcycleInteractorGetOwnerStart   = "Motorcycle get by owner started"
+	LogMotorcycleInteractorGetOwnerError   = "Error getting motorcycles by owner"
+	LogMotorcycleInteractorGetOwnerSuccess = "Motorcycles by owner retrieved successfully"
+	LogMotorcycleInteractorGetPlateStart   = "Motorcycle get by license plate started"
+	LogMotorcycleInteractorGetPlateError   = "Error getting motorcycle by license plate"
+	LogMotorcycleInteractorGetPlateSuccess = "Motorcycle by license plate retrieved successfully"
+
+	// Motorcycle Controller - GET BY PLATE (HU47)
+	LogMotorcycleControllerPlateRequest = "Motorcycle lookup by plate request received"
+	LogMotorcycleControllerPlateError   = "Error looking up motorcycle by plate"
+	LogMotorcycleControllerPlateSuccess = "Motorcycle by plate retrieved successfully"
+
+	// Motorcycle Repository (HU43-47)
+	LogMotorcycleRepoGetByID         = "Repository getting motorcycle by ID"
+	LogMotorcycleRepoGetByIDError    = "Repository error getting motorcycle by ID"
+	LogMotorcycleRepoGetByOwner      = "Repository getting motorcycles by owner"
+	LogMotorcycleRepoGetByOwnerError = "Repository error getting motorcycles by owner"
+	LogMotorcycleRepoGetByOwnerScan  = "Repository error scanning motorcycle row"
+	LogMotorcycleRepoGetByOwnerIter  = "Repository error iterating motorcycle rows"
+	LogMotorcycleRepoGetByPlate      = "Repository getting motorcycle by license plate"
+	LogMotorcycleRepoGetByPlateError = "Repository error getting motorcycle by license plate"
+	LogMotorcycleRepoInvalidTx       = "Repository invalid transaction type"
+	LogMotorcycleRepoSave            = "Repository saving motorcycle"
+	LogMotorcycleRepoSaveError       = "Repository save motorcycle error"
+	LogMotorcycleRepoSaveSuccess     = "Repository motorcycle saved"
+	LogMotorcycleRepoValidateRef     = "Repository validating reference"
+	LogMotorcycleRepoValidateRefErr  = "Repository error validating reference"
+	LogMotorcycleRepoCheckPlate      = "Repository checking license plate"
+	LogMotorcycleRepoCheckPlateErr   = "Repository error checking license plate"
+	LogMotorcycleRepoUpdate          = "Repository updating motorcycle"
+	LogMotorcycleRepoUpdateError     = "Repository error updating motorcycle"
+	LogMotorcycleRepoUpdateSuccess   = "Repository motorcycle updated"
+
+	// Motorcycle Interactor - UPDATE (HU44)
+	LogMotorcycleInteractorUpdateStart   = "Motorcycle update started"
+	LogMotorcycleInteractorUpdateError   = "Error updating motorcycle"
+	LogMotorcycleInteractorUpdateSuccess = "Motorcycle updated successfully"
+
+	// Motorcycle Controller - UPDATE (HU44)
+	LogMotorcycleControllerUpdateRequest  = "Motorcycle update request received"
+	LogMotorcycleControllerUpdateError    = "Error updating motorcycle"
+	LogMotorcycleControllerUpdateSuccess  = "Motorcycle updated successfully"
+	LogMotorcycleControllerUpdateDebug    = "Updating motorcycle"
+	LogMotorcycleControllerOwnershipDebug = "Ownership check debug"
+	LogMotorcycleControllerNoAuthUser     = "No authenticated user in context"
+	LogMotorcycleControllerPlateDebug     = "Looking up motorcycle by plate"
+	LogMotorcycleControllerMissingPlate   = "Missing plate query parameter"
+
+	// Motorcycle Repository - DELETE (HU45)
+	LogMotorcycleRepoDelete        = "Repository deleting motorcycle"
+	LogMotorcycleRepoDeleteError   = "Repository error deleting motorcycle"
+	LogMotorcycleRepoDeleteSuccess = "Repository motorcycle deleted"
+
+	// Motorcycle Interactor - DELETE (HU45)
+	LogMotorcycleInteractorDeleteStart   = "Motorcycle delete started"
+	LogMotorcycleInteractorDeleteError   = "Error deleting motorcycle"
+	LogMotorcycleInteractorDeleteSuccess = "Motorcycle deleted successfully"
+
+	// Motorcycle Controller - DELETE (HU45)
+	LogMotorcycleControllerDeleteRequest = "Motorcycle delete request received"
+	LogMotorcycleControllerDeleteError   = "Error deleting motorcycle"
+	LogMotorcycleControllerDeleteSuccess = "Motorcycle deleted successfully"
+
+	// Dependency initialization
+	LogDepMotorcycleRepoInitOK       = "Motorcycle repository initialized"
+	LogDepMotorcycleRepoInitErr      = "Error initializing motorcycle repository"
+	LogDepMotorcycleInteractorInitOK = "Motorcycle interactor initialized"
+
+	// Motorcycle Reference Catalog (HU50)
+	LogMotorcycleRepoGetAllRefQuery     = "Repository getting all motorcycle references"
+	LogMotorcycleRepoGetAllRefScanError = "Repository error scanning motorcycle reference row"
+	LogMotorcycleRepoGetAllRefIterError = "Repository error iterating motorcycle reference rows"
+	LogMotorcycleInteractorGetRefsStart = "Motorcycle get references started"
+	LogMotorcycleInteractorGetRefsError = "Error getting motorcycle references"
+	LogMotorcycleControllerRefsRequest  = "Motorcycle references request received"
+	LogMotorcycleControllerRefsError    = "Error getting motorcycle references"
+	LogMotorcycleControllerRefsSuccess  = "Motorcycle references retrieved successfully"
+
+	// Motorcycle Brand Lines (HU40)
+	LogMotorcycleRepoBrandLinesQuery         = "Repository getting motorcycle references by brand"
+	LogMotorcycleRepoBrandLinesError         = "Repository error getting references by brand"
+	LogMotorcycleRepoBrandLinesScanError     = "Repository error scanning brand line row"
+	LogMotorcycleRepoBrandLinesIterError     = "Repository error iterating brand line rows"
+	LogMotorcycleInteractorBrandLinesStart   = "Getting motorcycle references by brand started"
+	LogMotorcycleInteractorBrandLinesError   = "Error getting motorcycle references by brand"
+	LogMotorcycleInteractorBrandLinesSuccess = "Motorcycle references by brand retrieved successfully"
+	LogMotorcycleControllerBrandLinesRequest = "Brand lines request received"
+	LogMotorcycleControllerBrandLinesError   = "Error getting brand lines"
+	LogMotorcycleControllerBrandLinesSuccess = "Brand lines retrieved successfully"
 )

@@ -12,10 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// ============================================
-// NewMessageRepository Tests
-// ============================================
-
 func TestNewMessageRepository_NilDB(t *testing.T) {
 	// Act
 	repo, err := NewMessageRepository(nil)
@@ -50,10 +46,6 @@ func TestNewMessageRepository_Success(t *testing.T) {
 	assert.NotNil(t, repo)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
-
-// ============================================
-// GetAllActive Tests
-// ============================================
 
 func TestGetAllActive_Success(t *testing.T) {
 	// Arrange
@@ -134,10 +126,6 @@ func TestGetAllActive_Error(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
-// ============================================
-// GetByCode Tests
-// ============================================
-
 func TestGetByCode_Success(t *testing.T) {
 	// Arrange
 	db, mock, err := sqlmock.New()
@@ -212,10 +200,6 @@ func TestGetByCode_Error(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
-// ============================================
-// GetByID Tests
-// ============================================
-
 func TestGetByID_Success(t *testing.T) {
 	// Arrange
 	db, mock, err := sqlmock.New()
@@ -267,10 +251,6 @@ func TestGetByID_NotFound(t *testing.T) {
 	assert.Nil(t, err) // GetByID returns nil, nil for not found
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
-
-// ============================================
-// SaveMessage Tests
-// ============================================
 
 func TestSaveMessage_Success(t *testing.T) {
 	// Arrange
@@ -355,10 +335,6 @@ func TestSaveMessage_InvalidTransaction(t *testing.T) {
 	// Assert
 	assert.Equal(t, domain.ErrInvalidTransaction, err)
 }
-
-// ============================================
-// DeleteMessage Tests
-// ============================================
 
 func TestDeleteMessage_Success(t *testing.T) {
 	// Arrange
@@ -709,4 +685,65 @@ func TestUpdateMessage_InvalidTransaction(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, domain.ErrInvalidTransaction, err)
+}
+
+// ============================================
+// GetByCodeIncludingInactive Tests
+// ============================================
+
+func TestGetByCodeIncludingInactive_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	rows := sqlmock.NewRows([]string{
+		"id", "code", "type", "category", "module", "title", "content", "active", "created_at", "updated_at",
+	}).AddRow("msg-001", "ERR_TEST", "error", "user", "auth", "Test Title", "Test Content", false, time.Now(), time.Now())
+
+	mock.ExpectQuery("SELECT").
+		WithArgs("ERR_TEST").
+		WillReturnRows(rows)
+
+	repo := &repository{db: db}
+
+	msg, err := repo.GetByCodeIncludingInactive(context.Background(), "ERR_TEST")
+
+	assert.NoError(t, err)
+	assert.NotNil(t, msg)
+	assert.Equal(t, "ERR_TEST", msg.Code)
+	assert.False(t, msg.Active)
+}
+
+func TestGetByCodeIncludingInactive_NotFound(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectQuery("SELECT").
+		WithArgs("NOT_FOUND").
+		WillReturnError(sql.ErrNoRows)
+
+	repo := &repository{db: db}
+
+	msg, err := repo.GetByCodeIncludingInactive(context.Background(), "NOT_FOUND")
+
+	assert.NoError(t, err)
+	assert.Nil(t, msg)
+}
+
+func TestGetByCodeIncludingInactive_DBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectQuery("SELECT").
+		WithArgs("ERR_CODE").
+		WillReturnError(sql.ErrConnDone)
+
+	repo := &repository{db: db}
+
+	msg, err := repo.GetByCodeIncludingInactive(context.Background(), "ERR_CODE")
+
+	assert.Nil(t, msg)
+	assert.Error(t, err)
 }

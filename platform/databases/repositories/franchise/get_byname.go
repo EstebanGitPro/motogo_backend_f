@@ -8,7 +8,6 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// GetFranchiseByName retrieves a franchise by its name (for duplicate validation)
 func (r *repository) GetFranchiseByName(ctx context.Context, name string) (*domain.Franchise, error) {
 	var franchise domain.Franchise
 	var description sql.NullString

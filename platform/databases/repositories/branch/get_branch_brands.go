@@ -4,13 +4,12 @@ import (
 	"context"
 )
 
-// getBranchBrands retrieves all active brands for a branch
 func (r *repository) getBranchBrands(ctx context.Context, branchID string) ([]string, error) {
 	rows, err := r.stmtGetBranchBrands.QueryContext(ctx, branchID)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }() // Rows close error intentionally ignored
 
 	var brands []string
 	for rows.Next() {

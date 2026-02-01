@@ -8,7 +8,6 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// GetDetailByID retrieves a schedule detail by its ID
 func (r *repository) GetDetailByID(ctx context.Context, detailID string) (*domain.ScheduleDetail, error) {
 	var detail domain.ScheduleDetail
 	var entryType string

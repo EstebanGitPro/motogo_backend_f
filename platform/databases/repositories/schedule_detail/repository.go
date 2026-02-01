@@ -126,27 +126,32 @@ const (
 		  AND is_closed = TRUE
 		  AND active = TRUE
 	`
+	queryGetExceptionsForUpdate = `
+	SELECT id, schedule_id, entry_type, day_of_week, exception_start_date, exception_end_date,
+		opening_time, closing_time, is_closed, active, created_at, updated_at
+	FROM schedule_details
+	WHERE schedule_id = ? AND entry_type = 'EXCEPTION'
+	FOR UPDATE
+`
 )
 
 var log logger.Logger = logger.NewSlogLogger()
 
 type repository struct {
-	db                          *sql.DB
-	stmtSaveDetail              *sql.Stmt
-	stmtGetDetailByID           *sql.Stmt
-	stmtGetDetailsByScheduleID  *sql.Stmt
-	stmtGetDetailsByScheduleDay *sql.Stmt
-	stmtUpdateDetail            *sql.Stmt
-	stmtDeleteDetail            *sql.Stmt
-	stmtCheckTimeConflict       *sql.Stmt
-	// Exception statements (HU20-25)
+	db                             *sql.DB
+	stmtSaveDetail                 *sql.Stmt
+	stmtGetDetailByID              *sql.Stmt
+	stmtGetDetailsByScheduleID     *sql.Stmt
+	stmtGetDetailsByScheduleDay    *sql.Stmt
+	stmtUpdateDetail               *sql.Stmt
+	stmtDeleteDetail               *sql.Stmt
+	stmtCheckTimeConflict          *sql.Stmt
 	stmtGetExceptionsByScheduleID  *sql.Stmt
 	stmtGetExceptionByID           *sql.Stmt
 	stmtCheckExceptionDateConflict *sql.Stmt
-	// Duplicate detection statements (Validation Rules)
-	stmtCheckDayIsClosed          *sql.Stmt
-	stmtCheckDayHasTimeSlots      *sql.Stmt
-	stmtCheckExceptionIsRedundant *sql.Stmt
+	stmtCheckDayIsClosed           *sql.Stmt
+	stmtCheckDayHasTimeSlots       *sql.Stmt
+	stmtCheckExceptionIsRedundant  *sql.Stmt
 }
 
 // NewRepository creates a new ScheduleDetailRepository with prepared statements (fail-fast pattern)
@@ -197,7 +202,6 @@ func NewRepository(db *sql.DB) (output.ScheduleDetailRepository, error) {
 		return nil, fmt.Errorf("error preparing stmtCheckTimeConflict: %w", err)
 	}
 
-	// Exception prepared statements (HU20-25)
 	stmtGetExceptionsByScheduleID, err := db.Prepare(queryGetExceptionsByScheduleID)
 	if err != nil {
 		log.Error(logger.LogScheduleDetailRepoPrepareError, "statement", "GetExceptionsByScheduleID", "error", err)
@@ -216,7 +220,6 @@ func NewRepository(db *sql.DB) (output.ScheduleDetailRepository, error) {
 		return nil, fmt.Errorf("error preparing stmtCheckExceptionDateConflict: %w", err)
 	}
 
-	// Duplicate detection prepared statements (Validation Rules)
 	stmtCheckDayIsClosed, err := db.Prepare(queryCheckDayIsClosed)
 	if err != nil {
 		log.Error(logger.LogScheduleDetailRepoPrepareError, "statement", "CheckDayIsClosed", "error", err)
@@ -253,7 +256,6 @@ func NewRepository(db *sql.DB) (output.ScheduleDetailRepository, error) {
 	}, nil
 }
 
-// BeginTx starts a new database transaction
 func (r *repository) BeginTx(ctx context.Context) (output.Tx, error) {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {

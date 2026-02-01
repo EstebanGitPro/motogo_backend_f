@@ -9,11 +9,13 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// SaveScheduleDetail saves a new schedule detail to the database (HU6)
 func (r *repository) SaveScheduleDetail(ctx context.Context, tx output.Tx, detail domain.ScheduleDetail) error {
-	sqlTx := tx.(*common.SQLTx)
+	sqlTx, ok := tx.(*common.SQLTx)
+	if !ok {
+		return domain.ErrInvalidTransaction
+	}
 
-	_, err := sqlTx.StmtContext(ctx, r.stmtSaveDetail).ExecContext(ctx,
+	_, err := sqlTx.ExecContext(ctx, querySaveDetail,
 		detail.ID,
 		detail.ScheduleID,
 		detail.EntryType,

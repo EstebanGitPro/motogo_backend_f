@@ -6,18 +6,17 @@ import (
 	cachetypes "github.com/EstebanGitPro/motogo-backend/platform/cache/types"
 )
 
-// GetAllActiveForCache returns messages for cache (uses cachetypes.CachedMessage type)
 func (r *repository) GetAllActiveForCache(ctx context.Context) ([]cachetypes.CachedMessage, error) {
 	rows, err := r.db.QueryContext(ctx, queryGetAllActive)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }() // Rows close error intentionally ignored
 
 	var messages []cachetypes.CachedMessage
 	for rows.Next() {
 		var m cachetypes.CachedMessage
-		var createdAt, updatedAt interface{} 
+		var createdAt, updatedAt interface{}
 		err := rows.Scan(
 			&m.ID,
 			&m.Code,

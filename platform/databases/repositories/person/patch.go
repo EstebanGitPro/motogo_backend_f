@@ -9,7 +9,6 @@ import (
 )
 
 func (r *repository) PatchPerson(ctx context.Context, tx output.Tx, id string, keycloakUserID string) error {
-
 	dbTx, ok := tx.(*common.SQLTx)
 	if !ok {
 		return domain.ErrInvalidTransaction

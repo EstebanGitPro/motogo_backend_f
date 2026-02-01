@@ -8,13 +8,11 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// ValidateBrands checks if all provided brands exist in motorcycle_references table
 func (r *repository) ValidateBrands(ctx context.Context, brands []string) error {
 	if len(brands) == 0 {
 		return nil
 	}
 
-	// Build dynamic query with placeholders
 	placeholders := ""
 	args := make([]interface{}, len(brands))
 	for i, brand := range brands {
@@ -31,9 +29,8 @@ func (r *repository) ValidateBrands(ctx context.Context, brands []string) error 
 		log.Error(logger.LogBrandRepoValidateError, "error", err)
 		return err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }() // Rows close error intentionally ignored
 
-	// Collect found brands
 	foundBrands := make(map[string]bool)
 	for rows.Next() {
 		var brand string

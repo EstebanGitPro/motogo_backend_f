@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"errors"
+
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/middleware"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
@@ -59,29 +61,61 @@ func (h *handler) RegisterBranch() gin.HandlerFunc {
 			"establishment_type", req.EstablishmentType,
 			"brands_count", len(req.Brands))
 
-		// 3. Map DTO to domain model (using mapper in branch.go)
-		branch := req.ToDomain(person.ID)
+		// 3. Decode brand IDs (they come encoded from frontend)
+		decodedBrands := make([]string, 0, len(req.Brands))
+		for _, encodedBrandID := range req.Brands {
+			decoded, err := h.DecodeID(encodedBrandID)
+			if err != nil {
+				log.Warn(logger.LogBranchControllerIDDecodeError, "encoded_id", encodedBrandID, "error", err)
+				h.Response.Error(c, domain.MsgBrandNotFound)
+				return
+			}
+			decodedBrands = append(decodedBrands, decoded)
+		}
 
-		// 4. Check if user provided coordinates (to determine geocoding status later)
+		// 3.1 Decode location IDs (department_id and city_id come encoded from frontend)
+		decodedDepartmentID, err := h.DecodeID(req.Location.DepartmentID)
+		if err != nil {
+			log.Warn(logger.LogBranchControllerIDDecodeError, "encoded_id", req.Location.DepartmentID, "error", err)
+			h.Response.Error(c, domain.MsgValIDInvalid)
+			return
+		}
+		decodedCityID, err := h.DecodeID(req.Location.CityID)
+		if err != nil {
+			log.Warn(logger.LogBranchControllerIDDecodeError, "encoded_id", req.Location.CityID, "error", err)
+			h.Response.Error(c, domain.MsgValIDInvalid)
+			return
+		}
+
+		// 4. Map DTO to domain model (using mapper in branch.go)
+		branch := req.ToDomain(person.ID)
+		branch.Brands = decodedBrands // Override with decoded brand IDs
+		// Override location IDs with decoded values
+		if branch.Location != nil {
+			branch.Location.DepartmentID = decodedDepartmentID
+			branch.Location.CityID = decodedCityID
+		}
+
+		// 5. Check if user provided coordinates (to determine geocoding status later)
 		userProvidedCoords := branch.Location != nil &&
 			branch.Location.Latitude != nil &&
 			branch.Location.Longitude != nil
 
-		// 5. Call interactor (returns geocodingSucceeded flag)
+		// 6. Call interactor (returns geocodingSucceeded flag)
 		savedBranch, geocodingSucceeded, err := h.BranchInteractor.RegisterBranch(c.Request.Context(), branch)
 		if err != nil {
 			log.Error(logger.LogBranchControllerRegError,
 				"error", err,
 				"branch_name", req.Name,
 				"client_ip", c.ClientIP())
-			switch err {
-			case domain.ErrInvalidBranchType:
+			switch {
+			case errors.Is(err, domain.ErrInvalidBranchType):
 				h.Response.Error(c, domain.MsgBranchInvalidType)
-			case domain.ErrDuplicateBranchName:
+			case errors.Is(err, domain.ErrDuplicateBranchName):
 				h.Response.Error(c, domain.MsgBranchDuplicateName)
-			case domain.ErrBrandNotFound:
+			case errors.Is(err, domain.ErrBrandNotFound):
 				h.Response.Error(c, domain.MsgBrandNotFound)
-			case domain.ErrDuplicateAddress:
+			case errors.Is(err, domain.ErrDuplicateAddress):
 				h.Response.Error(c, domain.MsgDuplicateAddress)
 			default:
 				h.Response.Error(c, domain.MsgBranchCannotSave)
@@ -89,19 +123,19 @@ func (h *handler) RegisterBranch() gin.HandlerFunc {
 			return
 		}
 
-		// 6. Encode ID for response
+		// 7. Encode ID for response
 		encodedID, err := h.EncodeID(savedBranch.ID)
 		if err != nil {
 			h.HandleIDEncodingError(c, savedBranch.ID, err)
 			return
 		}
 
-		// 7. Build HATEOAS links and set Location header
+		// 8. Build HATEOAS links and set Location header
 		baseURL := GetBaseURL(c)
 		links := BuildBranchCreatedLinks(baseURL, encodedID)
 		SetLocationHeader(c, baseURL, "branches", encodedID)
 
-		// 8. Determine geocoding status for response
+		// 9. Determine geocoding status for response
 		var geocodingStatus GeocodingStatus
 		if userProvidedCoords {
 			geocodingStatus = GeocodingStatusSkipped // User provided coords, no geocoding attempted
@@ -111,8 +145,39 @@ func (h *handler) RegisterBranch() gin.HandlerFunc {
 			geocodingStatus = GeocodingStatusFailed // Geocoding was attempted but failed
 		}
 
-		// 9. Build response DTO (using mapper in branch.go)
+		// 10. Encode brand IDs for response
+		encodedBrands := make([]string, 0, len(savedBranch.Brands))
+		for _, brandID := range savedBranch.Brands {
+			encodedBrand, err := h.EncodeID(brandID)
+			if err != nil {
+				log.Warn(logger.LogIDEncodeError, "brand_id", brandID, "error", err)
+				continue // Skip brands with encoding errors
+			}
+			encodedBrands = append(encodedBrands, encodedBrand)
+		}
+
+		// 11. Build response DTO (using mapper in branch.go)
 		response := NewBranchResponse(savedBranch, encodedID, geocodingStatus, links)
+		response.Brands = encodedBrands // Override with encoded brand IDs
+
+		// 11.1 Encode franchise_id if present
+		if savedBranch.FranchiseID != nil && *savedBranch.FranchiseID != "" {
+			if encodedFranchiseID, err := h.EncodeID(*savedBranch.FranchiseID); err == nil {
+				response.FranchiseID = &encodedFranchiseID
+			} else {
+				log.Warn(logger.LogIDEncodeError, "franchise_id", *savedBranch.FranchiseID, "error", err)
+			}
+		}
+
+		// 11.2 Encode location IDs if present
+		if response.Location != nil && savedBranch.Location != nil {
+			if encodedDeptID, err := h.EncodeID(savedBranch.Location.DepartmentID); err == nil {
+				response.Location.DepartmentID = encodedDeptID
+			}
+			if encodedCityID, err := h.EncodeID(savedBranch.Location.CityID); err == nil {
+				response.Location.CityID = encodedCityID
+			}
+		}
 
 		log.Success(logger.LogBranchControllerRegSuccess,
 			"branch_id", savedBranch.ID,
@@ -122,7 +187,7 @@ func (h *handler) RegisterBranch() gin.HandlerFunc {
 			"geocoding_status", geocodingStatus,
 			"client_ip", c.ClientIP())
 
-		// 10. Send success response (201 Created)
+		// 12. Send success response (201 Created)
 		h.Response.SuccessWithData(c, domain.MsgBranchRegistered, response)
 	}
 }
@@ -176,7 +241,7 @@ func (h *handler) GetBranch() gin.HandlerFunc {
 				"error", err,
 				"branch_id", branchID,
 				"client_ip", c.ClientIP())
-			if err == domain.ErrBranchNotFound {
+			if errors.Is(err, domain.ErrBranchNotFound) {
 				h.Response.Error(c, domain.MsgBranchNotFound)
 			} else {
 				h.Response.Error(c, domain.MsgServerError)
@@ -191,8 +256,39 @@ func (h *handler) GetBranch() gin.HandlerFunc {
 		baseURL := GetBaseURL(c)
 		links := BuildBranchDetailLinks(baseURL, encodedID, isOwner)
 
-		// 6. Build response DTO (no geocoding status for query)
+		// 6. Encode brand IDs for response
+		encodedBrands := make([]string, 0, len(branch.Brands))
+		for _, brandID := range branch.Brands {
+			encodedBrand, err := h.EncodeID(brandID)
+			if err != nil {
+				log.Warn(logger.LogIDEncodeError, "brand_id", brandID, "error", err)
+				continue
+			}
+			encodedBrands = append(encodedBrands, encodedBrand)
+		}
+
+		// 7. Build response DTO (no geocoding status for query)
 		response := NewBranchResponse(branch, encodedID, "", links)
+		response.Brands = encodedBrands // Override with encoded brand IDs
+
+		// 7.1 Encode franchise_id if present
+		if branch.FranchiseID != nil && *branch.FranchiseID != "" {
+			if encodedFranchiseID, err := h.EncodeID(*branch.FranchiseID); err == nil {
+				response.FranchiseID = &encodedFranchiseID
+			} else {
+				log.Warn(logger.LogIDEncodeError, "franchise_id", *branch.FranchiseID, "error", err)
+			}
+		}
+
+		// 8. Encode location IDs if present
+		if response.Location != nil && branch.Location != nil {
+			if encodedDeptID, err := h.EncodeID(branch.Location.DepartmentID); err == nil {
+				response.Location.DepartmentID = encodedDeptID
+			}
+			if encodedCityID, err := h.EncodeID(branch.Location.CityID); err == nil {
+				response.Location.CityID = encodedCityID
+			}
+		}
 
 		log.Success(logger.LogBranchControllerGetSuccess,
 			"branch_id", branch.ID,
@@ -201,7 +297,7 @@ func (h *handler) GetBranch() gin.HandlerFunc {
 			"is_owner", isOwner,
 			"client_ip", c.ClientIP())
 
-		// 7. Send success response (200 OK)
+		// 9. Send success response (200 OK)
 		h.Response.SuccessWithData(c, domain.MsgBranchFound, response)
 	}
 }
@@ -300,9 +396,33 @@ func (h *handler) ListBranches() gin.HandlerFunc {
 				}
 			}
 
+			// Encode brand IDs for response
+			encodedBrands := make([]string, 0, len(branch.Brands))
+			for _, brandID := range branch.Brands {
+				encodedBrand, err := h.EncodeID(brandID)
+				if err != nil {
+					log.Warn(logger.LogIDEncodeError, "brand_id", brandID, "error", err)
+					continue
+				}
+				encodedBrands = append(encodedBrands, encodedBrand)
+			}
+
 			// Owner always sees full links since this is "my branches"
 			itemLinks := BuildBranchDetailLinks(baseURL, encodedID, true)
-			items = append(items, NewBranchListItemResponse(branch, encodedID, encodedFranchiseID, itemLinks))
+			item := NewBranchListItemResponse(branch, encodedID, encodedFranchiseID, itemLinks)
+			item.Brands = encodedBrands // Override with encoded brand IDs
+
+			// Encode location IDs if present
+			if item.Location != nil && branch.Location != nil {
+				if encodedDeptID, err := h.EncodeID(branch.Location.DepartmentID); err == nil {
+					item.Location.DepartmentID = encodedDeptID
+				}
+				if encodedCityID, err := h.EncodeID(branch.Location.CityID); err == nil {
+					item.Location.CityID = encodedCityID
+				}
+			}
+
+			items = append(items, item)
 		}
 
 		// 4. Build collection response with HATEOAS
@@ -379,26 +499,57 @@ func (h *handler) UpdateBranch() gin.HandlerFunc {
 			"branch_name", req.Name,
 			"establishment_type", req.EstablishmentType)
 
-		// 4. Map DTO to domain model
-		branch := req.ToDomain(person.ID)
+		// 4. Decode brand IDs (they come encoded from frontend)
+		decodedBrands := make([]string, 0, len(req.Brands))
+		for _, encodedBrandID := range req.Brands {
+			decoded, err := h.DecodeID(encodedBrandID)
+			if err != nil {
+				log.Warn(logger.LogBranchControllerIDDecodeError, "encoded_id", encodedBrandID, "error", err)
+				h.Response.Error(c, domain.MsgBrandNotFound)
+				return
+			}
+			decodedBrands = append(decodedBrands, decoded)
+		}
 
-		// 5. Check if user provided coordinates
+		// 4.1 Decode location IDs (department_id and city_id come encoded from frontend)
+		decodedDepartmentID, err := h.DecodeID(req.Location.DepartmentID)
+		if err != nil {
+			log.Warn(logger.LogBranchControllerIDDecodeError, "encoded_id", req.Location.DepartmentID, "error", err)
+			h.Response.Error(c, domain.MsgValIDInvalid)
+			return
+		}
+		decodedCityID, err := h.DecodeID(req.Location.CityID)
+		if err != nil {
+			log.Warn(logger.LogBranchControllerIDDecodeError, "encoded_id", req.Location.CityID, "error", err)
+			h.Response.Error(c, domain.MsgValIDInvalid)
+			return
+		}
+
+		// 5. Map DTO to domain model
+		branch := req.ToDomain(person.ID)
+		branch.Brands = decodedBrands
+		if branch.Location != nil {
+			branch.Location.DepartmentID = decodedDepartmentID
+			branch.Location.CityID = decodedCityID
+		}
+
+		// 6. Check if user provided coordinates
 		userProvidedCoords := branch.Location != nil &&
 			branch.Location.Latitude != nil &&
 			branch.Location.Longitude != nil
 
-		// 6. Call interactor with ownership validation
+		// 7. Call interactor with ownership validation
 		updatedBranch, geocodingSucceeded, err := h.BranchInteractor.UpdateBranch(c.Request.Context(), branchID, branch, person.ID)
 		if err != nil {
 			log.Error(logger.LogBranchControllerUpdateError, "error", err, "branch_id", branchID)
-			switch err {
-			case domain.ErrBranchNotFound:
+			switch {
+			case errors.Is(err, domain.ErrBranchNotFound):
 				h.Response.Error(c, domain.MsgBranchNotFound)
-			case domain.ErrForbidden:
+			case errors.Is(err, domain.ErrForbidden):
 				h.Response.Error(c, domain.MsgForbidden)
-			case domain.ErrInvalidBranchType:
+			case errors.Is(err, domain.ErrInvalidBranchType):
 				h.Response.Error(c, domain.MsgBranchInvalidType)
-			case domain.ErrBrandNotFound:
+			case errors.Is(err, domain.ErrBrandNotFound):
 				h.Response.Error(c, domain.MsgBrandNotFound)
 			default:
 				h.Response.Error(c, domain.MsgBranchCannotUpdate)
@@ -406,18 +557,18 @@ func (h *handler) UpdateBranch() gin.HandlerFunc {
 			return
 		}
 
-		// 7. Encode ID for response
+		// 8. Encode ID for response
 		responseEncodedID, err := h.EncodeID(updatedBranch.ID)
 		if err != nil {
 			h.HandleIDEncodingError(c, updatedBranch.ID, err)
 			return
 		}
 
-		// 8. Build HATEOAS links
+		// 9. Build HATEOAS links
 		baseURL := GetBaseURL(c)
 		links := BuildBranchDetailLinks(baseURL, responseEncodedID, true)
 
-		// 9. Determine geocoding status
+		// 10. Determine geocoding status
 		var geocodingStatus GeocodingStatus
 		if userProvidedCoords {
 			geocodingStatus = GeocodingStatusSkipped
@@ -427,15 +578,46 @@ func (h *handler) UpdateBranch() gin.HandlerFunc {
 			geocodingStatus = GeocodingStatusFailed
 		}
 
-		// 10. Build response DTO
+		// 11. Encode brand IDs for response
+		encodedBrands := make([]string, 0, len(updatedBranch.Brands))
+		for _, brandID := range updatedBranch.Brands {
+			encodedBrand, err := h.EncodeID(brandID)
+			if err != nil {
+				log.Warn(logger.LogIDEncodeError, "brand_id", brandID, "error", err)
+				continue
+			}
+			encodedBrands = append(encodedBrands, encodedBrand)
+		}
+
+		// 12. Build response DTO
 		response := NewBranchResponse(updatedBranch, responseEncodedID, geocodingStatus, links)
+		response.Brands = encodedBrands // Override with encoded brand IDs
+
+		// 12.1 Encode franchise_id if present
+		if updatedBranch.FranchiseID != nil && *updatedBranch.FranchiseID != "" {
+			if encodedFranchiseID, err := h.EncodeID(*updatedBranch.FranchiseID); err == nil {
+				response.FranchiseID = &encodedFranchiseID
+			} else {
+				log.Warn(logger.LogIDEncodeError, "franchise_id", *updatedBranch.FranchiseID, "error", err)
+			}
+		}
+
+		// 12.2 Encode location IDs if present
+		if response.Location != nil && updatedBranch.Location != nil {
+			if encodedDeptID, err := h.EncodeID(updatedBranch.Location.DepartmentID); err == nil {
+				response.Location.DepartmentID = encodedDeptID
+			}
+			if encodedCityID, err := h.EncodeID(updatedBranch.Location.CityID); err == nil {
+				response.Location.CityID = encodedCityID
+			}
+		}
 
 		log.Success(logger.LogBranchControllerUpdateSuccess,
 			"branch_id", updatedBranch.ID,
 			"branch_name", updatedBranch.Name,
 			"geocoding_status", geocodingStatus)
 
-		// 11. Send success response (200 OK)
+		// 13. Send success response (200 OK)
 		h.Response.SuccessWithData(c, domain.MsgBranchUpdated, response)
 	}
 }
@@ -481,12 +663,12 @@ func (h *handler) DeleteBranch() gin.HandlerFunc {
 		err = h.BranchInteractor.DeleteBranch(c.Request.Context(), branchID, person.ID)
 		if err != nil {
 			log.Error(logger.LogBranchControllerDeleteError, "error", err, "branch_id", branchID)
-			switch err {
-			case domain.ErrBranchNotFound:
+			switch {
+			case errors.Is(err, domain.ErrBranchNotFound):
 				h.Response.Error(c, domain.MsgBranchNotFound)
-			case domain.ErrForbidden:
+			case errors.Is(err, domain.ErrForbidden):
 				h.Response.Error(c, domain.MsgForbidden)
-			case domain.ErrBranchCannotDelete:
+			case errors.Is(err, domain.ErrBranchCannotDelete):
 				h.Response.Error(c, domain.MsgBranchHasAssoc)
 			default:
 				h.Response.Error(c, domain.MsgBranchCannotDelete)
@@ -513,4 +695,174 @@ func (h *handler) DeleteBranch() gin.HandlerFunc {
 		// 6. Send success response (200 OK)
 		h.Response.SuccessWithData(c, domain.MsgBranchDeleted, response)
 	}
+}
+
+// GetNearbyBranches handles GET /branches/nearby - search branches near location (HU89)
+// @Summary Search nearby branches
+// @Description Returns branches within the specified radius from given coordinates
+// @Tags Branch
+// @Produce json
+// @Security BearerAuth
+// @Param lat query number true "Latitude of the center point"
+// @Param lng query number true "Longitude of the center point"
+// @Param radius query number false "Search radius in kilometers (default: 5, max: 50)"
+// @Param type query string false "Filter by establishment type (WORKSHOP, STORE, WORKSHOP_STORE)"
+// @Success 200 {object} StandardResponse{data=NearbyBranchesResponse}
+// @Failure 400 {object} StandardResponse
+// @Failure 401 {object} StandardResponse
+// @Router /branches/nearby [get]
+func (h *handler) GetNearbyBranches() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		traceID := middleware.GetRequestID(c)
+		log := Logger.WithTraceID(traceID)
+
+		log.Info(logger.LogBranchControllerGetRequest,
+			"method", c.Request.Method,
+			"path", c.Request.URL.Path,
+			"client_ip", c.ClientIP())
+
+		// 1. Parse latitude (required)
+		latStr := c.Query("lat")
+		if latStr == "" {
+			log.Warn("nearby_branches_missing_lat", "client_ip", c.ClientIP())
+			h.Response.Error(c, domain.MsgValLatitudeRequired)
+			return
+		}
+		lat, err := parseFloat(latStr)
+		if err != nil || lat < -90 || lat > 90 {
+			log.Warn("nearby_branches_invalid_lat", "lat", latStr, "error", err)
+			h.Response.Error(c, domain.MsgValLatitudeInvalid)
+			return
+		}
+
+		// 2. Parse longitude (required)
+		lngStr := c.Query("lng")
+		if lngStr == "" {
+			log.Warn("nearby_branches_missing_lng", "client_ip", c.ClientIP())
+			h.Response.Error(c, domain.MsgValLongitudeRequired)
+			return
+		}
+		lng, err := parseFloat(lngStr)
+		if err != nil || lng < -180 || lng > 180 {
+			log.Warn("nearby_branches_invalid_lng", "lng", lngStr, "error", err)
+			h.Response.Error(c, domain.MsgValLongitudeInvalid)
+			return
+		}
+
+		// 3. Parse radius (optional, default 5km, max 50km)
+		radiusKm := 5.0 // default
+		if radiusStr := c.Query("radius"); radiusStr != "" {
+			radius, err := parseFloat(radiusStr)
+			if err != nil || radius <= 0 || radius > 50 {
+				log.Warn("nearby_branches_invalid_radius", "radius", radiusStr, "error", err)
+				h.Response.Error(c, domain.MsgValRadiusInvalid)
+				return
+			}
+			radiusKm = radius
+		}
+
+		// 4. Parse type (optional: WORKSHOP, STORE, WORKSHOP_STORE)
+		establishmentType := c.Query("type")
+		if establishmentType != "" {
+			if !domain.IsValidEstablishmentType(establishmentType) {
+				log.Warn("nearby_branches_invalid_type", "type", establishmentType)
+				h.Response.Error(c, domain.MsgBranchInvalidType)
+				return
+			}
+		}
+
+		log.Info("nearby_branches_search",
+			"lat", lat,
+			"lng", lng,
+			"radius_km", radiusKm,
+			"type", establishmentType)
+
+		// 5. Call interactor
+		branches, err := h.BranchInteractor.GetBranchesNearby(c.Request.Context(), lat, lng, radiusKm, establishmentType)
+		if err != nil {
+			log.Error("nearby_branches_error", "error", err)
+			h.Response.Error(c, domain.MsgServerError)
+			return
+		}
+
+		// 6. Build response with encoded IDs and HATEOAS links
+		baseURL := GetBaseURL(c)
+		items := make([]NearbyBranchResponse, 0, len(branches))
+		for _, branch := range branches {
+			encodedID, err := h.EncodeID(branch.ID)
+			if err != nil {
+				log.Warn(logger.LogIDEncodeError, "branch_id", branch.ID, "error", err)
+				continue
+			}
+			items = append(items, NewNearbyBranchResponse(branch, encodedID, baseURL))
+		}
+
+		// 7. Build collection response
+		response := NearbyBranchesResponse{
+			Branches: items,
+			Count:    len(items),
+			Center: struct {
+				Latitude  float64 `json:"latitude"`
+				Longitude float64 `json:"longitude"`
+			}{
+				Latitude:  lat,
+				Longitude: lng,
+			},
+			RadiusKm: radiusKm,
+			Links:    BuildNearbyBranchesLinks(baseURL, lat, lng, radiusKm),
+		}
+
+		log.Success("nearby_branches_found",
+			"count", len(items),
+			"radius_km", radiusKm,
+			"client_ip", c.ClientIP())
+
+		// 8. Send success response
+		h.Response.SuccessWithData(c, domain.MsgBranchNearbyFound, response)
+	}
+}
+
+// parseFloat converts string to float64
+func parseFloat(s string) (float64, error) {
+	var result float64
+	var negative bool
+	var i int
+
+	if len(s) == 0 {
+		return 0, domain.ErrInvalidBranchType
+	}
+
+	if s[0] == '-' {
+		negative = true
+		i = 1
+	}
+
+	var decimal bool
+	var decimalDiv float64 = 10
+
+	for ; i < len(s); i++ {
+		c := s[i]
+		if c == '.' {
+			if decimal {
+				return 0, domain.ErrInvalidBranchType
+			}
+			decimal = true
+			continue
+		}
+		if c < '0' || c > '9' {
+			return 0, domain.ErrInvalidBranchType
+		}
+		digit := float64(c - '0')
+		if decimal {
+			result += digit / decimalDiv
+			decimalDiv *= 10
+		} else {
+			result = result*10 + digit
+		}
+	}
+
+	if negative {
+		result = -result
+	}
+	return result, nil
 }

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/EstebanGitPro/motogo-backend/core/interactor"
@@ -64,14 +65,14 @@ func (h *handler) RegisterFranchise(franchiseInteractor *interactor.FranchiseInt
 		createdFranchise, err := franchiseInteractor.CreateFranchiseWithBranches(c.Request.Context(), franchise, branchIDs, person.ID)
 		if err != nil {
 			log.Error(logger.LogFranchiseControllerCreateError, "error", err, "franchise_name", req.Name)
-			switch err {
-			case domain.ErrFranchiseDuplicateName:
+			switch {
+			case errors.Is(err, domain.ErrFranchiseDuplicateName):
 				h.Response.Error(c, domain.MsgFranchiseDuplicateName)
-			case domain.ErrFranchiseNoBranches:
+			case errors.Is(err, domain.ErrFranchiseNoBranches):
 				h.Response.Error(c, domain.MsgFranchiseNoBranches)
-			case domain.ErrFranchiseBranchNotOwned:
+			case errors.Is(err, domain.ErrFranchiseBranchNotOwned):
 				h.Response.Error(c, domain.MsgFranchiseBranchNotOwned)
-			case domain.ErrBranchNotFound:
+			case errors.Is(err, domain.ErrBranchNotFound):
 				h.Response.Error(c, domain.MsgBranchNotFound)
 			default:
 				h.Response.Error(c, domain.MsgServerError)
@@ -179,7 +180,7 @@ func (h *handler) GetFranchise(franchiseInteractor *interactor.FranchiseInteract
 		franchise, err := franchiseInteractor.GetFranchiseByID(c.Request.Context(), franchiseID)
 		if err != nil {
 			log.Error(logger.LogFranchiseControllerGetError, "error", err, "franchise_id", franchiseID)
-			if err == domain.ErrFranchiseNotFound {
+			if errors.Is(err, domain.ErrFranchiseNotFound) {
 				h.Response.Error(c, domain.MsgFranchiseNotFound)
 			} else {
 				h.Response.Error(c, domain.MsgServerError)
@@ -237,10 +238,10 @@ func (h *handler) UpdateFranchise(franchiseInteractor *interactor.FranchiseInter
 		franchise := req.ToFranchiseDomain(franchiseID)
 		if err := franchiseInteractor.UpdateFranchise(c.Request.Context(), franchise, person.ID); err != nil {
 			log.Error(logger.LogFranchiseControllerUpdateError, "error", err, "franchise_id", franchiseID)
-			switch err {
-			case domain.ErrFranchiseNotFound:
+			switch {
+			case errors.Is(err, domain.ErrFranchiseNotFound):
 				h.Response.Error(c, domain.MsgFranchiseNotFound)
-			case domain.ErrFranchiseDuplicateName:
+			case errors.Is(err, domain.ErrFranchiseDuplicateName):
 				h.Response.Error(c, domain.MsgFranchiseDuplicateName)
 			default:
 				h.Response.Error(c, domain.MsgServerError)
@@ -289,7 +290,7 @@ func (h *handler) DeleteFranchise(franchiseInteractor *interactor.FranchiseInter
 		// 3. Delete franchise
 		if err := franchiseInteractor.DeleteFranchise(c.Request.Context(), franchiseID, person.ID); err != nil {
 			log.Error(logger.LogFranchiseControllerDeleteError, "error", err, "franchise_id", franchiseID)
-			if err == domain.ErrFranchiseNotFound {
+			if errors.Is(err, domain.ErrFranchiseNotFound) {
 				h.Response.Error(c, domain.MsgFranchiseNotFound)
 			} else {
 				h.Response.Error(c, domain.MsgServerError)
@@ -380,12 +381,12 @@ func (h *handler) AddBranchToFranchise(franchiseInteractor *interactor.Franchise
 		// 5. Call interactor
 		if err := franchiseInteractor.AddBranchToFranchise(c.Request.Context(), franchiseID, branchID, person.ID); err != nil {
 			log.Error(logger.LogFranchiseControllerAddBranchError, "error", err, "franchise_id", franchiseID, "branch_id", branchID)
-			switch err {
-			case domain.ErrBranchNotFound:
+			switch {
+			case errors.Is(err, domain.ErrBranchNotFound):
 				h.Response.Error(c, domain.MsgBranchNotFound)
-			case domain.ErrFranchiseBranchNotOwned:
+			case errors.Is(err, domain.ErrFranchiseBranchNotOwned):
 				h.Response.Error(c, domain.MsgFranchiseBranchNotOwned)
-			case domain.ErrFranchiseNotFound:
+			case errors.Is(err, domain.ErrFranchiseNotFound):
 				h.Response.Error(c, domain.MsgFranchiseNotFound)
 			default:
 				h.Response.Error(c, domain.MsgServerError)
@@ -447,12 +448,12 @@ func (h *handler) RemoveBranchFromFranchise(franchiseInteractor *interactor.Fran
 		// 4. Call interactor
 		if err := franchiseInteractor.RemoveBranchFromFranchise(c.Request.Context(), franchiseID, branchID, person.ID); err != nil {
 			log.Error(logger.LogFranchiseControllerRemBranchError, "error", err, "franchise_id", franchiseID, "branch_id", branchID)
-			switch err {
-			case domain.ErrBranchNotFound:
+			switch {
+			case errors.Is(err, domain.ErrBranchNotFound):
 				h.Response.Error(c, domain.MsgBranchNotFound)
-			case domain.ErrFranchiseMinBranches:
+			case errors.Is(err, domain.ErrFranchiseMinBranches):
 				h.Response.Error(c, domain.MsgFranchiseMinBranches)
-			case domain.ErrFranchiseNotFound:
+			case errors.Is(err, domain.ErrFranchiseNotFound):
 				h.Response.Error(c, domain.MsgFranchiseNotFound)
 			default:
 				h.Response.Error(c, domain.MsgServerError)

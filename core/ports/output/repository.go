@@ -66,6 +66,9 @@ type BranchRepository interface {
 
 	// Brand validation - read
 	ValidateBrands(ctx context.Context, brands []string) error
+
+	// GetBranchesNearby retrieves branches within radius of given coordinates (HU89)
+	GetBranchesNearby(ctx context.Context, lat, lng, radiusKm float64, establishmentType string, latMin, latMax, lngMin, lngMax float64) ([]domain.NearbyBranch, error)
 }
 
 // BrandRepository interface for Brand catalog operations
@@ -195,4 +198,27 @@ type ScheduleDetailRepository interface {
 
 	// Redundancy detection for EXCEPTION entries (Validation E1)
 	CheckExceptionIsRedundant(ctx context.Context, scheduleID string, dayOfWeek int) (bool, error)
+}
+
+// MotorcycleRepository interface for Motorcycle operations (HU43-47, HU50, HU40)
+type MotorcycleRepository interface {
+	BeginTx(ctx context.Context) (Tx, error)
+
+	// Motorcycle operations - write (HU43, HU44, HU45)
+	Save(ctx context.Context, tx Tx, motorcycle *domain.Motorcycle) error
+	Update(ctx context.Context, tx Tx, motorcycle *domain.Motorcycle) error
+	Delete(ctx context.Context, tx Tx, motorcycleID string) error
+
+	// Motorcycle operations - read (HU46, HU47)
+	GetByID(ctx context.Context, motorcycleID string) (*domain.Motorcycle, error)
+	GetByOwnerID(ctx context.Context, ownerID string) ([]domain.Motorcycle, error)
+	GetByLicensePlate(ctx context.Context, licensePlate string) (*domain.Motorcycle, error)
+
+	// Reference catalog (HU50, HU40)
+	GetAllReferences(ctx context.Context) ([]domain.MotorcycleReference, error)
+	GetReferencesByBrandID(ctx context.Context, brandID string) ([]domain.MotorcycleReference, error)
+
+	// Validation methods (HU43, HU44)
+	ValidateReferenceExists(ctx context.Context, referenceID string) (bool, error)
+	CheckLicensePlateExists(ctx context.Context, licensePlate string) (bool, error)
 }

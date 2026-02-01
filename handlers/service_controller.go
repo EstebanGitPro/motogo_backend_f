@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"errors"
+
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/middleware"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
@@ -331,7 +333,7 @@ func (h *handler) DissociateBranchService() gin.HandlerFunc {
 		err = h.ServiceInteractor.DissociateBranchService(c.Request.Context(), tx, decodedBranchID, decodedServiceID)
 		if err != nil {
 			tx.Rollback()
-			if err == domain.ErrServiceNotFound {
+			if errors.Is(err, domain.ErrServiceNotFound) {
 				log.Warn(logger.LogBranchServicesControllerNotFound, "branch_id", branchID, "service_id", serviceID)
 				h.Response.Error(c, domain.MsgServiceNotFound)
 				return
@@ -401,7 +403,7 @@ func (h *handler) UpdateService() gin.HandlerFunc {
 		// Verify service exists
 		existingService, err := h.ServiceInteractor.GetServiceByID(c.Request.Context(), decodedID)
 		if err != nil {
-			if err == domain.ErrServiceNotFound {
+			if errors.Is(err, domain.ErrServiceNotFound) {
 				log.Warn(logger.LogServiceControllerUpdateError, "service_id", serviceID, "error", "not found")
 				h.Response.Error(c, domain.MsgServiceResNotFound)
 				return
@@ -423,7 +425,7 @@ func (h *handler) UpdateService() gin.HandlerFunc {
 
 		// Perform update
 		if err := h.ServiceInteractor.UpdateService(c.Request.Context(), *existingService); err != nil {
-			if err == domain.ErrServiceNotFound {
+			if errors.Is(err, domain.ErrServiceNotFound) {
 				log.Warn(logger.LogServiceControllerUpdateError, "service_id", serviceID, "error", "update failed - not found")
 				h.Response.Error(c, domain.MsgServiceResNotFound)
 				return

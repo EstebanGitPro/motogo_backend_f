@@ -59,7 +59,6 @@ const (
 
 var log logger.Logger = logger.NewSlogLogger()
 
-// repository implements output.MessageRepository
 type repository struct {
 	stmtGetAllActive               *sql.Stmt
 	stmtGetByCode                  *sql.Stmt
@@ -78,13 +77,10 @@ type MessageRepository interface {
 	cachetypes.MessageCacheRepository
 }
 
-// NewMessageRepository creates a new message repository
 func NewMessageRepository(db *sql.DB) (MessageRepository, error) {
 	if db == nil {
 		return nil, sql.ErrConnDone
 	}
-
-	// Prepare all statements to fail-fast on application startup if SQL queries are malformed
 	stmtGetAllActive, err := db.Prepare(queryGetAllActive)
 	if err != nil {
 		log.Error(logger.LogDatabaseUnavailable, "error preparing stmtGetAllActive", err)

@@ -7,14 +7,13 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// GetAllBrands retrieves all brands from the catalog ordered by name
 func (r *repository) GetAllBrands(ctx context.Context) ([]domain.Brand, error) {
 	rows, err := r.stmtGetAllBrands.QueryContext(ctx)
 	if err != nil {
 		log.Error(logger.LogDatabaseUnavailable, "error", err)
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }() // Rows close error intentionally ignored
 
 	var brands []domain.Brand
 	for rows.Next() {

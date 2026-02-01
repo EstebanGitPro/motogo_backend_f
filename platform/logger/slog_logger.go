@@ -8,12 +8,10 @@ import (
 	"time"
 )
 
-
 type SlogLogger struct {
 	logFile *os.File
 	traceID string
 }
-
 
 func NewSlogLogger() Logger {
 	// Create log directory if it doesn't exist

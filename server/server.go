@@ -65,6 +65,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		dependencies.LocationInteractor,
 		dependencies.ServiceInteractor,
 		dependencies.FranchiseInteractor,
+		dependencies.MotorcycleInteractor,
 		dependencies.FirebaseClient,
 		dependencies.MessagingCache,
 		dependencies.IDEncoder,
@@ -86,10 +87,9 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		})
 	})
 
-	// 404 handler - must be registered AFTER all routes
+	// 404 handler - must be registered AFTER all rote
 	app.NoRoute(middleware.NotFoundHandler())
 
-	// Richardson Maturity Model Nivel 2-3: Recursos con URIs únicas + HATEOAS
 	public := app.Group("motogo/api/v1")
 	{
 		// === PERSONS ENDPOINTS ===
@@ -99,7 +99,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 
 		// GET /persons/:id - Locate: Obtener persona por ID
 		// Este es el endpoint referenciado en el Location header del POST
-		//public.GET("/persons/:id", handler.GetPersonByID())
+		// public.GET("/persons/:id", handler.GetPersonByID())
 
 		// === AUTH ENDPOINTS ===
 		// POST /auth/login - Autenticar usuario
@@ -138,7 +138,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		public.GET("/messages", handler.ListMessages())
 
 		// POST /messages/cache/reload - Recargar caché de mensajes desde BD
-		// Endpoint administrativo para forzar recarga después de cambios manuales
+		// Endpoint administration para forzar recarga después de cambios manuals
 		public.POST("/messages/cache/reload", handler.ReloadMessageCache())
 
 		// GET /persons/:id/contact - Obtener info de contacto pública (HU55)
@@ -197,6 +197,10 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 			handler.ListBranches(),
 		)
 
+		// GET /branches/nearby - Buscar sedes cercanas (HU89)
+		// Accessible by all authenticated users (USER, REPRESENTATIVE)
+		protected.GET("/branches/nearby", handler.GetNearbyBranches())
+
 		// GET /branches/:id - Consultar info de sede (HU62)
 		// Accessible by all authenticated users, HATEOAS links vary by ownership
 		protected.GET("/branches/:id", handler.GetBranch())
@@ -204,6 +208,55 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		// GET /branches/:id/services - Obtener servicios de una sede
 		// Accessible by all authenticated users
 		protected.GET("/branches/:id/services", handler.GetBranchServices())
+
+		// === MOTORCYCLES ENDPOINTS (HU43-47) ===
+		// Only USER role can access motorcycle endpoints (not ADMIN, not REPRESENTATIVE)
+
+		// POST /motorcycles - Register new motorcycle (HU43)
+		protected.POST("/motorcycles",
+			middleware.RequireRole(domain.RoleUser),
+			validator.WithValidateRegisterMotorcycle(),
+			handler.RegisterMotorcycle(),
+		)
+
+		// GET /motorcycles/:id - Get motorcycle details (HU46)
+		// HATEOAS links vary by ownership (Richardson Level 3)
+		protected.GET("/motorcycles/:id",
+			middleware.RequireRole(domain.RoleUser),
+			handler.GetMotorcycle(),
+		)
+
+		// GET /motorcycles - List all motorcycles for authenticated user (HU46)
+		protected.GET("/motorcycles",
+			middleware.RequireRole(domain.RoleUser),
+			handler.ListMotorcycles(),
+		)
+
+		// PUT /motorcycles/:id - Update motorcycle (HU44, solo propietario)
+		protected.PUT("/motorcycles/:id",
+			middleware.RequireRole(domain.RoleUser),
+			handler.UpdateMotorcycle(),
+		)
+
+		// DELETE /motorcycles/:id - Soft delete motorcycle (HU45, solo propietario)
+		protected.DELETE("/motorcycles/:id",
+			middleware.RequireRole(domain.RoleUser),
+			handler.DeleteMotorcycle(),
+		)
+
+		// GET /motorcycles/lookup?plate={placa} - Lookup motorcycle by plate (HU47)
+		// Accessible by representatives (workshops) for service purposes
+		protected.GET("/motorcycles/lookup",
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.LookupMotorcycleByPlate(),
+		)
+
+		// GET /motorcycle-references - List motorcycle reference catalog (HU50)
+		// Accessible by USER role for motorcycle registration
+		protected.GET("/motorcycle-references",
+			middleware.RequireRole(domain.RoleUser),
+			handler.GetMotorcycleReferences(),
+		)
 
 		// POST /branches/:id/services - Asociar servicios a una sede (solo REPRESENTANTE)
 		protected.POST("/branches/:id/services",
@@ -397,6 +450,10 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		// === SERVICES CATALOG ADMIN (HU68) ===
 		// PUT /admin/services/:id - Modificar servicio del catálogo global
 		admin.PUT("/services/:id", handler.UpdateService())
+
+		// === BRAND LINES ADMIN (HU40) ===
+		// GET /admin/brands/:brandId/lines - Consultar líneas de una marca
+		admin.GET("/brands/:brandId/lines", handler.GetBrandLines())
 	}
 
 	dependencies.Logger.Success(logger.LogRouteConfigured)
