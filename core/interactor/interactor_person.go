@@ -308,7 +308,7 @@ func (i *Interactor) RefreshToken(ctx context.Context, refreshToken string) (*dt
 		return nil, err
 	}
 
-	log.Success("Refresh token completado exitosamente")
+	log.Success(logger.LogPersonInteractorRefreshOK)
 	return &dto.TokenResponse{
 		AccessToken:  token.AccessToken,
 		TokenType:    token.TokenType,
@@ -408,7 +408,7 @@ func (i *Interactor) GetPublicContact(ctx context.Context, personID string) (*do
 		return nil, err
 	}
 
-	log.Success("Contacto público obtenido exitosamente", "person_id", personID)
+	log.Success(logger.LogPersonInteractorContactGetOK, "person_id", personID)
 	return person, nil
 }
 
@@ -426,7 +426,7 @@ func (i *Interactor) DeleteKeycloakUser(ctx context.Context, keycloakUserID stri
 		return err
 	}
 
-	log.Success("Usuario eliminado de Keycloak", "keycloak_user_id", keycloakUserID)
+	log.Success(logger.LogPersonInteractorKeycloakDeleteOK, "keycloak_user_id", keycloakUserID)
 	return nil
 }
 
@@ -444,6 +444,6 @@ func (i *Interactor) DeletePersonFromDB(ctx context.Context, personID string) er
 		return err
 	}
 
-	log.Success("Persona eliminada de base de datos", "person_id", personID)
+	log.Success(logger.LogPersonInteractorPersonDeleteOK, "person_id", personID)
 	return nil
 }

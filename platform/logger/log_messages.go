@@ -432,6 +432,22 @@ const (
 	LogPersonInteractorLoginError           = "Error iniciando sesión en Keycloak"
 	LogPersonInteractorLoginOK              = "Sesión iniciada exitosamente"
 	LogPersonInteractorLoginComplete        = "Sesión iniciada exitosamente"
+	// Refresh Token / Contact / Delete
+	LogPersonInteractorRefreshOK        = "Refresh token completado exitosamente"
+	LogPersonInteractorContactGetOK     = "Contacto público obtenido exitosamente"
+	LogPersonInteractorKeycloakDeleteOK = "Usuario eliminado de Keycloak"
+	LogPersonInteractorPersonDeleteOK   = "Persona eliminada de base de datos"
+)
+
+// ============================================
+// PERSON SERVICE
+// ============================================
+const (
+	LogPersonServiceRefreshStart            = "RefreshToken llamado"
+	LogPersonServiceRefreshError            = "RefreshToken fallido"
+	LogPersonServiceRefreshOK               = "RefreshToken completado exitosamente"
+	LogPersonServiceEmailExtracted          = "Email extraído del token"
+	LogPersonServicePasswordPolicyViolation = "Violación de política de contraseña"
 )
 
 // ============================================

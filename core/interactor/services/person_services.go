@@ -464,16 +464,16 @@ func (s service) Login(ctx context.Context, email, password string) (*gocloak.JW
 // RefreshToken obtains a new access token using the refresh token
 // This is called by the frontend when the access token expires
 func (s service) RefreshToken(ctx context.Context, refreshToken string) (*gocloak.JWT, error) {
-	log.Debug("RefreshToken called")
+	log.Debug(logger.LogPersonServiceRefreshStart)
 
 	// Delegate to Keycloak client
 	token, err := s.keycloak.RefreshToken(ctx, refreshToken)
 	if err != nil {
-		log.Error("RefreshToken failed", "error", err)
+		log.Error(logger.LogPersonServiceRefreshError, "error", err)
 		return nil, err
 	}
 
-	log.Success("RefreshToken completed successfully")
+	log.Success(logger.LogPersonServiceRefreshOK)
 	return token, nil
 }
 
@@ -491,7 +491,7 @@ func (s service) VerifyEmailByToken(ctx context.Context, token string) (string, 
 		return "", domain.ErrInvalidToken
 	}
 
-	log.Debug("Email extracted from token", "email", email)
+	log.Debug(logger.LogPersonServiceEmailExtracted, "email", email)
 
 	// Get user from Keycloak by email
 	user, err := s.keycloak.GetUserByEmail(ctx, email)
@@ -598,7 +598,7 @@ func (s service) ChangePassword(ctx context.Context, keycloakUserID, currentPass
 		}
 		// Check if error is due to password policy violation
 		if isPasswordPolicyError(err) {
-			log.Warn("Password policy violation", "keycloak_user_id", keycloakUserID, "error", err)
+			log.Warn(logger.LogPersonServicePasswordPolicyViolation, "keycloak_user_id", keycloakUserID, "error", err)
 			return domain.ErrPasswordPolicyViolation
 		}
 		log.Error(logger.LogChangePasswordUpdateError, "keycloak_user_id", keycloakUserID, "error", err)
