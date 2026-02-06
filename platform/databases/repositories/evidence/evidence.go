@@ -13,7 +13,8 @@ type Evidence struct {
 	MotorcycleID string         `db:"motorcycle_id"`
 	Angle        sql.NullString `db:"angle"`
 	ImageURL     string         `db:"image_url"`
-	UploadDate   time.Time      `db:"upload_date"`
+	Description  sql.NullString `db:"description"`
+	CreatedAt    time.Time      `db:"created_at"`
 }
 
 // ToDomain converts the database model to domain entity
@@ -22,12 +23,17 @@ func (e *Evidence) ToDomain() domain.MotorcycleEvidence {
 		ID:           e.ID,
 		MotorcycleID: e.MotorcycleID,
 		ImageURL:     e.ImageURL,
-		UploadDate:   e.UploadDate,
+		CreatedAt:    e.CreatedAt,
 	}
 
 	if e.Angle.Valid {
 		angle := e.Angle.String
 		evidence.Angle = &angle
+	}
+
+	if e.Description.Valid {
+		desc := e.Description.String
+		evidence.Description = &desc
 	}
 
 	return evidence
@@ -39,11 +45,15 @@ func FromDomain(evidence *domain.MotorcycleEvidence) *Evidence {
 		ID:           evidence.ID,
 		MotorcycleID: evidence.MotorcycleID,
 		ImageURL:     evidence.ImageURL,
-		UploadDate:   evidence.UploadDate,
+		CreatedAt:    evidence.CreatedAt,
 	}
 
 	if evidence.Angle != nil {
 		e.Angle = sql.NullString{String: *evidence.Angle, Valid: true}
+	}
+
+	if evidence.Description != nil {
+		e.Description = sql.NullString{String: *evidence.Description, Valid: true}
 	}
 
 	return e
