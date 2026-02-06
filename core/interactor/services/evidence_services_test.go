@@ -197,7 +197,7 @@ func TestIsEvidenceLimitReached_OverLimit(t *testing.T) {
 }
 
 func TestIsEvidenceLimitReached_UnderLimit(t *testing.T) {
-	assert.False(t, services.IsEvidenceLimitReached(4))
+	assert.False(t, services.IsEvidenceLimitReached(3))
 }
 
 func TestIsEvidenceLimitReached_ZeroCount(t *testing.T) {
