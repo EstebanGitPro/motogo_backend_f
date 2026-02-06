@@ -80,6 +80,11 @@ var fieldNameMapping = map[string]string{
 	"year":            "Año del modelo",
 	"current_mileage": "Kilometraje actual",
 	"owner_notes":     "Notas del propietario",
+
+	// Evidence (HU16-19)
+	"angle":       "Ángulo de la foto",
+	"image_url":   "URL de imagen",
+	"description": "Descripción",
 }
 
 // translateFieldNames converts technical field names to Spanish labels

@@ -6,14 +6,20 @@
   "properties": {
     "angle": {
       "type": "string",
-      "enum": ["FRONT", "SIDE", "BACK"],
-      "description": "Optional photo angle: FRONT (Frontal), SIDE (Lateral), BACK (Trasera)"
+      "enum": ["FRONTAL", "LATERAL", "REAR"],
+      "description": "Optional photo angle: FRONTAL (Frontal), LATERAL (Side), REAR (Back)"
     },
     "image_url": {
       "type": "string",
       "format": "uri",
+      "minLength": 1,
       "pattern": "^https://firebasestorage\\.googleapis\\.com/.*$",
       "description": "Firebase Storage URL for the uploaded image"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 200,
+      "description": "Optional description for the evidence photo"
     }
   },
   "required": ["image_url"],

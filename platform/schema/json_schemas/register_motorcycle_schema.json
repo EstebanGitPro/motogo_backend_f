@@ -38,6 +38,7 @@
       "type": "string",
       "description": "HU36 - Optional Firebase Storage URL for motorcycle profile image",
       "format": "uri",
+      "pattern": "^https://firebasestorage\\.googleapis\\.com/.*$",
       "maxLength": 1000
     }
   },
