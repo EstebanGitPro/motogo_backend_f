@@ -24,6 +24,7 @@ import (
 
 	branchRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/branch"
 	brandRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/brand"
+	evidenceRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/evidence" // HU16-19
 	franchiseRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/franchise"
 	locationRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/location"
 	messageRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/message"
@@ -49,6 +50,7 @@ type Dependencies struct {
 	ScheduleDetailInteractor    *interactor.ScheduleDetailInteractor    // HU6-9
 	ScheduleExceptionInteractor *interactor.ScheduleExceptionInteractor // HU20-25
 	MotorcycleInteractor        *interactor.MotorcycleInteractor        // HU43-47
+	EvidenceInteractor          *interactor.EvidenceInteractor          // HU16-19
 	FirebaseClient              *firebase.Client                        // Firebase Auth
 	JWTValidator                *jwt.JWKSValidator                      // JWT validation with JWKS
 	Config                      *config.Config
@@ -274,8 +276,20 @@ func Init() (*Dependencies, error) {
 	}
 	log.Success(logger.LogDepMotorcycleRepoInitOK)
 
+	// Create motorcycle interactor - will connect Firebase Storage later if available
 	motorcycleInteractor := interactor.NewMotorcycleInteractor(motorcycleRepository, log)
 	log.Success(logger.LogDepMotorcycleInteractorInitOK)
+
+	// Evidence feature (HU16-19)
+	evidenceRepository, err := evidenceRepo.NewRepository(db)
+	if err != nil {
+		log.Error("Error initializing evidence repository", "error", err)
+		return nil, err
+	}
+	log.Success("Evidence repository initialized")
+
+	evidenceInteractor := interactor.NewEvidenceInteractor(evidenceRepository, motorcycleRepository, log)
+	log.Success("Evidence interactor initialized")
 
 	var firebaseClient *firebase.Client
 	if cfg.Firebase.CredentialsPath != "" {
@@ -293,6 +307,9 @@ func Init() (*Dependencies, error) {
 			// Don't fail startup if Firebase is not configured
 		} else {
 			log.Success(logger.LogDepFirebaseClientInitOK)
+			// Connect Firebase Storage to MotorcycleInteractor for image deletion (HU45)
+			motorcycleInteractor.WithStorageClient(firebaseClient)
+			log.Success(logger.LogDepMotorcycleInteractorInitOK, "with_storage", true)
 		}
 	} else {
 		log.Warn("Firebase credentials not configured, skipping initialization")
@@ -327,6 +344,7 @@ func Init() (*Dependencies, error) {
 		ScheduleDetailInteractor:    scheduleDetailInteractor,
 		ScheduleExceptionInteractor: scheduleExceptionInteractor,
 		MotorcycleInteractor:        motorcycleInteractor,
+		EvidenceInteractor:          evidenceInteractor, // HU16-19
 		FirebaseClient:              firebaseClient,
 		JWTValidator:                jwtValidator,
 		Config:                      cfg,

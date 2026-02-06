@@ -40,6 +40,24 @@ func (m *MockMotorcycleRepository) Delete(ctx context.Context, tx output.Tx, mot
 	return args.Error(0)
 }
 
+// HardDelete permanently removes a motorcycle (HU45 hybrid delete)
+func (m *MockMotorcycleRepository) HardDelete(ctx context.Context, tx output.Tx, motorcycleID string) error {
+	args := m.Called(ctx, tx, motorcycleID)
+	return args.Error(0)
+}
+
+// ClearProfileImageURL sets the profile_image_url to NULL (HU39)
+func (m *MockMotorcycleRepository) ClearProfileImageURL(ctx context.Context, tx output.Tx, motorcycleID string) error {
+	args := m.Called(ctx, tx, motorcycleID)
+	return args.Error(0)
+}
+
+// HasServiceHistory checks if motorcycle has any completed_services or diagnostics (HU45 hybrid)
+func (m *MockMotorcycleRepository) HasServiceHistory(ctx context.Context, motorcycleID string) (bool, error) {
+	args := m.Called(ctx, motorcycleID)
+	return args.Bool(0), args.Error(1)
+}
+
 // Motorcycle operations - read (HU46, HU47)
 
 func (m *MockMotorcycleRepository) GetByID(ctx context.Context, motorcycleID string) (*domain.Motorcycle, error) {

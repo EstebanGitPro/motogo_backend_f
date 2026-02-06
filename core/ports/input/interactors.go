@@ -31,6 +31,15 @@ type MotorcycleInteractorInterface interface {
 	GetMotorcycleByLicensePlate(ctx context.Context, licensePlate string) (*domain.Motorcycle, error)
 	UpdateMotorcycle(ctx context.Context, motorcycleID string, ownerID string, updates *domain.Motorcycle) (*domain.Motorcycle, error)
 	DeleteMotorcycle(ctx context.Context, motorcycleID string, ownerID string) error
+	DeleteProfileImage(ctx context.Context, motorcycleID string, ownerID string) error // HU39
 	GetMotorcycleReferences(ctx context.Context) ([]domain.MotorcycleReference, error)
 	GetReferencesByBrandID(ctx context.Context, brandID string) ([]domain.MotorcycleReference, error)
+}
+
+// EvidenceInteractorInterface defines the contract for motorcycle evidence operations (HU16-19)
+type EvidenceInteractorInterface interface {
+	CreateEvidence(ctx context.Context, motorcycleID, ownerID string, evidence *domain.MotorcycleEvidence) (*domain.MotorcycleEvidence, error)
+	GetEvidenceByID(ctx context.Context, evidenceID, ownerID string) (*domain.MotorcycleEvidence, error)
+	ListEvidenceByMotorcycle(ctx context.Context, motorcycleID, ownerID string) ([]domain.MotorcycleEvidence, error)
+	DeleteEvidence(ctx context.Context, evidenceID, ownerID string) error
 }

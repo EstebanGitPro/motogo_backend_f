@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Create Motorcycle Evidence",
+  "description": "Schema for creating photographic evidence for a motorcycle (HU16)",
+  "type": "object",
+  "properties": {
+    "angle": {
+      "type": "string",
+      "enum": ["FRONT", "SIDE", "BACK"],
+      "description": "Optional photo angle: FRONT (Frontal), SIDE (Lateral), BACK (Trasera)"
+    },
+    "image_url": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https://firebasestorage\\.googleapis\\.com/.*$",
+      "description": "Firebase Storage URL for the uploaded image"
+    }
+  },
+  "required": ["image_url"],
+  "additionalProperties": false
+}

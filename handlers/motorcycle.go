@@ -6,13 +6,14 @@ import (
 
 // MotorcycleResponse represents the API response for a motorcycle (HU46)
 type MotorcycleResponse struct {
-	ID             string                  `json:"id"`
-	LicensePlate   string                  `json:"license_plate"`
-	Year           *int                    `json:"year,omitempty"`
-	CurrentMileage *int                    `json:"current_mileage,omitempty"`
-	OwnerNotes     *string                 `json:"owner_notes,omitempty"`
-	Reference      *MotorcycleReferenceDTO `json:"reference,omitempty"`
-	Links          []Link                  `json:"_links,omitempty"`
+	ID              string                  `json:"id"`
+	LicensePlate    string                  `json:"license_plate"`
+	Year            *int                    `json:"year,omitempty"`
+	CurrentMileage  *int                    `json:"current_mileage,omitempty"`
+	OwnerNotes      *string                 `json:"owner_notes,omitempty"`
+	ProfileImageURL *string                 `json:"profile_image_url,omitempty"`
+	Reference       *MotorcycleReferenceDTO `json:"reference,omitempty"`
+	Links           []Link                  `json:"_links,omitempty"`
 }
 
 // MotorcycleReferenceDTO represents the motorcycle reference in API responses (owner view)
@@ -28,12 +29,13 @@ type MotorcycleReferenceDTO struct {
 // MotorcycleLookupResponse represents the API response for motorcycle lookup by workshops (HU47)
 // This DTO excludes private owner data (notes) and unnecessary IDs (brand_id)
 type MotorcycleLookupResponse struct {
-	ID             string                        `json:"id"`
-	LicensePlate   string                        `json:"license_plate"`
-	Year           *int                          `json:"year,omitempty"`
-	CurrentMileage *int                          `json:"current_mileage,omitempty"`
-	Reference      *MotorcycleLookupReferenceDTO `json:"reference,omitempty"`
-	Links          []Link                        `json:"_links,omitempty"`
+	ID              string                        `json:"id"`
+	LicensePlate    string                        `json:"license_plate"`
+	Year            *int                          `json:"year,omitempty"`
+	CurrentMileage  *int                          `json:"current_mileage,omitempty"`
+	ProfileImageURL *string                       `json:"profile_image_url,omitempty"`
+	Reference       *MotorcycleLookupReferenceDTO `json:"reference,omitempty"`
+	Links           []Link                        `json:"_links,omitempty"`
 }
 
 // MotorcycleLookupReferenceDTO represents motorcycle reference for workshop lookup (no brand_id)
@@ -47,11 +49,12 @@ type MotorcycleLookupReferenceDTO struct {
 // ToMotorcycleResponse converts domain.Motorcycle to MotorcycleResponse
 func ToMotorcycleResponse(m *domain.Motorcycle) MotorcycleResponse {
 	response := MotorcycleResponse{
-		ID:             m.ID,
-		LicensePlate:   m.LicensePlate,
-		Year:           m.Year,
-		CurrentMileage: m.CurrentMileage,
-		OwnerNotes:     m.OwnerNotes,
+		ID:              m.ID,
+		LicensePlate:    m.LicensePlate,
+		Year:            m.Year,
+		CurrentMileage:  m.CurrentMileage,
+		OwnerNotes:      m.OwnerNotes,
+		ProfileImageURL: m.ProfileImageURL,
 	}
 
 	if m.Reference != nil {
@@ -72,10 +75,11 @@ func ToMotorcycleResponse(m *domain.Motorcycle) MotorcycleResponse {
 // Excludes: owner_notes (private), brand_id (not needed for workshops)
 func ToMotorcycleLookupResponse(m *domain.Motorcycle) MotorcycleLookupResponse {
 	response := MotorcycleLookupResponse{
-		ID:             m.ID,
-		LicensePlate:   m.LicensePlate,
-		Year:           m.Year,
-		CurrentMileage: m.CurrentMileage,
+		ID:              m.ID,
+		LicensePlate:    m.LicensePlate,
+		Year:            m.Year,
+		CurrentMileage:  m.CurrentMileage,
+		ProfileImageURL: m.ProfileImageURL,
 		// owner_notes intentionally excluded - private to owner
 	}
 
@@ -95,21 +99,23 @@ func ToMotorcycleLookupResponse(m *domain.Motorcycle) MotorcycleLookupResponse {
 // RegisterMotorcycleRequest represents the request body for motorcycle registration (HU43)
 // NOTE: reference_id is optional for Release 9 testing (catalog comes in Release 11)
 type RegisterMotorcycleRequest struct {
-	LicensePlate   string  `json:"license_plate" binding:"required"`
-	ReferenceID    *string `json:"reference_id,omitempty"` // Optional until Release 11
-	Year           *int    `json:"year,omitempty"`
-	CurrentMileage *int    `json:"current_mileage,omitempty"`
-	OwnerNotes     *string `json:"owner_notes,omitempty"`
+	LicensePlate    string  `json:"license_plate" binding:"required"`
+	ReferenceID     *string `json:"reference_id,omitempty"` // Optional until Release 11
+	Year            *int    `json:"year,omitempty"`
+	CurrentMileage  *int    `json:"current_mileage,omitempty"`
+	OwnerNotes      *string `json:"owner_notes,omitempty"`
+	ProfileImageURL *string `json:"profile_image_url,omitempty"` // HU36: Main profile photo
 }
 
 // ToDomain converts RegisterMotorcycleRequest to domain.Motorcycle
 func (r *RegisterMotorcycleRequest) ToDomain(ownerID string) *domain.Motorcycle {
 	moto := &domain.Motorcycle{
-		LicensePlate:   r.LicensePlate,
-		OwnerID:        ownerID,
-		Year:           r.Year,
-		CurrentMileage: r.CurrentMileage,
-		OwnerNotes:     r.OwnerNotes,
+		LicensePlate:    r.LicensePlate,
+		OwnerID:         ownerID,
+		Year:            r.Year,
+		CurrentMileage:  r.CurrentMileage,
+		OwnerNotes:      r.OwnerNotes,
+		ProfileImageURL: r.ProfileImageURL,
 	}
 	if r.ReferenceID != nil {
 		moto.ReferenceID = *r.ReferenceID
@@ -129,18 +135,20 @@ func ToMotorcycleResponseList(motorcycles []domain.Motorcycle) []MotorcycleRespo
 // UpdateMotorcycleRequest represents the request body for motorcycle update (HU44)
 // NOTE: license_plate is NOT updateable - it's a business identifier
 type UpdateMotorcycleRequest struct {
-	ReferenceID    *string `json:"reference_id,omitempty"`
-	Year           *int    `json:"year,omitempty"`
-	CurrentMileage *int    `json:"current_mileage,omitempty"`
-	OwnerNotes     *string `json:"owner_notes,omitempty"`
+	ReferenceID     *string `json:"reference_id,omitempty"`
+	Year            *int    `json:"year,omitempty"`
+	CurrentMileage  *int    `json:"current_mileage,omitempty"`
+	OwnerNotes      *string `json:"owner_notes,omitempty"`
+	ProfileImageURL *string `json:"profile_image_url,omitempty"` // HU36: Main profile photo
 }
 
 // ToDomain converts UpdateMotorcycleRequest to domain.Motorcycle
 func (r *UpdateMotorcycleRequest) ToDomain() *domain.Motorcycle {
 	moto := &domain.Motorcycle{
-		Year:           r.Year,
-		CurrentMileage: r.CurrentMileage,
-		OwnerNotes:     r.OwnerNotes,
+		Year:            r.Year,
+		CurrentMileage:  r.CurrentMileage,
+		OwnerNotes:      r.OwnerNotes,
+		ProfileImageURL: r.ProfileImageURL,
 	}
 	if r.ReferenceID != nil {
 		moto.ReferenceID = *r.ReferenceID

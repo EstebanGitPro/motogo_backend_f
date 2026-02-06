@@ -556,8 +556,8 @@ func TestUpdateMotorcycle_ReferenceNotFound(t *testing.T) {
 // DeleteMotorcycle Tests (HU45)
 // ============================================
 
-func TestDeleteMotorcycle_Success(t *testing.T) {
-	// Arrange
+func TestDeleteMotorcycle_Success_SoftDelete(t *testing.T) {
+	// Arrange - motorcycle WITH service history -> soft delete
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
 	mockLogger := setupMotorcycleMockLogger()
@@ -574,10 +574,47 @@ func TestDeleteMotorcycle_Success(t *testing.T) {
 		OwnerID:      ownerID,
 	}
 
-	// Mock expectations
+	// Mock expectations - has history -> soft delete
 	mockRepo.On("GetByID", ctx, motorcycleID).Return(existingMotorcycle, nil)
+	mockRepo.On("HasServiceHistory", ctx, motorcycleID).Return(true, nil) // Has history
 	mockRepo.On("BeginTx", ctx).Return(mockTx, nil)
-	mockRepo.On("Delete", ctx, mockTx, motorcycleID).Return(nil)
+	mockRepo.On("Delete", ctx, mockTx, motorcycleID).Return(nil) // Soft delete
+	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil)
+
+	// Act
+	err := motorcycleInteractor.DeleteMotorcycle(ctx, motorcycleID, ownerID)
+
+	// Assert
+	assert.NoError(t, err)
+
+	mockRepo.AssertExpectations(t)
+	mockTx.AssertCalled(t, "Commit")
+}
+
+func TestDeleteMotorcycle_Success_HardDelete(t *testing.T) {
+	// Arrange - motorcycle WITHOUT service history -> hard delete
+	ctx := context.Background()
+	mockRepo := new(mocks.MockMotorcycleRepository)
+	mockLogger := setupMotorcycleMockLogger()
+	mockTx := new(mocks.MockTx)
+
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger)
+
+	motorcycleID := "moto-456"
+	ownerID := "owner-123"
+
+	existingMotorcycle := &domain.Motorcycle{
+		ID:           motorcycleID,
+		LicensePlate: "DEF456",
+		OwnerID:      ownerID,
+	}
+
+	// Mock expectations - no history -> hard delete
+	mockRepo.On("GetByID", ctx, motorcycleID).Return(existingMotorcycle, nil)
+	mockRepo.On("HasServiceHistory", ctx, motorcycleID).Return(false, nil) // No history
+	mockRepo.On("BeginTx", ctx).Return(mockTx, nil)
+	mockRepo.On("HardDelete", ctx, mockTx, motorcycleID).Return(nil) // Hard delete
 	mockTx.On("Commit").Return(nil)
 	mockTx.On("Rollback").Return(nil)
 
@@ -666,6 +703,7 @@ func TestDeleteMotorcycle_TxError_Rollback(t *testing.T) {
 
 	// Mock expectations
 	mockRepo.On("GetByID", ctx, motorcycleID).Return(existingMotorcycle, nil)
+	mockRepo.On("HasServiceHistory", ctx, motorcycleID).Return(true, nil)
 	mockRepo.On("BeginTx", ctx).Return(mockTx, nil)
 	mockRepo.On("Delete", ctx, mockTx, motorcycleID).Return(deleteError)
 	mockTx.On("Rollback").Return(nil)
@@ -787,4 +825,324 @@ func TestGetReferencesByBrandID_Error(t *testing.T) {
 	assert.Nil(t, result)
 
 	mockRepo.AssertExpectations(t)
+}
+
+// ============================================
+// DeleteProfileImage Tests (HU39)
+// ============================================
+
+func TestDeleteProfileImage_Success(t *testing.T) {
+	// Arrange
+	ctx := context.Background()
+	mockRepo := new(mocks.MockMotorcycleRepository)
+	mockLogger := setupMotorcycleMockLogger()
+	mockTx := new(mocks.MockTx)
+	mockStorage := new(mocks.MockStorageClient)
+
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger).
+		WithStorageClient(mockStorage)
+
+	motorcycleID := "moto-123"
+	ownerID := "owner-123"
+	imageURL := "https://firebasestorage.googleapis.com/v0/b/motogo.appspot.com/o/motorcycles%2Fprofile.jpg"
+
+	existingMotorcycle := &domain.Motorcycle{
+		ID:              motorcycleID,
+		LicensePlate:    "ABC123",
+		OwnerID:         ownerID,
+		ProfileImageURL: &imageURL,
+	}
+
+	// Mock expectations
+	mockRepo.On("GetByID", ctx, motorcycleID).Return(existingMotorcycle, nil)
+	mockStorage.On("DeleteStorageFile", ctx, imageURL).Return(nil)
+	mockRepo.On("BeginTx", ctx).Return(mockTx, nil)
+	mockRepo.On("ClearProfileImageURL", ctx, mockTx, motorcycleID).Return(nil)
+	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil)
+
+	// Act
+	err := motorcycleInteractor.DeleteProfileImage(ctx, motorcycleID, ownerID)
+
+	// Assert
+	assert.NoError(t, err)
+
+	mockRepo.AssertExpectations(t)
+	mockStorage.AssertExpectations(t)
+	mockTx.AssertCalled(t, "Commit")
+}
+
+func TestDeleteProfileImage_Success_NoImage(t *testing.T) {
+	// Arrange - motorcycle without profile image
+	ctx := context.Background()
+	mockRepo := new(mocks.MockMotorcycleRepository)
+	mockLogger := setupMotorcycleMockLogger()
+
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger)
+
+	motorcycleID := "moto-123"
+	ownerID := "owner-123"
+
+	existingMotorcycle := &domain.Motorcycle{
+		ID:              motorcycleID,
+		LicensePlate:    "ABC123",
+		OwnerID:         ownerID,
+		ProfileImageURL: nil, // No image
+	}
+
+	// Mock expectations
+	mockRepo.On("GetByID", ctx, motorcycleID).Return(existingMotorcycle, nil)
+
+	// Act
+	err := motorcycleInteractor.DeleteProfileImage(ctx, motorcycleID, ownerID)
+
+	// Assert - should succeed without doing anything
+	assert.NoError(t, err)
+
+	mockRepo.AssertExpectations(t)
+}
+
+func TestDeleteProfileImage_Success_EmptyImageURL(t *testing.T) {
+	// Arrange - motorcycle with empty profile image URL
+	ctx := context.Background()
+	mockRepo := new(mocks.MockMotorcycleRepository)
+	mockLogger := setupMotorcycleMockLogger()
+
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger)
+
+	motorcycleID := "moto-123"
+	ownerID := "owner-123"
+	emptyURL := ""
+
+	existingMotorcycle := &domain.Motorcycle{
+		ID:              motorcycleID,
+		LicensePlate:    "ABC123",
+		OwnerID:         ownerID,
+		ProfileImageURL: &emptyURL, // Empty string
+	}
+
+	// Mock expectations
+	mockRepo.On("GetByID", ctx, motorcycleID).Return(existingMotorcycle, nil)
+
+	// Act
+	err := motorcycleInteractor.DeleteProfileImage(ctx, motorcycleID, ownerID)
+
+	// Assert - should succeed without doing anything
+	assert.NoError(t, err)
+
+	mockRepo.AssertExpectations(t)
+}
+
+func TestDeleteProfileImage_NotFound(t *testing.T) {
+	// Arrange
+	ctx := context.Background()
+	mockRepo := new(mocks.MockMotorcycleRepository)
+	mockLogger := setupMotorcycleMockLogger()
+
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger)
+
+	motorcycleID := "non-existent"
+	ownerID := "owner-123"
+
+	// Mock expectations
+	mockRepo.On("GetByID", ctx, motorcycleID).Return(nil, domain.ErrMotorcycleNotFound)
+
+	// Act
+	err := motorcycleInteractor.DeleteProfileImage(ctx, motorcycleID, ownerID)
+
+	// Assert
+	assert.Error(t, err)
+	assert.Equal(t, domain.ErrMotorcycleNotFound, err)
+
+	mockRepo.AssertExpectations(t)
+}
+
+func TestDeleteProfileImage_NotOwner(t *testing.T) {
+	// Arrange
+	ctx := context.Background()
+	mockRepo := new(mocks.MockMotorcycleRepository)
+	mockLogger := setupMotorcycleMockLogger()
+
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger)
+
+	motorcycleID := "moto-123"
+	ownerID := "other-owner" // Different from actual owner
+
+	existingMotorcycle := &domain.Motorcycle{
+		ID:           motorcycleID,
+		LicensePlate: "ABC123",
+		OwnerID:      "owner-123", // Actual owner
+	}
+
+	// Mock expectations
+	mockRepo.On("GetByID", ctx, motorcycleID).Return(existingMotorcycle, nil)
+
+	// Act
+	err := motorcycleInteractor.DeleteProfileImage(ctx, motorcycleID, ownerID)
+
+	// Assert
+	assert.Error(t, err)
+	assert.Equal(t, domain.ErrMotorcycleNotFound, err) // Returns 404 for security
+
+	mockRepo.AssertExpectations(t)
+}
+
+func TestDeleteProfileImage_StorageError_ContinuesSuccessfully(t *testing.T) {
+	// Arrange - storage deletion fails but operation continues
+	ctx := context.Background()
+	mockRepo := new(mocks.MockMotorcycleRepository)
+	mockLogger := setupMotorcycleMockLogger()
+	mockTx := new(mocks.MockTx)
+	mockStorage := new(mocks.MockStorageClient)
+
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger).
+		WithStorageClient(mockStorage)
+
+	motorcycleID := "moto-123"
+	ownerID := "owner-123"
+	imageURL := "https://firebasestorage.googleapis.com/v0/b/motogo.appspot.com/o/motorcycles%2Fprofile.jpg"
+
+	existingMotorcycle := &domain.Motorcycle{
+		ID:              motorcycleID,
+		OwnerID:         ownerID,
+		ProfileImageURL: &imageURL,
+	}
+
+	storageError := errors.New("storage unavailable")
+
+	// Mock expectations
+	mockRepo.On("GetByID", ctx, motorcycleID).Return(existingMotorcycle, nil)
+	mockStorage.On("DeleteStorageFile", ctx, imageURL).Return(storageError)
+	mockRepo.On("BeginTx", ctx).Return(mockTx, nil)
+	mockRepo.On("ClearProfileImageURL", ctx, mockTx, motorcycleID).Return(nil)
+	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil)
+
+	// Act
+	err := motorcycleInteractor.DeleteProfileImage(ctx, motorcycleID, ownerID)
+
+	// Assert - should succeed even with storage error (best effort)
+	assert.NoError(t, err)
+
+	mockRepo.AssertExpectations(t)
+	mockStorage.AssertExpectations(t)
+}
+
+func TestDeleteProfileImage_ClearURLError_Rollback(t *testing.T) {
+	// Arrange - database clear fails
+	ctx := context.Background()
+	mockRepo := new(mocks.MockMotorcycleRepository)
+	mockLogger := setupMotorcycleMockLogger()
+	mockTx := new(mocks.MockTx)
+	mockStorage := new(mocks.MockStorageClient)
+
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger).
+		WithStorageClient(mockStorage)
+
+	motorcycleID := "moto-123"
+	ownerID := "owner-123"
+	imageURL := "https://firebasestorage.googleapis.com/v0/b/motogo.appspot.com/o/motorcycles%2Fprofile.jpg"
+
+	existingMotorcycle := &domain.Motorcycle{
+		ID:              motorcycleID,
+		OwnerID:         ownerID,
+		ProfileImageURL: &imageURL,
+	}
+
+	dbError := errors.New("database error")
+
+	// Mock expectations
+	mockRepo.On("GetByID", ctx, motorcycleID).Return(existingMotorcycle, nil)
+	mockStorage.On("DeleteStorageFile", ctx, imageURL).Return(nil)
+	mockRepo.On("BeginTx", ctx).Return(mockTx, nil)
+	mockRepo.On("ClearProfileImageURL", ctx, mockTx, motorcycleID).Return(dbError)
+	mockTx.On("Rollback").Return(nil)
+
+	// Act
+	err := motorcycleInteractor.DeleteProfileImage(ctx, motorcycleID, ownerID)
+
+	// Assert
+	assert.Error(t, err)
+	assert.Equal(t, domain.ErrMotorcycleCannotUpdate, err)
+
+	mockTx.AssertCalled(t, "Rollback")
+	mockRepo.AssertExpectations(t)
+}
+
+func TestDeleteProfileImage_CommitError(t *testing.T) {
+	// Arrange
+	ctx := context.Background()
+	mockRepo := new(mocks.MockMotorcycleRepository)
+	mockLogger := setupMotorcycleMockLogger()
+	mockTx := new(mocks.MockTx)
+	mockStorage := new(mocks.MockStorageClient)
+
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger).
+		WithStorageClient(mockStorage)
+
+	motorcycleID := "moto-123"
+	ownerID := "owner-123"
+	imageURL := "https://firebasestorage.googleapis.com/v0/b/motogo.appspot.com/o/motorcycles%2Fprofile.jpg"
+
+	existingMotorcycle := &domain.Motorcycle{
+		ID:              motorcycleID,
+		OwnerID:         ownerID,
+		ProfileImageURL: &imageURL,
+	}
+
+	commitError := errors.New("commit failed")
+
+	// Mock expectations
+	mockRepo.On("GetByID", ctx, motorcycleID).Return(existingMotorcycle, nil)
+	mockStorage.On("DeleteStorageFile", ctx, imageURL).Return(nil)
+	mockRepo.On("BeginTx", ctx).Return(mockTx, nil)
+	mockRepo.On("ClearProfileImageURL", ctx, mockTx, motorcycleID).Return(nil)
+	mockTx.On("Commit").Return(commitError)
+	mockTx.On("Rollback").Return(nil)
+
+	// Act
+	err := motorcycleInteractor.DeleteProfileImage(ctx, motorcycleID, ownerID)
+
+	// Assert
+	assert.Error(t, err)
+	assert.Equal(t, domain.ErrMotorcycleCannotUpdate, err)
+
+	mockRepo.AssertExpectations(t)
+}
+
+func TestDeleteProfileImage_Success_WithoutStorageClient(t *testing.T) {
+	// Arrange - no storage client configured (skips storage deletion)
+	ctx := context.Background()
+	mockRepo := new(mocks.MockMotorcycleRepository)
+	mockLogger := setupMotorcycleMockLogger()
+	mockTx := new(mocks.MockTx)
+
+	// No storage client configured
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger)
+
+	motorcycleID := "moto-123"
+	ownerID := "owner-123"
+	imageURL := "https://firebasestorage.googleapis.com/v0/b/motogo.appspot.com/o/motorcycles%2Fprofile.jpg"
+
+	existingMotorcycle := &domain.Motorcycle{
+		ID:              motorcycleID,
+		OwnerID:         ownerID,
+		ProfileImageURL: &imageURL,
+	}
+
+	// Mock expectations - no storage deletion expected
+	mockRepo.On("GetByID", ctx, motorcycleID).Return(existingMotorcycle, nil)
+	mockRepo.On("BeginTx", ctx).Return(mockTx, nil)
+	mockRepo.On("ClearProfileImageURL", ctx, mockTx, motorcycleID).Return(nil)
+	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil)
+
+	// Act
+	err := motorcycleInteractor.DeleteProfileImage(ctx, motorcycleID, ownerID)
+
+	// Assert
+	assert.NoError(t, err)
+
+	mockRepo.AssertExpectations(t)
+	mockTx.AssertCalled(t, "Commit")
 }

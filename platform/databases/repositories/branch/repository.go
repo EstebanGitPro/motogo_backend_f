@@ -24,10 +24,12 @@ const (
 
 	queryGetBranchByID = `
 		SELECT b.id, b.representative_id, b.franchise_id, b.name, b.establishment_type, b.profile_image_url, b.status,
-			   l.id, l.city_id, l.address, l.latitude, l.longitude, c.department_id
+			   l.id, l.city_id, l.address, l.latitude, l.longitude, c.department_id,
+			   p.phone_number
 		FROM branches b
 		LEFT JOIN locations l ON b.id = l.branch_id
 		LEFT JOIN cities c ON l.city_id = c.id
+		LEFT JOIN persons p ON b.representative_id = p.id
 		WHERE b.id = ?
 	`
 	queryGetBranchByFranchiseAndName = `
@@ -38,10 +40,12 @@ const (
 	`
 	queryGetBranchesByRepresentative = `
 		SELECT b.id, b.representative_id, b.franchise_id, b.name, b.establishment_type, b.profile_image_url, b.status,
-		       l.id, l.city_id, l.address, l.latitude, l.longitude, c.department_id
+		       l.id, l.city_id, l.address, l.latitude, l.longitude, c.department_id,
+		       p.phone_number
 		FROM branches b
 		LEFT JOIN locations l ON b.id = l.branch_id
 		LEFT JOIN cities c ON l.city_id = c.id
+		LEFT JOIN persons p ON b.representative_id = p.id
 		WHERE b.representative_id = ?
 	`
 	querySaveBranchBrand = `
@@ -62,6 +66,7 @@ const (
 			b.id, b.name, b.establishment_type, b.profile_image_url, b.status,
 			l.address, l.latitude, l.longitude,
 			ci.name AS city_name, d.name AS department_name,
+			p.phone_number,
 			(6371 * ACOS(
 				COS(RADIANS(?)) * COS(RADIANS(l.latitude)) *
 				COS(RADIANS(l.longitude) - RADIANS(?)) +
@@ -71,6 +76,7 @@ const (
 		INNER JOIN locations l ON b.id = l.branch_id
 		INNER JOIN cities ci ON l.city_id = ci.id
 		INNER JOIN departments d ON ci.department_id = d.id
+		LEFT JOIN persons p ON b.representative_id = p.id
 		WHERE b.status = 'ACTIVE'
 		  AND l.latitude IS NOT NULL
 		  AND l.longitude IS NOT NULL

@@ -28,7 +28,7 @@ docker run --rm \
   --entrypoint sh \
   -v "$(pwd):/app" \
   -w /app \
-  motogo-swag -c "/go/bin/swag init --generalInfo cmd/main.go --output platform/swaggo --parseInternal --parseDependency"
+  motogo-swag -c "/go/bin/swag init -d ./ --generalInfo cmd/main.go --output platform/swaggo --parseInternal --parseDependency"
 
 echo ""
 echo "✅ Documentación regenerada"

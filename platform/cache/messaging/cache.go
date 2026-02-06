@@ -436,6 +436,14 @@ var messageCodeToHTTPStatus = map[string]int{
 	"MOD_MOT_LIST_ERR_00001":          http.StatusBadRequest, // 400 - Error al listar
 	"MOD_MOT_PLATE_REQ_ERR_00001":     http.StatusBadRequest, // 400 - Placa requerida
 
+	// Profile Image (MOD_MOT_IMG_*) - HU36-39
+	"MOD_MOT_IMG_UPDATE_EXI_00001":    http.StatusOK,         // 200 - Imagen actualizada (HU36/37)
+	"MOD_MOT_IMG_GET_EXI_00001":       http.StatusOK,         // 200 - Imagen obtenida (HU38)
+	"MOD_MOT_IMG_DELETE_EXI_00001":    http.StatusOK,         // 200 - Imagen eliminada (HU39)
+	"MOD_MOT_IMG_UPDATE_ERR_00001":    http.StatusBadRequest, // 400 - Error actualizando imagen
+	"MOD_MOT_IMG_NOT_FOUND_ERR_00001": http.StatusNotFound,   // 404 - Imagen no encontrada
+	"MOD_MOT_IMG_URL_REQ_ERR_00001":   http.StatusBadRequest, // 400 - URL de imagen requerida
+
 	// ========================================
 	// Geolocation Validation (MOD_V_GEO_*) - HU89
 	// ========================================

@@ -13,6 +13,7 @@ import (
 // MotorcycleInteractor handles motorcycle-related use cases (HU43-47)
 type MotorcycleInteractor struct {
 	motorcycleRepo output.MotorcycleRepository
+	storageClient  output.StorageClient // Optional: Firebase Storage for image deletion
 	logger         logger.Logger
 }
 
@@ -22,6 +23,12 @@ func NewMotorcycleInteractor(motorcycleRepo output.MotorcycleRepository, log log
 		motorcycleRepo: motorcycleRepo,
 		logger:         log,
 	}
+}
+
+// WithStorageClient sets the storage client for image deletion (optional)
+func (i *MotorcycleInteractor) WithStorageClient(client output.StorageClient) *MotorcycleInteractor {
+	i.storageClient = client
+	return i
 }
 
 // RegisterMotorcycle registers a new motorcycle for the authenticated user (HU43)
@@ -185,6 +192,9 @@ func (i *MotorcycleInteractor) UpdateMotorcycle(ctx context.Context, motorcycleI
 	if updates.OwnerNotes != nil {
 		motorcycle.OwnerNotes = updates.OwnerNotes
 	}
+	if updates.ProfileImageURL != nil {
+		motorcycle.ProfileImageURL = updates.ProfileImageURL
+	}
 
 	// Step 5: Begin transaction
 	tx, err := i.motorcycleRepo.BeginTx(ctx)
@@ -213,7 +223,10 @@ func (i *MotorcycleInteractor) UpdateMotorcycle(ctx context.Context, motorcycleI
 	return i.motorcycleRepo.GetByID(ctx, motorcycleID)
 }
 
-// DeleteMotorcycle soft-deletes a motorcycle (HU45)
+// DeleteMotorcycle implements hybrid delete strategy (HU45):
+// - Hard delete: If motorcycle has NO service history (diagnostics/completed_services)
+// - Soft delete: If motorcycle HAS service history (preserves historical data)
+// In both cases, profile image is removed from Firebase Storage
 // Only owner can delete their motorcycle - returns 404 for non-owners
 func (i *MotorcycleInteractor) DeleteMotorcycle(ctx context.Context, motorcycleID string, ownerID string) error {
 	traceID := middleware.GetTraceIDFromContext(ctx)
@@ -234,28 +247,115 @@ func (i *MotorcycleInteractor) DeleteMotorcycle(ctx context.Context, motorcycleI
 		return domain.ErrMotorcycleNotFound
 	}
 
-	// Step 3: Begin transaction
+	// Step 3: Check if motorcycle has service history
+	hasHistory, err := i.motorcycleRepo.HasServiceHistory(ctx, motorcycleID)
+	if err != nil {
+		log.Error(logger.LogMotorcycleInteractorDeleteError, "error checking history", err, "motorcycle_id", motorcycleID)
+		return domain.ErrMotorcycleCannotDelete
+	}
+
+	// Step 4: Delete profile image from Firebase Storage (if exists and client configured)
+	if motorcycle.ProfileImageURL != nil && *motorcycle.ProfileImageURL != "" && i.storageClient != nil {
+		if err := i.storageClient.DeleteStorageFile(ctx, *motorcycle.ProfileImageURL); err != nil {
+			// Log warning but don't fail the delete - image cleanup is best effort
+			log.Warn(logger.LogMotorcycleInteractorDeleteError, "storage delete failed (continuing)", err)
+		}
+	}
+
+	// Step 5: Begin transaction
 	tx, err := i.motorcycleRepo.BeginTx(ctx)
 	if err != nil {
 		log.Error(logger.LogMotorcycleInteractorBeginTxError, "error", err)
 		return domain.ErrMotorcycleCannotDelete
 	}
 
-	// Step 4: Soft delete motorcycle
-	err = i.motorcycleRepo.Delete(ctx, tx, motorcycleID)
-	if err != nil {
-		log.Error(logger.LogMotorcycleInteractorDeleteError, "error", err, "motorcycle_id", motorcycleID)
-		tx.Rollback()
-		return domain.ErrMotorcycleCannotDelete
+	// Step 6: Choose delete strategy based on history
+	if hasHistory {
+		// Soft delete - preserves historical data integrity
+		log.Info(logger.LogMotorcycleInteractorDeleteStart, "strategy", "soft_delete", "motorcycle_id", motorcycleID)
+		if err = i.motorcycleRepo.Delete(ctx, tx, motorcycleID); err != nil {
+			log.Error(logger.LogMotorcycleInteractorDeleteError, "error", err, "motorcycle_id", motorcycleID)
+			tx.Rollback()
+			return domain.ErrMotorcycleCannotDelete
+		}
+	} else {
+		// Hard delete - no history to preserve, clean removal
+		log.Info(logger.LogMotorcycleInteractorDeleteStart, "strategy", "hard_delete", "motorcycle_id", motorcycleID)
+		if err = i.motorcycleRepo.HardDelete(ctx, tx, motorcycleID); err != nil {
+			log.Error(logger.LogMotorcycleInteractorDeleteError, "error", err, "motorcycle_id", motorcycleID)
+			tx.Rollback()
+			return domain.ErrMotorcycleCannotDelete
+		}
 	}
 
-	// Step 5: Commit transaction
+	// Step 7: Commit transaction
 	if err := tx.Commit(); err != nil {
 		log.Error(logger.LogMotorcycleInteractorCommitError, "error", err)
 		return domain.ErrMotorcycleCannotDelete
 	}
 
-	log.Success(logger.LogMotorcycleInteractorDeleteSuccess, "motorcycle_id", motorcycleID)
+	log.Success(logger.LogMotorcycleInteractorDeleteSuccess, "motorcycle_id", motorcycleID, "strategy", map[bool]string{true: "soft_delete", false: "hard_delete"}[hasHistory])
+	return nil
+}
+
+// DeleteProfileImage removes profile image from both Firebase Storage and database (HU39)
+// Only owner can delete their motorcycle's image - returns 404 for non-owners
+func (i *MotorcycleInteractor) DeleteProfileImage(ctx context.Context, motorcycleID string, ownerID string) error {
+	traceID := middleware.GetTraceIDFromContext(ctx)
+	log := i.logger.WithTraceID(traceID)
+
+	log.Info(logger.LogMotorcycleInteractorUpdateStart, "action", "delete_profile_image", "motorcycle_id", motorcycleID, "owner_id", ownerID)
+
+	// Step 1: Get existing motorcycle
+	motorcycle, err := i.motorcycleRepo.GetByID(ctx, motorcycleID)
+	if err != nil {
+		log.Error(logger.LogMotorcycleInteractorGetError, "error", err, "motorcycle_id", motorcycleID)
+		return err
+	}
+
+	// Step 2: Validate ownership (security by obscurity - 404 for non-owners)
+	if motorcycle.OwnerID != ownerID {
+		log.Warn(logger.LogMotorcycleInteractorUpdateError, "reason", "not owner", "motorcycle_id", motorcycleID, "owner_id", ownerID)
+		return domain.ErrMotorcycleNotFound
+	}
+
+	// Step 3: Check if there's an image to delete
+	if motorcycle.ProfileImageURL == nil || *motorcycle.ProfileImageURL == "" {
+		log.Info(logger.LogMotorcycleInteractorUpdateSuccess, "action", "delete_profile_image", "result", "no_image_to_delete")
+		return nil // Nothing to delete
+	}
+
+	// Step 4: Delete from Firebase Storage (if client configured)
+	if i.storageClient != nil {
+		if err := i.storageClient.DeleteStorageFile(ctx, *motorcycle.ProfileImageURL); err != nil {
+			// Log warning but continue - storage cleanup is best effort
+			log.Warn(logger.LogMotorcycleInteractorUpdateError, "storage delete failed (continuing)", err, "url", *motorcycle.ProfileImageURL)
+		} else {
+			log.Info(logger.LogMotorcycleInteractorUpdateSuccess, "action", "storage_file_deleted", "url", *motorcycle.ProfileImageURL)
+		}
+	}
+
+	// Step 5: Begin transaction
+	tx, err := i.motorcycleRepo.BeginTx(ctx)
+	if err != nil {
+		log.Error(logger.LogMotorcycleInteractorBeginTxError, "error", err)
+		return domain.ErrMotorcycleCannotUpdate
+	}
+
+	// Step 6: Clear profile image URL in database
+	if err := i.motorcycleRepo.ClearProfileImageURL(ctx, tx, motorcycleID); err != nil {
+		log.Error(logger.LogMotorcycleInteractorUpdateError, "error", err, "motorcycle_id", motorcycleID)
+		tx.Rollback()
+		return domain.ErrMotorcycleCannotUpdate
+	}
+
+	// Step 7: Commit transaction
+	if err := tx.Commit(); err != nil {
+		log.Error(logger.LogMotorcycleInteractorCommitError, "error", err)
+		return domain.ErrMotorcycleCannotUpdate
+	}
+
+	log.Success(logger.LogMotorcycleInteractorUpdateSuccess, "action", "delete_profile_image", "motorcycle_id", motorcycleID)
 	return nil
 }
 

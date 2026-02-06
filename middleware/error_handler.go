@@ -99,9 +99,10 @@ var errorToMessageCode = map[error]string{
 }
 
 type ErrorResponse struct {
-	Success bool   `json:"success"`
-	Code    string `json:"code"`
-	Message string `json:"message"`
+	Success bool     `json:"success"`
+	Code    string   `json:"code"`
+	Message string   `json:"message"`
+	Fields  []string `json:"fields,omitempty"` // HU36: Show which fields failed validation
 }
 
 var log logger.Logger = logger.NewSlogLogger()
@@ -129,8 +130,10 @@ func (h *ErrorHandler) Handle() gin.HandlerFunc {
 
 			// Extract validation field names from context if available
 			var params []string
+			var validationFieldsList []string
 			if validationFields, exists := c.Get("validation_fields"); exists {
 				if fields, ok := validationFields.([]string); ok {
+					validationFieldsList = fields // Keep original list for response
 					// For multiple fields error, concatenate all field names into one parameter
 					if len(fields) > 1 {
 						// Join fields with comma for multiple fields message
@@ -165,6 +168,7 @@ func (h *ErrorHandler) Handle() gin.HandlerFunc {
 						Success: false,
 						Code:    msg.Code,
 						Message: msg.Content,
+						Fields:  validationFieldsList, // Include fields that failed validation
 					})
 					return
 				}

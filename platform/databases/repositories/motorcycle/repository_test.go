@@ -34,6 +34,8 @@ func TestNewRepository_Success(t *testing.T) {
 	mock.ExpectPrepare("UPDATE motorcycles.*SET deleted_at")
 	mock.ExpectPrepare("SELECT r.id, r.brand_id.*FROM motorcycle_references r.*ORDER BY b.name")
 	mock.ExpectPrepare("SELECT r.id, r.brand_id.*FROM motorcycle_references r.*WHERE r.brand_id")
+	// Schema validation statement (prepared and immediately closed)
+	mock.ExpectPrepare("SELECT EXISTS.*completed_services.*diagnostics")
 
 	repo, err := NewRepository(db)
 
@@ -173,10 +175,10 @@ func TestGetByID_Success(t *testing.T) {
 	defer db.Close()
 
 	rows := sqlmock.NewRows([]string{
-		"id", "license_plate", "reference_id", "owner_id", "year", "current_mileage", "owner_notes",
+		"id", "license_plate", "reference_id", "owner_id", "year", "current_mileage", "owner_notes", "profile_image_url",
 		"ref_id", "brand_id", "brand_name", "model", "category", "engine_displacement",
 	}).AddRow(
-		"moto-123", "ABC123", "ref-456", "owner-789", 2020, 15000, "Buen estado",
+		"moto-123", "ABC123", "ref-456", "owner-789", 2020, 15000, "Buen estado", "https://storage.example.com/image.jpg",
 		"ref-456", "brand-001", "Yamaha", "MT-07", "SPORT", 689,
 	)
 
@@ -196,6 +198,8 @@ func TestGetByID_Success(t *testing.T) {
 	assert.Equal(t, "ABC123", motorcycle.LicensePlate)
 	assert.NotNil(t, motorcycle.Year)
 	assert.Equal(t, 2020, *motorcycle.Year)
+	assert.NotNil(t, motorcycle.ProfileImageURL)
+	assert.Equal(t, "https://storage.example.com/image.jpg", *motorcycle.ProfileImageURL)
 }
 
 func TestGetByID_NotFound(t *testing.T) {
@@ -246,13 +250,13 @@ func TestGetByOwnerID_Success(t *testing.T) {
 	defer db.Close()
 
 	rows := sqlmock.NewRows([]string{
-		"id", "license_plate", "reference_id", "owner_id", "year", "current_mileage", "owner_notes",
+		"id", "license_plate", "reference_id", "owner_id", "year", "current_mileage", "owner_notes", "profile_image_url",
 		"ref_id", "brand_id", "brand_name", "model", "category", "engine_displacement",
 	}).AddRow(
-		"moto-1", "XYZ999", "ref-1", "owner-123", 2021, 5000, nil,
+		"moto-1", "XYZ999", "ref-1", "owner-123", 2021, 5000, nil, nil,
 		"ref-1", "brand-002", "Honda", "CBR-600", "SPORT", 599,
 	).AddRow(
-		"moto-2", "DEF456", "ref-2", "owner-123", 2019, 25000, "Revision reciente",
+		"moto-2", "DEF456", "ref-2", "owner-123", 2019, 25000, "Revision reciente", "https://example.com/image.jpg",
 		"ref-2", "brand-001", "Yamaha", "R6", "SUPERSPORT", 599,
 	)
 
@@ -278,7 +282,7 @@ func TestGetByOwnerID_Empty(t *testing.T) {
 	defer db.Close()
 
 	rows := sqlmock.NewRows([]string{
-		"id", "license_plate", "reference_id", "owner_id", "year", "current_mileage", "owner_notes",
+		"id", "license_plate", "reference_id", "owner_id", "year", "current_mileage", "owner_notes", "profile_image_url",
 		"ref_id", "brand_id", "brand_name", "model", "category", "engine_displacement",
 	})
 
@@ -325,10 +329,10 @@ func TestGetByLicensePlate_Success(t *testing.T) {
 	defer db.Close()
 
 	rows := sqlmock.NewRows([]string{
-		"id", "license_plate", "reference_id", "owner_id", "year", "current_mileage", "owner_notes",
+		"id", "license_plate", "reference_id", "owner_id", "year", "current_mileage", "owner_notes", "profile_image_url",
 		"ref_id", "brand_id", "brand_name", "model", "category", "engine_displacement",
 	}).AddRow(
-		"moto-by-plate", "ZZZ111", "ref-plate", "owner-plate", 2022, 1000, nil,
+		"moto-by-plate", "ZZZ111", "ref-plate", "owner-plate", 2022, 1000, nil, nil,
 		"ref-plate", "brand-003", "Kawasaki", "Ninja-400", "SPORT", 399,
 	)
 

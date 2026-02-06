@@ -87,6 +87,7 @@ type BranchResponse struct {
 	EstablishmentType      string          `json:"establishment_type"`
 	EstablishmentTypeLabel string          `json:"establishment_type_label"` // Spanish label for UI
 	Status                 string          `json:"status"`
+	ContactPhone           *string         `json:"contact_phone,omitempty"` // Representative's phone
 	FranchiseID            *string         `json:"franchise_id,omitempty"`
 	ProfileImageURL        *string         `json:"profile_image_url,omitempty"`
 	Location               *LocationDTO    `json:"location,omitempty"`
@@ -103,6 +104,7 @@ func NewBranchResponse(branch *domain.Branch, encodedID string, geocodingStatus 
 		EstablishmentType:      branch.EstablishmentType,
 		EstablishmentTypeLabel: domain.GetEstablishmentTypeLabel(branch.EstablishmentType),
 		Status:                 branch.Status,
+		ContactPhone:           branch.RepresentativePhone,
 		FranchiseID:            branch.FranchiseID,
 		ProfileImageURL:        branch.ProfileImageURL,
 		Brands:                 branch.Brands,
@@ -173,6 +175,7 @@ type NearbyBranchResponse struct {
 	EstablishmentType      string  `json:"establishment_type"`
 	EstablishmentTypeLabel string  `json:"establishment_type_label"`
 	ProfileImageURL        *string `json:"profile_image_url,omitempty"`
+	ContactPhone           *string `json:"contact_phone,omitempty"` // Representative's phone
 	Address                string  `json:"address"`
 	CityName               string  `json:"city_name"`
 	DepartmentName         string  `json:"department_name"`
@@ -190,6 +193,7 @@ func NewNearbyBranchResponse(branch domain.NearbyBranch, encodedID string, baseU
 		EstablishmentType:      branch.EstablishmentType,
 		EstablishmentTypeLabel: domain.GetEstablishmentTypeLabel(branch.EstablishmentType),
 		ProfileImageURL:        branch.ProfileImageURL,
+		ContactPhone:           branch.ContactPhone,
 		DistanceKm:             branch.DistanceKm,
 		Links:                  BuildBranchDetailLinks(baseURL, encodedID, false),
 	}

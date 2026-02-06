@@ -673,6 +673,13 @@ const (
 	LogFirebaseTokenCreateError = "Error creando token personalizado Firebase"
 	LogFirebaseTokenClaimsOK    = "Token con claims personalizado creado"
 	LogFirebaseTokenClaimsError = "Error creando token con claims"
+	// Storage operations (HU39/HU45)
+	LogFirebaseStorageClientWarn     = "No se pudo inicializar cliente de Storage Firebase (continuando sin Storage)"
+	LogFirebaseStorageNotConfigured  = "Cliente de Storage Firebase no configurado - delete ignorado"
+	LogFirebaseStorageParseError     = "Error parseando URL de Firebase Storage"
+	LogFirebaseStorageDeleteOK       = "Archivo eliminado de Firebase Storage exitosamente"
+	LogFirebaseStorageDeleteError    = "Error eliminando archivo de Firebase Storage"
+	LogFirebaseStorageAlreadyDeleted = "Archivo ya eliminado de Firebase Storage (no existe)"
 )
 
 // ============================================
@@ -1210,4 +1217,63 @@ const (
 	LogMotorcycleControllerBrandLinesRequest = "Brand lines request received"
 	LogMotorcycleControllerBrandLinesError   = "Error getting brand lines"
 	LogMotorcycleControllerBrandLinesSuccess = "Brand lines retrieved successfully"
+)
+
+// ============================================
+// MOTORCYCLE EVIDENCE INTERACTOR (HU16-19)
+// ============================================
+const (
+	// Evidence Create (HU16)
+	LogEvidenceInteractorCreateStart     = "Evidence creation started"
+	LogEvidenceInteractorMotorcycleError = "Error getting motorcycle for evidence"
+	LogEvidenceInteractorOwnerError      = "User is not the owner of this motorcycle"
+	LogEvidenceInteractorURLInvalid      = "Invalid Firebase Storage URL"
+	LogEvidenceInteractorAngleInvalid    = "Invalid evidence angle provided"
+	LogEvidenceInteractorCountError      = "Error counting evidence for motorcycle"
+	LogEvidenceInteractorLimitExceeded   = "Maximum evidence limit exceeded"
+	LogEvidenceInteractorIDGenerated     = "Evidence ID generated"
+	LogEvidenceInteractorBeginTxError    = "Error beginning transaction for evidence"
+	LogEvidenceInteractorSaveError       = "Error saving evidence"
+	LogEvidenceInteractorCommitError     = "Error committing evidence transaction"
+	LogEvidenceInteractorCreateSuccess   = "Evidence created successfully"
+
+	// Evidence Get (HU18)
+	LogEvidenceInteractorGetStart   = "Evidence get by ID started"
+	LogEvidenceInteractorGetError   = "Error getting evidence by ID"
+	LogEvidenceInteractorGetSuccess = "Evidence get by ID success"
+
+	// Evidence List (HU18)
+	LogEvidenceInteractorListStart   = "Evidence list by motorcycle started"
+	LogEvidenceInteractorListError   = "Error listing evidence by motorcycle"
+	LogEvidenceInteractorListSuccess = "Evidence list retrieved successfully"
+
+	// Evidence Delete (HU19)
+	LogEvidenceInteractorDeleteStart   = "Evidence delete started"
+	LogEvidenceInteractorDeleteError   = "Error deleting evidence"
+	LogEvidenceInteractorDeleteSuccess = "Evidence deleted successfully"
+)
+
+// ============================================
+// MOTORCYCLE EVIDENCE CONTROLLER (HU16-19)
+// ============================================
+const (
+	LogEvidenceControllerCreateRequest = "Create evidence request received"
+	LogEvidenceControllerCreateError   = "Error creating evidence"
+	LogEvidenceControllerCreateSuccess = "Evidence created successfully"
+	LogEvidenceControllerListRequest   = "List evidence request received"
+	LogEvidenceControllerListError     = "Error listing evidence"
+	LogEvidenceControllerListSuccess   = "Evidence listed successfully"
+	LogEvidenceControllerGetRequest    = "Get evidence request received"
+	LogEvidenceControllerGetError      = "Error getting evidence"
+	LogEvidenceControllerGetSuccess    = "Evidence retrieved successfully"
+	LogEvidenceControllerDeleteRequest = "Delete evidence request received"
+	LogEvidenceControllerDeleteError   = "Error deleting evidence"
+	LogEvidenceControllerDeleteSuccess = "Evidence deleted successfully"
+)
+
+// ============================================
+// MOTORCYCLE EVIDENCE REPOSITORY (HU16-19)
+// ============================================
+const (
+	LogDatabaseError = "Database error"
 )

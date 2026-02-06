@@ -15,6 +15,7 @@ func (r *repository) GetBranchByID(ctx context.Context, branchID string) (*domai
 	var locationID, cityID, address sql.NullString
 	var latitude, longitude sql.NullFloat64
 	var departmentID sql.NullString
+	var phoneNumber sql.NullString
 
 	err := r.stmtGetBranchByID.QueryRowContext(ctx, branchID).Scan(
 		&branch.ID,
@@ -30,6 +31,7 @@ func (r *repository) GetBranchByID(ctx context.Context, branchID string) (*domai
 		&latitude,
 		&longitude,
 		&departmentID,
+		&phoneNumber,
 	)
 
 	if err != nil {
@@ -45,6 +47,9 @@ func (r *repository) GetBranchByID(ctx context.Context, branchID string) (*domai
 	}
 	if profileImageURL.Valid {
 		branch.ProfileImageURL = &profileImageURL.String
+	}
+	if phoneNumber.Valid {
+		branch.RepresentativePhone = &phoneNumber.String
 	}
 
 	if locationID.Valid {

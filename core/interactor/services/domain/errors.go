@@ -457,6 +457,11 @@ const (
 	MsgMotorcycleReferencesListed = "MOD_MOT_REF_LIST_EXI_00001"    // HU50
 	MsgBrandLinesRetrieved        = "MOD_MOT_BRAND_LINES_EXI_00001" // HU40
 
+	// Profile Image Success Messages (HU36-39)
+	MsgProfileImageUpdated = "MOD_MOT_IMG_UPDATE_EXI_00001" // HU36/37
+	MsgProfileImageGet     = "MOD_MOT_IMG_GET_EXI_00001"    // HU38
+	MsgProfileImageDeleted = "MOD_MOT_IMG_DELETE_EXI_00001" // HU39
+
 	// Error messages
 	MsgMotorcycleNotFound          = "MOD_MOT_NOT_FOUND_ERR_00001"
 	MsgMotorcycleCannotSave        = "MOD_MOT_CREATE_ERR_00001"
@@ -466,4 +471,39 @@ const (
 	MsgMotorcycleReferenceNotFound = "MOD_MOT_REF_NOT_FOUND_ERR_00001"
 	MsgReferenceRequired           = "MOD_MOT_REF_REQ_ERR_00001"
 	MsgMissingPlateParam           = "MOD_MOT_PLATE_REQ_ERR_00001"
+
+	// Profile Image Error Messages (HU36-39)
+	MsgProfileImageUpdateError = "MOD_MOT_IMG_UPDATE_ERR_00001"
+	MsgProfileImageNotFound    = "MOD_MOT_IMG_NOT_FOUND_ERR_00001"
+	MsgProfileImageURLRequired = "MOD_MOT_IMG_URL_REQ_ERR_00001"
+)
+
+// Motorcycle Evidence Errors (MOD_EVD_*) - HU16-19
+var (
+	ErrEvidenceNotFound      = errors.New("ERR_EVIDENCE_NOT_FOUND")
+	ErrEvidenceCannotSave    = errors.New("ERR_EVIDENCE_CANNOT_SAVE")
+	ErrEvidenceCannotUpdate  = errors.New("ERR_EVIDENCE_CANNOT_UPDATE")
+	ErrEvidenceCannotDelete  = errors.New("ERR_EVIDENCE_CANNOT_DELETE")
+	ErrEvidenceLimitExceeded = errors.New("ERR_EVIDENCE_LIMIT_EXCEEDED")
+	ErrInvalidEvidenceURL    = errors.New("ERR_INVALID_EVIDENCE_URL")
+	ErrInvalidEvidenceAngle  = errors.New("ERR_INVALID_EVIDENCE_ANGLE")
+)
+
+// Motorcycle Evidence Module (MOD_EVD_*) - HU16-19
+const (
+	// Success messages
+	MsgEvidenceCreated   = "MOD_EVD_CREATE_EXI_00001"
+	MsgEvidenceRetrieved = "MOD_EVD_GET_EXI_00001"
+	MsgEvidenceUpdated   = "MOD_EVD_UPDATE_EXI_00001"
+	MsgEvidenceDeleted   = "MOD_EVD_DELETE_EXI_00001"
+	MsgEvidencesListed   = "MOD_EVD_LIST_EXI_00001"
+
+	// Error messages
+	MsgEvidenceNotFound      = "MOD_EVD_NOT_FOUND_ERR_00001"
+	MsgEvidenceCannotSave    = "MOD_EVD_CREATE_ERR_00001"
+	MsgEvidenceCannotUpdate  = "MOD_EVD_UPDATE_ERR_00001"
+	MsgEvidenceCannotDelete  = "MOD_EVD_DELETE_ERR_00001"
+	MsgEvidenceLimitExceeded = "MOD_EVD_LIMIT_ERR_00001"
+	MsgInvalidEvidenceURL    = "MOD_EVD_URL_ERR_00001"
+	MsgInvalidEvidenceAngle  = "MOD_EVD_ANGLE_ERR_00001"
 )

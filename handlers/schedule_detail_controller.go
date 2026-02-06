@@ -166,10 +166,7 @@ func (h *handler) ListScheduleDetails(
 			"path", c.Request.URL.Path,
 			"client_ip", c.ClientIP())
 
-		// 1. Get authenticated person from context
-		person, _ := middleware.GetAuthenticatedUser(c)
-
-		// 2. Decode branch ID
+		// 1. Decode branch ID (no ownership check needed for public viewing)
 		encodedBranchID := c.Param("id")
 		branchID, err := h.DecodeID(encodedBranchID)
 		if err != nil {
@@ -178,8 +175,8 @@ func (h *handler) ListScheduleDetails(
 			return
 		}
 
-		// 3. Get schedule for this branch
-		schedule, err := scheduleInteractor.GetScheduleByBranchID(c.Request.Context(), branchID, person.ID)
+		// 2. Get schedule for this branch (public access - no ownership validation)
+		schedule, err := scheduleInteractor.GetScheduleByBranchIDPublic(c.Request.Context(), branchID)
 		if err != nil {
 			log.Error(logger.LogScheduleDetailControllerListError, "error", err, "branch_id", branchID)
 			switch {
@@ -187,8 +184,6 @@ func (h *handler) ListScheduleDetails(
 				h.Response.Error(c, domain.MsgScheduleNotFound)
 			case errors.Is(err, domain.ErrBranchNotFound):
 				h.Response.Error(c, domain.MsgBranchNotFound)
-			case errors.Is(err, domain.ErrForbidden):
-				h.Response.Error(c, domain.MsgForbidden)
 			default:
 				h.Response.Error(c, domain.MsgServerError)
 			}

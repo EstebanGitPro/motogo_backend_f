@@ -159,6 +159,11 @@ func (b *Builder) WithValidateRegisterMotorcycle() gin.HandlerFunc {
 	return b.jsonValidator(b.Validators.RegisterMotorcycleValidator)
 }
 
+// WithValidateEvidence validates evidence creation request (HU16)
+func (b *Builder) WithValidateEvidence() gin.HandlerFunc {
+	return b.jsonValidator(b.Validators.CreateEvidenceValidator)
+}
+
 func (b *Builder) jsonValidator(schema *jsonschema.Schema) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Get request ID for trace correlation

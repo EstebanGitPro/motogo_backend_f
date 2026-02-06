@@ -1,5 +1,13 @@
+basePath: /motogo/api/v1
 definitions:
-  domain.MessageType:
+  github_com_EstebanGitPro_motogo-backend_core_interactor_services_domain.EstablishmentTypeInfo:
+    properties:
+      code:
+        type: string
+      label:
+        type: string
+    type: object
+  github_com_EstebanGitPro_motogo-backend_core_interactor_services_domain.MessageType:
     enum:
     - ERROR
     - EXITO
@@ -13,6 +21,32 @@ definitions:
     - TypeWarning
     - TypeInfo
     - TypeDebug
+  handlers.AddBranchToFranchiseRequest:
+    properties:
+      branch_id:
+        type: string
+    required:
+    - branch_id
+    type: object
+  handlers.AssociateBranchServicesRequest:
+    properties:
+      service_ids:
+        items:
+          type: string
+        minItems: 1
+        type: array
+    required:
+    - service_ids
+    type: object
+  handlers.AssociateBranchServicesResponse:
+    properties:
+      _links:
+        items:
+          $ref: '#/definitions/handlers.Link'
+        type: array
+      added_count:
+        type: integer
+    type: object
   handlers.AuthMeResponse:
     properties:
       _links:
@@ -36,6 +70,114 @@ definitions:
       second_last_name:
         type: string
     type: object
+  handlers.BranchListItemResponse:
+    properties:
+      _links:
+        items:
+          $ref: '#/definitions/handlers.Link'
+        type: array
+      brands:
+        items:
+          type: string
+        type: array
+      establishment_type:
+        type: string
+      establishment_type_label:
+        description: Spanish label for UI
+        type: string
+      franchise_id:
+        type: string
+      id:
+        type: string
+      location:
+        $ref: '#/definitions/handlers.LocationDTO'
+      name:
+        type: string
+      profile_image_url:
+        type: string
+      status:
+        type: string
+    type: object
+  handlers.BranchResponse:
+    properties:
+      _links:
+        items:
+          $ref: '#/definitions/handlers.Link'
+        type: array
+      brands:
+        items:
+          type: string
+        type: array
+      contact_phone:
+        description: Representative's phone
+        type: string
+      establishment_type:
+        type: string
+      establishment_type_label:
+        description: Spanish label for UI
+        type: string
+      franchise_id:
+        type: string
+      geocoding_status:
+        allOf:
+        - $ref: '#/definitions/handlers.GeocodingStatus'
+        description: Indicates geocoding result
+      id:
+        type: string
+      location:
+        $ref: '#/definitions/handlers.LocationDTO'
+      name:
+        type: string
+      profile_image_url:
+        type: string
+      status:
+        type: string
+    type: object
+  handlers.BranchServiceItemResponse:
+    properties:
+      active:
+        type: boolean
+      added_at:
+        description: ISO 8601 - when the service was added to this branch
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      service_type:
+        type: string
+    type: object
+  handlers.BranchServiceListResponse:
+    properties:
+      _links:
+        items:
+          $ref: '#/definitions/handlers.Link'
+        type: array
+      services:
+        items:
+          $ref: '#/definitions/handlers.BranchServiceItemResponse'
+        type: array
+    type: object
+  handlers.BrandItemResponse:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+    type: object
+  handlers.BrandListResponse:
+    properties:
+      _links:
+        items:
+          $ref: '#/definitions/handlers.Link'
+        type: array
+      brands:
+        items:
+          $ref: '#/definitions/handlers.BrandItemResponse'
+        type: array
+    type: object
   handlers.CacheReloadResponse:
     properties:
       after_count:
@@ -47,6 +189,144 @@ definitions:
       success:
         type: boolean
     type: object
+  handlers.ChangePasswordRequest:
+    properties:
+      current_password:
+        minLength: 8
+        type: string
+      new_password:
+        minLength: 8
+        type: string
+    required:
+    - current_password
+    - new_password
+    type: object
+  handlers.ChangePasswordResponse:
+    properties:
+      _links:
+        items:
+          $ref: '#/definitions/handlers.Link'
+        type: array
+      message:
+        type: string
+    type: object
+  handlers.CityListResponse:
+    properties:
+      _links:
+        items:
+          $ref: '#/definitions/handlers.Link'
+        type: array
+      cities:
+        items:
+          $ref: '#/definitions/handlers.CityResponse'
+        type: array
+    type: object
+  handlers.CityResponse:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+    type: object
+  handlers.CreateFranchiseRequest:
+    properties:
+      branch_ids:
+        items:
+          type: string
+        minItems: 1
+        type: array
+      description:
+        type: string
+      name:
+        type: string
+    required:
+    - branch_ids
+    - name
+    type: object
+  handlers.CreateScheduleDetailRequest:
+    properties:
+      closing_time:
+        description: HH:MM format, required if is_closed=false
+        type: string
+      day_of_week:
+        description: 1=Monday to 7=Sunday
+        type: integer
+      is_closed:
+        description: true if branch is closed on this day
+        type: boolean
+      opening_time:
+        description: HH:MM format, required if is_closed=false
+        type: string
+    type: object
+  handlers.DepartmentListResponse:
+    properties:
+      _links:
+        items:
+          $ref: '#/definitions/handlers.Link'
+        type: array
+      departments:
+        items:
+          $ref: '#/definitions/handlers.DepartmentResponse'
+        type: array
+    type: object
+  handlers.DepartmentResponse:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+    type: object
+  handlers.FirebaseTokenResponse:
+    properties:
+      firebase_token:
+        type: string
+    type: object
+  handlers.GeocodingStatus:
+    enum:
+    - SUCCESS
+    - FAILED
+    - SKIPPED
+    type: string
+    x-enum-comments:
+      GeocodingStatusFailed: Geocoding failed, retry via update
+      GeocodingStatusSkipped: User provided coordinates, no geocoding needed
+      GeocodingStatusSuccess: Coordinates were generated automatically
+    x-enum-descriptions:
+    - Coordinates were generated automatically
+    - Geocoding failed, retry via update
+    - User provided coordinates, no geocoding needed
+    x-enum-varnames:
+    - GeocodingStatusSuccess
+    - GeocodingStatusFailed
+    - GeocodingStatusSkipped
+  handlers.GeocodingTestRequest:
+    properties:
+      address:
+        type: string
+      city_name:
+        type: string
+      department_name:
+        type: string
+    required:
+    - address
+    - city_name
+    - department_name
+    type: object
+  handlers.GeocodingTestResponse:
+    properties:
+      confidence:
+        type: number
+      error:
+        type: string
+      formatted_address:
+        type: string
+      geocoded:
+        type: boolean
+      latitude:
+        type: number
+      longitude:
+        type: number
+    type: object
   handlers.Link:
     properties:
       href:
@@ -55,6 +335,29 @@ definitions:
         type: string
       rel:
         type: string
+    type: object
+  handlers.LocationDTO:
+    properties:
+      address:
+        type: string
+      city_id:
+        type: string
+      city_name:
+        description: For geocoding (not persisted)
+        type: string
+      department_id:
+        type: string
+      department_name:
+        description: For geocoding (not persisted)
+        type: string
+      latitude:
+        type: number
+      longitude:
+        type: number
+    required:
+    - address
+    - city_id
+    - department_id
     type: object
   handlers.LoginRequest:
     properties:
@@ -118,7 +421,7 @@ definitions:
       title:
         type: string
       type:
-        $ref: '#/definitions/domain.MessageType'
+        $ref: '#/definitions/github_com_EstebanGitPro_motogo-backend_core_interactor_services_domain.MessageType'
     type: object
   handlers.MessageResponse:
     properties:
@@ -141,7 +444,7 @@ definitions:
       title:
         type: string
       type:
-        $ref: '#/definitions/domain.MessageType'
+        $ref: '#/definitions/github_com_EstebanGitPro_motogo-backend_core_interactor_services_domain.MessageType'
     type: object
   handlers.MessageUpdatedResponse:
     properties:
@@ -149,6 +452,111 @@ definitions:
         items:
           $ref: '#/definitions/handlers.Link'
         type: array
+    type: object
+  handlers.MotorcycleReferenceCatalogItem:
+    properties:
+      brand_id:
+        type: string
+      brand_name:
+        type: string
+      category:
+        type: string
+      engine_displacement_cc:
+        type: integer
+      id:
+        type: string
+      model:
+        type: string
+    type: object
+  handlers.MotorcycleReferenceDTO:
+    properties:
+      brand_id:
+        type: string
+      brand_name:
+        type: string
+      category:
+        type: string
+      engine_displacement_cc:
+        type: integer
+      id:
+        type: string
+      model:
+        type: string
+    type: object
+  handlers.MotorcycleResponse:
+    properties:
+      _links:
+        items:
+          $ref: '#/definitions/handlers.Link'
+        type: array
+      current_mileage:
+        type: integer
+      id:
+        type: string
+      license_plate:
+        type: string
+      owner_notes:
+        type: string
+      profile_image_url:
+        type: string
+      reference:
+        $ref: '#/definitions/handlers.MotorcycleReferenceDTO'
+      year:
+        type: integer
+    type: object
+  handlers.NearbyBranchResponse:
+    properties:
+      _links:
+        items:
+          $ref: '#/definitions/handlers.Link'
+        type: array
+      address:
+        type: string
+      city_name:
+        type: string
+      contact_phone:
+        description: Representative's phone
+        type: string
+      department_name:
+        type: string
+      distance_km:
+        type: number
+      establishment_type:
+        type: string
+      establishment_type_label:
+        type: string
+      id:
+        type: string
+      latitude:
+        type: number
+      longitude:
+        type: number
+      name:
+        type: string
+      profile_image_url:
+        type: string
+    type: object
+  handlers.NearbyBranchesResponse:
+    properties:
+      _links:
+        items:
+          $ref: '#/definitions/handlers.Link'
+        type: array
+      branches:
+        items:
+          $ref: '#/definitions/handlers.NearbyBranchResponse'
+        type: array
+      center:
+        properties:
+          latitude:
+            type: number
+          longitude:
+            type: number
+        type: object
+      count:
+        type: integer
+      radius_km:
+        type: number
     type: object
   handlers.PasswordResetRequest:
     properties:
@@ -176,6 +584,81 @@ definitions:
       second_last_name:
         type: string
     type: object
+  handlers.ProfileImageRequest:
+    properties:
+      image_url:
+        type: string
+    required:
+    - image_url
+    type: object
+  handlers.ProfileImageResponse:
+    properties:
+      _links:
+        items:
+          $ref: '#/definitions/handlers.Link'
+        type: array
+      motorcycle_id:
+        type: string
+      profile_image_url:
+        type: string
+    type: object
+  handlers.PublicContactResponse:
+    properties:
+      _links:
+        items:
+          $ref: '#/definitions/handlers.Link'
+        type: array
+      phone_number:
+        type: string
+    type: object
+  handlers.RefreshTokenRequest:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  handlers.RegisterBranchRequest:
+    properties:
+      brands:
+        items:
+          type: string
+        type: array
+      establishment_type:
+        description: WORKSHOP or STORE
+        type: string
+      franchise_id:
+        type: string
+      location:
+        $ref: '#/definitions/handlers.LocationDTO'
+      name:
+        type: string
+      profile_image_url:
+        type: string
+    required:
+    - establishment_type
+    - location
+    - name
+    type: object
+  handlers.RegisterMotorcycleRequest:
+    properties:
+      current_mileage:
+        type: integer
+      license_plate:
+        type: string
+      owner_notes:
+        type: string
+      profile_image_url:
+        description: 'HU36: Main profile photo'
+        type: string
+      reference_id:
+        description: Optional until Release 11
+        type: string
+      year:
+        type: integer
+    required:
+    - license_plate
+    type: object
   handlers.RegistrationResponse:
     properties:
       _links:
@@ -200,6 +683,185 @@ definitions:
     required:
     - new_password
     - token
+    type: object
+  handlers.ServiceDetailResponse:
+    properties:
+      _links:
+        items:
+          $ref: '#/definitions/handlers.Link'
+        type: array
+      description:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      name:
+        type: string
+      service_type:
+        type: string
+    type: object
+  handlers.ServiceItemResponse:
+    properties:
+      description:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      name:
+        type: string
+      service_type:
+        type: string
+    type: object
+  handlers.ServiceListResponse:
+    properties:
+      _links:
+        items:
+          $ref: '#/definitions/handlers.Link'
+        type: array
+      services:
+        items:
+          $ref: '#/definitions/handlers.ServiceItemResponse'
+        type: array
+    type: object
+  handlers.ServiceTypeItemResponse:
+    properties:
+      value:
+        type: string
+    type: object
+  handlers.ServiceTypeListResponse:
+    properties:
+      _links:
+        items:
+          $ref: '#/definitions/handlers.Link'
+        type: array
+      types:
+        items:
+          $ref: '#/definitions/handlers.ServiceTypeItemResponse'
+        type: array
+    type: object
+  handlers.StandardResponse:
+    description: Standard API response wrapper with success flag, message and optional
+      data
+    properties:
+      code:
+        description: Business message code (e.g., "MSG_BRANCH_REGISTERED")
+        example: MSG_BRANCH_REGISTERED
+        type: string
+      data:
+        description: Response data payload (type varies by endpoint)
+      message:
+        description: Human-readable message content
+        example: Sede registrada exitosamente
+        type: string
+      success:
+        description: Whether the operation was successful
+        example: true
+        type: boolean
+    type: object
+  handlers.UpdateFranchiseRequest:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+    required:
+    - name
+    type: object
+  handlers.UpdateMotorcycleRequest:
+    properties:
+      current_mileage:
+        type: integer
+      owner_notes:
+        type: string
+      profile_image_url:
+        description: 'HU36: Main profile photo'
+        type: string
+      reference_id:
+        type: string
+      year:
+        type: integer
+    type: object
+  handlers.UpdateProfileRequest:
+    properties:
+      first_name:
+        type: string
+      identity_number:
+        type: string
+      last_name:
+        type: string
+      phone_number:
+        type: string
+      second_last_name:
+        type: string
+    type: object
+  handlers.UpdateProfileResponse:
+    properties:
+      _links:
+        items:
+          $ref: '#/definitions/handlers.Link'
+        type: array
+      email:
+        type: string
+      first_name:
+        type: string
+      id:
+        type: string
+      identity_number:
+        type: string
+      last_name:
+        type: string
+      phone_number:
+        type: string
+      role:
+        type: string
+      second_last_name:
+        type: string
+    type: object
+  handlers.UpdateScheduleDetailRequest:
+    properties:
+      active:
+        description: true if detail is active
+        type: boolean
+      closing_time:
+        description: HH:MM format
+        type: string
+      day_of_week:
+        description: 1=Monday to 7=Sunday
+        type: integer
+      is_closed:
+        description: true if branch is closed
+        type: boolean
+      opening_time:
+        description: HH:MM format
+        type: string
+    type: object
+  handlers.UpdateScheduleRequest:
+    properties:
+      active:
+        type: boolean
+      end_date:
+        description: YYYY-MM-DD format, null = indefinite
+        type: string
+      start_date:
+        description: YYYY-MM-DD format
+        type: string
+    type: object
+  handlers.UpdateServiceRequest:
+    properties:
+      description:
+        type: string
+      is_active:
+        description: 'Optional: activate/deactivate service'
+        type: boolean
+      name:
+        type: string
+      service_type:
+        type: string
+    required:
+    - name
+    - service_type
     type: object
   handlers.VerifyEmailRequest:
     properties:
@@ -227,9 +889,149 @@ definitions:
       success:
         type: boolean
     type: object
+externalDocs:
+  description: OpenAPI
+  url: https://swagger.io/resources/open-api/
+host: localhost:8085
 info:
-  contact: {}
+  contact:
+    email: support@motogo.com
+    name: Motogo API Support
+    url: https://motogo.com/support
+  description: API RESTful para la plataforma Motogo, implementada con arquitectura
+    hexagonal y siguiendo los principios del Richardson Maturity Model (Nivel 2-3)
+    con HATEOAS.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Motogo Backend API
+  version: "1.0"
 paths:
+  /admin/brands/{brandId}/lines:
+    get:
+      description: Retrieves all motorcycle references (models/lines) associated with
+        a specific brand. This endpoint requires ADMIN role and is used for catalog
+        management.
+      parameters:
+      - description: Brand ID (hashid encoded)
+        in: path
+        name: brandId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Lines retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/handlers.MotorcycleReferenceCatalogItem'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized - missing or invalid token
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "403":
+          description: Forbidden - requires ADMIN role
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: List motorcycle lines for a specific brand
+      tags:
+      - Admin Brands
+  /admin/services/{id}:
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing service in the global catalog. Requires ADMIN
+        role.
+      parameters:
+      - description: Service ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Service data to update
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.UpdateServiceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.ServiceDetailResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      summary: Update a service
+      tags:
+      - Admin
+  /auth/firebase-token:
+    get:
+      description: Generates a Firebase custom token using the authenticated user's
+        Keycloak ID
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.FirebaseTokenResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Firebase custom token
+      tags:
+      - Auth
   /auth/login:
     post:
       consumes:
@@ -335,6 +1137,42 @@ paths:
       summary: Actualizar contraseña con token
       tags:
       - Autenticación
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Obtiene un nuevo access token usando el refresh token. El frontend
+        debe llamar este endpoint cuando reciba 401 por token expirado.
+      parameters:
+      - description: Refresh token actual
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.RefreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token refrescado exitosamente
+          schema:
+            allOf:
+            - $ref: '#/definitions/middleware.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.LoginResponse'
+              type: object
+        "400":
+          description: Formato inválido
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+        "401":
+          description: Refresh token inválido o expirado
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+      summary: Refrescar access token
+      tags:
+      - Autenticación
   /auth/resend-verification:
     post:
       consumes:
@@ -414,6 +1252,938 @@ paths:
       summary: Verificar email de usuario (Proxy)
       tags:
       - Autenticación
+  /branch-types:
+    get:
+      description: Returns all valid establishment types for branches (public catalog)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/github_com_EstebanGitPro_motogo-backend_core_interactor_services_domain.EstablishmentTypeInfo'
+                  type: array
+              type: object
+      summary: Get all branch types
+      tags:
+      - Branch
+  /branches:
+    get:
+      description: Returns all branches owned by the authenticated representative,
+        including location and brands
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/handlers.BranchListItemResponse'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: List my branches
+      tags:
+      - Branch
+    post:
+      consumes:
+      - application/json
+      description: Creates a new branch (sede) for the authenticated representative
+      parameters:
+      - description: Branch registration data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.RegisterBranchRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.BranchResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: Register a new branch
+      tags:
+      - Branch
+  /branches/{id}:
+    delete:
+      description: Deletes an existing branch. Only the owner can delete. Cannot delete
+        if has diagnostics or completed services.
+      parameters:
+      - description: Branch ID (encoded)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a branch
+      tags:
+      - Branch
+    get:
+      description: Retrieves detailed information of a branch. Returns conditional
+        HATEOAS links based on ownership.
+      parameters:
+      - description: Branch ID (hashid encoded)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.BranchResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: Get branch by ID
+      tags:
+      - Branch
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing branch. Only the owner can update.
+      parameters:
+      - description: Branch ID (encoded)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Branch update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.RegisterBranchRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.BranchResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a branch
+      tags:
+      - Branch
+  /branches/{id}/schedules:
+    delete:
+      description: Removes the schedule configuration for a branch
+      parameters:
+      - description: Branch ID (encoded)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      summary: Delete schedule for a branch
+      tags:
+      - Schedules
+    get:
+      description: Retrieves the schedule configuration for a branch
+      parameters:
+      - description: Branch ID (encoded)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      summary: Get schedule for a branch
+      tags:
+      - Schedules
+    post:
+      consumes:
+      - application/json
+      description: Creates a new schedule configuration for a branch
+      parameters:
+      - description: Branch ID (encoded)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      summary: Create a schedule for a branch
+      tags:
+      - Schedules
+    put:
+      consumes:
+      - application/json
+      description: Updates the schedule configuration including validity dates
+      parameters:
+      - description: Branch ID (encoded)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Schedule update data
+        in: body
+        name: schedule
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.UpdateScheduleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      summary: Update schedule for a branch
+      tags:
+      - Schedules
+  /branches/{id}/schedules/activate:
+    put:
+      description: Activates the schedule configuration for a branch
+      parameters:
+      - description: Branch ID (encoded)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      summary: Activate schedule for a branch
+      tags:
+      - Schedules
+  /branches/{id}/schedules/deactivate:
+    put:
+      description: Deactivates the schedule configuration for a branch
+      parameters:
+      - description: Branch ID (encoded)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      summary: Deactivate schedule for a branch
+      tags:
+      - Schedules
+  /branches/{id}/schedules/details:
+    get:
+      description: Retrieves all time slots (schedule details) for a branch
+      parameters:
+      - description: Branch ID (encoded)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      summary: List time slots for a branch schedule
+      tags:
+      - Schedule Details
+    post:
+      consumes:
+      - application/json
+      description: Creates a new time slot (schedule detail) for a specific day of
+        the week
+      parameters:
+      - description: Branch ID (encoded)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Schedule detail data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CreateScheduleDetailRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      summary: Create a time slot for a branch schedule
+      tags:
+      - Schedule Details
+  /branches/{id}/services:
+    get:
+      description: Retrieves all services associated with a specific branch, including
+        when they were added
+      parameters:
+      - description: Branch ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.BranchServiceListResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      summary: Get services for a branch
+      tags:
+      - Branches
+    post:
+      consumes:
+      - application/json
+      description: Associates one or more services from the catalog to a specific
+        branch
+      parameters:
+      - description: Branch ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Service IDs to associate
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.AssociateBranchServicesRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.AssociateBranchServicesResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      summary: Associate services to a branch
+      tags:
+      - Branches
+  /branches/{id}/services/{serviceId}:
+    delete:
+      description: Removes a service association from a specific branch
+      parameters:
+      - description: Branch ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Service ID
+        in: path
+        name: serviceId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      summary: Dissociate a service from a branch
+      tags:
+      - Branches
+  /branches/nearby:
+    get:
+      description: Returns branches within the specified radius from given coordinates
+      parameters:
+      - description: Latitude of the center point
+        in: query
+        name: lat
+        required: true
+        type: number
+      - description: Longitude of the center point
+        in: query
+        name: lng
+        required: true
+        type: number
+      - description: 'Search radius in kilometers (default: 5, max: 50)'
+        in: query
+        name: radius
+        type: number
+      - description: Filter by establishment type (WORKSHOP, STORE, WORKSHOP_STORE)
+        in: query
+        name: type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.NearbyBranchesResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: Search nearby branches
+      tags:
+      - Branch
+  /brands:
+    get:
+      description: Retrieves the complete list of motorcycle brands available in the
+        system
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.BrandListResponse'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      summary: Get all motorcycle brands
+      tags:
+      - Brands
+  /departments:
+    get:
+      description: Retrieves all Colombian departments for location selection
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.DepartmentListResponse'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      summary: Get all departments
+      tags:
+      - Catalogs
+  /departments/{id}/cities:
+    get:
+      description: Retrieves all cities for a specific department
+      parameters:
+      - description: Department ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.CityListResponse'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      summary: Get cities by department
+      tags:
+      - Catalogs
+  /franchises:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      summary: List franchises for the authenticated representative
+      tags:
+      - Franchises
+    post:
+      consumes:
+      - application/json
+      description: Creates a new franchise and associates specified branches
+      parameters:
+      - description: Franchise data with branch IDs
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CreateFranchiseRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      summary: Create a new franchise
+      tags:
+      - Franchises
+  /franchises/{id}:
+    delete:
+      description: Deletes a franchise and disassociates all branches
+      parameters:
+      - description: Franchise ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      summary: Delete a franchise
+      tags:
+      - Franchises
+    get:
+      parameters:
+      - description: Franchise ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      summary: Get franchise by ID
+      tags:
+      - Franchises
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Franchise ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated franchise data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.UpdateFranchiseRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      summary: Update a franchise
+      tags:
+      - Franchises
+  /franchises/{id}/branches:
+    post:
+      consumes:
+      - application/json
+      description: Associates an existing branch to a franchise
+      parameters:
+      - description: Franchise ID (encoded)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Branch ID to add
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.AddBranchToFranchiseRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      summary: Add a branch to a franchise
+      tags:
+      - Franchises
+  /franchises/{id}/branches/{branchId}:
+    delete:
+      description: Dissociates a branch from a franchise
+      parameters:
+      - description: Franchise ID (encoded)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Branch ID (encoded)
+        in: path
+        name: branchId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      summary: Remove a branch from a franchise
+      tags:
+      - Franchises
+  /location/geocode:
+    post:
+      consumes:
+      - application/json
+      description: Test address geocoding without creating a branch
+      parameters:
+      - description: Address to geocode
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.GeocodingTestRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/middleware.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.GeocodingTestResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+      summary: Test geocoding service
+      tags:
+      - Dev Tools
   /messages:
     get:
       consumes:
@@ -602,7 +2372,7 @@ paths:
       consumes:
       - application/json
       description: Fuerza la recarga del caché de mensajes desde la base de datos.
-        Útil después de actualizaciones o eliminaciones manuales.
+        Útil después de actualizaciones o eliminaciones manuals.
       produces:
       - application/json
       responses:
@@ -622,6 +2392,408 @@ paths:
       summary: Recargar caché de mensajes
       tags:
       - messages
+  /motorcycle-references:
+    get:
+      description: Retrieves all motorcycle references (brands/models) for selection
+        during motorcycle registration.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: References retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/handlers.MotorcycleReferenceCatalogItem'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized - missing or invalid token
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: List motorcycle reference catalog
+      tags:
+      - Motorcycles
+  /motorcycles:
+    get:
+      description: Retrieves all motorcycles owned by the authenticated user. Returns
+        HATEOAS links for each motorcycle (Richardson Maturity Level 3).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Motorcycles listed successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/handlers.MotorcycleResponse'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized - missing or invalid token
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: List user's motorcycles
+      tags:
+      - Motorcycles
+    post:
+      consumes:
+      - application/json
+      description: Registers a new motorcycle for the authenticated user. Validates
+        that reference exists in catalog and license plate is unique. Returns HATEOAS
+        links (Richardson Maturity Level 3).
+      parameters:
+      - description: Motorcycle registration data
+        in: body
+        name: motorcycle
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.RegisterMotorcycleRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Motorcycle registered successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.MotorcycleResponse'
+              type: object
+        "400":
+          description: Bad request - invalid data or missing required fields
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "401":
+          description: Unauthorized - missing or invalid token
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Reference not found in catalog
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "409":
+          description: Conflict - duplicate license plate
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: Register a new motorcycle
+      tags:
+      - Motorcycles
+  /motorcycles/{id}:
+    delete:
+      description: Soft deletes a motorcycle. Only the owner can delete their motorcycle.
+        Returns 404 for non-owners (security by obscurity).
+      parameters:
+      - description: Motorcycle ID (hashid encoded)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Motorcycle deleted successfully with HATEOAS links
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "401":
+          description: Unauthorized - missing or invalid token
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Motorcycle not found or not owner
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a motorcycle
+      tags:
+      - Motorcycles
+    get:
+      description: Retrieves detailed information of a motorcycle including reference
+        and brand info. Returns conditional HATEOAS links based on ownership (Richardson
+        Maturity Level 3).
+      parameters:
+      - description: Motorcycle ID (hashid encoded)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Motorcycle retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.MotorcycleResponse'
+              type: object
+        "401":
+          description: Unauthorized - missing or invalid token
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Motorcycle not found
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: Get motorcycle by ID
+      tags:
+      - Motorcycles
+    put:
+      consumes:
+      - application/json
+      description: Updates motorcycle details. Only the owner can update their motorcycle.
+        Returns 404 for non-owners (security by obscurity). License plate cannot be
+        changed.
+      parameters:
+      - description: Motorcycle ID (hashid encoded)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Motorcycle update data
+        in: body
+        name: motorcycle
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.UpdateMotorcycleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Motorcycle updated successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.MotorcycleResponse'
+              type: object
+        "400":
+          description: Bad request - invalid data
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "401":
+          description: Unauthorized - missing or invalid token
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Motorcycle not found or not owner
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: Update motorcycle information
+      tags:
+      - Motorcycles
+  /motorcycles/{id}/profile-image:
+    delete:
+      consumes:
+      - application/json
+      description: Removes the profile image from a motorcycle. Only the owner can
+        delete.
+      parameters:
+      - description: Motorcycle ID (obfuscated)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Image deleted successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.ProfileImageResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Motorcycle not found or not owner
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      summary: Delete motorcycle profile image
+    get:
+      consumes:
+      - application/json
+      description: Gets the profile image URL for a motorcycle. Only the owner can
+        view.
+      parameters:
+      - description: Motorcycle ID (obfuscated)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Image retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.ProfileImageResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Motorcycle not found or not owner
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      summary: Get motorcycle profile image
+    put:
+      consumes:
+      - application/json
+      description: Adds or updates the profile image URL for a motorcycle. Only the
+        owner can update.
+      parameters:
+      - description: Motorcycle ID (obfuscated)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Profile image URL
+        in: body
+        name: image
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.ProfileImageRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Image updated successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.ProfileImageResponse'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Motorcycle not found or not owner
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      summary: Update motorcycle profile image
+  /motorcycles/lookup:
+    get:
+      description: Retrieves motorcycle information by license plate. Accessible by
+        representatives (workshops). Returns motorcycle details for service purposes.
+      parameters:
+      - description: License plate to lookup (exact match)
+        in: query
+        name: plate
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Motorcycle found successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.MotorcycleResponse'
+              type: object
+        "400":
+          description: Bad request - missing plate parameter
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "401":
+          description: Unauthorized - missing or invalid token
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "403":
+          description: Forbidden - user is not a representative
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Motorcycle not found
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: Lookup motorcycle by license plate
+      tags:
+      - Motorcycles
   /persons:
     post:
       consumes:
@@ -662,6 +2834,39 @@ paths:
       summary: Registrar nueva cuenta
       tags:
       - accounts
+  /persons/{id}/contact:
+    get:
+      description: Permite a motociclistas obtener el número de contacto de un representante
+        de sede
+      parameters:
+      - description: ID ofuscado del representante
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Info de contacto obtenida
+          schema:
+            allOf:
+            - $ref: '#/definitions/middleware.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.PublicContactResponse'
+              type: object
+        "400":
+          description: ID inválido
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+        "404":
+          description: Representante no encontrado
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+      summary: Obtener información de contacto pública de un representante
+      tags:
+      - Personas
   /persons/me:
     get:
       consumes:
@@ -693,4 +2898,229 @@ paths:
       summary: Obtener perfil del usuario autenticado
       tags:
       - Autenticación
+    put:
+      consumes:
+      - application/json
+      description: Permite al usuario autenticado actualizar su información de perfil
+        (excepto email y contraseña)
+      parameters:
+      - description: Datos del perfil a actualizar
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.UpdateProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Perfil actualizado exitosamente
+          schema:
+            allOf:
+            - $ref: '#/definitions/middleware.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.UpdateProfileResponse'
+              type: object
+        "400":
+          description: Formato inválido
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+        "401":
+          description: Token inválido o ausente
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+        "409":
+          description: Datos duplicados (teléfono o número de identidad)
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+        "500":
+          description: Error interno del servidor
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Actualizar perfil del usuario autenticado
+      tags:
+      - Autenticación
+  /persons/me/password:
+    put:
+      consumes:
+      - application/json
+      description: Permite al usuario autenticado cambiar su contraseña proporcionando
+        la contraseña actual
+      parameters:
+      - description: Contraseña actual y nueva
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.ChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Contraseña actualizada exitosamente
+          schema:
+            allOf:
+            - $ref: '#/definitions/middleware.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.ChangePasswordResponse'
+              type: object
+        "400":
+          description: Formato inválido o contraseña no cumple requisitos
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+        "401":
+          description: Token inválido o contraseña actual incorrecta
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+        "500":
+          description: Error interno del servidor
+          schema:
+            $ref: '#/definitions/middleware.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Cambiar contraseña del usuario autenticado
+      tags:
+      - Autenticación
+  /schedule-details/{id}:
+    delete:
+      description: Deletes an existing time slot (schedule detail)
+      parameters:
+      - description: Schedule Detail ID (encoded)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      summary: Delete a time slot
+      tags:
+      - Schedule Details
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing time slot (schedule detail)
+      parameters:
+      - description: Schedule Detail ID (encoded)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.UpdateScheduleDetailRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      summary: Update a time slot
+      tags:
+      - Schedule Details
+  /schedules/days:
+    get:
+      description: Returns the catalog of available days of week for schedules
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      summary: Get catalog of days of week
+      tags:
+      - Schedules
+  /service-types:
+    get:
+      description: Retrieves the complete list of service types available in the system
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.ServiceTypeListResponse'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      summary: Get all service types
+      tags:
+      - Services
+  /services:
+    get:
+      description: Retrieves the complete list of services available in the catalog,
+        optionally filtered by type
+      parameters:
+      - description: Filter by service type (e.g., Maintenance, Repair)
+        in: query
+        name: type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.ServiceListResponse'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      summary: Get all services
+      tags:
+      - Services
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"
