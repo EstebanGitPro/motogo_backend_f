@@ -41,15 +41,16 @@ const (
 )
 
 type Branch struct {
-	ID                string    `json:"id"`
-	RepresentativeID  string    `json:"representative_id"`
-	FranchiseID       *string   `json:"franchise_id,omitempty"`
-	Name              string    `json:"name"`
-	EstablishmentType string    `json:"establishment_type"`
-	ProfileImageURL   *string   `json:"profile_image_url,omitempty"`
-	Status            string    `json:"status"`
-	Location          *Location `json:"location,omitempty"`
-	Brands            []string  `json:"brands,omitempty"`
+	ID                  string    `json:"id"`
+	RepresentativeID    string    `json:"representative_id"`
+	RepresentativePhone *string   `json:"representative_phone,omitempty"` // From JOIN with persons (read-only)
+	FranchiseID         *string   `json:"franchise_id,omitempty"`
+	Name                string    `json:"name"`
+	EstablishmentType   string    `json:"establishment_type"`
+	ProfileImageURL     *string   `json:"profile_image_url,omitempty"`
+	Status              string    `json:"status"`
+	Location            *Location `json:"location,omitempty"`
+	Brands              []string  `json:"brands,omitempty"`
 }
 
 type Location struct {
@@ -97,6 +98,7 @@ type NearbyBranch struct {
 	Name              string          `json:"name"`
 	EstablishmentType string          `json:"establishment_type"`
 	ProfileImageURL   *string         `json:"profile_image_url,omitempty"`
+	ContactPhone      *string         `json:"contact_phone,omitempty"` // Representative's phone
 	Location          *NearbyLocation `json:"location,omitempty"`
 	DistanceKm        float64         `json:"distance_km"`
 }

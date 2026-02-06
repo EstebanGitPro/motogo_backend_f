@@ -7,13 +7,14 @@ import (
 )
 
 type Motorcycle struct {
-	ID             string         `db:"id"`
-	LicensePlate   string         `db:"license_plate"`
-	ReferenceID    sql.NullString `db:"reference_id"`
-	OwnerID        string         `db:"owner_id"`
-	Year           sql.NullInt64  `db:"year"`
-	CurrentMileage sql.NullInt64  `db:"current_mileage"`
-	OwnerNotes     sql.NullString `db:"owner_notes"`
+	ID              string         `db:"id"`
+	LicensePlate    string         `db:"license_plate"`
+	ReferenceID     sql.NullString `db:"reference_id"`
+	OwnerID         string         `db:"owner_id"`
+	Year            sql.NullInt64  `db:"year"`
+	CurrentMileage  sql.NullInt64  `db:"current_mileage"`
+	OwnerNotes      sql.NullString `db:"owner_notes"`
+	ProfileImageURL sql.NullString `db:"profile_image_url"`
 }
 
 type MotorcycleReference struct {
@@ -48,6 +49,10 @@ func (m *Motorcycle) ToDomain(ref *MotorcycleReference) domain.Motorcycle {
 	if m.OwnerNotes.Valid {
 		notes := m.OwnerNotes.String
 		motorcycle.OwnerNotes = &notes
+	}
+	if m.ProfileImageURL.Valid {
+		url := m.ProfileImageURL.String
+		motorcycle.ProfileImageURL = &url
 	}
 
 	if ref != nil && ref.ID.Valid {

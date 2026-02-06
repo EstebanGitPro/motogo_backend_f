@@ -66,6 +66,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		dependencies.ServiceInteractor,
 		dependencies.FranchiseInteractor,
 		dependencies.MotorcycleInteractor,
+		dependencies.EvidenceInteractor, // HU16-19
 		dependencies.FirebaseClient,
 		dependencies.MessagingCache,
 		dependencies.IDEncoder,
@@ -119,27 +120,6 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 
 		// POST /auth/password/reset - Actualizar contraseña con token del email de recuperación
 		public.POST("/auth/password/reset", handler.ResetPasswordWithToken())
-
-		// === MESSAGES ENDPOINTS (system administration) ===
-		// POST /messages - Crear nuevo mensaje del sistema
-		public.POST("/messages", validator.WithValidateMessage(), handler.CreateMessage())
-
-		// PUT /messages/:id - Actualizar mensaje existente
-		public.PUT("/messages/:id", validator.WithValidateMessage(), handler.UpdateMessage())
-
-		// DELETE /messages/:id - Eliminar mensaje
-		public.DELETE("/messages/:id", handler.DeleteMessage())
-
-		// GET /messages/:id - Obtener mensaje por ID
-		public.GET("/messages/:id", handler.GetMessageByID())
-
-		// GET /messages - Listar mensajes (con filtros opcionales)
-		// Query params: ?module=users&type=ERROR&category=usuario_final&active=true
-		public.GET("/messages", handler.ListMessages())
-
-		// POST /messages/cache/reload - Recargar caché de mensajes desde BD
-		// Endpoint administration para forzar recarga después de cambios manuals
-		public.POST("/messages/cache/reload", handler.ReloadMessageCache())
 
 		// GET /persons/:id/contact - Obtener info de contacto pública (HU55)
 		public.GET("/persons/:id/contact", handler.GetPublicContact())
@@ -244,6 +224,27 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 			handler.DeleteMotorcycle(),
 		)
 
+		// === MOTORCYCLE PROFILE IMAGE ENDPOINTS (HU36-39) ===
+		// Only USER role can manage their motorcycle's profile image
+
+		// PUT /motorcycles/:id/profile-image - Add or update profile image (HU36/37)
+		protected.PUT("/motorcycles/:id/profile-image",
+			middleware.RequireRole(domain.RoleUser),
+			handler.UpdateProfileImage(),
+		)
+
+		// GET /motorcycles/:id/profile-image - Get profile image URL (HU38)
+		protected.GET("/motorcycles/:id/profile-image",
+			middleware.RequireRole(domain.RoleUser),
+			handler.GetProfileImage(),
+		)
+
+		// DELETE /motorcycles/:id/profile-image - Remove profile image (HU39)
+		protected.DELETE("/motorcycles/:id/profile-image",
+			middleware.RequireRole(domain.RoleUser),
+			handler.DeleteProfileImage(),
+		)
+
 		// GET /motorcycles/lookup?plate={placa} - Lookup motorcycle by plate (HU47)
 		// Accessible by representatives (workshops) for service purposes
 		protected.GET("/motorcycles/lookup",
@@ -256,6 +257,34 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		protected.GET("/motorcycle-references",
 			middleware.RequireRole(domain.RoleUser),
 			handler.GetMotorcycleReferences(),
+		)
+
+		// === MOTORCYCLE EVIDENCE ENDPOINTS (HU16-19) ===
+		// Photographic evidence gallery for motorcycles
+
+		// POST /motorcycles/:id/evidence - Upload evidence for a motorcycle (HU16)
+		protected.POST("/motorcycles/:id/evidence",
+			middleware.RequireRole(domain.RoleUser),
+			validator.WithValidateEvidence(),
+			handler.CreateEvidence(),
+		)
+
+		// GET /motorcycles/:id/evidence - List evidence for a motorcycle (HU18)
+		// Accessible by any authenticated user (USER or REPRESENTATIVE can view)
+		protected.GET("/motorcycles/:id/evidence",
+			handler.ListEvidence(),
+		)
+
+		// PUT /motorcycles/:id/evidence/:evidenceId - Update evidence (HU17)
+		protected.PUT("/motorcycles/:id/evidence/:evidenceId",
+			middleware.RequireRole(domain.RoleUser),
+			handler.UpdateEvidence(),
+		)
+
+		// DELETE /motorcycles/:id/evidence/:evidenceId - Delete evidence (HU19)
+		protected.DELETE("/motorcycles/:id/evidence/:evidenceId",
+			middleware.RequireRole(domain.RoleUser),
+			handler.DeleteEvidence(),
 		)
 
 		// POST /branches/:id/services - Asociar servicios a una sede (solo REPRESENTANTE)
@@ -335,8 +364,8 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		)
 
 		// GET /branches/:id/schedules/details - Listar franjas horarias (HU9)
+		// Accessible by all authenticated users (USER can view schedule, REPRESENTATIVE can manage)
 		protected.GET("/branches/:id/schedules/details",
-			middleware.RequireRole(domain.RoleRepresentative),
 			handler.ListScheduleDetails(dependencies.ScheduleDetailInteractor, dependencies.ScheduleInteractor),
 		)
 
@@ -454,6 +483,27 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		// === BRAND LINES ADMIN (HU40) ===
 		// GET /admin/brands/:brandId/lines - Consultar líneas de una marca
 		admin.GET("/brands/:brandId/lines", handler.GetBrandLines())
+
+		// === MESSAGES ENDPOINTS (system administration) ===
+		// POST /admin/messages - Crear nuevo mensaje del sistema
+		admin.POST("/messages", validator.WithValidateMessage(), handler.CreateMessage())
+
+		// PUT /admin/messages/:id - Actualizar mensaje existente
+		admin.PUT("/messages/:id", validator.WithValidateMessage(), handler.UpdateMessage())
+
+		// DELETE /admin/messages/:id - Eliminar mensaje
+		admin.DELETE("/messages/:id", handler.DeleteMessage())
+
+		// GET /admin/messages/:id - Obtener mensaje por ID
+		admin.GET("/messages/:id", handler.GetMessageByID())
+
+		// GET /admin/messages - Listar mensajes (con filtros opcionales)
+		// Query params: ?module=users&type=ERROR&category=usuario_final&active=true
+		admin.GET("/messages", handler.ListMessages())
+
+		// POST /admin/messages/cache/reload - Recargar caché de mensajes desde BD
+		// Endpoint administration para forzar recarga después de cambios manuals
+		admin.POST("/messages/cache/reload", handler.ReloadMessageCache())
 	}
 
 	dependencies.Logger.Success(logger.LogRouteConfigured)

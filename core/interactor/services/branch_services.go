@@ -16,16 +16,14 @@ type branchService struct {
 	repository      output.BranchRepository
 	locationRepo    output.LocationRepository
 	geocodingClient geocoding.Client
-	logger          logger.Logger
 }
 
 // NewBranchService creates a new BranchService instance
-func NewBranchService(repo output.BranchRepository, locationRepo output.LocationRepository, geocodingClient geocoding.Client, log logger.Logger) input.BranchService {
+func NewBranchService(repo output.BranchRepository, locationRepo output.LocationRepository, geocodingClient geocoding.Client) input.BranchService {
 	return &branchService{
 		repository:      repo,
 		locationRepo:    locationRepo,
 		geocodingClient: geocodingClient,
-		logger:          log,
 	}
 }
 
@@ -47,7 +45,7 @@ func (s *branchService) GeocodeLocation(ctx context.Context, location *domain.Lo
 
 	// User already provided coordinates - skip geocoding
 	if location.Latitude != nil && location.Longitude != nil {
-		s.logger.Debug(logger.LogGeocodingSkipped,
+		log.Debug(logger.LogGeocodingSkipped,
 			"address", location.Address,
 			"lat", *location.Latitude,
 			"lng", *location.Longitude)
@@ -56,7 +54,7 @@ func (s *branchService) GeocodeLocation(ctx context.Context, location *domain.Lo
 
 	// Validate we have the required data for geocoding
 	if location.CityName == "" || location.DepartmentName == "" {
-		s.logger.Warn(logger.LogGeocodingCityError,
+		log.Warn(logger.LogGeocodingCityError,
 			"city_name", location.CityName,
 			"department_name", location.DepartmentName,
 			"reason", "missing city or department name for geocoding")
@@ -66,7 +64,7 @@ func (s *branchService) GeocodeLocation(ctx context.Context, location *domain.Lo
 	// Attempt geocoding
 	coords, err := s.geocodingClient.Geocode(ctx, location.Address, location.CityName, location.DepartmentName)
 	if err != nil {
-		s.logger.Warn(logger.LogGeocodingError,
+		log.Warn(logger.LogGeocodingError,
 			"address", location.Address,
 			"city", location.CityName,
 			"department", location.DepartmentName,
@@ -76,7 +74,7 @@ func (s *branchService) GeocodeLocation(ctx context.Context, location *domain.Lo
 
 	// No results from geocoding
 	if coords == nil {
-		s.logger.Warn(logger.LogGeocodingNoResults,
+		log.Warn(logger.LogGeocodingNoResults,
 			"address", location.Address,
 			"city", location.CityName,
 			"department", location.DepartmentName)
@@ -87,7 +85,7 @@ func (s *branchService) GeocodeLocation(ctx context.Context, location *domain.Lo
 	location.Latitude = &coords.Latitude
 	location.Longitude = &coords.Longitude
 
-	s.logger.Info(logger.LogGeocodingSuccess,
+	log.Info(logger.LogGeocodingSuccess,
 		"address", location.Address,
 		"city", location.CityName,
 		"lat", coords.Latitude,
@@ -102,7 +100,7 @@ func (s *branchService) GeocodeLocation(ctx context.Context, location *domain.Lo
 func (s *branchService) RegisterBranch(ctx context.Context, tx output.Tx, branch domain.Branch) (*domain.Branch, error) {
 	// 1. Validate establishment type
 	if !branch.IsValidEstablishmentType() {
-		s.logger.Warn(logger.LogBranchServiceInvalidType, "type", branch.EstablishmentType)
+		log.Warn(logger.LogBranchServiceInvalidType, "type", branch.EstablishmentType)
 		return nil, domain.ErrInvalidBranchType
 	}
 
@@ -110,11 +108,11 @@ func (s *branchService) RegisterBranch(ctx context.Context, tx output.Tx, branch
 	if branch.FranchiseID != nil && *branch.FranchiseID != "" {
 		existingBranch, err := s.repository.GetBranchByFranchiseAndName(ctx, *branch.FranchiseID, branch.Name)
 		if err != nil && !errors.Is(err, domain.ErrBranchNotFound) {
-			s.logger.Error(logger.LogBranchServiceDupNameCheck, "error", err)
+			log.Error(logger.LogBranchServiceDupNameCheck, "error", err)
 			return nil, err
 		}
 		if existingBranch != nil {
-			s.logger.Warn(logger.LogBranchServiceDupName, "name", branch.Name, "franchise_id", *branch.FranchiseID)
+			log.Warn(logger.LogBranchServiceDupName, "name", branch.Name, "franchise_id", *branch.FranchiseID)
 			return nil, domain.ErrDuplicateBranchName
 		}
 	}
@@ -131,7 +129,7 @@ func (s *branchService) RegisterBranch(ctx context.Context, tx output.Tx, branch
 
 	// 5. Save branch
 	if err := s.repository.SaveBranch(ctx, tx, branch); err != nil {
-		s.logger.Error(logger.LogBranchServiceSaveError, "error", err, "branch_id", branch.ID)
+		log.Error(logger.LogBranchServiceSaveError, "error", err, "branch_id", branch.ID)
 		return nil, err
 	}
 
@@ -140,17 +138,17 @@ func (s *branchService) RegisterBranch(ctx context.Context, tx output.Tx, branch
 		// 6.1 Check for duplicate address
 		addressExists, err := s.locationRepo.CheckAddressExists(ctx, branch.Location.Address)
 		if err != nil {
-			s.logger.Error(logger.LogBranchServiceLocSaveError, "error", err, "address", branch.Location.Address)
+			log.Error(logger.LogBranchServiceLocSaveError, "error", err, "address", branch.Location.Address)
 			return nil, err
 		}
 		if addressExists {
-			s.logger.Warn(logger.LogBranchServiceLocSaveError, "duplicate_address", branch.Location.Address)
+			log.Warn(logger.LogBranchServiceLocSaveError, "duplicate_address", branch.Location.Address)
 			return nil, domain.ErrDuplicateAddress
 		}
 
 		branch.Location.BranchID = branch.ID
 		if err := s.locationRepo.SaveLocation(ctx, tx, *branch.Location); err != nil {
-			s.logger.Error(logger.LogBranchServiceLocSaveError, "error", err, "branch_id", branch.ID)
+			log.Error(logger.LogBranchServiceLocSaveError, "error", err, "branch_id", branch.ID)
 			return nil, err
 		}
 	}
@@ -158,12 +156,12 @@ func (s *branchService) RegisterBranch(ctx context.Context, tx output.Tx, branch
 	// 7. Save brands if provided
 	if len(branch.Brands) > 0 {
 		if err := s.repository.SaveBranchBrands(ctx, tx, branch.ID, branch.Brands); err != nil {
-			s.logger.Error(logger.LogBranchServiceBrandSaveErr, "error", err, "branch_id", branch.ID)
+			log.Error(logger.LogBranchServiceBrandSaveErr, "error", err, "branch_id", branch.ID)
 			return nil, err
 		}
 	}
 
-	s.logger.Info(logger.LogBranchServiceRegComplete, "branch_id", branch.ID, "name", branch.Name)
+	log.Info(logger.LogBranchServiceRegComplete, "branch_id", branch.ID, "name", branch.Name)
 	return &branch, nil
 }
 
@@ -171,7 +169,7 @@ func (s *branchService) RegisterBranch(ctx context.Context, tx output.Tx, branch
 func (s *branchService) GetBranchByID(ctx context.Context, branchID string) (*domain.Branch, error) {
 	branch, err := s.repository.GetBranchByID(ctx, branchID)
 	if err != nil {
-		s.logger.Error(logger.LogBranchServiceGetError, "error", err, "branch_id", branchID)
+		log.Error(logger.LogBranchServiceGetError, "error", err, "branch_id", branchID)
 		return nil, err
 	}
 	return branch, nil
@@ -204,13 +202,13 @@ func (s *branchService) GetBranchesByRepresentative(ctx context.Context, represe
 func (s *branchService) UpdateBranch(ctx context.Context, tx output.Tx, branch domain.Branch) error {
 	// 1. Validate establishment type
 	if !branch.IsValidEstablishmentType() {
-		s.logger.Warn(logger.LogBranchServiceInvalidType, "type", branch.EstablishmentType)
+		log.Warn(logger.LogBranchServiceInvalidType, "type", branch.EstablishmentType)
 		return domain.ErrInvalidBranchType
 	}
 
 	// 2. Update branch core fields
 	if err := s.repository.UpdateBranch(ctx, tx, branch); err != nil {
-		s.logger.Error(logger.LogBranchServiceSaveError, "error", err, "branch_id", branch.ID)
+		log.Error(logger.LogBranchServiceSaveError, "error", err, "branch_id", branch.ID)
 		return err
 	}
 
@@ -218,25 +216,25 @@ func (s *branchService) UpdateBranch(ctx context.Context, tx output.Tx, branch d
 	if branch.Location != nil {
 		branch.Location.BranchID = branch.ID
 		if err := s.locationRepo.UpdateLocation(ctx, tx, *branch.Location); err != nil {
-			s.logger.Error(logger.LogBranchServiceLocSaveError, "error", err, "branch_id", branch.ID)
+			log.Error(logger.LogBranchServiceLocSaveError, "error", err, "branch_id", branch.ID)
 			return err
 		}
 	}
 
 	// 4. Update brands: delete existing and save new
 	if err := s.repository.DeleteBranchBrands(ctx, tx, branch.ID); err != nil {
-		s.logger.Error(logger.LogBranchServiceBrandSaveErr, "error", err, "branch_id", branch.ID)
+		log.Error(logger.LogBranchServiceBrandSaveErr, "error", err, "branch_id", branch.ID)
 		return err
 	}
 
 	if len(branch.Brands) > 0 {
 		if err := s.repository.SaveBranchBrands(ctx, tx, branch.ID, branch.Brands); err != nil {
-			s.logger.Error(logger.LogBranchServiceBrandSaveErr, "error", err, "branch_id", branch.ID)
+			log.Error(logger.LogBranchServiceBrandSaveErr, "error", err, "branch_id", branch.ID)
 			return err
 		}
 	}
 
-	s.logger.Info(logger.LogBranchServiceRegComplete, "branch_id", branch.ID, "name", branch.Name)
+	log.Info(logger.LogBranchServiceRegComplete, "branch_id", branch.ID, "name", branch.Name)
 	return nil
 }
 
@@ -245,11 +243,11 @@ func (s *branchService) UpdateBranch(ctx context.Context, tx output.Tx, branch d
 // diagnostics and completed_services have RESTRICT - will error if exist
 func (s *branchService) DeleteBranch(ctx context.Context, tx output.Tx, branchID string) error {
 	if err := s.repository.DeleteBranch(ctx, tx, branchID); err != nil {
-		s.logger.Error(logger.LogBranchServiceDelError, "error", err, "branch_id", branchID)
+		log.Error(logger.LogBranchServiceDelError, "error", err, "branch_id", branchID)
 		return err
 	}
 
-	s.logger.Info(logger.LogBranchServiceDelComplete, "branch_id", branchID)
+	log.Info(logger.LogBranchServiceDelComplete, "branch_id", branchID)
 	return nil
 }
 

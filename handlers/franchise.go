@@ -9,15 +9,35 @@ type CreateFranchiseRequest struct {
 	BranchIDs   []string `json:"branch_ids" binding:"required,min=1"`
 }
 
+// Sanitize trims whitespace from all string fields
+func (r *CreateFranchiseRequest) Sanitize() {
+	r.Name = TrimString(r.Name)
+	r.Description = TrimStringPtr(r.Description)
+	for i := range r.BranchIDs {
+		r.BranchIDs[i] = TrimString(r.BranchIDs[i])
+	}
+}
+
 // UpdateFranchiseRequest represents the request body for updating a franchise (HU27)
 type UpdateFranchiseRequest struct {
 	Name        string  `json:"name" binding:"required"`
 	Description *string `json:"description"`
 }
 
+// Sanitize trims whitespace from all string fields
+func (r *UpdateFranchiseRequest) Sanitize() {
+	r.Name = TrimString(r.Name)
+	r.Description = TrimStringPtr(r.Description)
+}
+
 // AddBranchToFranchiseRequest represents the request to add a branch to a franchise
 type AddBranchToFranchiseRequest struct {
 	BranchID string `json:"branch_id" binding:"required"`
+}
+
+// Sanitize trims whitespace from all string fields
+func (r *AddBranchToFranchiseRequest) Sanitize() {
+	r.BranchID = TrimString(r.BranchID)
 }
 
 // FranchiseResponse represents a franchise in API responses

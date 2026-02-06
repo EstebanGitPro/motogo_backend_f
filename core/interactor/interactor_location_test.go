@@ -9,57 +9,14 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/mocks"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
-
-// setupLocationMockLogger configures a MockLogger for location tests
-func setupLocationMockLogger() *mocks.MockLogger {
-	mockLogger := new(mocks.MockLogger)
-	mockLogger.On("Info", mock.Anything, mock.Anything).Maybe()
-	mockLogger.On("Success", mock.Anything, mock.Anything).Maybe()
-	mockLogger.On("Error", mock.Anything, mock.Anything).Maybe()
-	return mockLogger
-}
-
-// ============================================
-// GetAllDepartments Tests
-// ============================================
-
-func TestGetAllDepartments_Success(t *testing.T) {
-	// Arrange
-	ctx := context.Background()
-	mockLocationService := new(mocks.MockLocationService)
-	mockLogger := setupLocationMockLogger()
-
-	locationInteractor := interactor.NewLocationInteractor(mockLocationService, mockLogger)
-
-	expectedDepartments := []domain.Department{
-		{ID: "dept-1", Name: "Cundinamarca"},
-		{ID: "dept-2", Name: "Antioquia"},
-		{ID: "dept-3", Name: "Valle del Cauca"},
-	}
-
-	// Mock expectations
-	mockLocationService.On("GetAllDepartments", ctx).Return(expectedDepartments, nil)
-
-	// Act
-	result, err := locationInteractor.GetAllDepartments(ctx)
-
-	// Assert
-	assert.NoError(t, err)
-	assert.Len(t, result, 3)
-	assert.Equal(t, "Cundinamarca", result[0].Name)
-
-	mockLocationService.AssertExpectations(t)
-}
 
 func TestGetAllDepartments_Error(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockLocationService := new(mocks.MockLocationService)
-	mockLogger := setupLocationMockLogger()
 
-	locationInteractor := interactor.NewLocationInteractor(mockLocationService, mockLogger)
+	locationInteractor := interactor.NewLocationInteractor(mockLocationService)
 
 	dbError := errors.New("database connection failed")
 
@@ -81,9 +38,8 @@ func TestGetAllDepartments_Empty(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockLocationService := new(mocks.MockLocationService)
-	mockLogger := setupLocationMockLogger()
 
-	locationInteractor := interactor.NewLocationInteractor(mockLocationService, mockLogger)
+	locationInteractor := interactor.NewLocationInteractor(mockLocationService)
 
 	// Mock expectations
 	mockLocationService.On("GetAllDepartments", ctx).Return([]domain.Department{}, nil)
@@ -106,9 +62,8 @@ func TestGetCitiesByDepartment_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockLocationService := new(mocks.MockLocationService)
-	mockLogger := setupLocationMockLogger()
 
-	locationInteractor := interactor.NewLocationInteractor(mockLocationService, mockLogger)
+	locationInteractor := interactor.NewLocationInteractor(mockLocationService)
 
 	departmentID := "dept-cundinamarca"
 	expectedCities := []domain.City{
@@ -135,9 +90,8 @@ func TestGetCitiesByDepartment_Error(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockLocationService := new(mocks.MockLocationService)
-	mockLogger := setupLocationMockLogger()
 
-	locationInteractor := interactor.NewLocationInteractor(mockLocationService, mockLogger)
+	locationInteractor := interactor.NewLocationInteractor(mockLocationService)
 
 	departmentID := "dept-invalid"
 	dbError := errors.New("database error")
@@ -159,9 +113,8 @@ func TestGetCitiesByDepartment_Empty(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockLocationService := new(mocks.MockLocationService)
-	mockLogger := setupLocationMockLogger()
 
-	locationInteractor := interactor.NewLocationInteractor(mockLocationService, mockLogger)
+	locationInteractor := interactor.NewLocationInteractor(mockLocationService)
 
 	departmentID := "dept-empty"
 

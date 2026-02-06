@@ -17,11 +17,10 @@ import (
 // Helper Functions
 // ============================================
 
-func setupBranchServiceMocks() (*mocks.MockBranchRepository, *mocks.MockLocationRepository, *mocks.MockGeocodingClient, *mocks.MockLogger) {
+func setupBranchServiceMocks() (*mocks.MockBranchRepository, *mocks.MockLocationRepository, *mocks.MockGeocodingClient) {
 	return new(mocks.MockBranchRepository),
 		new(mocks.MockLocationRepository),
-		new(mocks.MockGeocodingClient),
-		new(mocks.MockLogger)
+		new(mocks.MockGeocodingClient)
 }
 
 func floatPtr(f float64) *float64 {
@@ -34,10 +33,10 @@ func floatPtr(f float64) *float64 {
 
 func TestNewBranchService_Success(t *testing.T) {
 	// Arrange
-	branchRepo, locationRepo, geocodingClient, logger := setupBranchServiceMocks()
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
 
 	// Act
-	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient, logger)
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
 
 	// Assert
 	assert.NotNil(t, service)
@@ -49,12 +48,12 @@ func TestNewBranchService_Success(t *testing.T) {
 
 func TestBranchService_BeginTx_Success(t *testing.T) {
 	// Arrange
-	branchRepo, locationRepo, geocodingClient, logger := setupBranchServiceMocks()
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
 	mockTx := new(mocks.MockTx)
 
 	branchRepo.On("BeginTx", mock.Anything).Return(mockTx, nil)
 
-	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient, logger)
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
 
 	// Act
 	tx, err := service.BeginTx(context.Background())
@@ -67,10 +66,10 @@ func TestBranchService_BeginTx_Success(t *testing.T) {
 
 func TestBranchService_BeginTx_Error(t *testing.T) {
 	// Arrange
-	branchRepo, locationRepo, geocodingClient, logger := setupBranchServiceMocks()
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
 	branchRepo.On("BeginTx", mock.Anything).Return(nil, errors.New("connection error"))
 
-	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient, logger)
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
 
 	// Act
 	tx, err := service.BeginTx(context.Background())
@@ -87,8 +86,8 @@ func TestBranchService_BeginTx_Error(t *testing.T) {
 
 func TestGeocodeLocation_NilLocation(t *testing.T) {
 	// Arrange
-	branchRepo, locationRepo, geocodingClient, logger := setupBranchServiceMocks()
-	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient, logger)
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
 
 	// Act
 	generated, err := service.GeocodeLocation(context.Background(), nil)
@@ -100,16 +99,14 @@ func TestGeocodeLocation_NilLocation(t *testing.T) {
 
 func TestGeocodeLocation_CoordinatesAlreadyProvided(t *testing.T) {
 	// Arrange
-	branchRepo, locationRepo, geocodingClient, logger := setupBranchServiceMocks()
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
 	location := &domain.Location{
 		Address:   "Calle 10 #20-30",
 		Latitude:  floatPtr(6.2518),
 		Longitude: floatPtr(-75.5636),
 	}
 
-	logger.On("Debug", mock.Anything, mock.Anything).Return()
-
-	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient, logger)
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
 
 	// Act
 	generated, err := service.GeocodeLocation(context.Background(), location)
@@ -117,20 +114,17 @@ func TestGeocodeLocation_CoordinatesAlreadyProvided(t *testing.T) {
 	// Assert
 	assert.NoError(t, err)
 	assert.False(t, generated) // No geocoding needed
-	logger.AssertExpectations(t)
 }
 
 func TestGeocodeLocation_MissingCityOrDepartment(t *testing.T) {
 	// Arrange
-	branchRepo, locationRepo, geocodingClient, logger := setupBranchServiceMocks()
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
 	location := &domain.Location{
 		Address:  "Calle 10 #20-30",
 		CityName: "", // Missing city
 	}
 
-	logger.On("Warn", mock.Anything, mock.Anything).Return()
-
-	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient, logger)
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
 
 	// Act
 	generated, err := service.GeocodeLocation(context.Background(), location)
@@ -138,12 +132,11 @@ func TestGeocodeLocation_MissingCityOrDepartment(t *testing.T) {
 	// Assert
 	assert.NoError(t, err)
 	assert.False(t, generated)
-	logger.AssertExpectations(t)
 }
 
 func TestGeocodeLocation_Success(t *testing.T) {
 	// Arrange
-	branchRepo, locationRepo, geocodingClient, logger := setupBranchServiceMocks()
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
 	location := &domain.Location{
 		Address:        "Calle 10 #20-30",
 		CityName:       "Medellín",
@@ -157,9 +150,8 @@ func TestGeocodeLocation_Success(t *testing.T) {
 	}
 
 	geocodingClient.On("Geocode", mock.Anything, "Calle 10 #20-30", "Medellín", "Antioquia").Return(coords, nil)
-	logger.On("Info", mock.Anything, mock.Anything).Return()
 
-	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient, logger)
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
 
 	// Act
 	generated, err := service.GeocodeLocation(context.Background(), location)
@@ -176,7 +168,7 @@ func TestGeocodeLocation_Success(t *testing.T) {
 
 func TestGeocodeLocation_GeocodingError(t *testing.T) {
 	// Arrange
-	branchRepo, locationRepo, geocodingClient, logger := setupBranchServiceMocks()
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
 	location := &domain.Location{
 		Address:        "Dirección Inválida",
 		CityName:       "Medellín",
@@ -185,9 +177,8 @@ func TestGeocodeLocation_GeocodingError(t *testing.T) {
 
 	geocodingClient.On("Geocode", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(nil, errors.New("geocoding API error"))
-	logger.On("Warn", mock.Anything, mock.Anything).Return()
 
-	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient, logger)
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
 
 	// Act
 	generated, err := service.GeocodeLocation(context.Background(), location)
@@ -200,7 +191,7 @@ func TestGeocodeLocation_GeocodingError(t *testing.T) {
 
 func TestGeocodeLocation_NoResults(t *testing.T) {
 	// Arrange
-	branchRepo, locationRepo, geocodingClient, logger := setupBranchServiceMocks()
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
 	location := &domain.Location{
 		Address:        "Dirección No Encontrada",
 		CityName:       "Medellín",
@@ -209,9 +200,8 @@ func TestGeocodeLocation_NoResults(t *testing.T) {
 
 	geocodingClient.On("Geocode", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(nil, nil) // No error, but no results
-	logger.On("Warn", mock.Anything, mock.Anything).Return()
 
-	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient, logger)
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
 
 	// Act
 	generated, err := service.GeocodeLocation(context.Background(), location)
@@ -219,7 +209,6 @@ func TestGeocodeLocation_NoResults(t *testing.T) {
 	// Assert
 	assert.NoError(t, err)
 	assert.False(t, generated)
-	logger.AssertExpectations(t)
 }
 
 // ============================================
@@ -228,7 +217,7 @@ func TestGeocodeLocation_NoResults(t *testing.T) {
 
 func TestRegisterBranch_InvalidEstablishmentType(t *testing.T) {
 	// Arrange
-	branchRepo, locationRepo, geocodingClient, logger := setupBranchServiceMocks()
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
 	mockTx := new(mocks.MockTx)
 
 	branch := domain.Branch{
@@ -236,9 +225,7 @@ func TestRegisterBranch_InvalidEstablishmentType(t *testing.T) {
 		EstablishmentType: "INVALID_TYPE",
 	}
 
-	logger.On("Warn", mock.Anything, mock.Anything).Return()
-
-	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient, logger)
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
 
 	// Act
 	result, err := service.RegisterBranch(context.Background(), mockTx, branch)
@@ -251,7 +238,7 @@ func TestRegisterBranch_InvalidEstablishmentType(t *testing.T) {
 
 func TestRegisterBranch_DuplicateName(t *testing.T) {
 	// Arrange
-	branchRepo, locationRepo, geocodingClient, logger := setupBranchServiceMocks()
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
 	mockTx := new(mocks.MockTx)
 
 	franchiseID := "franchise-123"
@@ -264,9 +251,8 @@ func TestRegisterBranch_DuplicateName(t *testing.T) {
 	existingBranch := &domain.Branch{ID: "existing-id", Name: "Taller Express"}
 	branchRepo.On("GetBranchByFranchiseAndName", mock.Anything, franchiseID, "Taller Express").
 		Return(existingBranch, nil)
-	logger.On("Warn", mock.Anything, mock.Anything).Return()
 
-	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient, logger)
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
 
 	// Act
 	result, err := service.RegisterBranch(context.Background(), mockTx, branch)
@@ -280,7 +266,7 @@ func TestRegisterBranch_DuplicateName(t *testing.T) {
 
 func TestRegisterBranch_Success_MinimalFields(t *testing.T) {
 	// Arrange
-	branchRepo, locationRepo, geocodingClient, logger := setupBranchServiceMocks()
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
 	mockTx := new(mocks.MockTx)
 
 	branch := domain.Branch{
@@ -290,9 +276,8 @@ func TestRegisterBranch_Success_MinimalFields(t *testing.T) {
 	}
 
 	branchRepo.On("SaveBranch", mock.Anything, mockTx, mock.AnythingOfType("domain.Branch")).Return(nil)
-	logger.On("Info", mock.Anything, mock.Anything).Return()
 
-	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient, logger)
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
 
 	// Act
 	result, err := service.RegisterBranch(context.Background(), mockTx, branch)
@@ -307,7 +292,7 @@ func TestRegisterBranch_Success_MinimalFields(t *testing.T) {
 
 func TestRegisterBranch_Success_WithLocationAndBrands(t *testing.T) {
 	// Arrange
-	branchRepo, locationRepo, geocodingClient, logger := setupBranchServiceMocks()
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
 	mockTx := new(mocks.MockTx)
 
 	branch := domain.Branch{
@@ -326,9 +311,8 @@ func TestRegisterBranch_Success_WithLocationAndBrands(t *testing.T) {
 	locationRepo.On("CheckAddressExists", mock.Anything, "Calle 10 #20-30").Return(false, nil)
 	locationRepo.On("SaveLocation", mock.Anything, mockTx, mock.AnythingOfType("domain.Location")).Return(nil)
 	branchRepo.On("SaveBranchBrands", mock.Anything, mockTx, mock.AnythingOfType("string"), []string{"Honda", "Yamaha"}).Return(nil)
-	logger.On("Info", mock.Anything, mock.Anything).Return()
 
-	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient, logger)
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
 
 	// Act
 	result, err := service.RegisterBranch(context.Background(), mockTx, branch)
@@ -342,7 +326,7 @@ func TestRegisterBranch_Success_WithLocationAndBrands(t *testing.T) {
 
 func TestRegisterBranch_DuplicateAddress(t *testing.T) {
 	// Arrange
-	branchRepo, locationRepo, geocodingClient, logger := setupBranchServiceMocks()
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
 	mockTx := new(mocks.MockTx)
 
 	branch := domain.Branch{
@@ -355,9 +339,8 @@ func TestRegisterBranch_DuplicateAddress(t *testing.T) {
 
 	branchRepo.On("SaveBranch", mock.Anything, mockTx, mock.AnythingOfType("domain.Branch")).Return(nil)
 	locationRepo.On("CheckAddressExists", mock.Anything, "Dirección Existente").Return(true, nil)
-	logger.On("Warn", mock.Anything, mock.Anything).Return()
 
-	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient, logger)
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
 
 	// Act
 	result, err := service.RegisterBranch(context.Background(), mockTx, branch)
@@ -374,7 +357,7 @@ func TestRegisterBranch_DuplicateAddress(t *testing.T) {
 
 func TestGetBranchByID_Success(t *testing.T) {
 	// Arrange
-	branchRepo, locationRepo, geocodingClient, logger := setupBranchServiceMocks()
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
 
 	expectedBranch := &domain.Branch{
 		ID:                "branch-123",
@@ -384,7 +367,7 @@ func TestGetBranchByID_Success(t *testing.T) {
 
 	branchRepo.On("GetBranchByID", mock.Anything, "branch-123").Return(expectedBranch, nil)
 
-	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient, logger)
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
 
 	// Act
 	result, err := service.GetBranchByID(context.Background(), "branch-123")
@@ -398,12 +381,11 @@ func TestGetBranchByID_Success(t *testing.T) {
 
 func TestGetBranchByID_NotFound(t *testing.T) {
 	// Arrange
-	branchRepo, locationRepo, geocodingClient, logger := setupBranchServiceMocks()
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
 
 	branchRepo.On("GetBranchByID", mock.Anything, "non-existent").Return(nil, domain.ErrBranchNotFound)
-	logger.On("Error", mock.Anything, mock.Anything).Return()
 
-	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient, logger)
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
 
 	// Act
 	result, err := service.GetBranchByID(context.Background(), "non-existent")
@@ -420,8 +402,8 @@ func TestGetBranchByID_NotFound(t *testing.T) {
 
 func TestValidateBrands_EmptyList(t *testing.T) {
 	// Arrange
-	branchRepo, locationRepo, geocodingClient, logger := setupBranchServiceMocks()
-	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient, logger)
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
 
 	// Act
 	err := service.ValidateBrands(context.Background(), []string{})
@@ -432,11 +414,11 @@ func TestValidateBrands_EmptyList(t *testing.T) {
 
 func TestValidateBrands_Success(t *testing.T) {
 	// Arrange
-	branchRepo, locationRepo, geocodingClient, logger := setupBranchServiceMocks()
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
 
 	branchRepo.On("ValidateBrands", mock.Anything, []string{"Honda", "Yamaha"}).Return(nil)
 
-	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient, logger)
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
 
 	// Act
 	err := service.ValidateBrands(context.Background(), []string{"Honda", "Yamaha"})
@@ -448,12 +430,12 @@ func TestValidateBrands_Success(t *testing.T) {
 
 func TestValidateBrands_InvalidBrand(t *testing.T) {
 	// Arrange
-	branchRepo, locationRepo, geocodingClient, logger := setupBranchServiceMocks()
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
 
 	branchRepo.On("ValidateBrands", mock.Anything, []string{"InvalidBrand"}).
 		Return(domain.ErrBrandNotFound)
 
-	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient, logger)
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
 
 	// Act
 	err := service.ValidateBrands(context.Background(), []string{"InvalidBrand"})
@@ -469,7 +451,7 @@ func TestValidateBrands_InvalidBrand(t *testing.T) {
 
 func TestGetBranchesByRepresentative_Success(t *testing.T) {
 	// Arrange
-	branchRepo, locationRepo, geocodingClient, logger := setupBranchServiceMocks()
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
 
 	expectedBranches := []domain.Branch{
 		{ID: "branch-1", Name: "Branch 1"},
@@ -479,7 +461,7 @@ func TestGetBranchesByRepresentative_Success(t *testing.T) {
 	branchRepo.On("GetBranchesByRepresentative", mock.Anything, "rep-123").
 		Return(expectedBranches, nil)
 
-	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient, logger)
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
 
 	// Act
 	result, err := service.GetBranchesByRepresentative(context.Background(), "rep-123")
@@ -492,12 +474,12 @@ func TestGetBranchesByRepresentative_Success(t *testing.T) {
 
 func TestGetBranchesByRepresentative_Empty(t *testing.T) {
 	// Arrange
-	branchRepo, locationRepo, geocodingClient, logger := setupBranchServiceMocks()
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
 
 	branchRepo.On("GetBranchesByRepresentative", mock.Anything, "rep-no-branches").
 		Return([]domain.Branch{}, nil)
 
-	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient, logger)
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
 
 	// Act
 	result, err := service.GetBranchesByRepresentative(context.Background(), "rep-no-branches")
@@ -513,7 +495,7 @@ func TestGetBranchesByRepresentative_Empty(t *testing.T) {
 
 func TestUpdateBranch_InvalidType(t *testing.T) {
 	// Arrange
-	branchRepo, locationRepo, geocodingClient, logger := setupBranchServiceMocks()
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
 	mockTx := new(mocks.MockTx)
 
 	branch := domain.Branch{
@@ -522,9 +504,7 @@ func TestUpdateBranch_InvalidType(t *testing.T) {
 		EstablishmentType: "INVALID",
 	}
 
-	logger.On("Warn", mock.Anything, mock.Anything).Return()
-
-	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient, logger)
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
 
 	// Act
 	err := service.UpdateBranch(context.Background(), mockTx, branch)
@@ -536,7 +516,7 @@ func TestUpdateBranch_InvalidType(t *testing.T) {
 
 func TestUpdateBranch_Success(t *testing.T) {
 	// Arrange
-	branchRepo, locationRepo, geocodingClient, logger := setupBranchServiceMocks()
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
 	mockTx := new(mocks.MockTx)
 
 	branch := domain.Branch{
@@ -549,9 +529,8 @@ func TestUpdateBranch_Success(t *testing.T) {
 	branchRepo.On("UpdateBranch", mock.Anything, mockTx, mock.AnythingOfType("domain.Branch")).Return(nil)
 	branchRepo.On("DeleteBranchBrands", mock.Anything, mockTx, "branch-123").Return(nil)
 	branchRepo.On("SaveBranchBrands", mock.Anything, mockTx, "branch-123", []string{"Suzuki"}).Return(nil)
-	logger.On("Info", mock.Anything, mock.Anything).Return()
 
-	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient, logger)
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
 
 	// Act
 	err := service.UpdateBranch(context.Background(), mockTx, branch)
@@ -563,7 +542,7 @@ func TestUpdateBranch_Success(t *testing.T) {
 
 func TestUpdateBranch_WithLocation(t *testing.T) {
 	// Arrange
-	branchRepo, locationRepo, geocodingClient, logger := setupBranchServiceMocks()
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
 	mockTx := new(mocks.MockTx)
 
 	branch := domain.Branch{
@@ -578,9 +557,8 @@ func TestUpdateBranch_WithLocation(t *testing.T) {
 	branchRepo.On("UpdateBranch", mock.Anything, mockTx, mock.AnythingOfType("domain.Branch")).Return(nil)
 	locationRepo.On("UpdateLocation", mock.Anything, mockTx, mock.AnythingOfType("domain.Location")).Return(nil)
 	branchRepo.On("DeleteBranchBrands", mock.Anything, mockTx, "branch-123").Return(nil)
-	logger.On("Info", mock.Anything, mock.Anything).Return()
 
-	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient, logger)
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
 
 	// Act
 	err := service.UpdateBranch(context.Background(), mockTx, branch)
@@ -596,13 +574,12 @@ func TestUpdateBranch_WithLocation(t *testing.T) {
 
 func TestDeleteBranch_Success(t *testing.T) {
 	// Arrange
-	branchRepo, locationRepo, geocodingClient, logger := setupBranchServiceMocks()
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
 	mockTx := new(mocks.MockTx)
 
 	branchRepo.On("DeleteBranch", mock.Anything, mockTx, "branch-123").Return(nil)
-	logger.On("Info", mock.Anything, mock.Anything).Return()
 
-	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient, logger)
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
 
 	// Act
 	err := service.DeleteBranch(context.Background(), mockTx, "branch-123")
@@ -614,14 +591,13 @@ func TestDeleteBranch_Success(t *testing.T) {
 
 func TestDeleteBranch_Error(t *testing.T) {
 	// Arrange
-	branchRepo, locationRepo, geocodingClient, logger := setupBranchServiceMocks()
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
 	mockTx := new(mocks.MockTx)
 
 	branchRepo.On("DeleteBranch", mock.Anything, mockTx, "branch-with-diagnostics").
 		Return(domain.ErrBranchCannotDelete)
-	logger.On("Error", mock.Anything, mock.Anything).Return()
 
-	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient, logger)
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
 
 	// Act
 	err := service.DeleteBranch(context.Background(), mockTx, "branch-with-diagnostics")
@@ -637,7 +613,7 @@ func TestDeleteBranch_Error(t *testing.T) {
 
 func TestGetBranchesNearby_Success(t *testing.T) {
 	// Arrange
-	branchRepo, locationRepo, geocodingClient, logger := setupBranchServiceMocks()
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
 
 	expectedBranches := []domain.NearbyBranch{
 		{ID: "branch-1", Name: "Nearby Branch 1", DistanceKm: 1.5},
@@ -650,7 +626,7 @@ func TestGetBranchesNearby_Success(t *testing.T) {
 		mock.AnythingOfType("float64"), mock.AnythingOfType("float64")).
 		Return(expectedBranches, nil)
 
-	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient, logger)
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
 
 	// Act
 	result, err := service.GetBranchesNearby(context.Background(), 6.2518, -75.5636, 5.0, "WORKSHOP")
@@ -664,7 +640,7 @@ func TestGetBranchesNearby_Success(t *testing.T) {
 
 func TestGetBranchesNearby_Empty(t *testing.T) {
 	// Arrange
-	branchRepo, locationRepo, geocodingClient, logger := setupBranchServiceMocks()
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
 
 	branchRepo.On("GetBranchesNearby", mock.Anything,
 		mock.AnythingOfType("float64"), mock.AnythingOfType("float64"),
@@ -673,7 +649,7 @@ func TestGetBranchesNearby_Empty(t *testing.T) {
 		mock.AnythingOfType("float64"), mock.AnythingOfType("float64")).
 		Return([]domain.NearbyBranch{}, nil)
 
-	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient, logger)
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
 
 	// Act
 	result, err := service.GetBranchesNearby(context.Background(), 0.0, 0.0, 1.0, "")
@@ -689,7 +665,7 @@ func TestGetBranchesNearby_Empty(t *testing.T) {
 
 func TestSaveLocation_Success(t *testing.T) {
 	// Arrange
-	branchRepo, locationRepo, geocodingClient, logger := setupBranchServiceMocks()
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
 	mockTx := new(mocks.MockTx)
 
 	location := domain.Location{
@@ -699,7 +675,7 @@ func TestSaveLocation_Success(t *testing.T) {
 
 	locationRepo.On("SaveLocation", mock.Anything, mockTx, location).Return(nil)
 
-	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient, logger)
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
 
 	// Act
 	err := service.SaveLocation(context.Background(), mockTx, location)
@@ -711,7 +687,7 @@ func TestSaveLocation_Success(t *testing.T) {
 
 func TestSaveLocation_Error(t *testing.T) {
 	// Arrange
-	branchRepo, locationRepo, geocodingClient, logger := setupBranchServiceMocks()
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
 	mockTx := new(mocks.MockTx)
 
 	location := domain.Location{
@@ -721,7 +697,7 @@ func TestSaveLocation_Error(t *testing.T) {
 
 	locationRepo.On("SaveLocation", mock.Anything, mockTx, location).Return(errors.New("save error"))
 
-	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient, logger)
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
 
 	// Act
 	err := service.SaveLocation(context.Background(), mockTx, location)
@@ -736,7 +712,7 @@ func TestSaveLocation_Error(t *testing.T) {
 
 func TestSaveBranchBrands_Success(t *testing.T) {
 	// Arrange
-	branchRepo, locationRepo, geocodingClient, logger := setupBranchServiceMocks()
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
 	mockTx := new(mocks.MockTx)
 
 	branchID := "branch-123"
@@ -744,7 +720,7 @@ func TestSaveBranchBrands_Success(t *testing.T) {
 
 	branchRepo.On("SaveBranchBrands", mock.Anything, mockTx, branchID, brands).Return(nil)
 
-	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient, logger)
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
 
 	// Act
 	err := service.SaveBranchBrands(context.Background(), mockTx, branchID, brands)
@@ -756,7 +732,7 @@ func TestSaveBranchBrands_Success(t *testing.T) {
 
 func TestSaveBranchBrands_Error(t *testing.T) {
 	// Arrange
-	branchRepo, locationRepo, geocodingClient, logger := setupBranchServiceMocks()
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
 	mockTx := new(mocks.MockTx)
 
 	branchID := "branch-123"
@@ -764,7 +740,7 @@ func TestSaveBranchBrands_Error(t *testing.T) {
 
 	branchRepo.On("SaveBranchBrands", mock.Anything, mockTx, branchID, brands).Return(errors.New("invalid brand"))
 
-	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient, logger)
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
 
 	// Act
 	err := service.SaveBranchBrands(context.Background(), mockTx, branchID, brands)

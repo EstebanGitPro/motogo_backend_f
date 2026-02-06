@@ -27,6 +27,10 @@ type APIResponse struct {
 	Data    interface{} `json:"data,omitempty"`
 }
 
+// StandardResponse is an alias for APIResponse - used in Swagger annotations
+// @Description Standard API response wrapper
+type StandardResponse = APIResponse
+
 // Error sends an error response
 func (h *ResponseHandler) Error(c *gin.Context, code string, params ...string) {
 	msg := h.cache.GetMessageResponse(code, params...)

@@ -12,7 +12,7 @@ import (
 
 const (
 	queryGetByID = `
-		SELECT m.id, m.license_plate, m.reference_id, m.owner_id, m.year, m.current_mileage, m.owner_notes,
+		SELECT m.id, m.license_plate, m.reference_id, m.owner_id, m.year, m.current_mileage, m.owner_notes, m.profile_image_url,
 		       r.id as ref_id, r.brand_id, b.name as brand_name, r.model, r.category, r.engine_displacement
 		FROM motorcycles m
 		INNER JOIN motorcycle_references r ON m.reference_id = r.id
@@ -21,7 +21,7 @@ const (
 	`
 
 	queryGetByOwnerID = `
-		SELECT m.id, m.license_plate, m.reference_id, m.owner_id, m.year, m.current_mileage, m.owner_notes,
+		SELECT m.id, m.license_plate, m.reference_id, m.owner_id, m.year, m.current_mileage, m.owner_notes, m.profile_image_url,
 		       r.id as ref_id, r.brand_id, b.name as brand_name, r.model, r.category, r.engine_displacement
 		FROM motorcycles m
 		INNER JOIN motorcycle_references r ON m.reference_id = r.id
@@ -31,7 +31,7 @@ const (
 	`
 
 	queryGetByLicensePlate = `
-		SELECT m.id, m.license_plate, m.reference_id, m.owner_id, m.year, m.current_mileage, m.owner_notes,
+		SELECT m.id, m.license_plate, m.reference_id, m.owner_id, m.year, m.current_mileage, m.owner_notes, m.profile_image_url,
 		       r.id as ref_id, r.brand_id, b.name as brand_name, r.model, r.category, r.engine_displacement
 		FROM motorcycles m
 		INNER JOIN motorcycle_references r ON m.reference_id = r.id
@@ -41,7 +41,7 @@ const (
 
 	queryUpdate = `
 		UPDATE motorcycles 
-		SET reference_id = ?, year = ?, current_mileage = ?, owner_notes = ?, updated_at = NOW()
+		SET reference_id = ?, year = ?, current_mileage = ?, owner_notes = ?, profile_image_url = ?, updated_at = NOW()
 		WHERE id = ?
 	`
 
@@ -64,6 +64,15 @@ const (
 		INNER JOIN brands b ON r.brand_id = b.id
 		WHERE r.brand_id = ?
 		ORDER BY r.model
+	`
+
+	// queryHasServiceHistory validates completed_services and diagnostics tables exist at startup (HU45)
+	queryHasServiceHistory = `
+		SELECT EXISTS(
+			SELECT 1 FROM completed_services WHERE motorcycle_id = ?
+			UNION
+			SELECT 1 FROM diagnostics WHERE motorcycle_id = ?
+		)
 	`
 )
 
@@ -126,6 +135,15 @@ func NewRepository(db *sql.DB) (output.MotorcycleRepository, error) {
 		log.Error(logger.LogDatabaseUnavailable, "error preparing stmtGetReferencesByBrandID", err)
 		return nil, fmt.Errorf("error preparing stmtGetReferencesByBrandID: %w", err)
 	}
+
+	// Schema validation: validate completed_services and diagnostics tables exist (HU45 hybrid delete)
+	// This statement is only prepared to detect missing tables at startup, then immediately closed
+	stmtHasServiceHistory, err := db.Prepare(queryHasServiceHistory)
+	if err != nil {
+		log.Error(logger.LogDatabaseUnavailable, "error preparing stmtHasServiceHistory (completed_services/diagnostics tables missing?)", err)
+		return nil, fmt.Errorf("error preparing stmtHasServiceHistory: %w", err)
+	}
+	stmtHasServiceHistory.Close() // Close immediately - only used for schema validation
 
 	return &repository{
 		db:                         db,

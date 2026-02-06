@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/EstebanGitPro/motogo-backend/config"
-	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,7 +14,7 @@ import (
 // ============================================
 
 func TestNewClient_NilConfig(t *testing.T) {
-	client, err := NewClient(nil, nil)
+	client, err := NewClient(nil)
 
 	assert.Nil(t, client)
 	assert.Error(t, err)
@@ -31,10 +30,8 @@ func TestNewClient_InvalidServerURL_FailsAdminAuth(t *testing.T) {
 		AdminUser:    "admin",
 		AdminPass:    "admin",
 	}
-	log := logger.NewSlogLogger()
-
 	// Should fail to connect to admin API for token
-	client, err := NewClient(cfg, log)
+	client, err := NewClient(cfg)
 
 	assert.Nil(t, client)
 	assert.Error(t, err)
@@ -76,11 +73,9 @@ func TestClient_LoginUser_EmptyCredentials(t *testing.T) {
 		ClientID:     "test-client",
 		ClientSecret: "test-secret",
 	}
-	log := logger.NewSlogLogger()
 
 	c := &client{
 		config: cfg,
-		logger: log,
 	}
 
 	// Test empty username
@@ -101,11 +96,9 @@ func TestClient_CreateUser_NilPerson(t *testing.T) {
 		ClientID:     "test-client",
 		ClientSecret: "test-secret",
 	}
-	log := logger.NewSlogLogger()
 
 	c := &client{
 		config: cfg,
-		logger: log,
 	}
 
 	_, err := c.CreateUser(context.Background(), nil)
@@ -116,7 +109,6 @@ func TestClient_CreateUser_NilPerson(t *testing.T) {
 func TestClient_GetUserByEmail_EmptyEmail(t *testing.T) {
 	c := &client{
 		config: &config.KeycloakConfig{},
-		logger: logger.NewSlogLogger(),
 	}
 
 	_, err := c.GetUserByEmail(context.Background(), "")
@@ -127,7 +119,6 @@ func TestClient_GetUserByEmail_EmptyEmail(t *testing.T) {
 func TestClient_GetUserByID_EmptyID(t *testing.T) {
 	c := &client{
 		config: &config.KeycloakConfig{},
-		logger: logger.NewSlogLogger(),
 	}
 
 	_, err := c.GetUserByID(context.Background(), "")
@@ -138,7 +129,6 @@ func TestClient_GetUserByID_EmptyID(t *testing.T) {
 func TestClient_UpdateUser_NilUser(t *testing.T) {
 	c := &client{
 		config: &config.KeycloakConfig{},
-		logger: logger.NewSlogLogger(),
 	}
 
 	err := c.UpdateUser(context.Background(), nil)
@@ -149,7 +139,6 @@ func TestClient_UpdateUser_NilUser(t *testing.T) {
 func TestClient_DeleteUser_EmptyID(t *testing.T) {
 	c := &client{
 		config: &config.KeycloakConfig{},
-		logger: logger.NewSlogLogger(),
 	}
 
 	err := c.DeleteUser(context.Background(), "")
@@ -160,7 +149,6 @@ func TestClient_DeleteUser_EmptyID(t *testing.T) {
 func TestClient_SetPassword_EmptyCredentials(t *testing.T) {
 	c := &client{
 		config: &config.KeycloakConfig{},
-		logger: logger.NewSlogLogger(),
 	}
 
 	// Empty userID
@@ -177,7 +165,6 @@ func TestClient_SetPassword_EmptyCredentials(t *testing.T) {
 func TestClient_AssignRole_EmptyParams(t *testing.T) {
 	c := &client{
 		config: &config.KeycloakConfig{},
-		logger: logger.NewSlogLogger(),
 	}
 
 	// Empty userID
@@ -194,7 +181,6 @@ func TestClient_AssignRole_EmptyParams(t *testing.T) {
 func TestClient_RemoveRole_EmptyParams(t *testing.T) {
 	c := &client{
 		config: &config.KeycloakConfig{},
-		logger: logger.NewSlogLogger(),
 	}
 
 	// Empty userID
@@ -211,7 +197,6 @@ func TestClient_RemoveRole_EmptyParams(t *testing.T) {
 func TestClient_GetUserRoles_EmptyID(t *testing.T) {
 	c := &client{
 		config: &config.KeycloakConfig{},
-		logger: logger.NewSlogLogger(),
 	}
 
 	_, err := c.GetUserRoles(context.Background(), "")
@@ -222,7 +207,6 @@ func TestClient_GetUserRoles_EmptyID(t *testing.T) {
 func TestClient_SendVerificationEmail_EmptyID(t *testing.T) {
 	c := &client{
 		config: &config.KeycloakConfig{},
-		logger: logger.NewSlogLogger(),
 	}
 
 	err := c.SendVerificationEmail(context.Background(), "")
@@ -233,7 +217,6 @@ func TestClient_SendVerificationEmail_EmptyID(t *testing.T) {
 func TestClient_SendPasswordResetEmail_EmptyEmail(t *testing.T) {
 	c := &client{
 		config: &config.KeycloakConfig{},
-		logger: logger.NewSlogLogger(),
 	}
 
 	err := c.SendPasswordResetEmail(context.Background(), "")
@@ -244,7 +227,6 @@ func TestClient_SendPasswordResetEmail_EmptyEmail(t *testing.T) {
 func TestClient_VerifyEmail_EmptyID(t *testing.T) {
 	c := &client{
 		config: &config.KeycloakConfig{},
-		logger: logger.NewSlogLogger(),
 	}
 
 	err := c.VerifyEmail(context.Background(), "")
@@ -255,7 +237,6 @@ func TestClient_VerifyEmail_EmptyID(t *testing.T) {
 func TestClient_Logout_EmptyRefreshToken(t *testing.T) {
 	c := &client{
 		config: &config.KeycloakConfig{},
-		logger: logger.NewSlogLogger(),
 	}
 
 	err := c.Logout(context.Background(), "")
@@ -266,7 +247,6 @@ func TestClient_Logout_EmptyRefreshToken(t *testing.T) {
 func TestClient_RefreshToken_EmptyRefreshToken(t *testing.T) {
 	c := &client{
 		config: &config.KeycloakConfig{},
-		logger: logger.NewSlogLogger(),
 	}
 
 	_, err := c.RefreshToken(context.Background(), "")

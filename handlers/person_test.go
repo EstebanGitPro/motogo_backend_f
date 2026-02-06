@@ -328,3 +328,112 @@ func TestAuthMeResponse_JSONSerialization(t *testing.T) {
 	assert.Equal(t, "john@example.com", result["email"])
 	assert.Equal(t, "John", result["first_name"])
 }
+
+// ============================================
+// PersonRequest.Sanitize Tests
+// ============================================
+
+func TestPersonRequest_Sanitize(t *testing.T) {
+	// Arrange
+	req := &handlers.PersonRequest{
+		IdentityNumber: "  1234567890  ",
+		FirstName:      "  Juan  ",
+		LastName:       "  Pérez  ",
+		SecondLastName: "  García\t",
+		Email:          "  juan@example.com  ",
+		PhoneNumber:    "  +57 300 1234567\n",
+		Password:       "  password123  ", // Should NOT be trimmed
+		Role:           "  USER  ",
+	}
+
+	// Act
+	req.Sanitize()
+
+	// Assert
+	assert.Equal(t, "1234567890", req.IdentityNumber)
+	assert.Equal(t, "Juan", req.FirstName)
+	assert.Equal(t, "Pérez", req.LastName)
+	assert.Equal(t, "García", req.SecondLastName)
+	assert.Equal(t, "juan@example.com", req.Email)
+	assert.Equal(t, "+57 300 1234567", req.PhoneNumber)
+	assert.Equal(t, "  password123  ", req.Password) // Password NOT trimmed
+	assert.Equal(t, "USER", req.Role)
+}
+
+// ============================================
+// LoginRequest.Sanitize Tests
+// ============================================
+
+func TestLoginRequest_Sanitize(t *testing.T) {
+	// Arrange
+	req := &handlers.LoginRequest{
+		Email:    "  user@example.com  ",
+		Password: "  password123  ",
+	}
+
+	// Act
+	req.Sanitize()
+
+	// Assert
+	assert.Equal(t, "user@example.com", req.Email)
+	assert.Equal(t, "  password123  ", req.Password) // Password NOT trimmed
+}
+
+// ============================================
+// UpdateProfileRequest.Sanitize Tests
+// ============================================
+
+func TestUpdateProfileRequest_Sanitize(t *testing.T) {
+	// Arrange
+	req := &handlers.UpdateProfileRequest{
+		IdentityNumber: "  9876543210  ",
+		FirstName:      "  María  ",
+		LastName:       "  López\t",
+		SecondLastName: "  Rodríguez\n",
+		PhoneNumber:    "  +57 311 9876543  ",
+	}
+
+	// Act
+	req.Sanitize()
+
+	// Assert
+	assert.Equal(t, "9876543210", req.IdentityNumber)
+	assert.Equal(t, "María", req.FirstName)
+	assert.Equal(t, "López", req.LastName)
+	assert.Equal(t, "Rodríguez", req.SecondLastName)
+	assert.Equal(t, "+57 311 9876543", req.PhoneNumber)
+}
+
+// ============================================
+// ResendVerificationEmailRequest.Sanitize Tests
+// ============================================
+
+func TestResendVerificationEmailRequest_Sanitize(t *testing.T) {
+	// Arrange
+	req := &handlers.ResendVerificationEmailRequest{
+		Email: "  user@domain.com  \n",
+	}
+
+	// Act
+	req.Sanitize()
+
+	// Assert
+	assert.Equal(t, "user@domain.com", req.Email)
+}
+
+// ============================================
+// PasswordResetRequest.Sanitize Tests
+// ============================================
+
+func TestPasswordResetRequest_Sanitize(t *testing.T) {
+	// Arrange
+	req := &handlers.PasswordResetRequest{
+		Email: "\t  reset@example.com  \t",
+	}
+
+	// Act
+	req.Sanitize()
+
+	// Assert
+	assert.Equal(t, "reset@example.com", req.Email)
+}

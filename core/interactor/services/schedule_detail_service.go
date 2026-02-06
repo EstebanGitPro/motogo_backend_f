@@ -358,11 +358,11 @@ func (s *scheduleDetailService) CreateException(
 	// The tx parameter ensures this query runs within the transaction context
 	existingExceptions, err := s.detailRepo.GetExceptionsByScheduleIDForUpdate(ctx, tx, exception.ScheduleID)
 	if err != nil {
-		scheduleDetailLog.Error("DEBUG_GetExceptions_ERROR", "error", err)
+		scheduleDetailLog.Error(logger.LogScheduleDetailDebugGetError, "error", err)
 		return nil, err
 	}
 
-	scheduleDetailLog.Info("DEBUG_CheckExceptionDateConflict_EXPLICIT",
+	scheduleDetailLog.Info(logger.LogScheduleDetailDebugExplicitCheck,
 		"schedule_id", exception.ScheduleID,
 		"new_start_date", exception.ExceptionStartDate.Format("2006-01-02"),
 		"new_end_date", exception.ExceptionEndDate.Format("2006-01-02"),
@@ -384,7 +384,7 @@ func (s *scheduleDetailService) CreateException(
 		// Overlap condition: existing.start <= new.end AND existing.end >= new.start
 		hasOverlap := existingStartStr <= newEndStr && existingEndStr >= newStartStr
 
-		scheduleDetailLog.Info("DEBUG_CheckOverlap",
+		scheduleDetailLog.Info(logger.LogScheduleDetailDebugCheckOverlap,
 			"existing_id", existing.ID,
 			"existing_start", existingStartStr,
 			"existing_end", existingEndStr,

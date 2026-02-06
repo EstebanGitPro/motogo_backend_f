@@ -172,3 +172,89 @@ func TestToFranchiseListResponse_Empty(t *testing.T) {
 	assert.Empty(t, response.Franchises)
 	assert.NotEmpty(t, response.Links)
 }
+
+// ============================================
+// CreateFranchiseRequest.Sanitize Tests
+// ============================================
+
+func TestCreateFranchiseRequest_Sanitize(t *testing.T) {
+	description := "  Una descripción de franquicia  "
+	req := handlers.CreateFranchiseRequest{
+		Name:        "  Mi Franquicia  ",
+		Description: &description,
+		BranchIDs:   []string{"  branch-1  ", "  branch-2  "},
+	}
+
+	req.Sanitize()
+
+	assert.Equal(t, "Mi Franquicia", req.Name)
+	assert.Equal(t, "Una descripción de franquicia", *req.Description)
+	assert.Equal(t, "branch-1", req.BranchIDs[0])
+	assert.Equal(t, "branch-2", req.BranchIDs[1])
+}
+
+func TestCreateFranchiseRequest_Sanitize_NilDescription(t *testing.T) {
+	req := handlers.CreateFranchiseRequest{
+		Name:        "  Franquicia Test  ",
+		Description: nil,
+		BranchIDs:   []string{"branch-1"},
+	}
+
+	req.Sanitize()
+
+	assert.Equal(t, "Franquicia Test", req.Name)
+	assert.Nil(t, req.Description)
+}
+
+// ============================================
+// UpdateFranchiseRequest.Sanitize Tests
+// ============================================
+
+func TestUpdateFranchiseRequest_Sanitize(t *testing.T) {
+	description := "  Descripción actualizada  "
+	req := handlers.UpdateFranchiseRequest{
+		Name:        "  Franquicia Actualizada  ",
+		Description: &description,
+	}
+
+	req.Sanitize()
+
+	assert.Equal(t, "Franquicia Actualizada", req.Name)
+	assert.Equal(t, "Descripción actualizada", *req.Description)
+}
+
+func TestUpdateFranchiseRequest_Sanitize_NilDescription(t *testing.T) {
+	req := handlers.UpdateFranchiseRequest{
+		Name:        "  Solo Nombre  ",
+		Description: nil,
+	}
+
+	req.Sanitize()
+
+	assert.Equal(t, "Solo Nombre", req.Name)
+	assert.Nil(t, req.Description)
+}
+
+// ============================================
+// AddBranchToFranchiseRequest.Sanitize Tests
+// ============================================
+
+func TestAddBranchToFranchiseRequest_Sanitize(t *testing.T) {
+	req := handlers.AddBranchToFranchiseRequest{
+		BranchID: "  branch-id-123  ",
+	}
+
+	req.Sanitize()
+
+	assert.Equal(t, "branch-id-123", req.BranchID)
+}
+
+func TestAddBranchToFranchiseRequest_Sanitize_NoSpaces(t *testing.T) {
+	req := handlers.AddBranchToFranchiseRequest{
+		BranchID: "abc123",
+	}
+
+	req.Sanitize()
+
+	assert.Equal(t, "abc123", req.BranchID)
+}

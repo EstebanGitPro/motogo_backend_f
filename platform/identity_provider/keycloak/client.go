@@ -13,16 +13,17 @@ import (
 	"github.com/Nerzal/gocloak/v13"
 )
 
+var log logger.Logger = logger.NewSlogLogger()
+
 type client struct {
 	gocloak        *gocloak.GoCloak
 	config         *config.KeycloakConfig
 	token          *gocloak.JWT
 	tokenExpiresAt time.Time
 	tokenMutex     sync.RWMutex
-	logger         logger.Logger
 }
 
-func NewClient(cfg *config.KeycloakConfig, log logger.Logger) (output.AuthClient, error) {
+func NewClient(cfg *config.KeycloakConfig) (output.AuthClient, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("keycloak config cannot be nil")
 	}
@@ -34,7 +35,6 @@ func NewClient(cfg *config.KeycloakConfig, log logger.Logger) (output.AuthClient
 	authClient := &client{
 		gocloak: gc,
 		config:  cfg,
-		logger:  log,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
@@ -72,14 +72,14 @@ func (c *client) ensureValidToken(ctx context.Context) (string, error) {
 		return c.token.AccessToken, nil
 	}
 
-	c.logger.Info(logger.LogKeycloakTokenRefresh,
+	log.Info(logger.LogKeycloakTokenRefresh,
 		"realm", c.config.Realm,
 		"admin_user", c.config.AdminUser,
 		"token_expires_at", c.tokenExpiresAt.Format(time.RFC3339))
 
 	token, err := c.gocloak.LoginAdmin(ctx, c.config.AdminUser, c.config.AdminPass, c.config.Realm)
 	if err != nil {
-		c.logger.Error(logger.LogKeycloakTokenRefreshErr,
+		log.Error(logger.LogKeycloakTokenRefreshErr,
 			"realm", c.config.Realm,
 			"admin_user", c.config.AdminUser,
 			"error", err)
@@ -89,7 +89,7 @@ func (c *client) ensureValidToken(ctx context.Context) (string, error) {
 	c.token = token
 	c.tokenExpiresAt = time.Now().Add(time.Duration(token.ExpiresIn) * time.Second)
 
-	c.logger.Success(logger.LogKeycloakTokenRefreshOK,
+	log.Success(logger.LogKeycloakTokenRefreshOK,
 		"realm", c.config.Realm,
 		"admin_user", c.config.AdminUser,
 		"new_expires_at", c.tokenExpiresAt.Format(time.RFC3339),
@@ -103,7 +103,7 @@ func (c *client) LoginUser(ctx context.Context, username, password string) (*goc
 		return nil, fmt.Errorf("username and password cannot be empty")
 	}
 
-	c.logger.Info(logger.LogKeycloakUserLogin, "username", username, "realm", c.config.Realm)
+	log.Info(logger.LogKeycloakUserLogin, "username", username, "realm", c.config.Realm)
 
 	//TODO: Me dice que no he compeltado los campos y yo le he mandado todo lo necesario.
 	token, err := c.gocloak.Login(
@@ -115,11 +115,11 @@ func (c *client) LoginUser(ctx context.Context, username, password string) (*goc
 		password,
 	)
 	if err != nil {
-		c.logger.Error(logger.LogKeycloakUserLoginError, "username", username, "error", err)
+		log.Error(logger.LogKeycloakUserLoginError, "username", username, "error", err)
 		return nil, fmt.Errorf("user login failed: %w", err)
 	}
 
-	c.logger.Success(logger.LogKeycloakUserLoginOK, "username", username)
+	log.Success(logger.LogKeycloakUserLoginOK, "username", username)
 	return token, nil
 }
 
@@ -133,7 +133,7 @@ func (c *client) CreateUser(ctx context.Context, person *domain.Person) (string,
 		return "", err
 	}
 
-	c.logger.Info(logger.LogKeycloakUserCreate, "email", person.Email, "realm", c.config.Realm)
+	log.Info(logger.LogKeycloakUserCreate, "email", person.Email, "realm", c.config.Realm)
 
 	keycloakUser := gocloak.User{
 		Email:     &person.Email,
@@ -150,7 +150,7 @@ func (c *client) CreateUser(ctx context.Context, person *domain.Person) (string,
 		keycloakUser,
 	)
 	if err != nil {
-		c.logger.Error(logger.LogKeycloakUserCreateError,
+		log.Error(logger.LogKeycloakUserCreateError,
 			"email", person.Email,
 			"error", err,
 			"error_details", err.Error(),
@@ -158,7 +158,7 @@ func (c *client) CreateUser(ctx context.Context, person *domain.Person) (string,
 		return "", fmt.Errorf("failed to create user in keycloak: %w", err)
 	}
 
-	c.logger.Success(logger.LogKeycloakUserCreateOK, "email", person.Email, "user_id", userID)
+	log.Success(logger.LogKeycloakUserCreateOK, "email", person.Email, "user_id", userID)
 	return userID, nil
 }
 
@@ -248,7 +248,7 @@ func (c *client) DeleteUser(ctx context.Context, userID string) error {
 		return err
 	}
 
-	c.logger.Warn(logger.LogKeycloakUserDelete, "user_id", userID)
+	log.Warn(logger.LogKeycloakUserDelete, "user_id", userID)
 
 	err = c.gocloak.DeleteUser(
 		ctx,
@@ -257,11 +257,11 @@ func (c *client) DeleteUser(ctx context.Context, userID string) error {
 		userID,
 	)
 	if err != nil {
-		c.logger.Error(logger.LogKeycloakUserDeleteError, "user_id", userID, "error", err)
+		log.Error(logger.LogKeycloakUserDeleteError, "user_id", userID, "error", err)
 		return fmt.Errorf("failed to delete user: %w", err)
 	}
 
-	c.logger.Info(logger.LogKeycloakUserDeleteOK, "user_id", userID)
+	log.Info(logger.LogKeycloakUserDeleteOK, "user_id", userID)
 	return nil
 }
 
@@ -275,7 +275,7 @@ func (c *client) SetPassword(ctx context.Context, userID string, password string
 		return err
 	}
 
-	c.logger.Debug(logger.LogKeycloakPasswordSet, "user_id", userID, "temporary", temporary)
+	log.Debug(logger.LogKeycloakPasswordSet, "user_id", userID, "temporary", temporary)
 
 	err = c.gocloak.SetPassword(
 		ctx,
@@ -286,11 +286,11 @@ func (c *client) SetPassword(ctx context.Context, userID string, password string
 		temporary,
 	)
 	if err != nil {
-		c.logger.Error(logger.LogKeycloakPasswordSetError, "user_id", userID, "error", err)
+		log.Error(logger.LogKeycloakPasswordSetError, "user_id", userID, "error", err)
 		return fmt.Errorf("failed to set password: %w", err)
 	}
 
-	c.logger.Success(logger.LogKeycloakPasswordSetOK, "user_id", userID)
+	log.Success(logger.LogKeycloakPasswordSetOK, "user_id", userID)
 	return nil
 }
 
@@ -304,7 +304,7 @@ func (c *client) AssignRole(ctx context.Context, userID string, roleName string)
 		return err
 	}
 
-	c.logger.Info(logger.LogKeycloakRoleAssign, "user_id", userID, "role", roleName)
+	log.Info(logger.LogKeycloakRoleAssign, "user_id", userID, "role", roleName)
 
 	// Obtener el role por nombre
 	role, err := c.gocloak.GetRealmRole(
@@ -314,7 +314,7 @@ func (c *client) AssignRole(ctx context.Context, userID string, roleName string)
 		roleName,
 	)
 	if err != nil {
-		c.logger.Error(logger.LogKeycloakRoleGetError, "role", roleName, "error", err)
+		log.Error(logger.LogKeycloakRoleGetError, "role", roleName, "error", err)
 		return fmt.Errorf("failed to get role %s: %w", roleName, err)
 	}
 
@@ -327,11 +327,11 @@ func (c *client) AssignRole(ctx context.Context, userID string, roleName string)
 		[]gocloak.Role{*role},
 	)
 	if err != nil {
-		c.logger.Error(logger.LogKeycloakRoleAssignError, "user_id", userID, "role", roleName, "error", err)
+		log.Error(logger.LogKeycloakRoleAssignError, "user_id", userID, "role", roleName, "error", err)
 		return fmt.Errorf("failed to assign role to user: %w", err)
 	}
 
-	c.logger.Success(logger.LogKeycloakRoleAssignOK, "user_id", userID, "role", roleName)
+	log.Success(logger.LogKeycloakRoleAssignOK, "user_id", userID, "role", roleName)
 	return nil
 }
 
@@ -402,7 +402,7 @@ func (c *client) SendVerificationEmail(ctx context.Context, userID string) error
 		return err
 	}
 
-	c.logger.Info(logger.LogKeycloakSendVerificationEmail, "user_id", userID, "realm", c.config.Realm)
+	log.Info(logger.LogKeycloakSendVerificationEmail, "user_id", userID, "realm", c.config.Realm)
 
 	params := gocloak.ExecuteActionsEmail{
 		UserID:   &userID,
@@ -417,11 +417,11 @@ func (c *client) SendVerificationEmail(ctx context.Context, userID string) error
 		params,
 	)
 	if err != nil {
-		c.logger.Error(logger.LogKeycloakSendVerificationEmailError, "user_id", userID, "error", err)
+		log.Error(logger.LogKeycloakSendVerificationEmailError, "user_id", userID, "error", err)
 		return fmt.Errorf("failed to send verification email: %w", err)
 	}
 
-	c.logger.Success(logger.LogKeycloakSendVerificationEmailOK, "user_id", userID)
+	log.Success(logger.LogKeycloakSendVerificationEmailOK, "user_id", userID)
 	return nil
 }
 
@@ -437,10 +437,10 @@ func (c *client) SendPasswordResetEmail(ctx context.Context, email string) error
 		return err
 	}
 
-	c.logger.Info(logger.LogKeycloakSendPasswordReset, "email", email, "realm", c.config.Realm)
+	log.Info(logger.LogKeycloakSendPasswordReset, "email", email, "realm", c.config.Realm)
 
 	// Buscar usuario por email
-	c.logger.Debug(logger.LogKeycloakSearchUserByEmail, "email", email)
+	log.Debug(logger.LogKeycloakSearchUserByEmail, "email", email)
 
 	users, err := c.gocloak.GetUsers(
 		ctx,
@@ -452,16 +452,16 @@ func (c *client) SendPasswordResetEmail(ctx context.Context, email string) error
 		},
 	)
 	if err != nil {
-		c.logger.Error(logger.LogKeycloakSendPasswordResetError, "email", email, "error", err)
+		log.Error(logger.LogKeycloakSendPasswordResetError, "email", email, "error", err)
 		return fmt.Errorf("failed to search user: %w", err)
 	}
 
 	if len(users) == 0 {
-		c.logger.Warn(logger.LogKeycloakUserNotFound, "email", email)
+		log.Warn(logger.LogKeycloakUserNotFound, "email", email)
 		return fmt.Errorf("user with email %s not found", email)
 	}
 
-	c.logger.Debug(logger.LogKeycloakSearchUserByEmailOK, "email", email, "user_id", *users[0].ID)
+	log.Debug(logger.LogKeycloakSearchUserByEmailOK, "email", email, "user_id", *users[0].ID)
 
 	// Enviar email de reset de contraseña
 	params := gocloak.ExecuteActionsEmail{
@@ -477,11 +477,11 @@ func (c *client) SendPasswordResetEmail(ctx context.Context, email string) error
 		params,
 	)
 	if err != nil {
-		c.logger.Error(logger.LogKeycloakSendPasswordResetError, "email", email, "error", err)
+		log.Error(logger.LogKeycloakSendPasswordResetError, "email", email, "error", err)
 		return fmt.Errorf("failed to send password reset email: %w", err)
 	}
 
-	c.logger.Success(logger.LogKeycloakSendPasswordResetOK, "email", email, "user_id", *users[0].ID)
+	log.Success(logger.LogKeycloakSendPasswordResetOK, "email", email, "user_id", *users[0].ID)
 	return nil
 }
 
@@ -535,7 +535,7 @@ func (c *client) RefreshToken(ctx context.Context, refreshToken string) (*gocloa
 		return nil, fmt.Errorf("refreshToken cannot be empty")
 	}
 
-	c.logger.Info(logger.LogKeycloakUserTokenRefresh,
+	log.Info(logger.LogKeycloakUserTokenRefresh,
 		"realm", c.config.Realm,
 		"client_id", c.config.ClientID)
 
@@ -547,14 +547,14 @@ func (c *client) RefreshToken(ctx context.Context, refreshToken string) (*gocloa
 		c.config.Realm,
 	)
 	if err != nil {
-		c.logger.Error(logger.LogKeycloakUserTokenRefreshErr,
+		log.Error(logger.LogKeycloakUserTokenRefreshErr,
 			"realm", c.config.Realm,
 			"client_id", c.config.ClientID,
 			"error", err)
 		return nil, fmt.Errorf("failed to refresh token: %w", err)
 	}
 
-	c.logger.Success(logger.LogKeycloakUserTokenRefreshOK,
+	log.Success(logger.LogKeycloakUserTokenRefreshOK,
 		"realm", c.config.Realm,
 		"client_id", c.config.ClientID,
 		"expires_in_seconds", token.ExpiresIn,

@@ -13,20 +13,18 @@ import (
 
 type Interactor struct {
 	service input.Service
-	logger  logger.Logger
 }
 
-func NewInteractor(service input.Service, log logger.Logger) *Interactor {
+func NewInteractor(service input.Service) *Interactor {
 	return &Interactor{
 		service: service,
-		logger:  log,
 	}
 }
 
 func (i *Interactor) RegisterPerson(ctx context.Context, person domain.Person) (result *dto.RegistrationResult, err error) {
 	// Extract traceID from context and create logger with it
 	traceID := middleware.GetTraceIDFromContext(ctx)
-	log := i.logger.WithTraceID(traceID)
+	log := log.WithTraceID(traceID)
 
 	log.Info(logger.LogPersonInteractorRegStart, person.ToLogger())
 
@@ -170,7 +168,7 @@ func (i *Interactor) RegisterPerson(ctx context.Context, person domain.Person) (
 // ResendVerificationEmail reenvía el email de verificación a un usuario
 func (i *Interactor) ResendVerificationEmail(ctx context.Context, email string) error {
 	traceID := middleware.GetTraceIDFromContext(ctx)
-	log := i.logger.WithTraceID(traceID)
+	log := log.WithTraceID(traceID)
 
 	log.Info(logger.LogKeycloakSendVerificationEmail, "email", email)
 
@@ -200,7 +198,7 @@ func (i *Interactor) ResendVerificationEmail(ctx context.Context, email string) 
 // RequestPasswordReset envía un email de recuperación de contraseña
 func (i *Interactor) RequestPasswordReset(ctx context.Context, email string) error {
 	traceID := middleware.GetTraceIDFromContext(ctx)
-	log := i.logger.WithTraceID(traceID)
+	log := log.WithTraceID(traceID)
 
 	log.Info(logger.LogKeycloakSendPasswordReset, "email", email)
 
@@ -221,7 +219,7 @@ func (i *Interactor) RequestPasswordReset(ctx context.Context, email string) err
 // Este método delega al Service que maneja la lógica de negocio (parsing del token y verificación en Keycloak)
 func (i *Interactor) VerifyEmailByToken(ctx context.Context, token string) (string, error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
-	log := i.logger.WithTraceID(traceID)
+	log := log.WithTraceID(traceID)
 
 	log.Info(logger.LogKeycloakEmailVerify)
 
@@ -249,7 +247,7 @@ func (i *Interactor) VerifyEmailByToken(ctx context.Context, token string) (stri
 // Este método delega al Service que maneja la lógica de negocio (parsing del token y actualización en Keycloak)
 func (i *Interactor) ResetPasswordWithToken(ctx context.Context, token string, newPassword string) error {
 	traceID := middleware.GetTraceIDFromContext(ctx)
-	log := i.logger.WithTraceID(traceID)
+	log := log.WithTraceID(traceID)
 
 	log.Info(logger.LogPasswordResetStart)
 
@@ -275,7 +273,7 @@ func (i *Interactor) ResetPasswordWithToken(ctx context.Context, token string, n
 
 func (i *Interactor) Login(ctx context.Context, email, password string) (*dto.TokenResponse, error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
-	log := i.logger.WithTraceID(traceID)
+	log := log.WithTraceID(traceID)
 
 	log.Info(logger.LogPersonInteractorLoginStart, "email", email)
 
@@ -299,18 +297,18 @@ func (i *Interactor) Login(ctx context.Context, email, password string) (*dto.To
 // This is called by the frontend when the access token expires
 func (i *Interactor) RefreshToken(ctx context.Context, refreshToken string) (*dto.TokenResponse, error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
-	log := i.logger.WithTraceID(traceID)
+	log := log.WithTraceID(traceID)
 
-	log.Info("RefreshToken started")
+	log.Info(logger.LogPersonRefreshTokenStart)
 
 	// Delegate to service to refresh token via Keycloak
 	token, err := i.service.RefreshToken(ctx, refreshToken)
 	if err != nil {
-		log.Error("RefreshToken failed", "error", err)
+		log.Error(logger.LogPersonRefreshTokenError, "error", err)
 		return nil, err
 	}
 
-	log.Success("RefreshToken completed successfully")
+	log.Success(logger.LogPersonInteractorRefreshOK)
 	return &dto.TokenResponse{
 		AccessToken:  token.AccessToken,
 		TokenType:    token.TokenType,
@@ -323,7 +321,7 @@ func (i *Interactor) RefreshToken(ctx context.Context, refreshToken string) (*dt
 // Requires the current password for verification before setting a new one
 func (i *Interactor) ChangePassword(ctx context.Context, keycloakUserID, currentPassword, newPassword string) error {
 	traceID := middleware.GetTraceIDFromContext(ctx)
-	log := i.logger.WithTraceID(traceID)
+	log := log.WithTraceID(traceID)
 
 	log.Info(logger.LogChangePasswordStart, "keycloak_user_id", keycloakUserID)
 
@@ -354,7 +352,7 @@ func (i *Interactor) ChangePassword(ctx context.Context, keycloakUserID, current
 func (i *Interactor) UpdateProfile(ctx context.Context, person domain.Person) (*domain.Person, error) {
 	// Extract traceID from context and create logger with it
 	traceID := middleware.GetTraceIDFromContext(ctx)
-	log := i.logger.WithTraceID(traceID)
+	log := log.WithTraceID(traceID)
 
 	log.Info(logger.LogUpdateProfileStart, person.ToLogger())
 
@@ -400,17 +398,17 @@ func (i *Interactor) UpdateProfile(ctx context.Context, person domain.Person) (*
 // Only returns phone_number for motorcyclists to contact representatives
 func (i *Interactor) GetPublicContact(ctx context.Context, personID string) (*domain.Person, error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
-	log := i.logger.WithTraceID(traceID)
+	log := log.WithTraceID(traceID)
 
-	log.Info("GetPublicContact started", "person_id", personID)
+	log.Info(logger.LogPersonGetPublicContactStart, "person_id", personID)
 
 	person, err := i.service.GetPersonByID(ctx, personID)
 	if err != nil {
-		log.Error("error getting person for public contact", "person_id", personID, "error", err)
+		log.Error(logger.LogPersonGetPublicContactError, "person_id", personID, "error", err)
 		return nil, err
 	}
 
-	log.Success("GetPublicContact completed", "person_id", personID)
+	log.Success(logger.LogPersonInteractorContactGetOK, "person_id", personID)
 	return person, nil
 }
 
@@ -418,17 +416,17 @@ func (i *Interactor) GetPublicContact(ctx context.Context, personID string) (*do
 // This is used as part of account deletion flow
 func (i *Interactor) DeleteKeycloakUser(ctx context.Context, keycloakUserID string) error {
 	traceID := middleware.GetTraceIDFromContext(ctx)
-	log := i.logger.WithTraceID(traceID)
+	log := log.WithTraceID(traceID)
 
-	log.Info("Deleting user from Keycloak", "keycloak_user_id", keycloakUserID)
+	log.Info(logger.LogPersonDeleteKeycloakStart, "keycloak_user_id", keycloakUserID)
 
 	// Use existing RollbackKeycloakUser which internally calls DeleteUser
 	if err := i.service.RollbackKeycloakUser(ctx, keycloakUserID); err != nil {
-		log.Error("Failed to delete user from Keycloak", "error", err, "keycloak_user_id", keycloakUserID)
+		log.Error(logger.LogPersonDeleteKeycloakError, "error", err, "keycloak_user_id", keycloakUserID)
 		return err
 	}
 
-	log.Success("User deleted from Keycloak", "keycloak_user_id", keycloakUserID)
+	log.Success(logger.LogPersonInteractorKeycloakDeleteOK, "keycloak_user_id", keycloakUserID)
 	return nil
 }
 
@@ -436,16 +434,16 @@ func (i *Interactor) DeleteKeycloakUser(ctx context.Context, keycloakUserID stri
 // This is used as part of account deletion flow
 func (i *Interactor) DeletePersonFromDB(ctx context.Context, personID string) error {
 	traceID := middleware.GetTraceIDFromContext(ctx)
-	log := i.logger.WithTraceID(traceID)
+	log := log.WithTraceID(traceID)
 
-	log.Info("Deleting person from database", "person_id", personID)
+	log.Info(logger.LogPersonDeleteDBStart, "person_id", personID)
 
 	// Use existing RollbackPerson which internally calls DeletePerson
 	if err := i.service.RollbackPerson(ctx, personID); err != nil {
-		log.Error("Failed to delete person from database", "error", err, "person_id", personID)
+		log.Error(logger.LogPersonDeleteDBError, "error", err, "person_id", personID)
 		return err
 	}
 
-	log.Success("Person deleted from database", "person_id", personID)
+	log.Success(logger.LogPersonInteractorPersonDeleteOK, "person_id", personID)
 	return nil
 }

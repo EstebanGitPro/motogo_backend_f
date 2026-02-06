@@ -63,6 +63,12 @@ func (m *MockMotorcycleInteractor) DeleteMotorcycle(ctx context.Context, motorcy
 	return args.Error(0)
 }
 
+// DeleteProfileImage mocks the DeleteProfileImage method (HU39)
+func (m *MockMotorcycleInteractor) DeleteProfileImage(ctx context.Context, motorcycleID string, ownerID string) error {
+	args := m.Called(ctx, motorcycleID, ownerID)
+	return args.Error(0)
+}
+
 // GetMotorcycleReferences mocks the GetMotorcycleReferences method
 func (m *MockMotorcycleInteractor) GetMotorcycleReferences(ctx context.Context) ([]domain.MotorcycleReference, error) {
 	args := m.Called(ctx)

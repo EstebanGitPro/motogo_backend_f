@@ -34,6 +34,8 @@ func TestNewRepository_Success(t *testing.T) {
 	mock.ExpectPrepare("UPDATE motorcycles.*SET deleted_at")
 	mock.ExpectPrepare("SELECT r.id, r.brand_id.*FROM motorcycle_references r.*ORDER BY b.name")
 	mock.ExpectPrepare("SELECT r.id, r.brand_id.*FROM motorcycle_references r.*WHERE r.brand_id")
+	// Schema validation statement (prepared and immediately closed)
+	mock.ExpectPrepare("SELECT EXISTS.*completed_services.*diagnostics")
 
 	repo, err := NewRepository(db)
 
@@ -173,10 +175,10 @@ func TestGetByID_Success(t *testing.T) {
 	defer db.Close()
 
 	rows := sqlmock.NewRows([]string{
-		"id", "license_plate", "reference_id", "owner_id", "year", "current_mileage", "owner_notes",
+		"id", "license_plate", "reference_id", "owner_id", "year", "current_mileage", "owner_notes", "profile_image_url",
 		"ref_id", "brand_id", "brand_name", "model", "category", "engine_displacement",
 	}).AddRow(
-		"moto-123", "ABC123", "ref-456", "owner-789", 2020, 15000, "Buen estado",
+		"moto-123", "ABC123", "ref-456", "owner-789", 2020, 15000, "Buen estado", "https://storage.example.com/image.jpg",
 		"ref-456", "brand-001", "Yamaha", "MT-07", "SPORT", 689,
 	)
 
@@ -196,6 +198,8 @@ func TestGetByID_Success(t *testing.T) {
 	assert.Equal(t, "ABC123", motorcycle.LicensePlate)
 	assert.NotNil(t, motorcycle.Year)
 	assert.Equal(t, 2020, *motorcycle.Year)
+	assert.NotNil(t, motorcycle.ProfileImageURL)
+	assert.Equal(t, "https://storage.example.com/image.jpg", *motorcycle.ProfileImageURL)
 }
 
 func TestGetByID_NotFound(t *testing.T) {
@@ -246,13 +250,13 @@ func TestGetByOwnerID_Success(t *testing.T) {
 	defer db.Close()
 
 	rows := sqlmock.NewRows([]string{
-		"id", "license_plate", "reference_id", "owner_id", "year", "current_mileage", "owner_notes",
+		"id", "license_plate", "reference_id", "owner_id", "year", "current_mileage", "owner_notes", "profile_image_url",
 		"ref_id", "brand_id", "brand_name", "model", "category", "engine_displacement",
 	}).AddRow(
-		"moto-1", "XYZ999", "ref-1", "owner-123", 2021, 5000, nil,
+		"moto-1", "XYZ999", "ref-1", "owner-123", 2021, 5000, nil, nil,
 		"ref-1", "brand-002", "Honda", "CBR-600", "SPORT", 599,
 	).AddRow(
-		"moto-2", "DEF456", "ref-2", "owner-123", 2019, 25000, "Revision reciente",
+		"moto-2", "DEF456", "ref-2", "owner-123", 2019, 25000, "Revision reciente", "https://example.com/image.jpg",
 		"ref-2", "brand-001", "Yamaha", "R6", "SUPERSPORT", 599,
 	)
 
@@ -278,7 +282,7 @@ func TestGetByOwnerID_Empty(t *testing.T) {
 	defer db.Close()
 
 	rows := sqlmock.NewRows([]string{
-		"id", "license_plate", "reference_id", "owner_id", "year", "current_mileage", "owner_notes",
+		"id", "license_plate", "reference_id", "owner_id", "year", "current_mileage", "owner_notes", "profile_image_url",
 		"ref_id", "brand_id", "brand_name", "model", "category", "engine_displacement",
 	})
 
@@ -325,10 +329,10 @@ func TestGetByLicensePlate_Success(t *testing.T) {
 	defer db.Close()
 
 	rows := sqlmock.NewRows([]string{
-		"id", "license_plate", "reference_id", "owner_id", "year", "current_mileage", "owner_notes",
+		"id", "license_plate", "reference_id", "owner_id", "year", "current_mileage", "owner_notes", "profile_image_url",
 		"ref_id", "brand_id", "brand_name", "model", "category", "engine_displacement",
 	}).AddRow(
-		"moto-by-plate", "ZZZ111", "ref-plate", "owner-plate", 2022, 1000, nil,
+		"moto-by-plate", "ZZZ111", "ref-plate", "owner-plate", 2022, 1000, nil, nil,
 		"ref-plate", "brand-003", "Kawasaki", "Ninja-400", "SPORT", 399,
 	)
 
@@ -819,4 +823,317 @@ func TestMotorcycle_ToDomain_ReferenceWithNullID(t *testing.T) {
 	dm := m.ToDomain(ref)
 
 	assert.Nil(t, dm.Reference) // Should be nil because ref.ID is not valid
+}
+
+// ============================================
+// Save Tests
+// ============================================
+
+func TestSave_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("UPDATE motorcycles")
+	mock.ExpectPrepare("UPDATE motorcycles")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id")
+	mock.ExpectPrepare("SELECT EXISTS")
+
+	repo, err := NewRepository(db)
+	assert.NoError(t, err)
+
+	mock.ExpectBegin()
+	tx, err := repo.BeginTx(context.Background())
+	assert.NoError(t, err)
+
+	mock.ExpectExec("INSERT INTO motorcycles").
+		WithArgs("moto-123", "ABC123", sqlmock.AnyArg(), "owner-456", 2020, 10000, "some notes", "https://image.url").
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	year := 2020
+	mileage := 10000
+	notes := "some notes"
+	imageURL := "https://image.url"
+	motorcycle := &domain.Motorcycle{
+		ID:              "moto-123",
+		LicensePlate:    "ABC123",
+		ReferenceID:     "ref-789",
+		OwnerID:         "owner-456",
+		Year:            &year,
+		CurrentMileage:  &mileage,
+		OwnerNotes:      &notes,
+		ProfileImageURL: &imageURL,
+	}
+
+	err = repo.Save(context.Background(), tx, motorcycle)
+	assert.NoError(t, err)
+}
+
+func TestSave_InvalidTx(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("UPDATE motorcycles")
+	mock.ExpectPrepare("UPDATE motorcycles")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id")
+	mock.ExpectPrepare("SELECT EXISTS")
+
+	repo, err := NewRepository(db)
+	assert.NoError(t, err)
+
+	// Pass nil transaction
+	err = repo.Save(context.Background(), nil, &domain.Motorcycle{})
+	assert.Error(t, err)
+	assert.Equal(t, domain.ErrMotorcycleCannotSave, err)
+}
+
+func TestSave_DBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("UPDATE motorcycles")
+	mock.ExpectPrepare("UPDATE motorcycles")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id")
+	mock.ExpectPrepare("SELECT EXISTS")
+
+	repo, err := NewRepository(db)
+	assert.NoError(t, err)
+
+	mock.ExpectBegin()
+	tx, err := repo.BeginTx(context.Background())
+	assert.NoError(t, err)
+
+	mock.ExpectExec("INSERT INTO motorcycles").
+		WillReturnError(sql.ErrConnDone)
+
+	motorcycle := &domain.Motorcycle{
+		ID:           "moto-123",
+		LicensePlate: "ABC123",
+	}
+
+	err = repo.Save(context.Background(), tx, motorcycle)
+	assert.Error(t, err)
+}
+
+// ============================================
+// Update Tests
+// ============================================
+
+func TestUpdate_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("UPDATE motorcycles")
+	mock.ExpectPrepare("UPDATE motorcycles")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id")
+	mock.ExpectPrepare("SELECT EXISTS")
+
+	repo, err := NewRepository(db)
+	assert.NoError(t, err)
+
+	mock.ExpectBegin()
+	tx, err := repo.BeginTx(context.Background())
+	assert.NoError(t, err)
+
+	mock.ExpectExec("UPDATE motorcycles").
+		WithArgs("ref-789", 2021, 15000, "updated notes", "https://new-image.url", "moto-123").
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	year := 2021
+	mileage := 15000
+	notes := "updated notes"
+	imageURL := "https://new-image.url"
+	motorcycle := &domain.Motorcycle{
+		ID:              "moto-123",
+		ReferenceID:     "ref-789",
+		Year:            &year,
+		CurrentMileage:  &mileage,
+		OwnerNotes:      &notes,
+		ProfileImageURL: &imageURL,
+	}
+
+	err = repo.Update(context.Background(), tx, motorcycle)
+	assert.NoError(t, err)
+}
+
+func TestUpdate_InvalidTx(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("UPDATE motorcycles")
+	mock.ExpectPrepare("UPDATE motorcycles")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id")
+	mock.ExpectPrepare("SELECT EXISTS")
+
+	repo, err := NewRepository(db)
+	assert.NoError(t, err)
+
+	err = repo.Update(context.Background(), nil, &domain.Motorcycle{})
+	assert.Error(t, err)
+	assert.Equal(t, domain.ErrInvalidTransaction, err)
+}
+
+func TestUpdate_DBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("UPDATE motorcycles")
+	mock.ExpectPrepare("UPDATE motorcycles")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id")
+	mock.ExpectPrepare("SELECT EXISTS")
+
+	repo, err := NewRepository(db)
+	assert.NoError(t, err)
+
+	mock.ExpectBegin()
+	tx, err := repo.BeginTx(context.Background())
+	assert.NoError(t, err)
+
+	mock.ExpectExec("UPDATE motorcycles").
+		WillReturnError(sql.ErrConnDone)
+
+	err = repo.Update(context.Background(), tx, &domain.Motorcycle{ID: "moto-123"})
+	assert.Error(t, err)
+}
+
+// ============================================
+// Delete Tests
+// ============================================
+
+func TestDelete_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("UPDATE motorcycles")
+	mock.ExpectPrepare("UPDATE motorcycles")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id")
+	mock.ExpectPrepare("SELECT EXISTS")
+
+	repo, err := NewRepository(db)
+	assert.NoError(t, err)
+
+	mock.ExpectBegin()
+	tx, err := repo.BeginTx(context.Background())
+	assert.NoError(t, err)
+
+	mock.ExpectExec("UPDATE motorcycles").
+		WithArgs("moto-123").
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	err = repo.Delete(context.Background(), tx, "moto-123")
+	assert.NoError(t, err)
+}
+
+func TestDelete_InvalidTx(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("UPDATE motorcycles")
+	mock.ExpectPrepare("UPDATE motorcycles")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id")
+	mock.ExpectPrepare("SELECT EXISTS")
+
+	repo, err := NewRepository(db)
+	assert.NoError(t, err)
+
+	err = repo.Delete(context.Background(), nil, "moto-123")
+	assert.Error(t, err)
+	assert.Equal(t, domain.ErrInvalidTransaction, err)
+}
+
+func TestDelete_NotFound(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("UPDATE motorcycles")
+	mock.ExpectPrepare("UPDATE motorcycles")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id")
+	mock.ExpectPrepare("SELECT EXISTS")
+
+	repo, err := NewRepository(db)
+	assert.NoError(t, err)
+
+	mock.ExpectBegin()
+	tx, err := repo.BeginTx(context.Background())
+	assert.NoError(t, err)
+
+	mock.ExpectExec("UPDATE motorcycles").
+		WithArgs("moto-not-found").
+		WillReturnResult(sqlmock.NewResult(0, 0)) // 0 rows affected
+
+	err = repo.Delete(context.Background(), tx, "moto-not-found")
+	assert.Error(t, err)
+	assert.Equal(t, domain.ErrMotorcycleNotFound, err)
+}
+
+func TestDelete_DBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("UPDATE motorcycles")
+	mock.ExpectPrepare("UPDATE motorcycles")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id")
+	mock.ExpectPrepare("SELECT EXISTS")
+
+	repo, err := NewRepository(db)
+	assert.NoError(t, err)
+
+	mock.ExpectBegin()
+	tx, err := repo.BeginTx(context.Background())
+	assert.NoError(t, err)
+
+	mock.ExpectExec("UPDATE motorcycles").
+		WillReturnError(sql.ErrConnDone)
+
+	err = repo.Delete(context.Background(), tx, "moto-123")
+	assert.Error(t, err)
 }

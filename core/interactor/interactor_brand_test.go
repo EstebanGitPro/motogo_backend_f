@@ -9,18 +9,7 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/mocks"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
-
-// setupBrandMockLogger configures a MockLogger for brand tests
-func setupBrandMockLogger() *mocks.MockLogger {
-	mockLogger := new(mocks.MockLogger)
-	mockLogger.On("WithTraceID", mock.Anything).Return(mockLogger)
-	mockLogger.On("Info", mock.Anything, mock.Anything).Maybe()
-	mockLogger.On("Success", mock.Anything, mock.Anything).Maybe()
-	mockLogger.On("Error", mock.Anything, mock.Anything).Maybe()
-	return mockLogger
-}
 
 // ============================================
 // GetAllBrands Tests
@@ -30,9 +19,8 @@ func TestGetAllBrands_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockBrandService := new(mocks.MockBrandService)
-	mockLogger := setupBrandMockLogger()
 
-	brandInteractor := interactor.NewBrandInteractor(mockBrandService, mockLogger)
+	brandInteractor := interactor.NewBrandInteractor(mockBrandService)
 
 	expectedBrands := []domain.Brand{
 		{ID: "brand-1", Name: "Honda"},
@@ -59,9 +47,8 @@ func TestGetAllBrands_Error(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockBrandService := new(mocks.MockBrandService)
-	mockLogger := setupBrandMockLogger()
 
-	brandInteractor := interactor.NewBrandInteractor(mockBrandService, mockLogger)
+	brandInteractor := interactor.NewBrandInteractor(mockBrandService)
 
 	dbError := errors.New("database connection failed")
 
@@ -83,9 +70,8 @@ func TestGetAllBrands_Empty(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockBrandService := new(mocks.MockBrandService)
-	mockLogger := setupBrandMockLogger()
 
-	brandInteractor := interactor.NewBrandInteractor(mockBrandService, mockLogger)
+	brandInteractor := interactor.NewBrandInteractor(mockBrandService)
 
 	// Mock expectations
 	mockBrandService.On("GetAllBrands", ctx).Return([]domain.Brand{}, nil)

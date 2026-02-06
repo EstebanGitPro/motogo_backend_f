@@ -5,7 +5,6 @@ import (
 
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/handlers"
-	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 	"github.com/EstebanGitPro/motogo-backend/tools/idencoder"
 	"github.com/stretchr/testify/assert"
 )
@@ -16,7 +15,7 @@ func createBrandTestEncoder() *idencoder.HashidsEncoder {
 		Secret:    "test-salt-for-brand-tests",
 		MinLength: 8,
 	}
-	encoder, _ := idencoder.NewHashidsEncoder(config, logger.NewSlogLogger())
+	encoder, _ := idencoder.NewHashidsEncoder(config)
 	return encoder
 }
 

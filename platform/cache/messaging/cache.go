@@ -436,6 +436,14 @@ var messageCodeToHTTPStatus = map[string]int{
 	"MOD_MOT_LIST_ERR_00001":          http.StatusBadRequest, // 400 - Error al listar
 	"MOD_MOT_PLATE_REQ_ERR_00001":     http.StatusBadRequest, // 400 - Placa requerida
 
+	// Profile Image (MOD_MOT_IMG_*) - HU36-39
+	"MOD_MOT_IMG_UPDATE_EXI_00001":    http.StatusOK,         // 200 - Imagen actualizada (HU36/37)
+	"MOD_MOT_IMG_GET_EXI_00001":       http.StatusOK,         // 200 - Imagen obtenida (HU38)
+	"MOD_MOT_IMG_DELETE_EXI_00001":    http.StatusOK,         // 200 - Imagen eliminada (HU39)
+	"MOD_MOT_IMG_UPDATE_ERR_00001":    http.StatusBadRequest, // 400 - Error actualizando imagen
+	"MOD_MOT_IMG_NOT_FOUND_ERR_00001": http.StatusNotFound,   // 404 - Imagen no encontrada
+	"MOD_MOT_IMG_URL_REQ_ERR_00001":   http.StatusBadRequest, // 400 - URL de imagen requerida
+
 	// ========================================
 	// Geolocation Validation (MOD_V_GEO_*) - HU89
 	// ========================================
@@ -449,6 +457,24 @@ var messageCodeToHTTPStatus = map[string]int{
 	// Nearby Branches (MOD_B_NEARBY_*) - HU89
 	// ========================================
 	"MOD_B_NEARBY_EXI_00001": http.StatusOK, // 200 - Sedes cercanas encontradas
+
+	// ========================================
+	// Motorcycle Evidence Module (MOD_EVD_*) - HU16-19
+	// ========================================
+	// Success messages
+	"MOD_EVD_CREATE_EXI_00001": http.StatusCreated, // 201 - Evidencia cargada (HU16)
+	"MOD_EVD_GET_EXI_00001":    http.StatusOK,      // 200 - Evidencia consultada (HU18)
+	"MOD_EVD_UPDATE_EXI_00001": http.StatusOK,      // 200 - Evidencia actualizada (HU17)
+	"MOD_EVD_DELETE_EXI_00001": http.StatusOK,      // 200 - Evidencia eliminada (HU19)
+	"MOD_EVD_LIST_EXI_00001":   http.StatusOK,      // 200 - Evidencias listadas (HU18)
+	// Error messages
+	"MOD_EVD_NOT_FOUND_ERR_00001": http.StatusNotFound,   // 404 - Evidencia no encontrada
+	"MOD_EVD_CREATE_ERR_00001":    http.StatusBadRequest, // 400 - Error al cargar evidencia
+	"MOD_EVD_UPDATE_ERR_00001":    http.StatusBadRequest, // 400 - Error al actualizar evidencia
+	"MOD_EVD_DELETE_ERR_00001":    http.StatusBadRequest, // 400 - Error al eliminar evidencia
+	"MOD_EVD_LIMIT_ERR_00001":     http.StatusConflict,   // 409 - Límite de evidencias alcanzado
+	"MOD_EVD_URL_ERR_00001":       http.StatusBadRequest, // 400 - URL de imagen inválida
+	"MOD_EVD_ANGLE_ERR_00001":     http.StatusBadRequest, // 400 - Ángulo de foto inválido
 
 }
 

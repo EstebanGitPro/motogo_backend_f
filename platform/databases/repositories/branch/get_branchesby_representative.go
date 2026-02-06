@@ -23,6 +23,7 @@ func (r *repository) GetBranchesByRepresentative(ctx context.Context, representa
 		var locationID, cityID, address sql.NullString
 		var departmentID sql.NullString
 		var latitude, longitude sql.NullFloat64
+		var phoneNumber sql.NullString
 
 		err := rows.Scan(
 			&branch.ID,
@@ -38,6 +39,7 @@ func (r *repository) GetBranchesByRepresentative(ctx context.Context, representa
 			&latitude,
 			&longitude,
 			&departmentID,
+			&phoneNumber,
 		)
 		if err != nil {
 			log.Error(logger.LogBranchRepoScanError, "error", err)
@@ -49,6 +51,9 @@ func (r *repository) GetBranchesByRepresentative(ctx context.Context, representa
 		}
 		if profileImageURL.Valid {
 			branch.ProfileImageURL = &profileImageURL.String
+		}
+		if phoneNumber.Valid {
+			branch.RepresentativePhone = &phoneNumber.String
 		}
 
 		if locationID.Valid {

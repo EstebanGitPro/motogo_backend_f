@@ -10,7 +10,7 @@ func TestIDEncoder_EncodeDecodeUUID(t *testing.T) {
 	encoder, err := NewHashidsEncoder(Config{
 		Secret:    "test-secret-12345",
 		MinLength: 10,
-	}, nil)
+	})
 	if err != nil {
 		t.Fatalf("Error creating encoder: %v", err)
 	}
@@ -49,7 +49,7 @@ func TestIDEncoder_InvalidUUID(t *testing.T) {
 	encoder, err := NewHashidsEncoder(Config{
 		Secret:    "test-secret-12345",
 		MinLength: 10,
-	}, nil)
+	})
 	if err != nil {
 		t.Fatalf("Error creating encoder: %v", err)
 	}
@@ -65,7 +65,7 @@ func TestIDEncoder_InvalidEncodedID(t *testing.T) {
 	encoder, err := NewHashidsEncoder(Config{
 		Secret:    "test-secret-12345",
 		MinLength: 10,
-	}, nil)
+	})
 	if err != nil {
 		t.Fatalf("Error creating encoder: %v", err)
 	}
@@ -81,7 +81,7 @@ func TestIDEncoder_Consistency(t *testing.T) {
 	encoder, err := NewHashidsEncoder(Config{
 		Secret:    "test-secret-12345",
 		MinLength: 10,
-	}, nil)
+	})
 	if err != nil {
 		t.Fatalf("Error creating encoder: %v", err)
 	}
@@ -105,7 +105,7 @@ func TestIDEncoder_EmptySecret(t *testing.T) {
 	_, err := NewHashidsEncoder(Config{
 		Secret:    "",
 		MinLength: 10,
-	}, nil)
+	})
 
 	if err == nil {
 		t.Error("Expected error for empty secret, got nil")
@@ -118,12 +118,12 @@ func TestIDEncoder_DifferentSecrets_DifferentEncodings(t *testing.T) {
 	encoder1, _ := NewHashidsEncoder(Config{
 		Secret:    "secret-1",
 		MinLength: 10,
-	}, nil)
+	})
 
 	encoder2, _ := NewHashidsEncoder(Config{
 		Secret:    "secret-2",
 		MinLength: 10,
-	}, nil)
+	})
 
 	encoded1, _ := encoder1.Encode(testUUID)
 	encoded2, _ := encoder2.Encode(testUUID)
@@ -139,12 +139,12 @@ func TestIDEncoder_DecodeWithDifferentSecret_Fails(t *testing.T) {
 	encoder1, _ := NewHashidsEncoder(Config{
 		Secret:    "secret-1",
 		MinLength: 10,
-	}, nil)
+	})
 
 	encoder2, _ := NewHashidsEncoder(Config{
 		Secret:    "secret-2",
 		MinLength: 10,
-	}, nil)
+	})
 
 	encoded, _ := encoder1.Encode(testUUID)
 
@@ -190,7 +190,7 @@ func TestIDEncoder_MustEncode_WithError(t *testing.T) {
 	encoder, _ := NewHashidsEncoder(Config{
 		Secret:    "test-secret",
 		MinLength: 10,
-	}, nil)
+	})
 
 	// MustEncode with invalid UUID should return empty string (doesn't panic)
 	result := encoder.MustEncode("invalid-uuid")
@@ -203,7 +203,7 @@ func TestIDEncoder_IsValidEncoded(t *testing.T) {
 	encoder, _ := NewHashidsEncoder(Config{
 		Secret:    "test-secret",
 		MinLength: 10,
-	}, nil)
+	})
 
 	testUUID := "550e8400-e29b-41d4-a716-446655440000"
 	encoded, _ := encoder.Encode(testUUID)
@@ -233,7 +233,7 @@ func TestIDEncoder_MinLength(t *testing.T) {
 		encoder, _ := NewHashidsEncoder(Config{
 			Secret:    "test-secret",
 			MinLength: minLen,
-		}, nil)
+		})
 
 		encoded, err := encoder.Encode(testUUID)
 		if err != nil {

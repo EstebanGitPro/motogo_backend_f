@@ -17,6 +17,7 @@ import (
 // @Tags Franchises
 // @Accept json
 // @Produce json
+// @Security     BearerAuth
 // @Param request body CreateFranchiseRequest true "Franchise data with branch IDs"
 // @Success 201 {object} StandardResponse
 // @Failure 400 {object} StandardResponse
@@ -43,6 +44,9 @@ func (h *handler) RegisterFranchise(franchiseInteractor *interactor.FranchiseInt
 			h.Response.Error(c, domain.MsgValJSONInvalid)
 			return
 		}
+
+		// Sanitize input
+		req.Sanitize()
 
 		log.Info(logger.LogFranchiseControllerProcessing,
 			"franchise_name", req.Name,
@@ -110,6 +114,7 @@ func (h *handler) RegisterFranchise(franchiseInteractor *interactor.FranchiseInt
 // @Summary List franchises for the authenticated representative
 // @Tags Franchises
 // @Produce json
+// @Security     BearerAuth
 // @Success 200 {object} StandardResponse
 // @Router /franchises [get]
 func (h *handler) ListFranchises(franchiseInteractor *interactor.FranchiseInteractor) gin.HandlerFunc {
@@ -158,6 +163,7 @@ func (h *handler) ListFranchises(franchiseInteractor *interactor.FranchiseIntera
 // @Summary Get franchise by ID
 // @Tags Franchises
 // @Produce json
+// @Security     BearerAuth
 // @Param id path string true "Franchise ID"
 // @Success 200 {object} StandardResponse
 // @Failure 404 {object} StandardResponse
@@ -204,6 +210,7 @@ func (h *handler) GetFranchise(franchiseInteractor *interactor.FranchiseInteract
 // @Tags Franchises
 // @Accept json
 // @Produce json
+// @Security     BearerAuth
 // @Param id path string true "Franchise ID"
 // @Param request body UpdateFranchiseRequest true "Updated franchise data"
 // @Success 200 {object} StandardResponse
@@ -233,6 +240,9 @@ func (h *handler) UpdateFranchise(franchiseInteractor *interactor.FranchiseInter
 			h.Response.Error(c, domain.MsgValJSONInvalid)
 			return
 		}
+
+		// Sanitize input
+		req.Sanitize()
 
 		// 4. Update franchise
 		franchise := req.ToFranchiseDomain(franchiseID)
@@ -267,6 +277,7 @@ func (h *handler) UpdateFranchise(franchiseInteractor *interactor.FranchiseInter
 // @Description Deletes a franchise and disassociates all branches
 // @Tags Franchises
 // @Produce json
+// @Security     BearerAuth
 // @Param id path string true "Franchise ID"
 // @Success 200 {object} StandardResponse
 // @Failure 404 {object} StandardResponse
@@ -336,6 +347,7 @@ func BuildFranchiseLinks(baseURL string, franchiseEncodedID string) []Link {
 // @Tags Franchises
 // @Accept json
 // @Produce json
+// @Security     BearerAuth
 // @Param id path string true "Franchise ID (encoded)"
 // @Param request body AddBranchToFranchiseRequest true "Branch ID to add"
 // @Success 200 {object} StandardResponse
@@ -369,6 +381,9 @@ func (h *handler) AddBranchToFranchise(franchiseInteractor *interactor.Franchise
 			h.Response.Error(c, domain.MsgValJSONInvalid)
 			return
 		}
+
+		// Sanitize input
+		req.Sanitize()
 
 		// 4. Decode branch ID
 		branchID, err := h.DecodeID(req.BranchID)
@@ -411,6 +426,7 @@ func (h *handler) AddBranchToFranchise(franchiseInteractor *interactor.Franchise
 // @Description Dissociates a branch from a franchise
 // @Tags Franchises
 // @Produce json
+// @Security     BearerAuth
 // @Param id path string true "Franchise ID (encoded)"
 // @Param branchId path string true "Branch ID (encoded)"
 // @Success 200 {object} StandardResponse
