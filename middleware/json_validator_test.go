@@ -148,3 +148,99 @@ func TestFieldNameMapping_HasExpectedEntries(t *testing.T) {
 		})
 	}
 }
+
+// ============================================
+// WithValidate* Methods Tests
+// These tests verify each validator method returns a valid handler
+// ============================================
+
+func TestWithValidateRegister_ReturnsHandler(t *testing.T) {
+	builder := NewMiddlewareValidator(&json_schema.Validators{})
+	handler := builder.WithValidateRegister()
+	assert.NotNil(t, handler)
+	assert.False(t, builder.isLogin)
+}
+
+func TestWithValidateMessage_ReturnsHandler(t *testing.T) {
+	builder := NewMiddlewareValidator(&json_schema.Validators{})
+	handler := builder.WithValidateMessage()
+	assert.NotNil(t, handler)
+}
+
+func TestWithValidateResendVerification_ReturnsHandler(t *testing.T) {
+	builder := NewMiddlewareValidator(&json_schema.Validators{})
+	handler := builder.WithValidateResendVerification()
+	assert.NotNil(t, handler)
+}
+
+func TestWithValidatePasswordReset_ReturnsHandler(t *testing.T) {
+	builder := NewMiddlewareValidator(&json_schema.Validators{})
+	handler := builder.WithValidatePasswordReset()
+	assert.NotNil(t, handler)
+}
+
+func TestWithValidateUpdateProfile_ReturnsHandler(t *testing.T) {
+	builder := NewMiddlewareValidator(&json_schema.Validators{})
+	handler := builder.WithValidateUpdateProfile()
+	assert.NotNil(t, handler)
+}
+
+func TestWithValidateResetPasswordWithToken_ReturnsHandler(t *testing.T) {
+	builder := NewMiddlewareValidator(&json_schema.Validators{})
+	handler := builder.WithValidateResetPasswordWithToken()
+	assert.NotNil(t, handler)
+}
+
+func TestWithValidateChangePassword_ReturnsHandler(t *testing.T) {
+	builder := NewMiddlewareValidator(&json_schema.Validators{})
+	handler := builder.WithValidateChangePassword()
+	assert.NotNil(t, handler)
+}
+
+func TestWithValidateRegisterBranch_ReturnsHandler(t *testing.T) {
+	builder := NewMiddlewareValidator(&json_schema.Validators{})
+	handler := builder.WithValidateRegisterBranch()
+	assert.NotNil(t, handler)
+}
+
+func TestWithValidateScheduleDetail_ReturnsHandler(t *testing.T) {
+	builder := NewMiddlewareValidator(&json_schema.Validators{})
+	handler := builder.WithValidateScheduleDetail()
+	assert.NotNil(t, handler)
+}
+
+func TestWithValidateUpdateSchedule_ReturnsHandler(t *testing.T) {
+	builder := NewMiddlewareValidator(&json_schema.Validators{})
+	handler := builder.WithValidateUpdateSchedule()
+	assert.NotNil(t, handler)
+}
+
+func TestWithValidateScheduleException_ReturnsHandler(t *testing.T) {
+	builder := NewMiddlewareValidator(&json_schema.Validators{})
+	handler := builder.WithValidateScheduleException()
+	assert.NotNil(t, handler)
+}
+
+func TestWithValidateUpdateScheduleException_ReturnsHandler(t *testing.T) {
+	builder := NewMiddlewareValidator(&json_schema.Validators{})
+	handler := builder.WithValidateUpdateScheduleException()
+	assert.NotNil(t, handler)
+}
+
+func TestWithValidateFranchise_ReturnsHandler(t *testing.T) {
+	builder := NewMiddlewareValidator(&json_schema.Validators{})
+	handler := builder.WithValidateFranchise()
+	assert.NotNil(t, handler)
+}
+
+func TestWithValidateRegisterMotorcycle_ReturnsHandler(t *testing.T) {
+	builder := NewMiddlewareValidator(&json_schema.Validators{})
+	handler := builder.WithValidateRegisterMotorcycle()
+	assert.NotNil(t, handler)
+}
+
+func TestWithValidateEvidence_ReturnsHandler(t *testing.T) {
+	builder := NewMiddlewareValidator(&json_schema.Validators{})
+	handler := builder.WithValidateEvidence()
+	assert.NotNil(t, handler)
+}

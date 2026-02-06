@@ -139,3 +139,45 @@ func TestRequestIDConstants(t *testing.T) {
 	assert.Equal(t, "request_id", middleware.RequestIDKey)
 	assert.Equal(t, "traceID", middleware.TraceIDKey)
 }
+
+func TestGetTraceIDFromContext_WithMiddleware(t *testing.T) {
+	// Arrange
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.Use(middleware.RequestID())
+
+	var capturedTraceID string
+	router.GET("/test", func(c *gin.Context) {
+		capturedTraceID = middleware.GetTraceIDFromContext(c.Request.Context())
+		c.Status(http.StatusOK)
+	})
+
+	// Act
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/test", nil)
+	req.Header.Set(middleware.RequestIDHeader, "trace-123")
+	router.ServeHTTP(w, req)
+
+	// Assert
+	assert.Equal(t, "trace-123", capturedTraceID)
+}
+
+func TestGetTraceIDFromContext_WithoutMiddleware(t *testing.T) {
+	// Arrange
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+
+	var capturedTraceID string
+	router.GET("/test", func(c *gin.Context) {
+		capturedTraceID = middleware.GetTraceIDFromContext(c.Request.Context())
+		c.Status(http.StatusOK)
+	})
+
+	// Act
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/test", nil)
+	router.ServeHTTP(w, req)
+
+	// Assert - should return empty string when not set
+	assert.Empty(t, capturedTraceID)
+}
