@@ -228,6 +228,17 @@ definitions:
       name:
         type: string
     type: object
+  handlers.CreateEvidenceRequest:
+    properties:
+      angle:
+        type: string
+      description:
+        type: string
+      image_url:
+        type: string
+    required:
+    - image_url
+    type: object
   handlers.CreateFranchiseRequest:
     properties:
       branch_ids:
@@ -274,6 +285,25 @@ definitions:
       id:
         type: string
       name:
+        type: string
+    type: object
+  handlers.EvidenceResponse:
+    properties:
+      _links:
+        items:
+          $ref: '#/definitions/handlers.Link'
+        type: array
+      angle:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      image_url:
+        type: string
+      motorcycle_id:
         type: string
     type: object
   handlers.FirebaseTokenResponse:
@@ -2628,6 +2658,189 @@ paths:
       summary: Update motorcycle information
       tags:
       - Motorcycles
+  /motorcycles/{id}/evidence:
+    get:
+      consumes:
+      - application/json
+      description: Lists all photographic evidence for a motorcycle owned by authenticated
+        user
+      parameters:
+      - description: Motorcycle ID (obfuscated)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Evidence list
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/handlers.EvidenceResponse'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized - missing or invalid token
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Motorcycle not found or not owner
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      summary: List motorcycle evidence
+    post:
+      consumes:
+      - application/json
+      description: Upload photographic evidence for a motorcycle. The image must already
+        be uploaded to Firebase Storage.
+      parameters:
+      - description: Motorcycle ID (obfuscated)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Evidence data
+        in: body
+        name: evidence
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CreateEvidenceRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Evidence created successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.EvidenceResponse'
+              type: object
+        "400":
+          description: Bad request - invalid image URL
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "401":
+          description: Unauthorized - missing or invalid token
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Motorcycle not found or not owner
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "409":
+          description: Evidence limit exceeded
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      summary: Upload photographic evidence
+  /motorcycles/{id}/evidence/{evidenceId}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes photographic evidence for a motorcycle. Only the owner
+        can delete.
+      parameters:
+      - description: Motorcycle ID (obfuscated)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Evidence ID (obfuscated)
+        in: path
+        name: evidenceId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Evidence deleted, includes navigation links
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "401":
+          description: Unauthorized - missing or invalid token
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Evidence not found or not owner
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      summary: Delete motorcycle evidence
+    put:
+      consumes:
+      - application/json
+      description: Updates photographic evidence for a motorcycle. Only the owner
+        can update.
+      parameters:
+      - description: Motorcycle ID (obfuscated)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Evidence ID (obfuscated)
+        in: path
+        name: evidenceId
+        required: true
+        type: string
+      - description: Updated evidence data
+        in: body
+        name: evidence
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CreateEvidenceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Evidence updated successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.EvidenceResponse'
+              type: object
+        "400":
+          description: Bad request - invalid data
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "401":
+          description: Unauthorized - missing or invalid token
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Evidence not found or not owner
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      summary: Update motorcycle evidence
   /motorcycles/{id}/profile-image:
     delete:
       consumes:

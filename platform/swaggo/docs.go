@@ -2807,6 +2807,292 @@ const docTemplate = `{
                 }
             }
         },
+        "/motorcycles/{id}/evidence": {
+            "get": {
+                "description": "Lists all photographic evidence for a motorcycle owned by authenticated user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "List motorcycle evidence",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Motorcycle ID (obfuscated)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Evidence list",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/handlers.EvidenceResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid token",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Motorcycle not found or not owner",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Upload photographic evidence for a motorcycle. The image must already be uploaded to Firebase Storage.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Upload photographic evidence",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Motorcycle ID (obfuscated)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Evidence data",
+                        "name": "evidence",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.CreateEvidenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Evidence created successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.EvidenceResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request - invalid image URL",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid token",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Motorcycle not found or not owner",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Evidence limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/motorcycles/{id}/evidence/{evidenceId}": {
+            "put": {
+                "description": "Updates photographic evidence for a motorcycle. Only the owner can update.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Update motorcycle evidence",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Motorcycle ID (obfuscated)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Evidence ID (obfuscated)",
+                        "name": "evidenceId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Updated evidence data",
+                        "name": "evidence",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.CreateEvidenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Evidence updated successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.EvidenceResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request - invalid data",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid token",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Evidence not found or not owner",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Deletes photographic evidence for a motorcycle. Only the owner can delete.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Delete motorcycle evidence",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Motorcycle ID (obfuscated)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Evidence ID (obfuscated)",
+                        "name": "evidenceId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Evidence deleted, includes navigation links",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "additionalProperties": true
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid token",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Evidence not found or not owner",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/motorcycles/{id}/profile-image": {
             "get": {
                 "description": "Gets the profile image URL for a motorcycle. Only the owner can view.",
@@ -3860,6 +4146,23 @@ const docTemplate = `{
                 }
             }
         },
+        "handlers.CreateEvidenceRequest": {
+            "type": "object",
+            "required": [
+                "image_url"
+            ],
+            "properties": {
+                "angle": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "image_url": {
+                    "type": "string"
+                }
+            }
+        },
         "handlers.CreateFranchiseRequest": {
             "type": "object",
             "required": [
@@ -3927,6 +4230,35 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.EvidenceResponse": {
+            "type": "object",
+            "properties": {
+                "_links": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.Link"
+                    }
+                },
+                "angle": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "image_url": {
+                    "type": "string"
+                },
+                "motorcycle_id": {
                     "type": "string"
                 }
             }
