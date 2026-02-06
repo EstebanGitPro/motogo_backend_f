@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/EstebanGitPro/motogo-backend/config"
-	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,7 +14,7 @@ import (
 // ============================================
 
 func TestNewClient_NilConfig(t *testing.T) {
-	client, err := NewClient(nil, nil)
+	client, err := NewClient(nil)
 
 	assert.Nil(t, client)
 	assert.Error(t, err)
@@ -31,10 +30,8 @@ func TestNewClient_InvalidServerURL_FailsAdminAuth(t *testing.T) {
 		AdminUser:    "admin",
 		AdminPass:    "admin",
 	}
-	log := logger.NewSlogLogger()
-
 	// Should fail to connect to admin API for token
-	client, err := NewClient(cfg, log)
+	client, err := NewClient(cfg)
 
 	assert.Nil(t, client)
 	assert.Error(t, err)
