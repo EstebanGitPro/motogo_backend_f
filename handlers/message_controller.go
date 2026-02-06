@@ -10,15 +10,16 @@ import (
 // CreateMessage godoc
 // @Summary      Crear nuevo mensaje del sistema
 // @Description  Crea un nuevo mensaje de sistema para manejo de notificaciones, errores y mensajes informativos
-// @Tags         messages
+// @Tags         admin
 // @Accept       json
 // @Produce      json
+// @Security     BearerAuth
 // @Param        message  body      MessageRequest  true  "Datos del mensaje"
 // @Success      201  {object}  middleware.APIResponse{data=MessageCreatedResponse}  "Mensaje creado exitosamente"
 // @Failure      400  {object}  middleware.APIResponse  "Error de validación"
 // @Failure      409  {object}  middleware.APIResponse  "Mensaje con código duplicado"
 // @Failure      500  {object}  middleware.APIResponse  "Error interno del servidor"
-// @Router       /messages [post]
+// @Router       /admin/messages [post]
 func (h handler) CreateMessage() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		// Create logger with trace ID for this request
@@ -94,16 +95,17 @@ func (h handler) CreateMessage() func(c *gin.Context) {
 // UpdateMessage godoc
 // @Summary      Actualizar mensaje existente
 // @Description  Actualiza un mensaje del sistema por su ID
-// @Tags         messages
+// @Tags         admin
 // @Accept       json
 // @Produce      json
+// @Security     BearerAuth
 // @Param        id       path      string          true  "ID del mensaje (hashid)"
 // @Param        message  body      MessageRequest  true  "Datos actualizados del mensaje"
 // @Success      200  {object}  middleware.APIResponse{data=MessageUpdatedResponse}  "Mensaje actualizado exitosamente"
 // @Failure      400  {object}  middleware.APIResponse  "Error de validación"
 // @Failure      404  {object}  middleware.APIResponse  "Mensaje no encontrado"
 // @Failure      500  {object}  middleware.APIResponse  "Error interno del servidor"
-// @Router       /messages/{id} [put]
+// @Router       /admin/messages/{id} [put]
 func (h handler) UpdateMessage() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		// Create logger with trace ID for this request
@@ -176,15 +178,16 @@ func (h handler) UpdateMessage() func(c *gin.Context) {
 // DeleteMessage godoc
 // @Summary      Eliminar mensaje
 // @Description  Elimina un mensaje del sistema por su ID
-// @Tags         messages
+// @Tags         admin
 // @Accept       json
 // @Produce      json
+// @Security     BearerAuth
 // @Param        id  path      string  true  "ID del mensaje (hashid)"
 // @Success      200  {object}  middleware.APIResponse  "Mensaje eliminado exitosamente"
 // @Failure      400  {object}  middleware.APIResponse  "ID inválido"
 // @Failure      404  {object}  middleware.APIResponse  "Mensaje no encontrado"
 // @Failure      500  {object}  middleware.APIResponse  "Error interno del servidor"
-// @Router       /messages/{id} [delete]
+// @Router       /admin/messages/{id} [delete]
 func (h handler) DeleteMessage() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		// Create logger with trace ID for this request
@@ -231,15 +234,16 @@ func (h handler) DeleteMessage() func(c *gin.Context) {
 // GetMessageByID godoc
 // @Summary      Obtener mensaje por ID
 // @Description  Obtiene un mensaje del sistema específico por su ID
-// @Tags         messages
+// @Tags         admin
 // @Accept       json
 // @Produce      json
+// @Security     BearerAuth
 // @Param        id  path      string  true  "ID del mensaje (hashid)"
 // @Success      200  {object}  MessageResponse  "Mensaje encontrado"
 // @Failure      400  {object}  middleware.APIResponse  "ID inválido"
 // @Failure      404  {object}  middleware.APIResponse  "Mensaje no encontrado"
 // @Failure      500  {object}  middleware.APIResponse  "Error interno del servidor"
-// @Router       /messages/{id} [get]
+// @Router       /admin/messages/{id} [get]
 func (h handler) GetMessageByID() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		// Create logger with trace ID for this request
@@ -298,16 +302,17 @@ func (h handler) GetMessageByID() func(c *gin.Context) {
 // ListMessages godoc
 // @Summary      Listar mensajes
 // @Description  Obtiene una lista de mensajes del sistema con filtros opcionales
-// @Tags         messages
+// @Tags         admin
 // @Accept       json
 // @Produce      json
+// @Security     BearerAuth
 // @Param        module    query     string  false  "Filtrar por módulo (ej: users, orders)"
 // @Param        type      query     string  false  "Filtrar por tipo (ERROR, SUCCESS, INFO, WARNING)"
 // @Param        category  query     string  false  "Filtrar por categoría (ej: usuario_final, admin)"
 // @Param        active    query     boolean  false  "Filtrar por estado activo (true/false)"
 // @Success      200  {object}  MessageListResponse  "Lista de mensajes"
 // @Failure      500  {object}  middleware.APIResponse  "Error interno del servidor"
-// @Router       /messages [get]
+// @Router       /admin/messages [get]
 func (h handler) ListMessages() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		// Create logger with trace ID for this request
@@ -373,12 +378,13 @@ func (h handler) ListMessages() func(c *gin.Context) {
 // ReloadMessageCache godoc
 // @Summary      Recargar caché de mensajes
 // @Description  Fuerza la recarga del caché de mensajes desde la base de datos. Útil después de actualizaciones o eliminaciones manuals.
-// @Tags         messages
+// @Tags         admin
 // @Accept       json
 // @Produce      json
+// @Security     BearerAuth
 // @Success      200  {object}  middleware.APIResponse{data=CacheReloadResponse}  "Caché recargado exitosamente"
 // @Failure      500  {object}  middleware.APIResponse  "Error al recargar el caché"
-// @Router       /messages/cache/reload [post]
+// @Router       /admin/messages/cache/reload [post]
 func (h handler) ReloadMessageCache() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		// Create logger with trace ID for this request

@@ -91,6 +91,361 @@ const docTemplate = `{
                 }
             }
         },
+        "/admin/messages": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Obtiene una lista de mensajes del sistema con filtros opcionales",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Listar mensajes",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filtrar por módulo (ej: users, orders)",
+                        "name": "module",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filtrar por tipo (ERROR, SUCCESS, INFO, WARNING)",
+                        "name": "type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filtrar por categoría (ej: usuario_final, admin)",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Filtrar por estado activo (true/false)",
+                        "name": "active",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lista de mensajes",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.MessageListResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno del servidor",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Crea un nuevo mensaje de sistema para manejo de notificaciones, errores y mensajes informativos",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Crear nuevo mensaje del sistema",
+                "parameters": [
+                    {
+                        "description": "Datos del mensaje",
+                        "name": "message",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.MessageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Mensaje creado exitosamente",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/middleware.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.MessageCreatedResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Error de validación",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Mensaje con código duplicado",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno del servidor",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/messages/cache/reload": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Fuerza la recarga del caché de mensajes desde la base de datos. Útil después de actualizaciones o eliminaciones manuals.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Recargar caché de mensajes",
+                "responses": {
+                    "200": {
+                        "description": "Caché recargado exitosamente",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/middleware.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.CacheReloadResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Error al recargar el caché",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/messages/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Obtiene un mensaje del sistema específico por su ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Obtener mensaje por ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID del mensaje (hashid)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Mensaje encontrado",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.MessageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "ID inválido",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Mensaje no encontrado",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno del servidor",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Actualiza un mensaje del sistema por su ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Actualizar mensaje existente",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID del mensaje (hashid)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Datos actualizados del mensaje",
+                        "name": "message",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.MessageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Mensaje actualizado exitosamente",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/middleware.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.MessageUpdatedResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Error de validación",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Mensaje no encontrado",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno del servidor",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Elimina un mensaje del sistema por su ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Eliminar mensaje",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID del mensaje (hashid)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Mensaje eliminado exitosamente",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "ID inválido",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Mensaje no encontrado",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno del servidor",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/services/{id}": {
             "put": {
                 "description": "Updates an existing service in the global catalog. Requires ADMIN role.",
@@ -2022,331 +2377,6 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/middleware.APIResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/messages": {
-            "get": {
-                "description": "Obtiene una lista de mensajes del sistema con filtros opcionales",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "messages"
-                ],
-                "summary": "Listar mensajes",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Filtrar por módulo (ej: users, orders)",
-                        "name": "module",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filtrar por tipo (ERROR, SUCCESS, INFO, WARNING)",
-                        "name": "type",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filtrar por categoría (ej: usuario_final, admin)",
-                        "name": "category",
-                        "in": "query"
-                    },
-                    {
-                        "type": "boolean",
-                        "description": "Filtrar por estado activo (true/false)",
-                        "name": "active",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Lista de mensajes",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.MessageListResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Error interno del servidor",
-                        "schema": {
-                            "$ref": "#/definitions/middleware.APIResponse"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "description": "Crea un nuevo mensaje de sistema para manejo de notificaciones, errores y mensajes informativos",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "messages"
-                ],
-                "summary": "Crear nuevo mensaje del sistema",
-                "parameters": [
-                    {
-                        "description": "Datos del mensaje",
-                        "name": "message",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handlers.MessageRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Mensaje creado exitosamente",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/middleware.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/handlers.MessageCreatedResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Error de validación",
-                        "schema": {
-                            "$ref": "#/definitions/middleware.APIResponse"
-                        }
-                    },
-                    "409": {
-                        "description": "Mensaje con código duplicado",
-                        "schema": {
-                            "$ref": "#/definitions/middleware.APIResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Error interno del servidor",
-                        "schema": {
-                            "$ref": "#/definitions/middleware.APIResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/messages/cache/reload": {
-            "post": {
-                "description": "Fuerza la recarga del caché de mensajes desde la base de datos. Útil después de actualizaciones o eliminaciones manuals.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "messages"
-                ],
-                "summary": "Recargar caché de mensajes",
-                "responses": {
-                    "200": {
-                        "description": "Caché recargado exitosamente",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/middleware.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/handlers.CacheReloadResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Error al recargar el caché",
-                        "schema": {
-                            "$ref": "#/definitions/middleware.APIResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/messages/{id}": {
-            "get": {
-                "description": "Obtiene un mensaje del sistema específico por su ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "messages"
-                ],
-                "summary": "Obtener mensaje por ID",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "ID del mensaje (hashid)",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Mensaje encontrado",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.MessageResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "ID inválido",
-                        "schema": {
-                            "$ref": "#/definitions/middleware.APIResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Mensaje no encontrado",
-                        "schema": {
-                            "$ref": "#/definitions/middleware.APIResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Error interno del servidor",
-                        "schema": {
-                            "$ref": "#/definitions/middleware.APIResponse"
-                        }
-                    }
-                }
-            },
-            "put": {
-                "description": "Actualiza un mensaje del sistema por su ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "messages"
-                ],
-                "summary": "Actualizar mensaje existente",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "ID del mensaje (hashid)",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Datos actualizados del mensaje",
-                        "name": "message",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handlers.MessageRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Mensaje actualizado exitosamente",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/middleware.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/handlers.MessageUpdatedResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Error de validación",
-                        "schema": {
-                            "$ref": "#/definitions/middleware.APIResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Mensaje no encontrado",
-                        "schema": {
-                            "$ref": "#/definitions/middleware.APIResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Error interno del servidor",
-                        "schema": {
-                            "$ref": "#/definitions/middleware.APIResponse"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "description": "Elimina un mensaje del sistema por su ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "messages"
-                ],
-                "summary": "Eliminar mensaje",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "ID del mensaje (hashid)",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Mensaje eliminado exitosamente",
-                        "schema": {
-                            "$ref": "#/definitions/middleware.APIResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "ID inválido",
-                        "schema": {
-                            "$ref": "#/definitions/middleware.APIResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Mensaje no encontrado",
-                        "schema": {
-                            "$ref": "#/definitions/middleware.APIResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Error interno del servidor",
                         "schema": {
                             "$ref": "#/definitions/middleware.APIResponse"
                         }
