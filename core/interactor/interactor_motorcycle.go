@@ -14,14 +14,12 @@ import (
 type MotorcycleInteractor struct {
 	motorcycleRepo output.MotorcycleRepository
 	storageClient  output.StorageClient // Optional: Firebase Storage for image deletion
-	logger         logger.Logger
 }
 
 // NewMotorcycleInteractor creates a new MotorcycleInteractor instance
-func NewMotorcycleInteractor(motorcycleRepo output.MotorcycleRepository, log logger.Logger) *MotorcycleInteractor {
+func NewMotorcycleInteractor(motorcycleRepo output.MotorcycleRepository) *MotorcycleInteractor {
 	return &MotorcycleInteractor{
 		motorcycleRepo: motorcycleRepo,
-		logger:         log,
 	}
 }
 
@@ -34,7 +32,7 @@ func (i *MotorcycleInteractor) WithStorageClient(client output.StorageClient) *M
 // RegisterMotorcycle registers a new motorcycle for the authenticated user (HU43)
 func (i *MotorcycleInteractor) RegisterMotorcycle(ctx context.Context, motorcycle *domain.Motorcycle) (*domain.Motorcycle, error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
-	log := i.logger.WithTraceID(traceID)
+	log := log.WithTraceID(traceID)
 
 	log.Info(logger.LogMotorcycleInteractorRegStart, "license_plate", motorcycle.LicensePlate, "owner_id", motorcycle.OwnerID)
 
@@ -98,7 +96,7 @@ func (i *MotorcycleInteractor) RegisterMotorcycle(ctx context.Context, motorcycl
 // GetMotorcycleByID retrieves a motorcycle by its ID (HU46)
 func (i *MotorcycleInteractor) GetMotorcycleByID(ctx context.Context, motorcycleID string) (*domain.Motorcycle, error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
-	log := i.logger.WithTraceID(traceID)
+	log := log.WithTraceID(traceID)
 
 	log.Info(logger.LogMotorcycleInteractorGetStart, "motorcycle_id", motorcycleID)
 
@@ -115,7 +113,7 @@ func (i *MotorcycleInteractor) GetMotorcycleByID(ctx context.Context, motorcycle
 // GetMotorcyclesByOwner retrieves all motorcycles owned by a person (HU47)
 func (i *MotorcycleInteractor) GetMotorcyclesByOwner(ctx context.Context, ownerID string) ([]domain.Motorcycle, error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
-	log := i.logger.WithTraceID(traceID)
+	log := log.WithTraceID(traceID)
 
 	log.Info(logger.LogMotorcycleInteractorGetOwnerStart, "owner_id", ownerID)
 
@@ -133,7 +131,7 @@ func (i *MotorcycleInteractor) GetMotorcyclesByOwner(ctx context.Context, ownerI
 // This endpoint is accessible by representatives (workshops) to lookup motorcycle info
 func (i *MotorcycleInteractor) GetMotorcycleByLicensePlate(ctx context.Context, licensePlate string) (*domain.Motorcycle, error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
-	log := i.logger.WithTraceID(traceID)
+	log := log.WithTraceID(traceID)
 
 	log.Info(logger.LogMotorcycleInteractorGetPlateStart, "license_plate", licensePlate)
 
@@ -151,7 +149,7 @@ func (i *MotorcycleInteractor) GetMotorcycleByLicensePlate(ctx context.Context, 
 // Only owner can update their motorcycle - caller must validate ownership
 func (i *MotorcycleInteractor) UpdateMotorcycle(ctx context.Context, motorcycleID string, ownerID string, updates *domain.Motorcycle) (*domain.Motorcycle, error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
-	log := i.logger.WithTraceID(traceID)
+	log := log.WithTraceID(traceID)
 
 	log.Info(logger.LogMotorcycleInteractorUpdateStart, "motorcycle_id", motorcycleID, "owner_id", ownerID)
 
@@ -230,7 +228,7 @@ func (i *MotorcycleInteractor) UpdateMotorcycle(ctx context.Context, motorcycleI
 // Only owner can delete their motorcycle - returns 404 for non-owners
 func (i *MotorcycleInteractor) DeleteMotorcycle(ctx context.Context, motorcycleID string, ownerID string) error {
 	traceID := middleware.GetTraceIDFromContext(ctx)
-	log := i.logger.WithTraceID(traceID)
+	log := log.WithTraceID(traceID)
 
 	log.Info(logger.LogMotorcycleInteractorDeleteStart, "motorcycle_id", motorcycleID, "owner_id", ownerID)
 
@@ -302,7 +300,7 @@ func (i *MotorcycleInteractor) DeleteMotorcycle(ctx context.Context, motorcycleI
 // Only owner can delete their motorcycle's image - returns 404 for non-owners
 func (i *MotorcycleInteractor) DeleteProfileImage(ctx context.Context, motorcycleID string, ownerID string) error {
 	traceID := middleware.GetTraceIDFromContext(ctx)
-	log := i.logger.WithTraceID(traceID)
+	log := log.WithTraceID(traceID)
 
 	log.Info(logger.LogMotorcycleInteractorUpdateStart, "action", "delete_profile_image", "motorcycle_id", motorcycleID, "owner_id", ownerID)
 
@@ -362,7 +360,7 @@ func (i *MotorcycleInteractor) DeleteProfileImage(ctx context.Context, motorcycl
 // GetMotorcycleReferences retrieves all motorcycle references from catalog (HU50)
 func (i *MotorcycleInteractor) GetMotorcycleReferences(ctx context.Context) ([]domain.MotorcycleReference, error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
-	log := i.logger.WithTraceID(traceID)
+	log := log.WithTraceID(traceID)
 
 	log.Info(logger.LogMotorcycleInteractorGetRefsStart)
 
@@ -378,7 +376,7 @@ func (i *MotorcycleInteractor) GetMotorcycleReferences(ctx context.Context) ([]d
 // GetReferencesByBrandID retrieves motorcycle references for a specific brand (HU40 - Admin only)
 func (i *MotorcycleInteractor) GetReferencesByBrandID(ctx context.Context, brandID string) ([]domain.MotorcycleReference, error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
-	log := i.logger.WithTraceID(traceID)
+	log := log.WithTraceID(traceID)
 
 	log.Info(logger.LogMotorcycleInteractorBrandLinesStart, "brand_id", brandID)
 

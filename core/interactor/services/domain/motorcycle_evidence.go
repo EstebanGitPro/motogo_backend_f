@@ -6,17 +6,18 @@ import "time"
 type MotorcycleEvidence struct {
 	ID           string    // UUID primary key
 	MotorcycleID string    // FK to motorcycle
-	Angle        *string   // Optional: FRONT, SIDE, BACK
+	Angle        *string   // Optional: FRONTAL, LATERAL, REAR
 	ImageURL     string    // Firebase Storage URL
-	UploadDate   time.Time // Upload timestamp
+	Description  *string   // Optional description
+	CreatedAt    time.Time // Upload timestamp
 }
 
 // Evidence angle constants
 const (
-	EvidenceAngleFront = "FRONT"
-	EvidenceAngleSide  = "SIDE"
-	EvidenceAngleBack  = "BACK"
+	EvidenceAngleFrontal = "FRONTAL"
+	EvidenceAngleLateral = "LATERAL"
+	EvidenceAngleRear    = "REAR"
 )
 
 // ValidEvidenceAngles contains all valid angle values
-var ValidEvidenceAngles = []string{EvidenceAngleFront, EvidenceAngleSide, EvidenceAngleBack}
+var ValidEvidenceAngles = []string{EvidenceAngleFrontal, EvidenceAngleLateral, EvidenceAngleRear}
