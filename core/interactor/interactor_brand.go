@@ -12,21 +12,19 @@ import (
 // BrandInteractor handles brand catalog use cases
 type BrandInteractor struct {
 	brandService input.BrandService
-	logger       logger.Logger
 }
 
 // NewBrandInteractor creates a new BrandInteractor instance
-func NewBrandInteractor(brandService input.BrandService, log logger.Logger) *BrandInteractor {
+func NewBrandInteractor(brandService input.BrandService) *BrandInteractor {
 	return &BrandInteractor{
 		brandService: brandService,
-		logger:       log,
 	}
 }
 
 // GetAllBrands retrieves all brands from the catalog
 func (i *BrandInteractor) GetAllBrands(ctx context.Context) ([]domain.Brand, error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
-	log := i.logger.WithTraceID(traceID)
+	log := log.WithTraceID(traceID)
 
 	log.Info(logger.LogBrandInteractorGetAll)
 

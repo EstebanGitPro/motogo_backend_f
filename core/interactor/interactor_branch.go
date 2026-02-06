@@ -5,6 +5,7 @@ import (
 
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/input"
+	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
 	"github.com/EstebanGitPro/motogo-backend/middleware"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
@@ -12,15 +13,20 @@ import (
 // BranchInteractor handles branch-related use cases (HU59)
 type BranchInteractor struct {
 	branchService input.BranchService
-	logger        logger.Logger
+	storageClient output.StorageClient // Optional: Firebase Storage for image deletion
 }
 
 // NewBranchInteractor creates a new BranchInteractor instance
-func NewBranchInteractor(branchService input.BranchService, log logger.Logger) *BranchInteractor {
+func NewBranchInteractor(branchService input.BranchService) *BranchInteractor {
 	return &BranchInteractor{
 		branchService: branchService,
-		logger:        log,
 	}
+}
+
+// WithStorageClient sets the storage client for image deletion (optional)
+func (i *BranchInteractor) WithStorageClient(client output.StorageClient) *BranchInteractor {
+	i.storageClient = client
+	return i
 }
 
 // RegisterBranch registers a new branch for an authenticated representative (HU59)
@@ -31,7 +37,7 @@ func NewBranchInteractor(branchService input.BranchService, log logger.Logger) *
 func (i *BranchInteractor) RegisterBranch(ctx context.Context, branch domain.Branch) (*domain.Branch, bool, error) {
 	// Extract traceID from context and create logger with it
 	traceID := middleware.GetTraceIDFromContext(ctx)
-	log := i.logger.WithTraceID(traceID)
+	log := log.WithTraceID(traceID)
 
 	log.Info(logger.LogBranchInteractorRegStart,
 		"branch_name", branch.Name,
@@ -55,10 +61,10 @@ func (i *BranchInteractor) RegisterBranch(ctx context.Context, branch domain.Bra
 		geocodingSucceeded, err = i.branchService.GeocodeLocation(ctx, branch.Location)
 		if err != nil {
 			// Log but don't fail - geocoding errors are non-fatal
-			log.Warn("geocoding_step_failed", "error", err)
+			log.Warn(logger.LogBranchGeocodingFailed, "error", err)
 		}
 		if geocodingSucceeded {
-			log.Info("geocoding_coordinates_generated",
+			log.Info(logger.LogBranchGeocodingGenerated,
 				"lat", *branch.Location.Latitude,
 				"lng", *branch.Location.Longitude)
 		}
@@ -111,7 +117,7 @@ func (i *BranchInteractor) RegisterBranch(ctx context.Context, branch domain.Bra
 // GetBranchByID retrieves a branch by its ID
 func (i *BranchInteractor) GetBranchByID(ctx context.Context, branchID string) (*domain.Branch, error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
-	log := i.logger.WithTraceID(traceID)
+	log := log.WithTraceID(traceID)
 
 	log.Info(logger.LogBranchInteractorGetByID, "branch_id", branchID)
 
@@ -133,7 +139,7 @@ func (i *BranchInteractor) GeocodeLocation(ctx context.Context, location *domain
 // GetBranchesByRepresentative retrieves all branches for a representative (HU62 - List my branches)
 func (i *BranchInteractor) GetBranchesByRepresentative(ctx context.Context, representativeID string) ([]domain.Branch, error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
-	log := i.logger.WithTraceID(traceID)
+	log := log.WithTraceID(traceID)
 
 	log.Info(logger.LogBranchInteractorListByRep, "representative_id", representativeID)
 
@@ -151,7 +157,7 @@ func (i *BranchInteractor) GetBranchesByRepresentative(ctx context.Context, repr
 // Returns: (updatedBranch, geocodingSucceeded, error)
 func (i *BranchInteractor) UpdateBranch(ctx context.Context, branchID string, branch domain.Branch, personID string) (*domain.Branch, bool, error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
-	log := i.logger.WithTraceID(traceID)
+	log := log.WithTraceID(traceID)
 
 	log.Info(logger.LogBranchInteractorUpdateStart, "branch_id", branchID, "person_id", personID)
 
@@ -181,7 +187,7 @@ func (i *BranchInteractor) UpdateBranch(ctx context.Context, branchID string, br
 	if branch.Location != nil {
 		geocodingSucceeded, err = i.branchService.GeocodeLocation(ctx, branch.Location)
 		if err != nil {
-			log.Warn("geocoding_step_failed", "error", err)
+			log.Warn(logger.LogBranchGeocodingFailed, "error", err)
 		}
 	}
 
@@ -217,10 +223,22 @@ func (i *BranchInteractor) UpdateBranch(ctx context.Context, branchID string, br
 		return nil, false, err
 	}
 
-	// 9. Fetch updated branch for response
+	// 9. Delete old profile image from Firebase Storage if it was replaced
+	if branch.ProfileImageURL != nil && *branch.ProfileImageURL != "" &&
+		existingBranch.ProfileImageURL != nil && *existingBranch.ProfileImageURL != "" &&
+		*branch.ProfileImageURL != *existingBranch.ProfileImageURL &&
+		i.storageClient != nil {
+		if storageErr := i.storageClient.DeleteStorageFile(ctx, *existingBranch.ProfileImageURL); storageErr != nil {
+			log.Warn(logger.LogBranchInteractorUpdateError, "old image delete failed (continuing)", storageErr)
+		} else {
+			log.Info(logger.LogBranchInteractorUpdateComplete, "action", "old_storage_file_deleted", "url", *existingBranch.ProfileImageURL)
+		}
+	}
+
+	// 10. Fetch updated branch for response
 	updatedBranch, err := i.branchService.GetBranchByID(ctx, branchID)
 	if err != nil {
-		log.Warn("branch_refetch_failed", "error", err, "branch_id", branchID)
+		log.Warn(logger.LogBranchRefetchFailed, "error", err, "branch_id", branchID)
 		// Return original data, update was successful
 		return &branch, geocodingSucceeded, nil
 	}
@@ -234,7 +252,7 @@ func (i *BranchInteractor) UpdateBranch(ctx context.Context, branchID string, br
 // A branch cannot be deleted if it has diagnostics or completed_services (FK RESTRICT)
 func (i *BranchInteractor) DeleteBranch(ctx context.Context, branchID string, personID string) error {
 	traceID := middleware.GetTraceIDFromContext(ctx)
-	log := i.logger.WithTraceID(traceID)
+	log := log.WithTraceID(traceID)
 
 	log.Info(logger.LogBranchInteractorDeleteStart, "branch_id", branchID, "person_id", personID)
 
@@ -279,7 +297,17 @@ func (i *BranchInteractor) DeleteBranch(ctx context.Context, branchID string, pe
 		return err
 	}
 
-	// 5. Commit transaction
+	// 5. Delete profile image from Firebase Storage (if exists and client configured)
+	if existingBranch.ProfileImageURL != nil && *existingBranch.ProfileImageURL != "" && i.storageClient != nil {
+		if storageErr := i.storageClient.DeleteStorageFile(ctx, *existingBranch.ProfileImageURL); storageErr != nil {
+			// Log warning but don't fail the delete - image cleanup is best effort
+			log.Warn(logger.LogBranchInteractorDeleteError, "storage delete failed (continuing)", storageErr)
+		} else {
+			log.Info(logger.LogBranchInteractorDeleteComplete, "action", "storage_file_deleted", "url", *existingBranch.ProfileImageURL)
+		}
+	}
+
+	// 6. Commit transaction
 	if err = tx.Commit(); err != nil {
 		log.Error(logger.LogBranchInteractorCommitError, "error", err)
 		return err
@@ -319,7 +347,7 @@ func findSubstring(s, substr string) bool {
 // Default radius is 5km if not specified
 func (i *BranchInteractor) GetBranchesNearby(ctx context.Context, lat, lng, radiusKm float64, establishmentType string) ([]domain.NearbyBranch, error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
-	log := i.logger.WithTraceID(traceID)
+	log := log.WithTraceID(traceID)
 
 	log.Info(logger.LogBranchInteractorNearbyStart,
 		"lat", lat,

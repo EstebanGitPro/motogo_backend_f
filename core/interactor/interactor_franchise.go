@@ -17,7 +17,7 @@ type FranchiseInteractor struct {
 }
 
 // NewFranchiseInteractor creates a new FranchiseInteractor
-func NewFranchiseInteractor(franchiseService input.FranchiseService, branchService input.BranchService, log logger.Logger) *FranchiseInteractor {
+func NewFranchiseInteractor(franchiseService input.FranchiseService, branchService input.BranchService) *FranchiseInteractor {
 	return &FranchiseInteractor{
 		franchiseService: franchiseService,
 		branchService:    branchService,
@@ -196,7 +196,7 @@ func (i *FranchiseInteractor) AddBranchToFranchise(ctx context.Context, franchis
 		return err
 	}
 
-	log.Info("Branch added to franchise", "franchise_id", franchiseID, "branch_id", branchID)
+	log.Info(logger.LogFranchiseBranchAdded, "franchise_id", franchiseID, "branch_id", branchID)
 	return nil
 }
 
@@ -211,7 +211,7 @@ func (i *FranchiseInteractor) RemoveBranchFromFranchise(ctx context.Context, fra
 
 	// 2. Validate minimum branches - cannot remove last branch
 	if count <= 1 {
-		log.Warn("Cannot remove last branch from franchise", "franchise_id", franchiseID, "branch_id", branchID)
+		log.Warn(logger.LogFranchiseCannotRemoveLast, "franchise_id", franchiseID, "branch_id", branchID)
 		return domain.ErrFranchiseMinBranches
 	}
 
@@ -236,6 +236,6 @@ func (i *FranchiseInteractor) RemoveBranchFromFranchise(ctx context.Context, fra
 		return err
 	}
 
-	log.Info("Branch removed from franchise", "franchise_id", franchiseID, "branch_id", branchID)
+	log.Info(logger.LogFranchiseBranchRemoved, "franchise_id", franchiseID, "branch_id", branchID)
 	return nil
 }
