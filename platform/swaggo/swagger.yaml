@@ -1250,6 +1250,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
       summary: Update a service
       tags:
       - Admin
@@ -1750,6 +1752,8 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
       summary: Delete schedule for a branch
       tags:
       - Schedules
@@ -1772,6 +1776,8 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
       summary: Get schedule for a branch
       tags:
       - Schedules
@@ -1808,6 +1814,8 @@ paths:
           description: Conflict
           schema:
             $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
       summary: Create a schedule for a branch
       tags:
       - Schedules
@@ -1846,6 +1854,8 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
       summary: Update schedule for a branch
       tags:
       - Schedules
@@ -1873,6 +1883,8 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
       summary: Activate schedule for a branch
       tags:
       - Schedules
@@ -1900,6 +1912,8 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
       summary: Deactivate schedule for a branch
       tags:
       - Schedules
@@ -1923,6 +1937,8 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
       summary: List time slots for a branch schedule
       tags:
       - Schedule Details
@@ -1966,6 +1982,8 @@ paths:
           description: Conflict
           schema:
             $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
       summary: Create a time slot for a branch schedule
       tags:
       - Schedule Details
@@ -2003,6 +2021,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
       summary: Get services for a branch
       tags:
       - Branches
@@ -2051,6 +2071,8 @@ paths:
           description: Conflict
           schema:
             $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
       summary: Associate services to a branch
       tags:
       - Branches
@@ -2083,6 +2105,8 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
       summary: Dissociate a service from a branch
       tags:
       - Branches
@@ -2219,6 +2243,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
       summary: List franchises for the authenticated representative
       tags:
       - Franchises
@@ -2252,6 +2278,8 @@ paths:
           description: Conflict
           schema:
             $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
       summary: Create a new franchise
       tags:
       - Franchises
@@ -2275,6 +2303,8 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
       summary: Delete a franchise
       tags:
       - Franchises
@@ -2296,6 +2326,8 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
       summary: Get franchise by ID
       tags:
       - Franchises
@@ -2329,6 +2361,8 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
       summary: Update a franchise
       tags:
       - Franchises
@@ -2368,6 +2402,8 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
       summary: Add a branch to a franchise
       tags:
       - Franchises
@@ -2400,6 +2436,8 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
       summary: Remove a branch from a franchise
       tags:
       - Franchises
@@ -2431,6 +2469,8 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/middleware.APIResponse'
+      security:
+      - BearerAuth: []
       summary: Test geocoding service
       tags:
       - Dev Tools
@@ -2708,6 +2748,8 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
       summary: List motorcycle evidence
     post:
       consumes:
@@ -2758,6 +2800,8 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
       summary: Upload photographic evidence
   /motorcycles/{id}/evidence/{evidenceId}:
     delete:
@@ -2801,6 +2845,8 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
       summary: Delete motorcycle evidence
     put:
       consumes:
@@ -2852,6 +2898,8 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
       summary: Update motorcycle evidence
   /motorcycles/{id}/profile-image:
     delete:
@@ -2889,6 +2937,8 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
       summary: Delete motorcycle profile image
     get:
       consumes:
@@ -2925,6 +2975,8 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
       summary: Get motorcycle profile image
     put:
       consumes:
@@ -2971,6 +3023,8 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
       summary: Update motorcycle profile image
   /motorcycles/lookup:
     get:
@@ -3234,6 +3288,8 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
       summary: Delete a time slot
       tags:
       - Schedule Details
@@ -3276,6 +3332,8 @@ paths:
           description: Conflict
           schema:
             $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
       summary: Update a time slot
       tags:
       - Schedule Details
@@ -3289,6 +3347,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
       summary: Get catalog of days of week
       tags:
       - Schedules
@@ -3311,6 +3371,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
       summary: Get all service types
       tags:
       - Services
@@ -3339,6 +3401,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
       summary: Get all services
       tags:
       - Services

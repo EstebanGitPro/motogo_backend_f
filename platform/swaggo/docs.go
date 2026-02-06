@@ -448,6 +448,11 @@ const docTemplate = `{
         },
         "/admin/services/{id}": {
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Updates an existing service in the global catalog. Requires ADMIN role.",
                 "consumes": [
                     "application/json"
@@ -1365,6 +1370,11 @@ const docTemplate = `{
         },
         "/branches/{id}/schedules": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Retrieves the schedule configuration for a branch",
                 "produces": [
                     "application/json"
@@ -1398,6 +1408,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Updates the schedule configuration including validity dates",
                 "consumes": [
                     "application/json"
@@ -1455,6 +1470,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Creates a new schedule configuration for a branch",
                 "consumes": [
                     "application/json"
@@ -1509,6 +1529,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Removes the schedule configuration for a branch",
                 "produces": [
                     "application/json"
@@ -1550,6 +1575,11 @@ const docTemplate = `{
         },
         "/branches/{id}/schedules/activate": {
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Activates the schedule configuration for a branch",
                 "produces": [
                     "application/json"
@@ -1591,6 +1621,11 @@ const docTemplate = `{
         },
         "/branches/{id}/schedules/deactivate": {
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Deactivates the schedule configuration for a branch",
                 "produces": [
                     "application/json"
@@ -1632,6 +1667,11 @@ const docTemplate = `{
         },
         "/branches/{id}/schedules/details": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Retrieves all time slots (schedule details) for a branch",
                 "produces": [
                     "application/json"
@@ -1665,6 +1705,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Creates a new time slot (schedule detail) for a specific day of the week",
                 "consumes": [
                     "application/json"
@@ -1730,6 +1775,11 @@ const docTemplate = `{
         },
         "/branches/{id}/services": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Retrieves all services associated with a specific branch, including when they were added",
                 "produces": [
                     "application/json"
@@ -1787,6 +1837,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Associates one or more services from the catalog to a specific branch",
                 "consumes": [
                     "application/json"
@@ -1864,6 +1919,11 @@ const docTemplate = `{
         },
         "/branches/{id}/services/{serviceId}": {
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Removes a service association from a specific branch",
                 "produces": [
                     "application/json"
@@ -2041,6 +2101,11 @@ const docTemplate = `{
         },
         "/franchises": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -2058,6 +2123,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Creates a new franchise and associates specified branches",
                 "consumes": [
                     "application/json"
@@ -2110,6 +2180,11 @@ const docTemplate = `{
         },
         "/franchises/{id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -2142,6 +2217,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -2192,6 +2272,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Deletes a franchise and disassociates all branches",
                 "produces": [
                     "application/json"
@@ -2227,6 +2312,11 @@ const docTemplate = `{
         },
         "/franchises/{id}/branches": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Associates an existing branch to a franchise",
                 "consumes": [
                     "application/json"
@@ -2286,6 +2376,11 @@ const docTemplate = `{
         },
         "/franchises/{id}/branches/{branchId}": {
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Dissociates a branch from a franchise",
                 "produces": [
                     "application/json"
@@ -2334,6 +2429,11 @@ const docTemplate = `{
         },
         "/location/geocode": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Test address geocoding without creating a branch",
                 "consumes": [
                     "application/json"
@@ -2839,6 +2939,11 @@ const docTemplate = `{
         },
         "/motorcycles/{id}/evidence": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Lists all photographic evidence for a motorcycle owned by authenticated user",
                 "consumes": [
                     "application/json"
@@ -2899,6 +3004,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Upload photographic evidence for a motorcycle. The image must already be uploaded to Firebase Storage.",
                 "consumes": [
                     "application/json"
@@ -2979,6 +3089,11 @@ const docTemplate = `{
         },
         "/motorcycles/{id}/evidence/{evidenceId}": {
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Updates photographic evidence for a motorcycle. Only the owner can update.",
                 "consumes": [
                     "application/json"
@@ -3058,6 +3173,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Deletes photographic evidence for a motorcycle. Only the owner can delete.",
                 "consumes": [
                     "application/json"
@@ -3125,6 +3245,11 @@ const docTemplate = `{
         },
         "/motorcycles/{id}/profile-image": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Gets the profile image URL for a motorcycle. Only the owner can view.",
                 "consumes": [
                     "application/json"
@@ -3182,6 +3307,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Adds or updates the profile image URL for a motorcycle. Only the owner can update.",
                 "consumes": [
                     "application/json"
@@ -3254,6 +3384,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Removes the profile image from a motorcycle. Only the owner can delete.",
                 "consumes": [
                     "application/json"
@@ -3624,6 +3759,11 @@ const docTemplate = `{
         },
         "/schedule-details/{id}": {
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Updates an existing time slot (schedule detail)",
                 "consumes": [
                     "application/json"
@@ -3687,6 +3827,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Deletes an existing time slot (schedule detail)",
                 "produces": [
                     "application/json"
@@ -3728,6 +3873,11 @@ const docTemplate = `{
         },
         "/schedules/days": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Returns the catalog of available days of week for schedules",
                 "produces": [
                     "application/json"
@@ -3748,6 +3898,11 @@ const docTemplate = `{
         },
         "/service-types": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Retrieves the complete list of service types available in the system",
                 "produces": [
                     "application/json"
@@ -3786,6 +3941,11 @@ const docTemplate = `{
         },
         "/services": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Retrieves the complete list of services available in the catalog, optionally filtered by type",
                 "produces": [
                     "application/json"
