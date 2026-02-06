@@ -838,7 +838,7 @@ func (h *handler) GetNearbyBranches() gin.HandlerFunc {
 			Links:    BuildNearbyBranchesLinks(baseURL, lat, lng, radiusKm),
 		}
 
-		log.Success("nearby_branches_found",
+		log.Success(logger.LogBranchControllerNearbyFound,
 			"count", len(items),
 			"radius_km", radiusKm,
 			"client_ip", c.ClientIP())

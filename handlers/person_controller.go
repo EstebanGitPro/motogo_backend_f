@@ -65,7 +65,7 @@ func (h handler) RegisterPerson() func(c *gin.Context) {
 			return
 		}
 
-		log.Success("Registro completado exitosamente",
+		log.Success(logger.LogPersonControllerRegComplete,
 			result.Person.ToLogger(),
 			"encoded_id", encodedID,
 			"client_ip", c.ClientIP())
@@ -255,7 +255,7 @@ func (h handler) RefreshToken() gin.HandlerFunc {
 			Links:        hateoasLinks,
 		}
 
-		log.Success("Token refrescado exitosamente", "client_ip", c.ClientIP())
+		log.Success(logger.LogPersonControllerTokenRefreshOK, "client_ip", c.ClientIP())
 		h.Response.SuccessWithData(c, "MOD_AUTH_REFRESH_SUCCESS_EXI_00001", response)
 	}
 }
@@ -414,7 +414,7 @@ func (h handler) GetAuthenticatedUser() gin.HandlerFunc {
 			Links:          hateoasLinks,
 		}
 
-		log.Success("Perfil de usuario obtenido exitosamente", "user_id", encodedID, "email", person.Email)
+		log.Success(logger.LogPersonControllerProfileGetOK, "user_id", encodedID, "email", person.Email)
 		h.Response.SuccessWithData(c, domain.MsgAuthProfileRetrieved, response)
 	}
 }
@@ -439,7 +439,7 @@ func (h handler) ChangePassword() gin.HandlerFunc {
 		// Get authenticated user from context (injected by JWT middleware)
 		person, ok := middleware.GetAuthenticatedUser(c)
 		if !ok {
-			log.Error("authenticated user not found in context")
+			log.Error(logger.LogPersonControllerUserNotInContext)
 			c.Error(domain.ErrUserNotFound)
 			return
 		}
@@ -510,7 +510,7 @@ func (h handler) UpdateProfile() gin.HandlerFunc {
 		// Get authenticated user from context (injected by JWT middleware)
 		person, ok := middleware.GetAuthenticatedUser(c)
 		if !ok {
-			log.Error("authenticated user not found in context")
+			log.Error(logger.LogPersonControllerUserNotInContext)
 			c.Error(domain.ErrUserNotFound)
 			return
 		}
@@ -562,7 +562,7 @@ func (h handler) UpdateProfile() gin.HandlerFunc {
 		// Encode ID for response
 		encodedID, err := h.EncodeID(result.ID)
 		if err != nil {
-			log.Error("error encoding user ID", "error", err, "user_id", result.ID)
+			log.Error(logger.LogPersonControllerIDEncodeError, "error", err, "user_id", result.ID)
 			c.Error(err)
 			return
 		}
@@ -637,7 +637,7 @@ func (h handler) GetPublicContact() gin.HandlerFunc {
 			Links:       hateoasLinks,
 		}
 
-		log.Success("Información de contacto público obtenida", "person_id", personID, "client_ip", c.ClientIP())
+		log.Success(logger.LogPersonControllerContactGetOK, "person_id", personID, "client_ip", c.ClientIP())
 		h.Response.SuccessWithData(c, domain.MsgPersonContactRetrieved, response)
 	}
 }
@@ -688,7 +688,7 @@ func (h handler) DeleteSelf() gin.HandlerFunc {
 			return
 		}
 
-		log.Success("Cuenta eliminada exitosamente", "user_id", person.ID, "email", person.Email)
+		log.Success(logger.LogPersonControllerAccountDeleteOK, "user_id", person.ID, "email", person.Email)
 		h.Response.Success(c, domain.MsgPersonDeleted)
 	}
 }

@@ -632,6 +632,36 @@ const (
 )
 
 // ============================================
+// GEOCODING CONTROLLER
+// ============================================
+const (
+	LogGeocodingControllerTestRequest = "Solicitud de prueba de geocodificación recibida"
+	LogGeocodingControllerTestInvalid = "Solicitud de prueba de geocodificación inválida"
+	LogGeocodingControllerTestSuccess = "Prueba de geocodificación exitosa"
+	LogGeocodingControllerTestFailed  = "Prueba de geocodificación fallida"
+)
+
+// ============================================
+// PERSON CONTROLLER
+// ============================================
+const (
+	LogPersonControllerRegComplete      = "Registro de usuario completado exitosamente"
+	LogPersonControllerTokenRefreshOK   = "Token de usuario refrescado exitosamente"
+	LogPersonControllerProfileGetOK     = "Perfil de usuario obtenido exitosamente"
+	LogPersonControllerUserNotInContext = "Usuario autenticado no encontrado en contexto"
+	LogPersonControllerIDEncodeError    = "Error codificando ID de usuario"
+	LogPersonControllerContactGetOK     = "Información de contacto público obtenida"
+	LogPersonControllerAccountDeleteOK  = "Cuenta de usuario eliminada exitosamente"
+)
+
+// ============================================
+// BRANCH CONTROLLER - NEARBY
+// ============================================
+const (
+	LogBranchControllerNearbyFound = "Sucursales cercanas encontradas"
+)
+
+// ============================================
 // LOCATION INTERACTOR
 // ============================================
 const (

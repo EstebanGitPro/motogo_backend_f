@@ -713,7 +713,7 @@ func (h *handler) GetBrandLines() gin.HandlerFunc {
 			return
 		}
 
-		log.Debug("Decoded brand ID", "encoded", encodedBrandID, "decoded", brandID)
+		log.Debug(logger.LogMotorcycleControllerBrandIDDecoded, "encoded", encodedBrandID, "decoded", brandID)
 
 		// 2. Call interactor to get references by brand
 		references, err := h.MotorcycleInteractor.GetReferencesByBrandID(c.Request.Context(), brandID)
