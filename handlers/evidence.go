@@ -8,15 +8,17 @@ import (
 
 // CreateEvidenceRequest represents the request body for evidence creation (HU16)
 type CreateEvidenceRequest struct {
-	ImageURL string  `json:"image_url" binding:"required"`
-	Angle    *string `json:"angle,omitempty"`
+	ImageURL    string  `json:"image_url" binding:"required"`
+	Angle       *string `json:"angle,omitempty"`
+	Description *string `json:"description,omitempty"`
 }
 
 // ToDomain converts CreateEvidenceRequest to domain.MotorcycleEvidence
 func (r *CreateEvidenceRequest) ToDomain() *domain.MotorcycleEvidence {
 	return &domain.MotorcycleEvidence{
-		ImageURL: r.ImageURL,
-		Angle:    r.Angle,
+		ImageURL:    r.ImageURL,
+		Angle:       r.Angle,
+		Description: r.Description,
 	}
 }
 
@@ -26,7 +28,8 @@ type EvidenceResponse struct {
 	MotorcycleID string  `json:"motorcycle_id"`
 	Angle        *string `json:"angle,omitempty"`
 	ImageURL     string  `json:"image_url"`
-	UploadDate   string  `json:"upload_date"`
+	Description  *string `json:"description,omitempty"`
+	CreatedAt    string  `json:"created_at"`
 	Links        []Link  `json:"_links,omitempty"`
 }
 
@@ -37,7 +40,8 @@ func ToEvidenceResponse(e *domain.MotorcycleEvidence) EvidenceResponse {
 		MotorcycleID: e.MotorcycleID,
 		Angle:        e.Angle,
 		ImageURL:     e.ImageURL,
-		UploadDate:   e.UploadDate.Format(time.RFC3339),
+		Description:  e.Description,
+		CreatedAt:    e.CreatedAt.Format(time.RFC3339),
 	}
 }
 

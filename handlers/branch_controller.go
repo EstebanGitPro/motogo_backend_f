@@ -683,7 +683,7 @@ func (h *handler) DeleteBranch() gin.HandlerFunc {
 			return
 		}
 
-		log.Debug("branch_delete_processing", "branch_id", branchID, "person_id", person.ID)
+		log.Debug(logger.LogBranchDeleteProcessing, "branch_id", branchID, "person_id", person.ID)
 
 		// 3. Call interactor with ownership validation
 		err = h.BranchInteractor.DeleteBranch(c.Request.Context(), branchID, person.ID)
@@ -750,13 +750,13 @@ func (h *handler) GetNearbyBranches() gin.HandlerFunc {
 		// 1. Parse latitude (required)
 		latStr := c.Query("lat")
 		if latStr == "" {
-			log.Warn("nearby_branches_missing_lat", "client_ip", c.ClientIP())
+			log.Warn(logger.LogBranchNearbyMissingLat, "client_ip", c.ClientIP())
 			h.Response.Error(c, domain.MsgValLatitudeRequired)
 			return
 		}
 		lat, err := parseFloat(latStr)
 		if err != nil || lat < -90 || lat > 90 {
-			log.Warn("nearby_branches_invalid_lat", "lat", latStr, "error", err)
+			log.Warn(logger.LogBranchNearbyInvalidLat, "lat", latStr, "error", err)
 			h.Response.Error(c, domain.MsgValLatitudeInvalid)
 			return
 		}
@@ -764,13 +764,13 @@ func (h *handler) GetNearbyBranches() gin.HandlerFunc {
 		// 2. Parse longitude (required)
 		lngStr := c.Query("lng")
 		if lngStr == "" {
-			log.Warn("nearby_branches_missing_lng", "client_ip", c.ClientIP())
+			log.Warn(logger.LogBranchNearbyMissingLng, "client_ip", c.ClientIP())
 			h.Response.Error(c, domain.MsgValLongitudeRequired)
 			return
 		}
 		lng, err := parseFloat(lngStr)
 		if err != nil || lng < -180 || lng > 180 {
-			log.Warn("nearby_branches_invalid_lng", "lng", lngStr, "error", err)
+			log.Warn(logger.LogBranchNearbyInvalidLng, "lng", lngStr, "error", err)
 			h.Response.Error(c, domain.MsgValLongitudeInvalid)
 			return
 		}
@@ -780,7 +780,7 @@ func (h *handler) GetNearbyBranches() gin.HandlerFunc {
 		if radiusStr := c.Query("radius"); radiusStr != "" {
 			radius, err := parseFloat(radiusStr)
 			if err != nil || radius <= 0 || radius > 50 {
-				log.Warn("nearby_branches_invalid_radius", "radius", radiusStr, "error", err)
+				log.Warn(logger.LogBranchNearbyInvalidRadius, "radius", radiusStr, "error", err)
 				h.Response.Error(c, domain.MsgValRadiusInvalid)
 				return
 			}
@@ -791,13 +791,13 @@ func (h *handler) GetNearbyBranches() gin.HandlerFunc {
 		establishmentType := c.Query("type")
 		if establishmentType != "" {
 			if !domain.IsValidEstablishmentType(establishmentType) {
-				log.Warn("nearby_branches_invalid_type", "type", establishmentType)
+				log.Warn(logger.LogBranchNearbyInvalidType, "type", establishmentType)
 				h.Response.Error(c, domain.MsgBranchInvalidType)
 				return
 			}
 		}
 
-		log.Info("nearby_branches_search",
+		log.Info(logger.LogBranchNearbySearch,
 			"lat", lat,
 			"lng", lng,
 			"radius_km", radiusKm,
@@ -806,7 +806,7 @@ func (h *handler) GetNearbyBranches() gin.HandlerFunc {
 		// 5. Call interactor
 		branches, err := h.BranchInteractor.GetBranchesNearby(c.Request.Context(), lat, lng, radiusKm, establishmentType)
 		if err != nil {
-			log.Error("nearby_branches_error", "error", err)
+			log.Error(logger.LogBranchNearbyError, "error", err)
 			h.Response.Error(c, domain.MsgServerError)
 			return
 		}

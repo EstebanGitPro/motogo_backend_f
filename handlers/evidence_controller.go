@@ -165,6 +165,88 @@ func (h *handler) ListEvidence() gin.HandlerFunc {
 	}
 }
 
+// UpdateEvidence handles PUT /motorcycles/:id/evidence/:evidenceId - updates evidence (HU17)
+// @Summary Update motorcycle evidence
+// @Description Updates photographic evidence for a motorcycle. Only the owner can update.
+// @Accept json
+// @Produce json
+// @Param id path string true "Motorcycle ID (obfuscated)"
+// @Param evidenceId path string true "Evidence ID (obfuscated)"
+// @Param evidence body CreateEvidenceRequest true "Updated evidence data"
+// @Success 200 {object} StandardResponse{data=EvidenceResponse} "Evidence updated successfully"
+// @Failure 400 {object} StandardResponse "Bad request - invalid data"
+// @Failure 401 {object} StandardResponse "Unauthorized - missing or invalid token"
+// @Failure 404 {object} StandardResponse "Evidence not found or not owner"
+// @Failure 500 {object} StandardResponse "Internal server error"
+// @Router /motorcycles/{id}/evidence/{evidenceId} [put]
+func (h *handler) UpdateEvidence() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		traceID := middleware.GetTraceIDFromContext(c)
+
+		Logger.Info(logger.LogEvidenceControllerUpdateRequest, "trace_id", traceID)
+
+		// Step 1: Get authenticated user
+		user, exists := middleware.GetAuthenticatedUser(c)
+		if !exists {
+			Logger.Warn(logger.LogBranchControllerUserUnauth)
+			h.Response.Error(c, domain.MsgUnauthorized)
+			return
+		}
+
+		// Step 2: Decode evidence ID
+		encodedEvidenceID := c.Param("evidenceId")
+		evidenceID, err := h.DecodeID(encodedEvidenceID)
+		if err != nil {
+			Logger.Error(logger.LogBranchControllerIDDecodeError, "error", err)
+			h.Response.Error(c, domain.MsgEvidenceNotFound)
+			return
+		}
+
+		// Get motorcycle ID for HATEOAS links
+		encodedMotorcycleID := c.Param("id")
+
+		// Step 3: Parse request body
+		var request CreateEvidenceRequest
+		if err := c.ShouldBindJSON(&request); err != nil {
+			Logger.Error(logger.LogBranchControllerBindError, "error", err)
+			h.Response.Error(c, domain.MsgServerError)
+			return
+		}
+
+		// Step 4: Update evidence through interactor
+		evidence, err := h.EvidenceInteractor.UpdateEvidence(
+			c.Request.Context(),
+			evidenceID,
+			user.ID,
+			request.ToDomain(),
+		)
+		if err != nil {
+			Logger.Error(logger.LogEvidenceControllerUpdateError, "error", err)
+
+			switch {
+			case errors.Is(err, domain.ErrEvidenceNotFound):
+				h.Response.Error(c, domain.MsgEvidenceNotFound)
+			case errors.Is(err, domain.ErrInvalidEvidenceURL):
+				h.Response.Error(c, domain.MsgInvalidEvidenceURL)
+			default:
+				h.Response.Error(c, domain.MsgEvidenceCannotUpdate)
+			}
+			return
+		}
+
+		Logger.Info(logger.LogEvidenceControllerUpdateSuccess, "id", evidenceID, "trace_id", traceID)
+
+		// Step 5: Build response with HATEOAS links
+		baseURL := GetBaseURL(c)
+		response := ToEvidenceResponse(evidence)
+		response.ID = encodedEvidenceID
+		response.MotorcycleID = encodedMotorcycleID
+		response.Links = BuildEvidenceDetailLinks(baseURL, encodedMotorcycleID, encodedEvidenceID, true)
+
+		h.Response.SuccessWithData(c, domain.MsgEvidenceUpdated, response)
+	}
+}
+
 // DeleteEvidence handles DELETE /motorcycles/:id/evidence/:evidenceId - deletes evidence (HU19)
 // @Summary Delete motorcycle evidence
 // @Description Deletes photographic evidence for a motorcycle. Only the owner can delete.
