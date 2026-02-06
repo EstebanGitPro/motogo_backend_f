@@ -53,6 +53,9 @@ func (h *handler) UpdateProfileImage() gin.HandlerFunc {
 			return
 		}
 
+		// Sanitize input
+		req.Sanitize()
+
 		// Step 4: Update via interactor
 		updates := req.ToDomain()
 		motorcycle, err := h.MotorcycleInteractor.UpdateMotorcycle(c.Request.Context(), motorcycleID, user.ID, &updates)

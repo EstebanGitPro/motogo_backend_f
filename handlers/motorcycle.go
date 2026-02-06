@@ -107,6 +107,14 @@ type RegisterMotorcycleRequest struct {
 	ProfileImageURL *string `json:"profile_image_url,omitempty"` // HU36: Main profile photo
 }
 
+// Sanitize trims whitespace from all string fields
+func (r *RegisterMotorcycleRequest) Sanitize() {
+	r.LicensePlate = TrimString(r.LicensePlate)
+	r.ReferenceID = TrimStringPtr(r.ReferenceID)
+	r.OwnerNotes = TrimStringPtr(r.OwnerNotes)
+	r.ProfileImageURL = TrimStringPtr(r.ProfileImageURL)
+}
+
 // ToDomain converts RegisterMotorcycleRequest to domain.Motorcycle
 func (r *RegisterMotorcycleRequest) ToDomain(ownerID string) *domain.Motorcycle {
 	moto := &domain.Motorcycle{
@@ -140,6 +148,13 @@ type UpdateMotorcycleRequest struct {
 	CurrentMileage  *int    `json:"current_mileage,omitempty"`
 	OwnerNotes      *string `json:"owner_notes,omitempty"`
 	ProfileImageURL *string `json:"profile_image_url,omitempty"` // HU36: Main profile photo
+}
+
+// Sanitize trims whitespace from all string fields
+func (r *UpdateMotorcycleRequest) Sanitize() {
+	r.ReferenceID = TrimStringPtr(r.ReferenceID)
+	r.OwnerNotes = TrimStringPtr(r.OwnerNotes)
+	r.ProfileImageURL = TrimStringPtr(r.ProfileImageURL)
 }
 
 // ToDomain converts UpdateMotorcycleRequest to domain.Motorcycle

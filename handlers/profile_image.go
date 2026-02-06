@@ -9,6 +9,11 @@ type ProfileImageRequest struct {
 	ImageURL string `json:"image_url" binding:"required"`
 }
 
+// Sanitize trims whitespace from all string fields
+func (r *ProfileImageRequest) Sanitize() {
+	r.ImageURL = TrimString(r.ImageURL)
+}
+
 // ProfileImageResponse represents the profile image response (HU38)
 type ProfileImageResponse struct {
 	MotorcycleID    string `json:"motorcycle_id"`

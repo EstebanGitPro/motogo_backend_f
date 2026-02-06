@@ -45,6 +45,9 @@ func (h *handler) RegisterFranchise(franchiseInteractor *interactor.FranchiseInt
 			return
 		}
 
+		// Sanitize input
+		req.Sanitize()
+
 		log.Info(logger.LogFranchiseControllerProcessing,
 			"franchise_name", req.Name,
 			"branch_count", len(req.BranchIDs))
@@ -238,6 +241,9 @@ func (h *handler) UpdateFranchise(franchiseInteractor *interactor.FranchiseInter
 			return
 		}
 
+		// Sanitize input
+		req.Sanitize()
+
 		// 4. Update franchise
 		franchise := req.ToFranchiseDomain(franchiseID)
 		if err := franchiseInteractor.UpdateFranchise(c.Request.Context(), franchise, person.ID); err != nil {
@@ -375,6 +381,9 @@ func (h *handler) AddBranchToFranchise(franchiseInteractor *interactor.Franchise
 			h.Response.Error(c, domain.MsgValJSONInvalid)
 			return
 		}
+
+		// Sanitize input
+		req.Sanitize()
 
 		// 4. Decode branch ID
 		branchID, err := h.DecodeID(req.BranchID)

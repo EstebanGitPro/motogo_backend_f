@@ -55,6 +55,9 @@ func (h *handler) CreateEvidence() gin.HandlerFunc {
 			return
 		}
 
+		// Sanitize input
+		request.Sanitize()
+
 		// Step 4: Create evidence through interactor
 		evidence, err := h.EvidenceInteractor.CreateEvidence(
 			c.Request.Context(),
@@ -215,6 +218,9 @@ func (h *handler) UpdateEvidence() gin.HandlerFunc {
 			h.Response.Error(c, domain.MsgServerError)
 			return
 		}
+
+		// Sanitize input
+		request.Sanitize()
 
 		// Step 4: Update evidence through interactor
 		evidence, err := h.EvidenceInteractor.UpdateEvidence(

@@ -166,6 +166,9 @@ func (h *handler) RegisterMotorcycle() gin.HandlerFunc {
 			return
 		}
 
+		// Sanitize input
+		req.Sanitize()
+
 		// 3. Convert to domain object
 		motorcycle := req.ToDomain(person.ID)
 
@@ -459,6 +462,9 @@ func (h *handler) UpdateMotorcycle() gin.HandlerFunc {
 			h.Response.Error(c, domain.MsgMotorcycleCannotUpdate)
 			return
 		}
+
+		// Sanitize input
+		req.Sanitize()
 
 		log.Debug(logger.LogMotorcycleControllerUpdateDebug,
 			"motorcycle_id", motorcycleID,

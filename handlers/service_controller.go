@@ -399,6 +399,9 @@ func (h *handler) UpdateService() gin.HandlerFunc {
 			return
 		}
 
+		// Sanitize input
+		req.Sanitize()
+
 		// Validate service type
 		if !domain.IsValidServiceType(req.ServiceType) {
 			log.Warn(logger.LogServiceControllerInvalidType, "type", req.ServiceType)

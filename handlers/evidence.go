@@ -13,6 +13,13 @@ type CreateEvidenceRequest struct {
 	Description *string `json:"description,omitempty"`
 }
 
+// Sanitize trims whitespace from all string fields
+func (r *CreateEvidenceRequest) Sanitize() {
+	r.ImageURL = TrimString(r.ImageURL)
+	r.Angle = TrimStringPtr(r.Angle)
+	r.Description = TrimStringPtr(r.Description)
+}
+
 // ToDomain converts CreateEvidenceRequest to domain.MotorcycleEvidence
 func (r *CreateEvidenceRequest) ToDomain() *domain.MotorcycleEvidence {
 	return &domain.MotorcycleEvidence{
