@@ -24,6 +24,7 @@ import (
 
 	branchRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/branch"
 	brandRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/brand"
+	evidenceRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/evidence" // HU16-19
 	franchiseRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/franchise"
 	locationRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/location"
 	messageRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/message"
@@ -49,6 +50,7 @@ type Dependencies struct {
 	ScheduleDetailInteractor    *interactor.ScheduleDetailInteractor    // HU6-9
 	ScheduleExceptionInteractor *interactor.ScheduleExceptionInteractor // HU20-25
 	MotorcycleInteractor        *interactor.MotorcycleInteractor        // HU43-47
+	EvidenceInteractor          *interactor.EvidenceInteractor          // HU16-19
 	FirebaseClient              *firebase.Client                        // Firebase Auth
 	JWTValidator                *jwt.JWKSValidator                      // JWT validation with JWKS
 	Config                      *config.Config
@@ -72,14 +74,14 @@ func Init() (*Dependencies, error) {
 	middleware.PrometheusInit()
 	log.Success(logger.LogPrometheusInitOK)
 
-	db, err := mysql.GetDB(cfg.Database, log)
+	db, err := mysql.GetDB(cfg.Database)
 	if err != nil {
 		log.Error(logger.LogAppDatabaseError, "error", err)
 		return nil, err
 	}
 	log.Success(logger.LogAppDatabaseConnected)
 
-	keycloakClient, err := keycloak.NewClient(&cfg.Keycloak, log)
+	keycloakClient, err := keycloak.NewClient(&cfg.Keycloak)
 	if err != nil {
 		log.Error(logger.LogKeycloakClientError, "error", err)
 		return nil, err
@@ -92,14 +94,14 @@ func Init() (*Dependencies, error) {
 		return nil, err
 	}
 
-	personService := services.NewService(personRepo, keycloakClient, log)
+	personService := services.NewService(personRepo, keycloakClient)
 
-	interactorFacade := interactor.NewInteractor(personService, log)
+	interactorFacade := interactor.NewInteractor(personService)
 
 	encoder, err := idencoder.NewHashidsEncoder(idencoder.Config{
 		Secret:    cfg.IDEncoder.Secret,
 		MinLength: cfg.IDEncoder.MinLength,
-	}, log)
+	})
 	if err != nil {
 		log.Error(logger.LogIDEncoderInitError, "error", err)
 		return nil, err
@@ -125,8 +127,8 @@ func Init() (*Dependencies, error) {
 
 	responseHandler := middleware.NewResponseHandler(messagingCache)
 
-	messageService := services.NewMessageService(msgRepo, log)
-	messageInteractor := interactor.NewMessageInteractor(messageService, log)
+	messageService := services.NewMessageService(msgRepo)
+	messageInteractor := interactor.NewMessageInteractor(messageService)
 	log.Success(logger.LogDependencyMessageIntInit)
 
 	branchRepository, err := branchRepo.NewRepository(db)
@@ -201,8 +203,8 @@ func Init() (*Dependencies, error) {
 	}
 	log.Success(logger.LogDepLocationRepoInitOK)
 
-	branchService := services.NewBranchService(branchRepository, locationRepository, geocodingClient, log)
-	branchInteractor := interactor.NewBranchInteractor(branchService, log)
+	branchService := services.NewBranchService(branchRepository, locationRepository, geocodingClient)
+	branchInteractor := interactor.NewBranchInteractor(branchService)
 	log.Success(logger.LogDepBranchInteractorInitOK)
 
 	brandRepository, err := brandRepo.NewRepository(db)
@@ -213,11 +215,11 @@ func Init() (*Dependencies, error) {
 	log.Success(logger.LogDepBrandRepoInitOK)
 
 	brandService := services.NewBrandService(brandRepository)
-	brandInteractor := interactor.NewBrandInteractor(brandService, log)
+	brandInteractor := interactor.NewBrandInteractor(brandService)
 	log.Success(logger.LogDepBrandInteractorInitOK)
 
 	locationService := services.NewLocationService(locationRepository)
-	locationInteractor := interactor.NewLocationInteractor(locationService, log)
+	locationInteractor := interactor.NewLocationInteractor(locationService)
 	log.Success(logger.LogDepLocationInteractorInitOK)
 
 	serviceRepository, err := serviceRepo.NewRepository(db)
@@ -228,7 +230,7 @@ func Init() (*Dependencies, error) {
 	log.Success(logger.LogDepServiceRepoInitOK)
 
 	serviceCatalogService := services.NewServiceCatalogService(serviceRepository)
-	serviceInteractor := interactor.NewServiceInteractor(serviceCatalogService, log)
+	serviceInteractor := interactor.NewServiceInteractor(serviceCatalogService)
 	log.Success(logger.LogDepServiceInteractorInitOK)
 
 	franchiseRepository, err := franchiseRepo.NewRepository(db)
@@ -238,34 +240,34 @@ func Init() (*Dependencies, error) {
 	}
 	log.Success(logger.LogDepFranchiseRepoInitOK)
 
-	franchiseService := services.NewFranchiseService(franchiseRepository, log)
-	franchiseInteractor := interactor.NewFranchiseInteractor(franchiseService, branchService, log)
+	franchiseService := services.NewFranchiseService(franchiseRepository)
+	franchiseInteractor := interactor.NewFranchiseInteractor(franchiseService, branchService)
 	log.Success(logger.LogDepFranchiseInteractorInitOK)
 
 	scheduleRepository, err := scheduleRepo.NewRepository(db)
 	if err != nil {
-		log.Error("Error initializing schedule repository", "error", err)
+		log.Error(logger.LogDepScheduleRepoInitErr, "error", err)
 		return nil, err
 	}
-	log.Success("Schedule repository initialized")
+	log.Success(logger.LogDepScheduleRepoInitOK)
 
 	scheduleService := services.NewScheduleService(scheduleRepository, branchRepository)
 	scheduleInteractor := interactor.NewScheduleInteractor(scheduleService, branchService)
-	log.Success("Schedule interactor initialized")
+	log.Success(logger.LogDepScheduleIntInitOK)
 
 	scheduleDetailRepository, err := scheduleDetailRepo.NewRepository(db)
 	if err != nil {
-		log.Error("Error initializing schedule detail repository", "error", err)
+		log.Error(logger.LogDepScheduleDetailRepoInitErr, "error", err)
 		return nil, err
 	}
-	log.Success("Schedule detail repository initialized")
+	log.Success(logger.LogDepScheduleDetailRepoInitOK)
 
 	scheduleDetailService := services.NewScheduleDetailService(scheduleDetailRepository, scheduleRepository)
 	scheduleDetailInteractor := interactor.NewScheduleDetailInteractor(scheduleDetailService, scheduleService, branchService)
-	log.Success("Schedule detail interactor initialized")
+	log.Success(logger.LogDepScheduleDetailIntInitOK)
 
 	scheduleExceptionInteractor := interactor.NewScheduleExceptionInteractor(scheduleDetailService, scheduleService, branchService)
-	log.Success("Schedule exception interactor initialized")
+	log.Success(logger.LogDepScheduleExceptionIntInitOK)
 
 	motorcycleRepository, err := motorcycleRepo.NewRepository(db)
 	if err != nil {
@@ -274,8 +276,20 @@ func Init() (*Dependencies, error) {
 	}
 	log.Success(logger.LogDepMotorcycleRepoInitOK)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(motorcycleRepository, log)
+	// Create motorcycle interactor - will connect Firebase Storage later if available
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(motorcycleRepository)
 	log.Success(logger.LogDepMotorcycleInteractorInitOK)
+
+	// Evidence feature (HU16-19)
+	evidenceRepository, err := evidenceRepo.NewRepository(db)
+	if err != nil {
+		log.Error(logger.LogDepEvidenceRepoInitErr, "error", err)
+		return nil, err
+	}
+	log.Success(logger.LogDepEvidenceRepoInitOK)
+
+	evidenceInteractor := interactor.NewEvidenceInteractor(evidenceRepository, motorcycleRepository)
+	log.Success(logger.LogDepEvidenceInteractorInitOK)
 
 	var firebaseClient *firebase.Client
 	if cfg.Firebase.CredentialsPath != "" {
@@ -286,16 +300,25 @@ func Init() (*Dependencies, error) {
 				firebaseCredPath = filepath.Join(root, firebaseCredPath)
 			}
 		}
-		log.Debug("Firebase credentials path resolved", "path", firebaseCredPath)
+		log.Debug(logger.LogDepFirebaseCredPathResolved, "path", firebaseCredPath)
 		firebaseClient, err = firebase.NewClient(firebaseCredPath)
 		if err != nil {
-			log.Warn("Firebase initialization skipped", "error", err)
+			log.Warn(logger.LogDepFirebaseInitSkipped, "error", err)
 			// Don't fail startup if Firebase is not configured
 		} else {
 			log.Success(logger.LogDepFirebaseClientInitOK)
+			// Connect Firebase Storage to MotorcycleInteractor for image deletion (HU45)
+			motorcycleInteractor.WithStorageClient(firebaseClient)
+			log.Success(logger.LogDepMotorcycleInteractorInitOK, "with_storage", true)
+			// Connect Firebase Storage to EvidenceInteractor for evidence deletion (HU19)
+			evidenceInteractor.WithStorageClient(firebaseClient)
+			log.Success(logger.LogDepEvidenceInteractorInitOK, "with_storage", true)
+			// Connect Firebase Storage to BranchInteractor for profile image deletion (HU60-61)
+			branchInteractor.WithStorageClient(firebaseClient)
+			log.Success(logger.LogDepBranchInteractorInitOK, "with_storage", true)
 		}
 	} else {
-		log.Warn("Firebase credentials not configured, skipping initialization")
+		log.Warn(logger.LogDepFirebaseCredNotConfig)
 	}
 
 	var jwtValidator *jwt.JWKSValidator
@@ -306,7 +329,7 @@ func Init() (*Dependencies, error) {
 	}
 	jwtValidator, err = jwt.NewJWKSValidator(context.Background(), jwtConfig)
 	if err != nil {
-		log.Warn("JWKS validator initialization failed, using fallback validation", "error", err)
+		log.Warn(logger.LogDepJWKSValidatorInitErr, "error", err)
 		jwtValidator = nil
 	} else {
 		log.Success(logger.LogDepJWKSValidatorInitOK, "jwks_url", jwtConfig.JWKSURL)
@@ -327,6 +350,7 @@ func Init() (*Dependencies, error) {
 		ScheduleDetailInteractor:    scheduleDetailInteractor,
 		ScheduleExceptionInteractor: scheduleExceptionInteractor,
 		MotorcycleInteractor:        motorcycleInteractor,
+		EvidenceInteractor:          evidenceInteractor, // HU16-19
 		FirebaseClient:              firebaseClient,
 		JWTValidator:                jwtValidator,
 		Config:                      cfg,

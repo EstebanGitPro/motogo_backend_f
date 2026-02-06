@@ -18,9 +18,8 @@ func TestGetPersonByEmail_Success(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	expectedPerson := &domain.Person{
 		ID:        "person-123",
@@ -30,7 +29,6 @@ func TestGetPersonByEmail_Success(t *testing.T) {
 	}
 
 	// Mock expectations
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
 	mockRepo.On("GetPersonByEmail", ctx, "test@example.com").Return(expectedPerson, nil)
 
 	// Act
@@ -43,7 +41,6 @@ func TestGetPersonByEmail_Success(t *testing.T) {
 	assert.Equal(t, expectedPerson.ID, person.ID)
 
 	mockRepo.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }
 
 func TestGetPersonByEmail_NotFound(t *testing.T) {
@@ -51,15 +48,12 @@ func TestGetPersonByEmail_NotFound(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	notFoundError := errors.New("record not found")
 
 	// Mock expectations
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Error", mock.Anything, mock.Anything).Return()
 	mockRepo.On("GetPersonByEmail", ctx, "notfound@example.com").Return(nil, notFoundError)
 
 	// Act
@@ -71,7 +65,6 @@ func TestGetPersonByEmail_NotFound(t *testing.T) {
 	assert.Equal(t, notFoundError, err)
 
 	mockRepo.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }
 
 func TestGetPersonByID_Success(t *testing.T) {
@@ -79,9 +72,8 @@ func TestGetPersonByID_Success(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	expectedPerson := &domain.Person{
 		ID:        "person-123",
@@ -91,7 +83,6 @@ func TestGetPersonByID_Success(t *testing.T) {
 	}
 
 	// Mock expectations
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
 	mockRepo.On("GetPersonByID", ctx, "person-123").Return(expectedPerson, nil)
 
 	// Act
@@ -103,7 +94,6 @@ func TestGetPersonByID_Success(t *testing.T) {
 	assert.Equal(t, expectedPerson.ID, person.ID)
 
 	mockRepo.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }
 
 func TestGetPersonByID_NotFound(t *testing.T) {
@@ -111,15 +101,12 @@ func TestGetPersonByID_NotFound(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	notFoundError := errors.New("record not found")
 
 	// Mock expectations
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Error", mock.Anything, mock.Anything).Return()
 	mockRepo.On("GetPersonByID", ctx, "not-found-id").Return(nil, notFoundError)
 
 	// Act
@@ -131,7 +118,6 @@ func TestGetPersonByID_NotFound(t *testing.T) {
 	assert.Equal(t, notFoundError, err)
 
 	mockRepo.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }
 
 func TestRegisterPerson_Success_NeitherExists(t *testing.T) {
@@ -139,9 +125,8 @@ func TestRegisterPerson_Success_NeitherExists(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	person := domain.Person{
 		Email:     "newuser@example.com",
@@ -152,8 +137,6 @@ func TestRegisterPerson_Success_NeitherExists(t *testing.T) {
 	notFoundError := errors.New("record not found")
 
 	// Mock expectations
-	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
 
 	// Check DB - not found
 	mockRepo.On("GetPersonByEmail", ctx, person.Email).Return(nil, notFoundError)
@@ -171,7 +154,6 @@ func TestRegisterPerson_Success_NeitherExists(t *testing.T) {
 
 	mockRepo.AssertExpectations(t)
 	mockAuthClient.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }
 
 func TestRegisterPerson_BothExist_ReturnsDuplicate(t *testing.T) {
@@ -179,9 +161,8 @@ func TestRegisterPerson_BothExist_ReturnsDuplicate(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	person := domain.Person{
 		Email:     "existing@example.com",
@@ -199,9 +180,6 @@ func TestRegisterPerson_BothExist_ReturnsDuplicate(t *testing.T) {
 	}
 
 	// Mock expectations
-	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Warn", mock.Anything, mock.Anything).Return()
 
 	mockRepo.On("GetPersonByEmail", ctx, person.Email).Return(existingPerson, nil)
 	mockAuthClient.On("GetUserByEmail", ctx, person.Email).Return(existingKeycloakUser, nil)
@@ -216,7 +194,6 @@ func TestRegisterPerson_BothExist_ReturnsDuplicate(t *testing.T) {
 
 	mockRepo.AssertExpectations(t)
 	mockAuthClient.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }
 
 func TestRegisterPerson_OnlyDBExists(t *testing.T) {
@@ -224,9 +201,8 @@ func TestRegisterPerson_OnlyDBExists(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	person := domain.Person{
 		Email: "dbonly@example.com",
@@ -240,9 +216,6 @@ func TestRegisterPerson_OnlyDBExists(t *testing.T) {
 	notFoundError := errors.New("record not found")
 
 	// Mock expectations
-	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Warn", mock.Anything, mock.Anything).Return()
 	mockRepo.On("GetPersonByEmail", ctx, person.Email).Return(existingPerson, nil)
 	mockAuthClient.On("GetUserByEmail", ctx, person.Email).Return(nil, notFoundError)
 
@@ -256,7 +229,6 @@ func TestRegisterPerson_OnlyDBExists(t *testing.T) {
 
 	mockRepo.AssertExpectations(t)
 	mockAuthClient.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }
 
 func TestRegisterPerson_OnlyKeycloakExists(t *testing.T) {
@@ -264,9 +236,8 @@ func TestRegisterPerson_OnlyKeycloakExists(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	person := domain.Person{
 		Email: "kconly@example.com",
@@ -279,9 +250,6 @@ func TestRegisterPerson_OnlyKeycloakExists(t *testing.T) {
 	notFoundError := errors.New("record not found")
 
 	// Mock expectations
-	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Warn", mock.Anything, mock.Anything).Return()
 	mockRepo.On("GetPersonByEmail", ctx, person.Email).Return(nil, notFoundError)
 	mockAuthClient.On("GetUserByEmail", ctx, person.Email).Return(existingKeycloakUser, nil)
 
@@ -295,7 +263,6 @@ func TestRegisterPerson_OnlyKeycloakExists(t *testing.T) {
 
 	mockRepo.AssertExpectations(t)
 	mockAuthClient.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }
 
 func TestRegisterPerson_DBConnectionError(t *testing.T) {
@@ -303,9 +270,8 @@ func TestRegisterPerson_DBConnectionError(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	person := domain.Person{
 		Email: "test@example.com",
@@ -314,9 +280,6 @@ func TestRegisterPerson_DBConnectionError(t *testing.T) {
 	dbError := errors.New("connection refused")
 
 	// Mock expectations
-	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Error", mock.Anything, mock.Anything).Return()
 	mockRepo.On("GetPersonByEmail", ctx, person.Email).Return(nil, dbError)
 
 	// Act
@@ -328,7 +291,6 @@ func TestRegisterPerson_DBConnectionError(t *testing.T) {
 	assert.Nil(t, result)
 
 	mockRepo.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }
 
 func TestRegisterPerson_KeycloakConnectionError(t *testing.T) {
@@ -336,9 +298,8 @@ func TestRegisterPerson_KeycloakConnectionError(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	person := domain.Person{
 		Email: "test@example.com",
@@ -348,9 +309,6 @@ func TestRegisterPerson_KeycloakConnectionError(t *testing.T) {
 	kcError := errors.New("timeout")
 
 	// Mock expectations
-	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Error", mock.Anything, mock.Anything).Return()
 
 	mockRepo.On("GetPersonByEmail", ctx, person.Email).Return(nil, notFoundError)
 	mockAuthClient.On("GetUserByEmail", ctx, person.Email).Return(nil, kcError)
@@ -365,7 +323,6 @@ func TestRegisterPerson_KeycloakConnectionError(t *testing.T) {
 
 	mockRepo.AssertExpectations(t)
 	mockAuthClient.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }
 
 func TestSavePersonToDB_Success(t *testing.T) {
@@ -373,10 +330,10 @@ func TestSavePersonToDB_Success(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
+
 	mockTx := new(mocks.MockTx)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	person := domain.Person{
 		ID:        "person-123",
@@ -386,8 +343,6 @@ func TestSavePersonToDB_Success(t *testing.T) {
 	}
 
 	// Mock expectations
-	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Success", mock.Anything, mock.Anything).Return()
 	mockRepo.On("SavePerson", ctx, mockTx, person).Return(nil)
 
 	// Act
@@ -397,7 +352,6 @@ func TestSavePersonToDB_Success(t *testing.T) {
 	assert.NoError(t, err)
 
 	mockRepo.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }
 
 func TestSavePersonToDB_Error(t *testing.T) {
@@ -405,10 +359,10 @@ func TestSavePersonToDB_Error(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
+
 	mockTx := new(mocks.MockTx)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	person := domain.Person{
 		ID:    "person-123",
@@ -418,8 +372,6 @@ func TestSavePersonToDB_Error(t *testing.T) {
 	dbError := errors.New("database error")
 
 	// Mock expectations
-	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Error", mock.Anything, mock.Anything).Return()
 	mockRepo.On("SavePerson", ctx, mockTx, person).Return(dbError)
 
 	// Act
@@ -430,7 +382,6 @@ func TestSavePersonToDB_Error(t *testing.T) {
 	assert.Equal(t, dbError, err)
 
 	mockRepo.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }
 
 func TestCreateUserInKeycloak_Success(t *testing.T) {
@@ -438,9 +389,8 @@ func TestCreateUserInKeycloak_Success(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	person := &domain.Person{
 		Email:     "test@example.com",
@@ -451,8 +401,6 @@ func TestCreateUserInKeycloak_Success(t *testing.T) {
 	keycloakUserID := "kc-user-123"
 
 	// Mock expectations
-	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Success", mock.Anything, mock.Anything).Return()
 	mockAuthClient.On("CreateUser", ctx, person).Return(keycloakUserID, nil)
 
 	// Act
@@ -463,7 +411,6 @@ func TestCreateUserInKeycloak_Success(t *testing.T) {
 	assert.Equal(t, keycloakUserID, userID)
 
 	mockAuthClient.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }
 
 func TestCreateUserInKeycloak_Error(t *testing.T) {
@@ -471,9 +418,8 @@ func TestCreateUserInKeycloak_Error(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	person := &domain.Person{
 		Email:     "test@example.com",
@@ -484,8 +430,6 @@ func TestCreateUserInKeycloak_Error(t *testing.T) {
 	keycloakError := errors.New("keycloak creation failed")
 
 	// Mock expectations
-	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Error", mock.Anything, mock.Anything).Return()
 	mockAuthClient.On("CreateUser", ctx, person).Return("", keycloakError)
 
 	// Act
@@ -497,7 +441,6 @@ func TestCreateUserInKeycloak_Error(t *testing.T) {
 	assert.Equal(t, domain.ErrKeycloakUserCreationFailed, err)
 
 	mockAuthClient.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }
 
 func TestRollbackKeycloakUser_Success(t *testing.T) {
@@ -505,15 +448,12 @@ func TestRollbackKeycloakUser_Success(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	keycloakUserID := "kc-user-123"
 
 	// Mock expectations
-	mockLogger.On("Warn", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
 	mockAuthClient.On("DeleteUser", ctx, keycloakUserID).Return(nil)
 
 	// Act
@@ -523,7 +463,6 @@ func TestRollbackKeycloakUser_Success(t *testing.T) {
 	assert.NoError(t, err)
 
 	mockAuthClient.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }
 
 func TestRollbackKeycloakUser_Error(t *testing.T) {
@@ -531,16 +470,13 @@ func TestRollbackKeycloakUser_Error(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	keycloakUserID := "kc-user-123"
 	kcError := errors.New("keycloak error")
 
 	// Mock expectations
-	mockLogger.On("Warn", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Error", mock.Anything, mock.Anything).Return()
 	mockAuthClient.On("DeleteUser", ctx, keycloakUserID).Return(kcError)
 
 	// Act
@@ -551,7 +487,6 @@ func TestRollbackKeycloakUser_Error(t *testing.T) {
 	assert.Equal(t, kcError, err)
 
 	mockAuthClient.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }
 
 func TestSetUserPassword_Success(t *testing.T) {
@@ -559,16 +494,13 @@ func TestSetUserPassword_Success(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	userID := "kc-user-123"
 	password := "new-password"
 
 	// Mock expectations
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Success", mock.Anything, mock.Anything).Return()
 	mockAuthClient.On("SetPassword", ctx, userID, password, false).Return(nil)
 
 	// Act
@@ -578,7 +510,6 @@ func TestSetUserPassword_Success(t *testing.T) {
 	assert.NoError(t, err)
 
 	mockAuthClient.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }
 
 func TestSetUserPassword_Error(t *testing.T) {
@@ -586,17 +517,14 @@ func TestSetUserPassword_Error(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	userID := "kc-user-123"
 	password := "new-password"
 	kcError := errors.New("keycloak error")
 
 	// Mock expectations
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Error", mock.Anything, mock.Anything).Return()
 	mockAuthClient.On("SetPassword", ctx, userID, password, false).Return(kcError)
 
 	// Act
@@ -605,7 +533,6 @@ func TestSetUserPassword_Error(t *testing.T) {
 	// Assert
 	assert.Error(t, err)
 	mockAuthClient.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }
 
 func TestAssignUserRole_Success(t *testing.T) {
@@ -613,16 +540,13 @@ func TestAssignUserRole_Success(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	userID := "kc-user-123"
 	role := "admin"
 
 	// Mock expectations
-	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Success", mock.Anything, mock.Anything).Return()
 	mockAuthClient.On("AssignRole", ctx, userID, role).Return(nil)
 
 	// Act
@@ -632,7 +556,6 @@ func TestAssignUserRole_Success(t *testing.T) {
 	assert.NoError(t, err)
 
 	mockAuthClient.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }
 
 func TestAssignUserRole_Error(t *testing.T) {
@@ -640,17 +563,14 @@ func TestAssignUserRole_Error(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	userID := "kc-user-123"
 	role := "admin"
 	kcError := errors.New("keycloak error")
 
 	// Mock expectations
-	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Error", mock.Anything, mock.Anything).Return()
 	mockAuthClient.On("AssignRole", ctx, userID, role).Return(kcError)
 
 	// Act
@@ -661,7 +581,6 @@ func TestAssignUserRole_Error(t *testing.T) {
 	assert.Equal(t, kcError, err)
 
 	mockAuthClient.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }
 
 func TestUpdatePersonKeycloakID_Success(t *testing.T) {
@@ -669,17 +588,15 @@ func TestUpdatePersonKeycloakID_Success(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
+
 	mockTx := new(mocks.MockTx)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	personID := "person-123"
 	keycloakUserID := "kc-user-123"
 
 	// Mock expectations
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Success", mock.Anything, mock.Anything).Return()
 	mockRepo.On("PatchPerson", ctx, mockTx, personID, keycloakUserID).Return(nil)
 
 	// Act
@@ -689,7 +606,6 @@ func TestUpdatePersonKeycloakID_Success(t *testing.T) {
 	assert.NoError(t, err)
 
 	mockRepo.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }
 
 func TestUpdatePersonKeycloakID_Error(t *testing.T) {
@@ -697,18 +613,16 @@ func TestUpdatePersonKeycloakID_Error(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
+
 	mockTx := new(mocks.MockTx)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	personID := "person-123"
 	keycloakUserID := "kc-user-123"
 	dbError := errors.New("database error")
 
 	// Mock expectations
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Error", mock.Anything, mock.Anything).Return()
 	mockRepo.On("PatchPerson", ctx, mockTx, personID, keycloakUserID).Return(dbError)
 
 	// Act
@@ -719,7 +633,6 @@ func TestUpdatePersonKeycloakID_Error(t *testing.T) {
 	assert.Equal(t, dbError, err)
 
 	mockRepo.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }
 
 func TestRollbackPerson_Success(t *testing.T) {
@@ -727,15 +640,12 @@ func TestRollbackPerson_Success(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	personID := "person-123"
 
 	// Mock expectations
-	mockLogger.On("Warn", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
 	mockRepo.On("DeletePerson", ctx, nil, personID).Return(nil)
 
 	// Act
@@ -745,7 +655,6 @@ func TestRollbackPerson_Success(t *testing.T) {
 	assert.NoError(t, err)
 
 	mockRepo.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }
 
 func TestRollbackPerson_Error(t *testing.T) {
@@ -753,16 +662,13 @@ func TestRollbackPerson_Error(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	personID := "person-123"
 	dbError := errors.New("database error")
 
 	// Mock expectations
-	mockLogger.On("Warn", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Error", mock.Anything, mock.Anything).Return()
 	mockRepo.On("DeletePerson", ctx, nil, personID).Return(dbError)
 
 	// Act
@@ -773,7 +679,6 @@ func TestRollbackPerson_Error(t *testing.T) {
 	assert.Equal(t, dbError, err)
 
 	mockRepo.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }
 
 // ============================================
@@ -785,10 +690,10 @@ func TestPersonService_BeginTx_Success(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
+
 	mockTx := new(mocks.MockTx)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	mockRepo.On("BeginTx", ctx).Return(mockTx, nil)
 
@@ -806,9 +711,8 @@ func TestPersonService_BeginTx_Error(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	dbError := errors.New("connection error")
 	mockRepo.On("BeginTx", ctx).Return(nil, dbError)
@@ -831,9 +735,8 @@ func TestGetPersonByKeycloakID_Success(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	expectedPerson := &domain.Person{
 		ID:             "person-123",
@@ -841,7 +744,6 @@ func TestGetPersonByKeycloakID_Success(t *testing.T) {
 		KeycloakUserID: "kc-user-123",
 	}
 
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
 	mockRepo.On("GetPersonByKeycloakID", ctx, "kc-user-123").Return(expectedPerson, nil)
 
 	// Act
@@ -859,14 +761,11 @@ func TestGetPersonByKeycloakID_NotFound(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	notFoundError := errors.New("record not found")
 
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Error", mock.Anything, mock.Anything).Return()
 	mockRepo.On("GetPersonByKeycloakID", ctx, "non-existent").Return(nil, notFoundError)
 
 	// Act
@@ -887,14 +786,12 @@ func TestGetUserByEmail_Success(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	id := "kc-user-123"
 	expectedUser := &gocloak.User{ID: &id}
 
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
 	mockAuthClient.On("GetUserByEmail", ctx, "test@example.com").Return(expectedUser, nil)
 
 	// Act
@@ -911,14 +808,11 @@ func TestGetUserByEmail_NotFound(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	notFoundError := errors.New("user not found")
 
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Error", mock.Anything, mock.Anything).Return()
 	mockAuthClient.On("GetUserByEmail", ctx, "notfound@example.com").Return(nil, notFoundError)
 
 	// Act
@@ -939,12 +833,9 @@ func TestSendVerificationEmail_Success(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Success", mock.Anything, mock.Anything).Return()
 	mockAuthClient.On("SendVerificationEmail", ctx, "kc-user-123").Return(nil)
 
 	// Act
@@ -960,14 +851,11 @@ func TestSendVerificationEmail_Error(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	kcError := errors.New("keycloak error")
 
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Error", mock.Anything, mock.Anything).Return()
 	mockAuthClient.On("SendVerificationEmail", ctx, "kc-user-123").Return(kcError)
 
 	// Act
@@ -987,12 +875,9 @@ func TestSendPasswordResetEmail_Success(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Success", mock.Anything, mock.Anything).Return()
 	mockAuthClient.On("SendPasswordResetEmail", ctx, "test@example.com").Return(nil)
 
 	// Act
@@ -1008,14 +893,11 @@ func TestSendPasswordResetEmail_Error(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	kcError := errors.New("keycloak error")
 
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Error", mock.Anything, mock.Anything).Return()
 	mockAuthClient.On("SendPasswordResetEmail", ctx, "test@example.com").Return(kcError)
 
 	// Act
@@ -1035,9 +917,8 @@ func TestLogin_Success(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	id := "kc-user-123"
 	email := "test@example.com"
@@ -1052,8 +933,6 @@ func TestLogin_Success(t *testing.T) {
 		RefreshToken: "refresh-token",
 	}
 
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Success", mock.Anything, mock.Anything).Return()
 	mockAuthClient.On("GetUserByEmail", ctx, email).Return(existingUser, nil)
 	mockAuthClient.On("LoginUser", ctx, email, "password123").Return(expectedToken, nil)
 
@@ -1072,9 +951,8 @@ func TestLogin_EmailNotVerified(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	id := "kc-user-123"
 	email := "unverified@example.com"
@@ -1085,10 +963,6 @@ func TestLogin_EmailNotVerified(t *testing.T) {
 		EmailVerified: &verified,
 	}
 
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Warn", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Success", mock.Anything, mock.Anything).Return()
 	mockAuthClient.On("GetUserByEmail", ctx, email).Return(existingUser, nil)
 	mockAuthClient.On("SendVerificationEmail", ctx, id).Return(nil)
 
@@ -1107,14 +981,11 @@ func TestLogin_UserNotFound(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	notFoundError := errors.New("user not found")
 
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Error", mock.Anything, mock.Anything).Return()
 	mockAuthClient.On("GetUserByEmail", ctx, "notfound@example.com").Return(nil, notFoundError)
 
 	// Act
@@ -1136,17 +1007,14 @@ func TestRefreshToken_Success(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	expectedToken := &gocloak.JWT{
 		AccessToken:  "new-access-token",
 		RefreshToken: "new-refresh-token",
 	}
 
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Success", mock.Anything, mock.Anything).Return()
 	mockAuthClient.On("RefreshToken", ctx, "old-refresh-token").Return(expectedToken, nil)
 
 	// Act
@@ -1164,14 +1032,11 @@ func TestRefreshToken_Error(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	kcError := errors.New("invalid refresh token")
 
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Error", mock.Anything, mock.Anything).Return()
 	mockAuthClient.On("RefreshToken", ctx, "invalid-token").Return(nil, kcError)
 
 	// Act
@@ -1192,10 +1057,10 @@ func TestUpdatePersonProfile_Success(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
+
 	mockTx := new(mocks.MockTx)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	person := domain.Person{
 		ID:             "person-123",
@@ -1205,8 +1070,6 @@ func TestUpdatePersonProfile_Success(t *testing.T) {
 		KeycloakUserID: "kc-user-123",
 	}
 
-	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Success", mock.Anything, mock.Anything).Return()
 	mockRepo.On("UpdatePerson", ctx, mockTx, person).Return(nil)
 	mockAuthClient.On("UpdateUser", ctx, mock.AnythingOfType("*gocloak.User")).Return(nil)
 
@@ -1224,10 +1087,10 @@ func TestUpdatePersonProfile_DBError(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
+
 	mockTx := new(mocks.MockTx)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	person := domain.Person{
 		ID:    "person-123",
@@ -1236,8 +1099,6 @@ func TestUpdatePersonProfile_DBError(t *testing.T) {
 
 	dbError := errors.New("database error")
 
-	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Error", mock.Anything, mock.Anything).Return()
 	mockRepo.On("UpdatePerson", ctx, mockTx, person).Return(dbError)
 
 	// Act
@@ -1253,10 +1114,10 @@ func TestUpdatePersonProfile_WithoutKeycloakSync(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
+
 	mockTx := new(mocks.MockTx)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	person := domain.Person{
 		ID:             "person-123",
@@ -1266,8 +1127,6 @@ func TestUpdatePersonProfile_WithoutKeycloakSync(t *testing.T) {
 		KeycloakUserID: "", // Empty - skip Keycloak sync
 	}
 
-	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Success", mock.Anything, mock.Anything).Return()
 	mockRepo.On("UpdatePerson", ctx, mockTx, person).Return(nil)
 	// Note: UpdateUser should NOT be called
 
@@ -1290,9 +1149,8 @@ func TestChangePassword_Success(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	keycloakUserID := "kc-user-123"
 	email := "test@example.com"
@@ -1301,8 +1159,6 @@ func TestChangePassword_Success(t *testing.T) {
 		Email: &email,
 	}
 
-	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Success", mock.Anything, mock.Anything).Return()
 	mockAuthClient.On("GetUserByID", ctx, keycloakUserID).Return(existingUser, nil)
 	mockAuthClient.On("LoginUser", ctx, email, "current-password").Return(&gocloak.JWT{}, nil)
 	mockAuthClient.On("SetPassword", ctx, keycloakUserID, "new-password", false).Return(nil)
@@ -1320,9 +1176,8 @@ func TestChangePassword_InvalidCurrentPassword(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	keycloakUserID := "kc-user-123"
 	email := "test@example.com"
@@ -1333,8 +1188,6 @@ func TestChangePassword_InvalidCurrentPassword(t *testing.T) {
 
 	loginError := errors.New("invalid credentials")
 
-	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Warn", mock.Anything, mock.Anything).Return()
 	mockAuthClient.On("GetUserByID", ctx, keycloakUserID).Return(existingUser, nil)
 	mockAuthClient.On("LoginUser", ctx, email, "wrong-password").Return(nil, loginError)
 
@@ -1352,14 +1205,11 @@ func TestChangePassword_UserNotFound(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	notFoundError := errors.New("user not found")
 
-	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Error", mock.Anything, mock.Anything).Return()
 	mockAuthClient.On("GetUserByID", ctx, "non-existent").Return(nil, notFoundError)
 
 	// Act
@@ -1376,9 +1226,8 @@ func TestChangePassword_SetPasswordError(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	keycloakUserID := "kc-user-123"
 	email := "test@example.com"
@@ -1389,8 +1238,6 @@ func TestChangePassword_SetPasswordError(t *testing.T) {
 
 	setPasswordError := errors.New("keycloak error")
 
-	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Error", mock.Anything, mock.Anything).Return()
 	mockAuthClient.On("GetUserByID", ctx, keycloakUserID).Return(existingUser, nil)
 	mockAuthClient.On("LoginUser", ctx, email, "current-password").Return(&gocloak.JWT{}, nil)
 	mockAuthClient.On("SetPassword", ctx, keycloakUserID, "new-password", false).Return(setPasswordError)
@@ -1413,16 +1260,14 @@ func TestCheckAndCleanInconsistentState_BothExist_ConsistentState(t *testing.T) 
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	email := "test@example.com"
 	existingPerson := &domain.Person{ID: "person-123", Email: email}
 	id := "kc-user-123"
 	existingKeycloakUser := &gocloak.User{ID: &id}
 
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
 	mockRepo.On("GetPersonByEmail", ctx, email).Return(existingPerson, nil)
 	mockAuthClient.On("GetUserByEmail", ctx, email).Return(existingKeycloakUser, nil)
 
@@ -1440,14 +1285,12 @@ func TestCheckAndCleanInconsistentState_NeitherExist_ConsistentState(t *testing.
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	email := "nonexistent@example.com"
 	notFoundError := errors.New("not found")
 
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
 	mockRepo.On("GetPersonByEmail", ctx, email).Return(nil, notFoundError)
 	mockAuthClient.On("GetUserByEmail", ctx, email).Return(nil, notFoundError)
 
@@ -1465,19 +1308,14 @@ func TestCheckAndCleanInconsistentState_OnlyKeycloakExists_CleansOrphan(t *testi
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	email := "orphan@example.com"
 	id := "kc-user-123"
 	existingKeycloakUser := &gocloak.User{ID: &id}
 	notFoundError := errors.New("not found")
 
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Warn", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Success", mock.Anything, mock.Anything).Return()
 	mockRepo.On("GetPersonByEmail", ctx, email).Return(nil, notFoundError)
 	mockAuthClient.On("GetUserByEmail", ctx, email).Return(existingKeycloakUser, nil)
 	mockAuthClient.On("DeleteUser", ctx, id).Return(nil)
@@ -1496,18 +1334,13 @@ func TestCheckAndCleanInconsistentState_OnlyDBExists_CleansOrphan(t *testing.T) 
 	ctx := context.Background()
 	mockRepo := new(mocks.MockRepository)
 	mockAuthClient := new(mocks.MockAuthClient)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewService(mockRepo, mockAuthClient, mockLogger)
+	service := services.NewService(mockRepo, mockAuthClient)
 
 	email := "dbonly@example.com"
 	existingPerson := &domain.Person{ID: "person-123", Email: email}
 	notFoundError := errors.New("not found")
 
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Warn", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Success", mock.Anything, mock.Anything).Return()
 	mockRepo.On("GetPersonByEmail", ctx, email).Return(existingPerson, nil)
 	mockAuthClient.On("GetUserByEmail", ctx, email).Return(nil, notFoundError)
 	mockRepo.On("DeletePerson", ctx, nil, "person-123").Return(nil)

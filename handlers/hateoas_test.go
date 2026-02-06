@@ -404,3 +404,181 @@ func TestBuildBranchDetailLinks_NoEditNoDelete(t *testing.T) {
 	deleteLink := findLinkByRel(links, "delete")
 	assert.Nil(t, deleteLink)
 }
+
+// ============================================
+// HATEOAS Builders with 0% coverage
+// ============================================
+
+func TestBuildBranchListLinks(t *testing.T) {
+	// Act
+	links := handlers.BuildBranchListLinks("http://localhost:8080")
+
+	// Assert
+	assert.GreaterOrEqual(t, len(links), 1)
+
+	selfLink := findLinkByRel(links, "self")
+	assert.NotNil(t, selfLink)
+	assert.Contains(t, selfLink.Href, "/branches")
+}
+
+func TestBuildBranchDeletedLinks(t *testing.T) {
+	// Act
+	links := handlers.BuildBranchDeletedLinks("http://localhost:8080")
+
+	// Assert
+	assert.GreaterOrEqual(t, len(links), 1)
+
+	listLink := findLinkByRel(links, "list")
+	assert.NotNil(t, listLink)
+}
+
+func TestBuildServiceTypeListLinks(t *testing.T) {
+	// Act
+	links := handlers.BuildServiceTypeListLinks("http://localhost:8080")
+
+	// Assert
+	assert.GreaterOrEqual(t, len(links), 1)
+
+	selfLink := findLinkByRel(links, "self")
+	assert.NotNil(t, selfLink)
+	assert.Contains(t, selfLink.Href, "/service-types")
+}
+
+func TestBuildServiceListLinks(t *testing.T) {
+	// Act
+	links := handlers.BuildServiceListLinks("http://localhost:8080", "Mantenimiento")
+
+	// Assert
+	assert.GreaterOrEqual(t, len(links), 1)
+
+	selfLink := findLinkByRel(links, "self")
+	assert.NotNil(t, selfLink)
+	assert.Contains(t, selfLink.Href, "/services")
+}
+
+func TestBuildServiceListLinks_NoFilter(t *testing.T) {
+	// Act
+	links := handlers.BuildServiceListLinks("http://localhost:8080", "")
+
+	// Assert
+	selfLink := findLinkByRel(links, "self")
+	assert.NotNil(t, selfLink)
+}
+
+func TestBuildMotorcycleDetailLinks(t *testing.T) {
+	// Act
+	links := handlers.BuildMotorcycleDetailLinks("http://localhost:8080", "moto-123", true)
+
+	// Assert
+	assert.GreaterOrEqual(t, len(links), 2)
+
+	selfLink := findLinkByRel(links, "self")
+	assert.NotNil(t, selfLink)
+	assert.Contains(t, selfLink.Href, "motorcycles/moto-123")
+}
+
+func TestBuildMotorcycleDetailLinks_ReadOnly(t *testing.T) {
+	// Act
+	links := handlers.BuildMotorcycleDetailLinks("http://localhost:8080", "moto-456", false)
+
+	// Assert
+	selfLink := findLinkByRel(links, "self")
+	assert.NotNil(t, selfLink)
+
+	updateLink := findLinkByRel(links, "update")
+	assert.Nil(t, updateLink)
+}
+
+func TestBuildMotorcycleDeletedLinks(t *testing.T) {
+	// Act
+	links := handlers.BuildMotorcycleDeletedLinks("http://localhost:8080")
+
+	// Assert
+	assert.GreaterOrEqual(t, len(links), 1)
+
+	listLink := findLinkByRel(links, "list")
+	assert.NotNil(t, listLink)
+}
+
+func TestBuildNearbyBranchesLinks(t *testing.T) {
+	// Act
+	links := handlers.BuildNearbyBranchesLinks("http://localhost:8080", 4.60971, -74.08175, 5.0)
+
+	// Assert
+	assert.GreaterOrEqual(t, len(links), 1)
+
+	selfLink := findLinkByRel(links, "self")
+	assert.NotNil(t, selfLink)
+	assert.Contains(t, selfLink.Href, "/branches/nearby")
+}
+
+func TestBuildMotorcycleReferencesLinks(t *testing.T) {
+	// Act
+	links := handlers.BuildMotorcycleReferencesLinks("http://localhost:8080")
+
+	// Assert
+	assert.GreaterOrEqual(t, len(links), 1)
+
+	selfLink := findLinkByRel(links, "self")
+	assert.NotNil(t, selfLink)
+	assert.Contains(t, selfLink.Href, "/motorcycle-references")
+}
+
+func TestBuildBrandLinesLinks(t *testing.T) {
+	// Act
+	links := handlers.BuildBrandLinesLinks("http://localhost:8080", "brand-123")
+
+	// Assert
+	assert.GreaterOrEqual(t, len(links), 1)
+
+	selfLink := findLinkByRel(links, "self")
+	assert.NotNil(t, selfLink)
+	assert.Contains(t, selfLink.Href, "brands/brand-123/lines")
+}
+
+func TestBuildEvidenceDetailLinks(t *testing.T) {
+	// Act
+	links := handlers.BuildEvidenceDetailLinks("http://localhost:8080", "moto-123", "ev-456", true)
+
+	// Assert
+	assert.GreaterOrEqual(t, len(links), 2)
+
+	selfLink := findLinkByRel(links, "self")
+	assert.NotNil(t, selfLink)
+	assert.Contains(t, selfLink.Href, "evidence/ev-456")
+}
+
+func TestBuildEvidenceDetailLinks_NoDelete(t *testing.T) {
+	// Act
+	links := handlers.BuildEvidenceDetailLinks("http://localhost:8080", "moto-123", "ev-789", false)
+
+	// Assert
+	selfLink := findLinkByRel(links, "self")
+	assert.NotNil(t, selfLink)
+
+	deleteLink := findLinkByRel(links, "delete")
+	assert.Nil(t, deleteLink)
+}
+
+func TestBuildEvidenceListLinks(t *testing.T) {
+	// Act
+	links := handlers.BuildEvidenceListLinks("http://localhost:8080", "moto-123")
+
+	// Assert
+	assert.GreaterOrEqual(t, len(links), 1)
+
+	selfLink := findLinkByRel(links, "self")
+	assert.NotNil(t, selfLink)
+	assert.Contains(t, selfLink.Href, "motorcycles/moto-123/evidence")
+}
+
+func TestBuildEvidenceDeletedLinks(t *testing.T) {
+	// Act
+	links := handlers.BuildEvidenceDeletedLinks("http://localhost:8080", "moto-123")
+
+	// Assert
+	assert.GreaterOrEqual(t, len(links), 1)
+
+	listLink := findLinkByRel(links, "list")
+	assert.NotNil(t, listLink)
+}

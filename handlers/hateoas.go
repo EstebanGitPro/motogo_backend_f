@@ -557,3 +557,55 @@ func BuildBrandLinesLinks(baseURL string, brandID string) []Link {
 		{Href: fmt.Sprintf("%s/motogo/api/v1/motorcycle-references", baseURL), Rel: "references", Method: "GET"},
 	}
 }
+
+// ============================================
+// MOTORCYCLE EVIDENCE HATEOAS (HU16-19)
+// ============================================
+
+// BuildEvidenceDetailLinks constructs HATEOAS links for evidence detail (HU16-19)
+// isOwner is used to show/hide edit and delete actions
+func BuildEvidenceDetailLinks(baseURL, motorcycleID, evidenceID string, isOwner bool) []Link {
+	evidenceURL := fmt.Sprintf("%s/motogo/api/v1/motorcycles/%s/evidence/%s", baseURL, motorcycleID, evidenceID)
+	listURL := fmt.Sprintf("%s/motogo/api/v1/motorcycles/%s/evidence", baseURL, motorcycleID)
+	motorcycleURL := BuildResourceURL(baseURL, "motorcycles", motorcycleID)
+
+	links := []Link{
+		{Href: evidenceURL, Rel: "self", Method: "GET"},
+		{Href: listURL, Rel: "list", Method: "GET"},
+		{Href: motorcycleURL, Rel: "motorcycle", Method: "GET"},
+	}
+
+	if isOwner {
+		links = append(links,
+			Link{Href: evidenceURL, Rel: "delete", Method: "DELETE"},
+			Link{Href: listURL, Rel: "create", Method: "POST"},
+		)
+	}
+
+	return links
+}
+
+// BuildEvidenceListLinks constructs HATEOAS links for evidence list (HU18)
+func BuildEvidenceListLinks(baseURL, motorcycleID string) []Link {
+	listURL := fmt.Sprintf("%s/motogo/api/v1/motorcycles/%s/evidence", baseURL, motorcycleID)
+	motorcycleURL := BuildResourceURL(baseURL, "motorcycles", motorcycleID)
+
+	return []Link{
+		{Href: listURL, Rel: "self", Method: "GET"},
+		{Href: listURL, Rel: "create", Method: "POST"},
+		{Href: motorcycleURL, Rel: "motorcycle", Method: "GET"},
+	}
+}
+
+// BuildEvidenceDeletedLinks constructs HATEOAS links after evidence deletion (HU19)
+// Shows next possible actions: list evidence or view motorcycle
+func BuildEvidenceDeletedLinks(baseURL, motorcycleID string) []Link {
+	listURL := fmt.Sprintf("%s/motogo/api/v1/motorcycles/%s/evidence", baseURL, motorcycleID)
+	motorcycleURL := BuildResourceURL(baseURL, "motorcycles", motorcycleID)
+
+	return []Link{
+		{Href: listURL, Rel: "list", Method: "GET"},
+		{Href: listURL, Rel: "create", Method: "POST"},
+		{Href: motorcycleURL, Rel: "motorcycle", Method: "GET"},
+	}
+}

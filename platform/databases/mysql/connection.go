@@ -11,7 +11,9 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-func GetDB(dbConfig config.Database, log logger.Logger) (*sql.DB, error) {
+var log logger.Logger = logger.NewSlogLogger()
+
+func GetDB(dbConfig config.Database) (*sql.DB, error) {
 	log.Info(logger.LogDBConnecting,
 		"host", dbConfig.Host,
 		"port", dbConfig.Port,

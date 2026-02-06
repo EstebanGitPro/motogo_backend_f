@@ -56,6 +56,7 @@ func (r *repository) GetBranchesNearby(
 			&location.Longitude,
 			&location.CityName,
 			&location.DepartmentName,
+			&branch.ContactPhone,
 			&branch.DistanceKm,
 		)
 		if err != nil {

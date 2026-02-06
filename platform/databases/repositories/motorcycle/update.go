@@ -30,6 +30,7 @@ func (r *repository) Update(ctx context.Context, tx output.Tx, motorcycle *domai
 		motorcycle.Year,
 		motorcycle.CurrentMileage,
 		motorcycle.OwnerNotes,
+		motorcycle.ProfileImageURL,
 		motorcycle.ID,
 	)
 

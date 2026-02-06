@@ -151,6 +151,13 @@ type UpdateServiceRequest struct {
 	IsActive    *bool  `json:"is_active"` // Optional: activate/deactivate service
 }
 
+// Sanitize trims whitespace from all string fields
+func (r *UpdateServiceRequest) Sanitize() {
+	r.Name = TrimString(r.Name)
+	r.Description = TrimString(r.Description)
+	r.ServiceType = TrimString(r.ServiceType)
+}
+
 // ServiceDetailResponse represents a single service response (HU68)
 type ServiceDetailResponse struct {
 	ID          string `json:"id"`

@@ -9,12 +9,580 @@ const docTemplate = `{
     "info": {
         "description": "{{escape .Description}}",
         "title": "{{.Title}}",
-        "contact": {},
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "name": "Motogo API Support",
+            "url": "https://motogo.com/support",
+            "email": "support@motogo.com"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
         "version": "{{.Version}}"
     },
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/admin/brands/{brandId}/lines": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves all motorcycle references (models/lines) associated with a specific brand. This endpoint requires ADMIN role and is used for catalog management.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Brands"
+                ],
+                "summary": "List motorcycle lines for a specific brand",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Brand ID (hashid encoded)",
+                        "name": "brandId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lines retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/handlers.MotorcycleReferenceCatalogItem"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid token",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - requires ADMIN role",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/messages": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Obtiene una lista de mensajes del sistema con filtros opcionales",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Listar mensajes",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filtrar por módulo (ej: users, orders)",
+                        "name": "module",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filtrar por tipo (ERROR, SUCCESS, INFO, WARNING)",
+                        "name": "type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filtrar por categoría (ej: usuario_final, admin)",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Filtrar por estado activo (true/false)",
+                        "name": "active",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lista de mensajes",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.MessageListResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno del servidor",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Crea un nuevo mensaje de sistema para manejo de notificaciones, errores y mensajes informativos",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Crear nuevo mensaje del sistema",
+                "parameters": [
+                    {
+                        "description": "Datos del mensaje",
+                        "name": "message",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.MessageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Mensaje creado exitosamente",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/middleware.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.MessageCreatedResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Error de validación",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Mensaje con código duplicado",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno del servidor",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/messages/cache/reload": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Fuerza la recarga del caché de mensajes desde la base de datos. Útil después de actualizaciones o eliminaciones manuals.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Recargar caché de mensajes",
+                "responses": {
+                    "200": {
+                        "description": "Caché recargado exitosamente",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/middleware.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.CacheReloadResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Error al recargar el caché",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/messages/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Obtiene un mensaje del sistema específico por su ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Obtener mensaje por ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID del mensaje (hashid)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Mensaje encontrado",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.MessageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "ID inválido",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Mensaje no encontrado",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno del servidor",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Actualiza un mensaje del sistema por su ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Actualizar mensaje existente",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID del mensaje (hashid)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Datos actualizados del mensaje",
+                        "name": "message",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.MessageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Mensaje actualizado exitosamente",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/middleware.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.MessageUpdatedResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Error de validación",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Mensaje no encontrado",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno del servidor",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Elimina un mensaje del sistema por su ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Eliminar mensaje",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID del mensaje (hashid)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Mensaje eliminado exitosamente",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "ID inválido",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Mensaje no encontrado",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno del servidor",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/services/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Updates an existing service in the global catalog. Requires ADMIN role.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Update a service",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Service ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Service data to update",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.UpdateServiceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.ServiceDetailResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/firebase-token": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Generates a Firebase custom token using the authenticated user's Keycloak ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Get Firebase custom token",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.FirebaseTokenResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/login": {
             "post": {
                 "description": "Autentica un usuario y retorna tokens de acceso",
@@ -177,6 +745,64 @@ const docTemplate = `{
                 }
             }
         },
+        "/auth/refresh": {
+            "post": {
+                "description": "Obtiene un nuevo access token usando el refresh token. El frontend debe llamar este endpoint cuando reciba 401 por token expirado.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Autenticación"
+                ],
+                "summary": "Refrescar access token",
+                "parameters": [
+                    {
+                        "description": "Refresh token actual",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.RefreshTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Token refrescado exitosamente",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/middleware.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.LoginResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Formato inválido",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Refresh token inválido o expirado",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/resend-verification": {
             "post": {
                 "description": "Reenvía el email de verificación a un usuario registrado que aún no ha verificado su correo",
@@ -299,62 +925,105 @@ const docTemplate = `{
                 }
             }
         },
-        "/messages": {
+        "/branch-types": {
             "get": {
-                "description": "Obtiene una lista de mensajes del sistema con filtros opcionales",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "Returns all valid establishment types for branches (public catalog)",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "messages"
+                    "Branch"
                 ],
-                "summary": "Listar mensajes",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Filtrar por módulo (ej: users, orders)",
-                        "name": "module",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filtrar por tipo (ERROR, SUCCESS, INFO, WARNING)",
-                        "name": "type",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filtrar por categoría (ej: usuario_final, admin)",
-                        "name": "category",
-                        "in": "query"
-                    },
-                    {
-                        "type": "boolean",
-                        "description": "Filtrar por estado activo (true/false)",
-                        "name": "active",
-                        "in": "query"
-                    }
-                ],
+                "summary": "Get all branch types",
                 "responses": {
                     "200": {
-                        "description": "Lista de mensajes",
+                        "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.MessageListResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/github_com_EstebanGitPro_motogo-backend_core_interactor_services_domain.EstablishmentTypeInfo"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/branches": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns all branches owned by the authenticated representative, including location and brands",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Branch"
+                ],
+                "summary": "List my branches",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/handlers.BranchListItemResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
                         }
                     },
                     "500": {
-                        "description": "Error interno del servidor",
+                        "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/middleware.APIResponse"
+                            "$ref": "#/definitions/handlers.StandardResponse"
                         }
                     }
                 }
             },
             "post": {
-                "description": "Crea un nuevo mensaje de sistema para manejo de notificaciones, errores y mensajes informativos",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates a new branch (sede) for the authenticated representative",
                 "consumes": [
                     "application/json"
                 ],
@@ -362,33 +1031,33 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "messages"
+                    "Branch"
                 ],
-                "summary": "Crear nuevo mensaje del sistema",
+                "summary": "Register a new branch",
                 "parameters": [
                     {
-                        "description": "Datos del mensaje",
-                        "name": "message",
+                        "description": "Branch registration data",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.MessageRequest"
+                            "$ref": "#/definitions/handlers.RegisterBranchRequest"
                         }
                     }
                 ],
                 "responses": {
                     "201": {
-                        "description": "Mensaje creado exitosamente",
+                        "description": "Created",
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/middleware.APIResponse"
+                                    "$ref": "#/definitions/handlers.StandardResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/handlers.MessageCreatedResponse"
+                                            "$ref": "#/definitions/handlers.BranchResponse"
                                         }
                                     }
                                 }
@@ -396,84 +1065,134 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Error de validación",
+                        "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/middleware.APIResponse"
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
                         }
                     },
                     "409": {
-                        "description": "Mensaje con código duplicado",
+                        "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/middleware.APIResponse"
+                            "$ref": "#/definitions/handlers.StandardResponse"
                         }
                     },
                     "500": {
-                        "description": "Error interno del servidor",
+                        "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/middleware.APIResponse"
+                            "$ref": "#/definitions/handlers.StandardResponse"
                         }
                     }
                 }
             }
         },
-        "/messages/cache/reload": {
-            "post": {
-                "description": "Fuerza la recarga del caché de mensajes desde la base de datos. Útil después de actualizaciones o eliminaciones manuals.",
-                "consumes": [
-                    "application/json"
+        "/branches/nearby": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
                 ],
+                "description": "Returns branches within the specified radius from given coordinates",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "messages"
+                    "Branch"
                 ],
-                "summary": "Recargar caché de mensajes",
+                "summary": "Search nearby branches",
+                "parameters": [
+                    {
+                        "type": "number",
+                        "description": "Latitude of the center point",
+                        "name": "lat",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "number",
+                        "description": "Longitude of the center point",
+                        "name": "lng",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "number",
+                        "description": "Search radius in kilometers (default: 5, max: 50)",
+                        "name": "radius",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by establishment type (WORKSHOP, STORE, WORKSHOP_STORE)",
+                        "name": "type",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
-                        "description": "Caché recargado exitosamente",
+                        "description": "OK",
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/middleware.APIResponse"
+                                    "$ref": "#/definitions/handlers.StandardResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/handlers.CacheReloadResponse"
+                                            "$ref": "#/definitions/handlers.NearbyBranchesResponse"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Error al recargar el caché",
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/middleware.APIResponse"
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
                         }
                     }
                 }
             }
         },
-        "/messages/{id}": {
+        "/branches/{id}": {
             "get": {
-                "description": "Obtiene un mensaje del sistema específico por su ID",
-                "consumes": [
-                    "application/json"
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
                 ],
+                "description": "Retrieves detailed information of a branch. Returns conditional HATEOAS links based on ownership.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "messages"
+                    "Branch"
                 ],
-                "summary": "Obtener mensaje por ID",
+                "summary": "Get branch by ID",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "ID del mensaje (hashid)",
+                        "description": "Branch ID (hashid encoded)",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -481,33 +1200,44 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Mensaje encontrado",
+                        "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.MessageResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.BranchResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
-                    "400": {
-                        "description": "ID inválido",
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/middleware.APIResponse"
+                            "$ref": "#/definitions/handlers.StandardResponse"
                         }
                     },
                     "404": {
-                        "description": "Mensaje no encontrado",
+                        "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/middleware.APIResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Error interno del servidor",
-                        "schema": {
-                            "$ref": "#/definitions/middleware.APIResponse"
+                            "$ref": "#/definitions/handlers.StandardResponse"
                         }
                     }
                 }
             },
             "put": {
-                "description": "Actualiza un mensaje del sistema por su ID",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Updates an existing branch. Only the owner can update.",
                 "consumes": [
                     "application/json"
                 ],
@@ -515,30 +1245,1220 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "messages"
+                    "Branch"
                 ],
-                "summary": "Actualizar mensaje existente",
+                "summary": "Update a branch",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "ID del mensaje (hashid)",
+                        "description": "Branch ID (encoded)",
                         "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "Datos actualizados del mensaje",
-                        "name": "message",
+                        "description": "Branch update data",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.MessageRequest"
+                            "$ref": "#/definitions/handlers.RegisterBranchRequest"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Mensaje actualizado exitosamente",
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.BranchResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Deletes an existing branch. Only the owner can delete. Cannot delete if has diagnostics or completed services.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Branch"
+                ],
+                "summary": "Delete a branch",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Branch ID (encoded)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/branches/{id}/schedules": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves the schedule configuration for a branch",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Schedules"
+                ],
+                "summary": "Get schedule for a branch",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Branch ID (encoded)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Updates the schedule configuration including validity dates",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Schedules"
+                ],
+                "summary": "Update schedule for a branch",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Branch ID (encoded)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Schedule update data",
+                        "name": "schedule",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.UpdateScheduleRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates a new schedule configuration for a branch",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Schedules"
+                ],
+                "summary": "Create a schedule for a branch",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Branch ID (encoded)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Removes the schedule configuration for a branch",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Schedules"
+                ],
+                "summary": "Delete schedule for a branch",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Branch ID (encoded)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/branches/{id}/schedules/activate": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Activates the schedule configuration for a branch",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Schedules"
+                ],
+                "summary": "Activate schedule for a branch",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Branch ID (encoded)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/branches/{id}/schedules/deactivate": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Deactivates the schedule configuration for a branch",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Schedules"
+                ],
+                "summary": "Deactivate schedule for a branch",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Branch ID (encoded)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/branches/{id}/schedules/details": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves all time slots (schedule details) for a branch",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Schedule Details"
+                ],
+                "summary": "List time slots for a branch schedule",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Branch ID (encoded)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates a new time slot (schedule detail) for a specific day of the week",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Schedule Details"
+                ],
+                "summary": "Create a time slot for a branch schedule",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Branch ID (encoded)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Schedule detail data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.CreateScheduleDetailRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/branches/{id}/services": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves all services associated with a specific branch, including when they were added",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Branches"
+                ],
+                "summary": "Get services for a branch",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Branch ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.BranchServiceListResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Associates one or more services from the catalog to a specific branch",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Branches"
+                ],
+                "summary": "Associate services to a branch",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Branch ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Service IDs to associate",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.AssociateBranchServicesRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.AssociateBranchServicesResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/branches/{id}/services/{serviceId}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Removes a service association from a specific branch",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Branches"
+                ],
+                "summary": "Dissociate a service from a branch",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Branch ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Service ID",
+                        "name": "serviceId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/brands": {
+            "get": {
+                "description": "Retrieves the complete list of motorcycle brands available in the system",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Brands"
+                ],
+                "summary": "Get all motorcycle brands",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.BrandListResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/departments": {
+            "get": {
+                "description": "Retrieves all Colombian departments for location selection",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogs"
+                ],
+                "summary": "Get all departments",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.DepartmentListResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/departments/{id}/cities": {
+            "get": {
+                "description": "Retrieves all cities for a specific department",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogs"
+                ],
+                "summary": "Get cities by department",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Department ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.CityListResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/franchises": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Franchises"
+                ],
+                "summary": "List franchises for the authenticated representative",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates a new franchise and associates specified branches",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Franchises"
+                ],
+                "summary": "Create a new franchise",
+                "parameters": [
+                    {
+                        "description": "Franchise data with branch IDs",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.CreateFranchiseRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/franchises/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Franchises"
+                ],
+                "summary": "Get franchise by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Franchise ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Franchises"
+                ],
+                "summary": "Update a franchise",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Franchise ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Updated franchise data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.UpdateFranchiseRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Deletes a franchise and disassociates all branches",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Franchises"
+                ],
+                "summary": "Delete a franchise",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Franchise ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/franchises/{id}/branches": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Associates an existing branch to a franchise",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Franchises"
+                ],
+                "summary": "Add a branch to a franchise",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Franchise ID (encoded)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Branch ID to add",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.AddBranchToFranchiseRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/franchises/{id}/branches/{branchId}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Dissociates a branch from a franchise",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Franchises"
+                ],
+                "summary": "Remove a branch from a franchise",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Franchise ID (encoded)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Branch ID (encoded)",
+                        "name": "branchId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/location/geocode": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Test address geocoding without creating a branch",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Dev Tools"
+                ],
+                "summary": "Test geocoding service",
+                "parameters": [
+                    {
+                        "description": "Address to geocode",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.GeocodingTestRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
                         "schema": {
                             "allOf": [
                                 {
@@ -548,7 +2468,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/handlers.MessageUpdatedResponse"
+                                            "$ref": "#/definitions/handlers.GeocodingTestResponse"
                                         }
                                     }
                                 }
@@ -556,27 +2476,124 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Error de validación",
-                        "schema": {
-                            "$ref": "#/definitions/middleware.APIResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Mensaje no encontrado",
-                        "schema": {
-                            "$ref": "#/definitions/middleware.APIResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Error interno del servidor",
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/middleware.APIResponse"
                         }
                     }
                 }
+            }
+        },
+        "/motorcycle-references": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves all motorcycle references (brands/models) for selection during motorcycle registration.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Motorcycles"
+                ],
+                "summary": "List motorcycle reference catalog",
+                "responses": {
+                    "200": {
+                        "description": "References retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/handlers.MotorcycleReferenceCatalogItem"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid token",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/motorcycles": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves all motorcycles owned by the authenticated user. Returns HATEOAS links for each motorcycle (Richardson Maturity Level 3).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Motorcycles"
+                ],
+                "summary": "List user's motorcycles",
+                "responses": {
+                    "200": {
+                        "description": "Motorcycles listed successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/handlers.MotorcycleResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid token",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
             },
-            "delete": {
-                "description": "Elimina un mensaje del sistema por su ID",
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Registers a new motorcycle for the authenticated user. Validates that reference exists in catalog and license plate is unique. Returns HATEOAS links (Richardson Maturity Level 3).",
                 "consumes": [
                     "application/json"
                 ],
@@ -584,13 +2601,167 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "messages"
+                    "Motorcycles"
                 ],
-                "summary": "Eliminar mensaje",
+                "summary": "Register a new motorcycle",
+                "parameters": [
+                    {
+                        "description": "Motorcycle registration data",
+                        "name": "motorcycle",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.RegisterMotorcycleRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Motorcycle registered successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.MotorcycleResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request - invalid data or missing required fields",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid token",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Reference not found in catalog",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict - duplicate license plate",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/motorcycles/lookup": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves motorcycle information by license plate. Accessible by representatives (workshops). Returns motorcycle details for service purposes.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Motorcycles"
+                ],
+                "summary": "Lookup motorcycle by license plate",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "ID del mensaje (hashid)",
+                        "description": "License plate to lookup (exact match)",
+                        "name": "plate",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Motorcycle found successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.MotorcycleResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request - missing plate parameter",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid token",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - user is not a representative",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Motorcycle not found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/motorcycles/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves detailed information of a motorcycle including reference and brand info. Returns conditional HATEOAS links based on ownership (Richardson Maturity Level 3).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Motorcycles"
+                ],
+                "summary": "Get motorcycle by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Motorcycle ID (hashid encoded)",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -598,27 +2769,678 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Mensaje eliminado exitosamente",
+                        "description": "Motorcycle retrieved successfully",
                         "schema": {
-                            "$ref": "#/definitions/middleware.APIResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.MotorcycleResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
-                    "400": {
-                        "description": "ID inválido",
+                    "401": {
+                        "description": "Unauthorized - missing or invalid token",
                         "schema": {
-                            "$ref": "#/definitions/middleware.APIResponse"
+                            "$ref": "#/definitions/handlers.StandardResponse"
                         }
                     },
                     "404": {
-                        "description": "Mensaje no encontrado",
+                        "description": "Motorcycle not found",
                         "schema": {
-                            "$ref": "#/definitions/middleware.APIResponse"
+                            "$ref": "#/definitions/handlers.StandardResponse"
                         }
                     },
                     "500": {
-                        "description": "Error interno del servidor",
+                        "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/middleware.APIResponse"
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Updates motorcycle details. Only the owner can update their motorcycle. Returns 404 for non-owners (security by obscurity). License plate cannot be changed.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Motorcycles"
+                ],
+                "summary": "Update motorcycle information",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Motorcycle ID (hashid encoded)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Motorcycle update data",
+                        "name": "motorcycle",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.UpdateMotorcycleRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Motorcycle updated successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.MotorcycleResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request - invalid data",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid token",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Motorcycle not found or not owner",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Soft deletes a motorcycle. Only the owner can delete their motorcycle. Returns 404 for non-owners (security by obscurity).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Motorcycles"
+                ],
+                "summary": "Delete a motorcycle",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Motorcycle ID (hashid encoded)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Motorcycle deleted successfully with HATEOAS links",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid token",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Motorcycle not found or not owner",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/motorcycles/{id}/evidence": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Lists all photographic evidence for a motorcycle owned by authenticated user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "List motorcycle evidence",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Motorcycle ID (obfuscated)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Evidence list",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/handlers.EvidenceResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid token",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Motorcycle not found or not owner",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Upload photographic evidence for a motorcycle. The image must already be uploaded to Firebase Storage.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Upload photographic evidence",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Motorcycle ID (obfuscated)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Evidence data",
+                        "name": "evidence",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.CreateEvidenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Evidence created successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.EvidenceResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request - invalid image URL",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid token",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Motorcycle not found or not owner",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Evidence limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/motorcycles/{id}/evidence/{evidenceId}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Updates photographic evidence for a motorcycle. Only the owner can update.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Update motorcycle evidence",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Motorcycle ID (obfuscated)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Evidence ID (obfuscated)",
+                        "name": "evidenceId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Updated evidence data",
+                        "name": "evidence",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.CreateEvidenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Evidence updated successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.EvidenceResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request - invalid data",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid token",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Evidence not found or not owner",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Deletes photographic evidence for a motorcycle. Only the owner can delete.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Delete motorcycle evidence",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Motorcycle ID (obfuscated)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Evidence ID (obfuscated)",
+                        "name": "evidenceId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Evidence deleted, includes navigation links",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "additionalProperties": true
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid token",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Evidence not found or not owner",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/motorcycles/{id}/profile-image": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Gets the profile image URL for a motorcycle. Only the owner can view.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Get motorcycle profile image",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Motorcycle ID (obfuscated)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Image retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.ProfileImageResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Motorcycle not found or not owner",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Adds or updates the profile image URL for a motorcycle. Only the owner can update.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Update motorcycle profile image",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Motorcycle ID (obfuscated)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Profile image URL",
+                        "name": "image",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ProfileImageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Image updated successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.ProfileImageResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Motorcycle not found or not owner",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Removes the profile image from a motorcycle. Only the owner can delete.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Delete motorcycle profile image",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Motorcycle ID (obfuscated)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Image deleted successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.ProfileImageResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Motorcycle not found or not owner",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
                         }
                     }
                 }
@@ -738,11 +3560,450 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Permite al usuario autenticado actualizar su información de perfil (excepto email y contraseña)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Autenticación"
+                ],
+                "summary": "Actualizar perfil del usuario autenticado",
+                "parameters": [
+                    {
+                        "description": "Datos del perfil a actualizar",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.UpdateProfileRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Perfil actualizado exitosamente",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/middleware.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.UpdateProfileResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Formato inválido",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Token inválido o ausente",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Datos duplicados (teléfono o número de identidad)",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno del servidor",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/persons/me/password": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Permite al usuario autenticado cambiar su contraseña proporcionando la contraseña actual",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Autenticación"
+                ],
+                "summary": "Cambiar contraseña del usuario autenticado",
+                "parameters": [
+                    {
+                        "description": "Contraseña actual y nueva",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ChangePasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Contraseña actualizada exitosamente",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/middleware.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.ChangePasswordResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Formato inválido o contraseña no cumple requisitos",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Token inválido o contraseña actual incorrecta",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno del servidor",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/persons/{id}/contact": {
+            "get": {
+                "description": "Permite a motociclistas obtener el número de contacto de un representante de sede",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Personas"
+                ],
+                "summary": "Obtener información de contacto pública de un representante",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID ofuscado del representante",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Info de contacto obtenida",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/middleware.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.PublicContactResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "ID inválido",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Representante no encontrado",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/schedule-details/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Updates an existing time slot (schedule detail)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Schedule Details"
+                ],
+                "summary": "Update a time slot",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Schedule Detail ID (encoded)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.UpdateScheduleDetailRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Deletes an existing time slot (schedule detail)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Schedule Details"
+                ],
+                "summary": "Delete a time slot",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Schedule Detail ID (encoded)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/schedules/days": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the catalog of available days of week for schedules",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Schedules"
+                ],
+                "summary": "Get catalog of days of week",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/service-types": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves the complete list of service types available in the system",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Services"
+                ],
+                "summary": "Get all service types",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.ServiceTypeListResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/services": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves the complete list of services available in the catalog, optionally filtered by type",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Services"
+                ],
+                "summary": "Get all services",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by service type (e.g., Maintenance, Repair)",
+                        "name": "type",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.ServiceListResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
             }
         }
     },
     "definitions": {
-        "domain.MessageType": {
+        "github_com_EstebanGitPro_motogo-backend_core_interactor_services_domain.EstablishmentTypeInfo": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "label": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_EstebanGitPro_motogo-backend_core_interactor_services_domain.MessageType": {
             "type": "string",
             "enum": [
                 "ERROR",
@@ -758,6 +4019,46 @@ const docTemplate = `{
                 "TypeInfo",
                 "TypeDebug"
             ]
+        },
+        "handlers.AddBranchToFranchiseRequest": {
+            "type": "object",
+            "required": [
+                "branch_id"
+            ],
+            "properties": {
+                "branch_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.AssociateBranchServicesRequest": {
+            "type": "object",
+            "required": [
+                "service_ids"
+            ],
+            "properties": {
+                "service_ids": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "handlers.AssociateBranchServicesResponse": {
+            "type": "object",
+            "properties": {
+                "_links": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.Link"
+                    }
+                },
+                "added_count": {
+                    "type": "integer"
+                }
+            }
         },
         "handlers.AuthMeResponse": {
             "type": "object",
@@ -794,6 +4095,171 @@ const docTemplate = `{
                 }
             }
         },
+        "handlers.BranchListItemResponse": {
+            "type": "object",
+            "properties": {
+                "_links": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.Link"
+                    }
+                },
+                "brands": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "establishment_type": {
+                    "type": "string"
+                },
+                "establishment_type_label": {
+                    "description": "Spanish label for UI",
+                    "type": "string"
+                },
+                "franchise_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "location": {
+                    "$ref": "#/definitions/handlers.LocationDTO"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "profile_image_url": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.BranchResponse": {
+            "type": "object",
+            "properties": {
+                "_links": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.Link"
+                    }
+                },
+                "brands": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "contact_phone": {
+                    "description": "Representative's phone",
+                    "type": "string"
+                },
+                "establishment_type": {
+                    "type": "string"
+                },
+                "establishment_type_label": {
+                    "description": "Spanish label for UI",
+                    "type": "string"
+                },
+                "franchise_id": {
+                    "type": "string"
+                },
+                "geocoding_status": {
+                    "description": "Indicates geocoding result",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/handlers.GeocodingStatus"
+                        }
+                    ]
+                },
+                "id": {
+                    "type": "string"
+                },
+                "location": {
+                    "$ref": "#/definitions/handlers.LocationDTO"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "profile_image_url": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.BranchServiceItemResponse": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "added_at": {
+                    "description": "ISO 8601 - when the service was added to this branch",
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "service_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.BranchServiceListResponse": {
+            "type": "object",
+            "properties": {
+                "_links": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.Link"
+                    }
+                },
+                "services": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.BranchServiceItemResponse"
+                    }
+                }
+            }
+        },
+        "handlers.BrandItemResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.BrandListResponse": {
+            "type": "object",
+            "properties": {
+                "_links": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.Link"
+                    }
+                },
+                "brands": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.BrandItemResponse"
+                    }
+                }
+            }
+        },
         "handlers.CacheReloadResponse": {
             "type": "object",
             "properties": {
@@ -811,6 +4277,255 @@ const docTemplate = `{
                 }
             }
         },
+        "handlers.ChangePasswordRequest": {
+            "type": "object",
+            "required": [
+                "current_password",
+                "new_password"
+            ],
+            "properties": {
+                "current_password": {
+                    "type": "string",
+                    "minLength": 8
+                },
+                "new_password": {
+                    "type": "string",
+                    "minLength": 8
+                }
+            }
+        },
+        "handlers.ChangePasswordResponse": {
+            "type": "object",
+            "properties": {
+                "_links": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.Link"
+                    }
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.CityListResponse": {
+            "type": "object",
+            "properties": {
+                "_links": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.Link"
+                    }
+                },
+                "cities": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.CityResponse"
+                    }
+                }
+            }
+        },
+        "handlers.CityResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.CreateEvidenceRequest": {
+            "type": "object",
+            "required": [
+                "image_url"
+            ],
+            "properties": {
+                "angle": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "image_url": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.CreateFranchiseRequest": {
+            "type": "object",
+            "required": [
+                "branch_ids",
+                "name"
+            ],
+            "properties": {
+                "branch_ids": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.CreateScheduleDetailRequest": {
+            "type": "object",
+            "properties": {
+                "closing_time": {
+                    "description": "HH:MM format, required if is_closed=false",
+                    "type": "string"
+                },
+                "day_of_week": {
+                    "description": "1=Monday to 7=Sunday",
+                    "type": "integer"
+                },
+                "is_closed": {
+                    "description": "true if branch is closed on this day",
+                    "type": "boolean"
+                },
+                "opening_time": {
+                    "description": "HH:MM format, required if is_closed=false",
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.DepartmentListResponse": {
+            "type": "object",
+            "properties": {
+                "_links": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.Link"
+                    }
+                },
+                "departments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.DepartmentResponse"
+                    }
+                }
+            }
+        },
+        "handlers.DepartmentResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.EvidenceResponse": {
+            "type": "object",
+            "properties": {
+                "_links": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.Link"
+                    }
+                },
+                "angle": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "image_url": {
+                    "type": "string"
+                },
+                "motorcycle_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.FirebaseTokenResponse": {
+            "type": "object",
+            "properties": {
+                "firebase_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.GeocodingStatus": {
+            "type": "string",
+            "enum": [
+                "SUCCESS",
+                "FAILED",
+                "SKIPPED"
+            ],
+            "x-enum-comments": {
+                "GeocodingStatusFailed": "Geocoding failed, retry via update",
+                "GeocodingStatusSkipped": "User provided coordinates, no geocoding needed",
+                "GeocodingStatusSuccess": "Coordinates were generated automatically"
+            },
+            "x-enum-descriptions": [
+                "Coordinates were generated automatically",
+                "Geocoding failed, retry via update",
+                "User provided coordinates, no geocoding needed"
+            ],
+            "x-enum-varnames": [
+                "GeocodingStatusSuccess",
+                "GeocodingStatusFailed",
+                "GeocodingStatusSkipped"
+            ]
+        },
+        "handlers.GeocodingTestRequest": {
+            "type": "object",
+            "required": [
+                "address",
+                "city_name",
+                "department_name"
+            ],
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "city_name": {
+                    "type": "string"
+                },
+                "department_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.GeocodingTestResponse": {
+            "type": "object",
+            "properties": {
+                "confidence": {
+                    "type": "number"
+                },
+                "error": {
+                    "type": "string"
+                },
+                "formatted_address": {
+                    "type": "string"
+                },
+                "geocoded": {
+                    "type": "boolean"
+                },
+                "latitude": {
+                    "type": "number"
+                },
+                "longitude": {
+                    "type": "number"
+                }
+            }
+        },
         "handlers.Link": {
             "type": "object",
             "properties": {
@@ -822,6 +4537,39 @@ const docTemplate = `{
                 },
                 "rel": {
                     "type": "string"
+                }
+            }
+        },
+        "handlers.LocationDTO": {
+            "type": "object",
+            "required": [
+                "address",
+                "city_id",
+                "department_id"
+            ],
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "city_id": {
+                    "type": "string"
+                },
+                "city_name": {
+                    "description": "For geocoding (not persisted)",
+                    "type": "string"
+                },
+                "department_id": {
+                    "type": "string"
+                },
+                "department_name": {
+                    "description": "For geocoding (not persisted)",
+                    "type": "string"
+                },
+                "latitude": {
+                    "type": "number"
+                },
+                "longitude": {
+                    "type": "number"
                 }
             }
         },
@@ -919,7 +4667,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "type": {
-                    "$ref": "#/definitions/domain.MessageType"
+                    "$ref": "#/definitions/github_com_EstebanGitPro_motogo-backend_core_interactor_services_domain.MessageType"
                 }
             }
         },
@@ -954,7 +4702,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "type": {
-                    "$ref": "#/definitions/domain.MessageType"
+                    "$ref": "#/definitions/github_com_EstebanGitPro_motogo-backend_core_interactor_services_domain.MessageType"
                 }
             }
         },
@@ -966,6 +4714,166 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/handlers.Link"
                     }
+                }
+            }
+        },
+        "handlers.MotorcycleReferenceCatalogItem": {
+            "type": "object",
+            "properties": {
+                "brand_id": {
+                    "type": "string"
+                },
+                "brand_name": {
+                    "type": "string"
+                },
+                "category": {
+                    "type": "string"
+                },
+                "engine_displacement_cc": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "model": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.MotorcycleReferenceDTO": {
+            "type": "object",
+            "properties": {
+                "brand_id": {
+                    "type": "string"
+                },
+                "brand_name": {
+                    "type": "string"
+                },
+                "category": {
+                    "type": "string"
+                },
+                "engine_displacement_cc": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "model": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.MotorcycleResponse": {
+            "type": "object",
+            "properties": {
+                "_links": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.Link"
+                    }
+                },
+                "current_mileage": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "license_plate": {
+                    "type": "string"
+                },
+                "owner_notes": {
+                    "type": "string"
+                },
+                "profile_image_url": {
+                    "type": "string"
+                },
+                "reference": {
+                    "$ref": "#/definitions/handlers.MotorcycleReferenceDTO"
+                },
+                "year": {
+                    "type": "integer"
+                }
+            }
+        },
+        "handlers.NearbyBranchResponse": {
+            "type": "object",
+            "properties": {
+                "_links": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.Link"
+                    }
+                },
+                "address": {
+                    "type": "string"
+                },
+                "city_name": {
+                    "type": "string"
+                },
+                "contact_phone": {
+                    "description": "Representative's phone",
+                    "type": "string"
+                },
+                "department_name": {
+                    "type": "string"
+                },
+                "distance_km": {
+                    "type": "number"
+                },
+                "establishment_type": {
+                    "type": "string"
+                },
+                "establishment_type_label": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "latitude": {
+                    "type": "number"
+                },
+                "longitude": {
+                    "type": "number"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "profile_image_url": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.NearbyBranchesResponse": {
+            "type": "object",
+            "properties": {
+                "_links": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.Link"
+                    }
+                },
+                "branches": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.NearbyBranchResponse"
+                    }
+                },
+                "center": {
+                    "type": "object",
+                    "properties": {
+                        "latitude": {
+                            "type": "number"
+                        },
+                        "longitude": {
+                            "type": "number"
+                        }
+                    }
+                },
+                "count": {
+                    "type": "integer"
+                },
+                "radius_km": {
+                    "type": "number"
                 }
             }
         },
@@ -1009,6 +4917,119 @@ const docTemplate = `{
                 }
             }
         },
+        "handlers.ProfileImageRequest": {
+            "type": "object",
+            "required": [
+                "image_url"
+            ],
+            "properties": {
+                "image_url": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.ProfileImageResponse": {
+            "type": "object",
+            "properties": {
+                "_links": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.Link"
+                    }
+                },
+                "motorcycle_id": {
+                    "type": "string"
+                },
+                "profile_image_url": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.PublicContactResponse": {
+            "type": "object",
+            "properties": {
+                "_links": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.Link"
+                    }
+                },
+                "phone_number": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.RefreshTokenRequest": {
+            "type": "object",
+            "required": [
+                "refresh_token"
+            ],
+            "properties": {
+                "refresh_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.RegisterBranchRequest": {
+            "type": "object",
+            "required": [
+                "establishment_type",
+                "location",
+                "name"
+            ],
+            "properties": {
+                "brands": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "establishment_type": {
+                    "description": "WORKSHOP or STORE",
+                    "type": "string"
+                },
+                "franchise_id": {
+                    "type": "string"
+                },
+                "location": {
+                    "$ref": "#/definitions/handlers.LocationDTO"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "profile_image_url": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.RegisterMotorcycleRequest": {
+            "type": "object",
+            "required": [
+                "license_plate"
+            ],
+            "properties": {
+                "current_mileage": {
+                    "type": "integer"
+                },
+                "license_plate": {
+                    "type": "string"
+                },
+                "owner_notes": {
+                    "type": "string"
+                },
+                "profile_image_url": {
+                    "description": "HU36: Main profile photo",
+                    "type": "string"
+                },
+                "reference_id": {
+                    "description": "Optional until Release 11",
+                    "type": "string"
+                },
+                "year": {
+                    "type": "integer"
+                }
+            }
+        },
         "handlers.RegistrationResponse": {
             "type": "object",
             "properties": {
@@ -1043,6 +5064,271 @@ const docTemplate = `{
                     "minLength": 8
                 },
                 "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.ServiceDetailResponse": {
+            "type": "object",
+            "properties": {
+                "_links": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.Link"
+                    }
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "service_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.ServiceItemResponse": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "service_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.ServiceListResponse": {
+            "type": "object",
+            "properties": {
+                "_links": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.Link"
+                    }
+                },
+                "services": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.ServiceItemResponse"
+                    }
+                }
+            }
+        },
+        "handlers.ServiceTypeItemResponse": {
+            "type": "object",
+            "properties": {
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.ServiceTypeListResponse": {
+            "type": "object",
+            "properties": {
+                "_links": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.Link"
+                    }
+                },
+                "types": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.ServiceTypeItemResponse"
+                    }
+                }
+            }
+        },
+        "handlers.StandardResponse": {
+            "description": "Standard API response wrapper with success flag, message and optional data",
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "Business message code (e.g., \"MSG_BRANCH_REGISTERED\")",
+                    "type": "string",
+                    "example": "MSG_BRANCH_REGISTERED"
+                },
+                "data": {
+                    "description": "Response data payload (type varies by endpoint)"
+                },
+                "message": {
+                    "description": "Human-readable message content",
+                    "type": "string",
+                    "example": "Sede registrada exitosamente"
+                },
+                "success": {
+                    "description": "Whether the operation was successful",
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        },
+        "handlers.UpdateFranchiseRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.UpdateMotorcycleRequest": {
+            "type": "object",
+            "properties": {
+                "current_mileage": {
+                    "type": "integer"
+                },
+                "owner_notes": {
+                    "type": "string"
+                },
+                "profile_image_url": {
+                    "description": "HU36: Main profile photo",
+                    "type": "string"
+                },
+                "reference_id": {
+                    "type": "string"
+                },
+                "year": {
+                    "type": "integer"
+                }
+            }
+        },
+        "handlers.UpdateProfileRequest": {
+            "type": "object",
+            "properties": {
+                "first_name": {
+                    "type": "string"
+                },
+                "identity_number": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "phone_number": {
+                    "type": "string"
+                },
+                "second_last_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.UpdateProfileResponse": {
+            "type": "object",
+            "properties": {
+                "_links": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.Link"
+                    }
+                },
+                "email": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "identity_number": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "phone_number": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "second_last_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.UpdateScheduleDetailRequest": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "description": "true if detail is active",
+                    "type": "boolean"
+                },
+                "closing_time": {
+                    "description": "HH:MM format",
+                    "type": "string"
+                },
+                "day_of_week": {
+                    "description": "1=Monday to 7=Sunday",
+                    "type": "integer"
+                },
+                "is_closed": {
+                    "description": "true if branch is closed",
+                    "type": "boolean"
+                },
+                "opening_time": {
+                    "description": "HH:MM format",
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.UpdateScheduleRequest": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "end_date": {
+                    "description": "YYYY-MM-DD format, null = indefinite",
+                    "type": "string"
+                },
+                "start_date": {
+                    "description": "YYYY-MM-DD format",
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.UpdateServiceRequest": {
+            "type": "object",
+            "required": [
+                "name",
+                "service_type"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "description": "Optional: activate/deactivate service",
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "service_type": {
                     "type": "string"
                 }
             }
@@ -1086,17 +5372,29 @@ const docTemplate = `{
                 }
             }
         }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "Type \"Bearer\" followed by a space and JWT token.",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    },
+    "externalDocs": {
+        "description": "OpenAPI",
+        "url": "https://swagger.io/resources/open-api/"
     }
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "",
-	Host:             "",
-	BasePath:         "",
+	Version:          "1.0",
+	Host:             "localhost:8085",
+	BasePath:         "/motogo/api/v1",
 	Schemes:          []string{},
-	Title:            "",
-	Description:      "",
+	Title:            "Motogo Backend API",
+	Description:      "API RESTful para la plataforma Motogo, implementada con arquitectura hexagonal y siguiendo los principios del Richardson Maturity Model (Nivel 2-3) con HATEOAS.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

@@ -65,7 +65,7 @@ func (h handler) RegisterPerson() func(c *gin.Context) {
 			return
 		}
 
-		log.Success("Registro completado exitosamente",
+		log.Success(logger.LogPersonControllerRegComplete,
 			result.Person.ToLogger(),
 			"encoded_id", encodedID,
 			"client_ip", c.ClientIP())
@@ -232,12 +232,12 @@ func (h handler) RefreshToken() gin.HandlerFunc {
 			return
 		}
 
-		log.Info("Refresh token requested", "client_ip", c.ClientIP())
+		log.Info(logger.LogPersonControllerRefreshRequest, "client_ip", c.ClientIP())
 
 		// Call Keycloak to refresh the token
 		token, err := h.Interactor.RefreshToken(c, req.RefreshToken)
 		if err != nil {
-			log.Error("Refresh token failed", "error", err, "client_ip", c.ClientIP())
+			log.Error(logger.LogPersonControllerRefreshError, "error", err, "client_ip", c.ClientIP())
 			// All refresh errors return 401 - user needs to login again
 			h.Response.Error(c, domain.MsgUnauthorized)
 			return
@@ -255,7 +255,7 @@ func (h handler) RefreshToken() gin.HandlerFunc {
 			Links:        hateoasLinks,
 		}
 
-		log.Success("Token refreshed successfully", "client_ip", c.ClientIP())
+		log.Success(logger.LogPersonControllerTokenRefreshOK, "client_ip", c.ClientIP())
 		h.Response.SuccessWithData(c, "MOD_AUTH_REFRESH_SUCCESS_EXI_00001", response)
 	}
 }
@@ -382,17 +382,17 @@ func (h handler) GetAuthenticatedUser() gin.HandlerFunc {
 		// Get authenticated user from context (injected by JWT middleware)
 		person, ok := middleware.GetAuthenticatedUser(c)
 		if !ok {
-			log.Error("authenticated user not found in context")
+			log.Error(logger.LogPersonAuthNotFoundInContext)
 			c.Error(domain.ErrUserNotFound)
 			return
 		}
 
-		log.Debug("retrieving authenticated user profile", "user_id", person.ID, "email", person.Email)
+		log.Debug(logger.LogPersonRetrievingProfile, "user_id", person.ID, "email", person.Email)
 
 		// Encode ID for response
 		encodedID, err := h.EncodeID(person.ID)
 		if err != nil {
-			log.Error("error encoding user ID", "error", err, "user_id", person.ID)
+			log.Error(logger.LogPersonIDEncodeError, "error", err, "user_id", person.ID)
 			c.Error(err)
 			return
 		}
@@ -414,7 +414,7 @@ func (h handler) GetAuthenticatedUser() gin.HandlerFunc {
 			Links:          hateoasLinks,
 		}
 
-		log.Success("user profile retrieved successfully", "user_id", encodedID, "email", person.Email)
+		log.Success(logger.LogPersonControllerProfileGetOK, "user_id", encodedID, "email", person.Email)
 		h.Response.SuccessWithData(c, domain.MsgAuthProfileRetrieved, response)
 	}
 }
@@ -439,7 +439,7 @@ func (h handler) ChangePassword() gin.HandlerFunc {
 		// Get authenticated user from context (injected by JWT middleware)
 		person, ok := middleware.GetAuthenticatedUser(c)
 		if !ok {
-			log.Error("authenticated user not found in context")
+			log.Error(logger.LogPersonControllerUserNotInContext)
 			c.Error(domain.ErrUserNotFound)
 			return
 		}
@@ -510,7 +510,7 @@ func (h handler) UpdateProfile() gin.HandlerFunc {
 		// Get authenticated user from context (injected by JWT middleware)
 		person, ok := middleware.GetAuthenticatedUser(c)
 		if !ok {
-			log.Error("authenticated user not found in context")
+			log.Error(logger.LogPersonControllerUserNotInContext)
 			c.Error(domain.ErrUserNotFound)
 			return
 		}
@@ -562,7 +562,7 @@ func (h handler) UpdateProfile() gin.HandlerFunc {
 		// Encode ID for response
 		encodedID, err := h.EncodeID(result.ID)
 		if err != nil {
-			log.Error("error encoding user ID", "error", err, "user_id", result.ID)
+			log.Error(logger.LogPersonControllerIDEncodeError, "error", err, "user_id", result.ID)
 			c.Error(err)
 			return
 		}
@@ -605,24 +605,24 @@ func (h handler) GetPublicContact() gin.HandlerFunc {
 		// Get and decode person ID from URL param
 		encodedID := c.Param("id")
 		if encodedID == "" {
-			log.Error("missing person ID in URL")
+			log.Error(logger.LogPersonMissingIDInURL)
 			h.Response.Error(c, domain.MsgValBadFormat)
 			return
 		}
 
 		personID, err := h.DecodeID(encodedID)
 		if err != nil {
-			log.Error("error decoding person ID", "encoded_id", encodedID, "error", err)
+			log.Error(logger.LogPersonIDDecodeError, "encoded_id", encodedID, "error", err)
 			h.Response.Error(c, domain.MsgValBadFormat)
 			return
 		}
 
-		log.Info("getting public contact info", "person_id", personID, "client_ip", c.ClientIP())
+		log.Info(logger.LogPersonControllerGetContactStart, "person_id", personID, "client_ip", c.ClientIP())
 
 		// Get person from interactor (Clean Architecture - HU55)
 		person, err := h.Interactor.GetPublicContact(c, personID)
 		if err != nil {
-			log.Error("error getting person", "person_id", personID, "error", err)
+			log.Error(logger.LogPersonGetError, "person_id", personID, "error", err)
 			c.Error(domain.ErrPersonNotFound)
 			return
 		}
@@ -637,7 +637,7 @@ func (h handler) GetPublicContact() gin.HandlerFunc {
 			Links:       hateoasLinks,
 		}
 
-		log.Success("public contact info retrieved", "person_id", personID, "client_ip", c.ClientIP())
+		log.Success(logger.LogPersonControllerContactGetOK, "person_id", personID, "client_ip", c.ClientIP())
 		h.Response.SuccessWithData(c, domain.MsgPersonContactRetrieved, response)
 	}
 }
@@ -652,43 +652,43 @@ func (h handler) DeleteSelf() gin.HandlerFunc {
 		// Get authenticated user from context
 		person, ok := middleware.GetAuthenticatedUser(c)
 		if !ok {
-			log.Error("DeleteSelf: authenticated user not found in context")
+			log.Error(logger.LogPersonAuthNotFoundInContext)
 			c.Error(domain.ErrUserNotFound)
 			return
 		}
 
-		log.Info("DeleteSelf request received", "user_id", person.ID, "email", person.Email)
+		log.Info(logger.LogPersonDeleteSelfRequest, "user_id", person.ID, "email", person.Email)
 
 		// STEP 1: Check if user has active branches
 		branches, err := h.BranchInteractor.GetBranchesByRepresentative(c, person.ID)
 		if err != nil {
-			log.Error("error checking branches", "error", err, "user_id", person.ID)
+			log.Error(logger.LogPersonCheckBranchesError, "error", err, "user_id", person.ID)
 			h.Response.Error(c, domain.MsgPersonCannotDelete)
 			return
 		}
 
 		if len(branches) > 0 {
-			log.Warn("user has active branches, cannot delete", "user_id", person.ID, "branch_count", len(branches))
+			log.Warn(logger.LogPersonHasActiveBranches, "user_id", person.ID, "branch_count", len(branches))
 			h.Response.Error(c, domain.MsgPersonHasBranches)
 			return
 		}
 
 		// STEP 2: Delete from Keycloak first
 		if err := h.Interactor.DeleteKeycloakUser(c, person.KeycloakUserID); err != nil {
-			log.Error("error deleting from Keycloak", "error", err, "keycloak_id", person.KeycloakUserID)
+			log.Error(logger.LogPersonDeleteKeycloakFailed, "error", err, "keycloak_id", person.KeycloakUserID)
 			h.Response.Error(c, domain.MsgPersonCannotDelete)
 			return
 		}
 
 		// STEP 3: Delete from database
 		if err := h.Interactor.DeletePersonFromDB(c, person.ID); err != nil {
-			log.Error("error deleting from database", "error", err, "user_id", person.ID)
+			log.Error(logger.LogPersonDeleteDBFailed, "error", err, "user_id", person.ID)
 			// Note: User already deleted from Keycloak - inconsistent state
 			h.Response.Error(c, domain.MsgPersonCannotDelete)
 			return
 		}
 
-		log.Success("Account deleted successfully", "user_id", person.ID, "email", person.Email)
+		log.Success(logger.LogPersonControllerAccountDeleteOK, "user_id", person.ID, "email", person.Email)
 		h.Response.Success(c, domain.MsgPersonDeleted)
 	}
 }

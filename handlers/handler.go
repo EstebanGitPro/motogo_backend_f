@@ -21,6 +21,7 @@ type handler struct {
 	ServiceInteractor    *interactor.ServiceInteractor       // Services catalog (HU63, HU75)
 	FranchiseInteractor  *interactor.FranchiseInteractor     // Franchise CRUD (HU26-29)
 	MotorcycleInteractor input.MotorcycleInteractorInterface // Motorcycle CRUD (interface for testing)
+	EvidenceInteractor   input.EvidenceInteractorInterface   // Evidence CRUD (HU16-19)
 	FirebaseClient       *firebase.Client                    // Firebase Auth
 	MessagingCache       *messagingCache.MessageCache
 	IDEncoder            *idencoder.HashidsEncoder
@@ -36,6 +37,7 @@ func New(
 	serviceInteractor *interactor.ServiceInteractor,
 	franchiseInteractor *interactor.FranchiseInteractor,
 	motorcycleInteractor *interactor.MotorcycleInteractor,
+	evidenceInteractor *interactor.EvidenceInteractor, // HU16-19
 	firebaseClient *firebase.Client,
 	messageCache *messagingCache.MessageCache,
 	encoder *idencoder.HashidsEncoder,
@@ -50,6 +52,7 @@ func New(
 		ServiceInteractor:    serviceInteractor,
 		FranchiseInteractor:  franchiseInteractor,
 		MotorcycleInteractor: motorcycleInteractor,
+		EvidenceInteractor:   evidenceInteractor, // HU16-19
 		FirebaseClient:       firebaseClient,
 		MessagingCache:       messageCache,
 		IDEncoder:            encoder,

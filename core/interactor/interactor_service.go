@@ -13,21 +13,19 @@ import (
 // ServiceInteractor handles service catalog use cases
 type ServiceInteractor struct {
 	serviceCatalogService input.ServiceCatalogService
-	logger                logger.Logger
 }
 
 // NewServiceInteractor creates a new ServiceInteractor instance
-func NewServiceInteractor(serviceCatalogService input.ServiceCatalogService, log logger.Logger) *ServiceInteractor {
+func NewServiceInteractor(serviceCatalogService input.ServiceCatalogService) *ServiceInteractor {
 	return &ServiceInteractor{
 		serviceCatalogService: serviceCatalogService,
-		logger:                log,
 	}
 }
 
 // GetServiceTypes retrieves all available service types (HU75)
 func (i *ServiceInteractor) GetServiceTypes(ctx context.Context) []domain.ServiceType {
 	traceID := middleware.GetTraceIDFromContext(ctx)
-	log := i.logger.WithTraceID(traceID)
+	log := log.WithTraceID(traceID)
 
 	log.Info(logger.LogServiceInteractorGetTypes)
 
@@ -40,7 +38,7 @@ func (i *ServiceInteractor) GetServiceTypes(ctx context.Context) []domain.Servic
 // GetAllServices retrieves all services from the catalog (HU63)
 func (i *ServiceInteractor) GetAllServices(ctx context.Context) ([]domain.Service, error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
-	log := i.logger.WithTraceID(traceID)
+	log := log.WithTraceID(traceID)
 
 	log.Info(logger.LogServiceInteractorGetAll)
 
@@ -57,7 +55,7 @@ func (i *ServiceInteractor) GetAllServices(ctx context.Context) ([]domain.Servic
 // GetServicesByType retrieves services filtered by type (HU63)
 func (i *ServiceInteractor) GetServicesByType(ctx context.Context, serviceType domain.ServiceType) ([]domain.Service, error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
-	log := i.logger.WithTraceID(traceID)
+	log := log.WithTraceID(traceID)
 
 	log.Info(logger.LogServiceInteractorGetByType, "type", serviceType)
 
@@ -74,7 +72,7 @@ func (i *ServiceInteractor) GetServicesByType(ctx context.Context, serviceType d
 // GetServicesByBranch retrieves services associated with a specific branch
 func (i *ServiceInteractor) GetServicesByBranch(ctx context.Context, branchID string) ([]domain.BranchServiceInfo, error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
-	log := i.logger.WithTraceID(traceID)
+	log := log.WithTraceID(traceID)
 
 	log.Info(logger.LogBranchServicesIntGetByBranch, "branch_id", branchID)
 
@@ -111,7 +109,7 @@ func (i *ServiceInteractor) DissociateBranchService(ctx context.Context, tx outp
 // GetServiceByID retrieves a service by UUID (HU68)
 func (i *ServiceInteractor) GetServiceByID(ctx context.Context, serviceID string) (*domain.Service, error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
-	log := i.logger.WithTraceID(traceID)
+	log := log.WithTraceID(traceID)
 
 	log.Info(logger.LogServiceInteractorGetByID, "service_id", serviceID)
 
@@ -128,7 +126,7 @@ func (i *ServiceInteractor) GetServiceByID(ctx context.Context, serviceID string
 // UpdateService updates a service in the catalog (HU68 - Admin only)
 func (i *ServiceInteractor) UpdateService(ctx context.Context, service domain.Service) error {
 	traceID := middleware.GetTraceIDFromContext(ctx)
-	log := i.logger.WithTraceID(traceID)
+	log := log.WithTraceID(traceID)
 
 	log.Info(logger.LogServiceInteractorUpdate, "service_id", service.ID)
 

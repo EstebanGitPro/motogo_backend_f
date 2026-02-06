@@ -18,7 +18,7 @@ type franchiseService struct {
 }
 
 // NewFranchiseService creates a new FranchiseService instance
-func NewFranchiseService(repo output.FranchiseRepository, log logger.Logger) input.FranchiseService {
+func NewFranchiseService(repo output.FranchiseRepository) input.FranchiseService {
 	return &franchiseService{
 		repository: repo,
 	}
@@ -38,7 +38,7 @@ func (s *franchiseService) CreateFranchise(ctx context.Context, tx output.Tx, fr
 		return nil, err
 	}
 	if existing != nil {
-		log.Warn("Franchise name already exists", "name", franchise.Name)
+		log.Warn(logger.LogFranchiseNameExists, "name", franchise.Name)
 		return nil, domain.ErrFranchiseDuplicateName
 	}
 
@@ -53,7 +53,7 @@ func (s *franchiseService) CreateFranchise(ctx context.Context, tx output.Tx, fr
 		return nil, domain.ErrFranchiseCannotSave
 	}
 
-	log.Info("Franchise created", "franchise_id", franchise.ID, "name", franchise.Name)
+	log.Info(logger.LogFranchiseCreated, "franchise_id", franchise.ID, "name", franchise.Name)
 	return &franchise, nil
 }
 
@@ -103,7 +103,7 @@ func (s *franchiseService) UpdateFranchise(ctx context.Context, tx output.Tx, fr
 		return domain.ErrFranchiseCannotUpdate
 	}
 
-	log.Info("Franchise updated", "franchise_id", franchise.ID, "name", franchise.Name)
+	log.Info(logger.LogFranchiseUpdated, "franchise_id", franchise.ID, "name", franchise.Name)
 	return nil
 }
 
@@ -125,7 +125,7 @@ func (s *franchiseService) DeleteFranchise(ctx context.Context, tx output.Tx, fr
 		return domain.ErrFranchiseCannotDelete
 	}
 
-	log.Info("Franchise deleted", "franchise_id", franchiseID)
+	log.Info(logger.LogFranchiseDeleted, "franchise_id", franchiseID)
 	return nil
 }
 

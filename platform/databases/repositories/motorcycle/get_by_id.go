@@ -15,7 +15,7 @@ func (r *repository) GetByID(ctx context.Context, motorcycleID string) (*domain.
 	var ref MotorcycleReference
 
 	err := row.Scan(
-		&m.ID, &m.LicensePlate, &m.ReferenceID, &m.OwnerID, &m.Year, &m.CurrentMileage, &m.OwnerNotes,
+		&m.ID, &m.LicensePlate, &m.ReferenceID, &m.OwnerID, &m.Year, &m.CurrentMileage, &m.OwnerNotes, &m.ProfileImageURL,
 		&ref.ID, &ref.BrandID, &ref.BrandName, &ref.Model, &ref.Category, &ref.EngineDisplacement,
 	)
 
@@ -46,7 +46,7 @@ func (r *repository) GetByOwnerID(ctx context.Context, ownerID string) ([]domain
 		var ref MotorcycleReference
 
 		err := rows.Scan(
-			&m.ID, &m.LicensePlate, &m.ReferenceID, &m.OwnerID, &m.Year, &m.CurrentMileage, &m.OwnerNotes,
+			&m.ID, &m.LicensePlate, &m.ReferenceID, &m.OwnerID, &m.Year, &m.CurrentMileage, &m.OwnerNotes, &m.ProfileImageURL,
 			&ref.ID, &ref.BrandID, &ref.BrandName, &ref.Model, &ref.Category, &ref.EngineDisplacement,
 		)
 		if err != nil {
@@ -73,7 +73,7 @@ func (r *repository) GetByLicensePlate(ctx context.Context, licensePlate string)
 	var ref MotorcycleReference
 
 	err := row.Scan(
-		&m.ID, &m.LicensePlate, &m.ReferenceID, &m.OwnerID, &m.Year, &m.CurrentMileage, &m.OwnerNotes,
+		&m.ID, &m.LicensePlate, &m.ReferenceID, &m.OwnerID, &m.Year, &m.CurrentMileage, &m.OwnerNotes, &m.ProfileImageURL,
 		&ref.ID, &ref.BrandID, &ref.BrandName, &ref.Model, &ref.Category, &ref.EngineDisplacement,
 	)
 

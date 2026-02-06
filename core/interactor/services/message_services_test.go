@@ -87,9 +87,8 @@ func TestGetMessageByID_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockRepo := new(MockMessageRepository)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewMessageService(mockRepo, mockLogger)
+	service := services.NewMessageService(mockRepo)
 
 	expectedMessage := &domain.Message{
 		ID:      "msg-123",
@@ -100,7 +99,6 @@ func TestGetMessageByID_Success(t *testing.T) {
 	}
 
 	// Mock expectations
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
 	mockRepo.On("GetByID", ctx, "msg-123").Return(expectedMessage, nil)
 
 	// Act
@@ -113,20 +111,16 @@ func TestGetMessageByID_Success(t *testing.T) {
 	assert.Equal(t, expectedMessage.Code, message.Code)
 
 	mockRepo.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }
 
 func TestGetMessageByID_NotFound(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockRepo := new(MockMessageRepository)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewMessageService(mockRepo, mockLogger)
+	service := services.NewMessageService(mockRepo)
 
 	// Mock expectations
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Warn", mock.Anything, mock.Anything).Return()
 	mockRepo.On("GetByID", ctx, "not-found").Return(nil, nil)
 
 	// Act
@@ -138,16 +132,14 @@ func TestGetMessageByID_NotFound(t *testing.T) {
 	assert.Nil(t, message)
 
 	mockRepo.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }
 
 func TestGetMessageByCode_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockRepo := new(MockMessageRepository)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewMessageService(mockRepo, mockLogger)
+	service := services.NewMessageService(mockRepo)
 
 	expectedMessage := &domain.Message{
 		ID:    "msg-123",
@@ -156,7 +148,6 @@ func TestGetMessageByCode_Success(t *testing.T) {
 	}
 
 	// Mock expectations
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
 	mockRepo.On("GetByCode", ctx, "TEST_CODE_001").Return(expectedMessage, nil)
 
 	// Act
@@ -168,16 +159,14 @@ func TestGetMessageByCode_Success(t *testing.T) {
 	assert.Equal(t, expectedMessage.Code, message.Code)
 
 	mockRepo.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }
 
 func TestListActiveMessages_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockRepo := new(MockMessageRepository)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewMessageService(mockRepo, mockLogger)
+	service := services.NewMessageService(mockRepo)
 
 	expectedMessages := []domain.Message{
 		{ID: "msg-1", Code: "CODE_001", Active: true},
@@ -185,7 +174,6 @@ func TestListActiveMessages_Success(t *testing.T) {
 	}
 
 	// Mock expectations
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
 	mockRepo.On("GetAllActive", ctx).Return(expectedMessages, nil)
 
 	// Act
@@ -197,22 +185,18 @@ func TestListActiveMessages_Success(t *testing.T) {
 	assert.Equal(t, expectedMessages[0].Code, messages[0].Code)
 
 	mockRepo.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }
 
 func TestListActiveMessages_Error(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockRepo := new(MockMessageRepository)
-	mockLogger := new(mocks.MockLogger)
 
-	service := services.NewMessageService(mockRepo, mockLogger)
+	service := services.NewMessageService(mockRepo)
 
 	dbError := errors.New("database error")
 
 	// Mock expectations
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Error", mock.Anything, mock.Anything).Return()
 	mockRepo.On("GetAllActive", ctx).Return(nil, dbError)
 
 	// Act
@@ -224,17 +208,16 @@ func TestListActiveMessages_Error(t *testing.T) {
 	assert.Equal(t, dbError, err)
 
 	mockRepo.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }
 
 func TestSaveMessageToDB_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockRepo := new(MockMessageRepository)
-	mockLogger := new(mocks.MockLogger)
+
 	mockTx := new(mocks.MockTx)
 
-	service := services.NewMessageService(mockRepo, mockLogger)
+	service := services.NewMessageService(mockRepo)
 
 	message := domain.Message{
 		ID:      "msg-123",
@@ -245,8 +228,6 @@ func TestSaveMessageToDB_Success(t *testing.T) {
 	}
 
 	// Mock expectations
-	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Success", mock.Anything, mock.Anything).Return()
 	mockRepo.On("SaveMessage", ctx, mockTx, message).Return(nil)
 
 	// Act
@@ -256,17 +237,16 @@ func TestSaveMessageToDB_Success(t *testing.T) {
 	assert.NoError(t, err)
 
 	mockRepo.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }
 
 func TestSaveMessageToDB_Error(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockRepo := new(MockMessageRepository)
-	mockLogger := new(mocks.MockLogger)
+
 	mockTx := new(mocks.MockTx)
 
-	service := services.NewMessageService(mockRepo, mockLogger)
+	service := services.NewMessageService(mockRepo)
 
 	message := domain.Message{
 		ID:   "msg-123",
@@ -276,8 +256,6 @@ func TestSaveMessageToDB_Error(t *testing.T) {
 	dbError := errors.New("save failed")
 
 	// Mock expectations
-	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Error", mock.Anything, mock.Anything).Return()
 	mockRepo.On("SaveMessage", ctx, mockTx, message).Return(dbError)
 
 	// Act
@@ -288,17 +266,16 @@ func TestSaveMessageToDB_Error(t *testing.T) {
 	assert.Equal(t, dbError, err)
 
 	mockRepo.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }
 
 func TestUpdateMessageInDB_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockRepo := new(MockMessageRepository)
-	mockLogger := new(mocks.MockLogger)
+
 	mockTx := new(mocks.MockTx)
 
-	service := services.NewMessageService(mockRepo, mockLogger)
+	service := services.NewMessageService(mockRepo)
 
 	message := domain.Message{
 		ID:      "msg-123",
@@ -313,8 +290,6 @@ func TestUpdateMessageInDB_Success(t *testing.T) {
 	}
 
 	// Mock expectations
-	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Success", mock.Anything, mock.Anything).Return()
 	mockRepo.On("GetByID", ctx, "msg-123").Return(existingMessage, nil)
 	mockRepo.On("UpdateMessage", ctx, mockTx, message).Return(nil)
 
@@ -325,21 +300,18 @@ func TestUpdateMessageInDB_Success(t *testing.T) {
 	assert.NoError(t, err)
 
 	mockRepo.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }
 
 func TestDeleteMessageFromDB_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockRepo := new(MockMessageRepository)
-	mockLogger := new(mocks.MockLogger)
+
 	mockTx := new(mocks.MockTx)
 
-	service := services.NewMessageService(mockRepo, mockLogger)
+	service := services.NewMessageService(mockRepo)
 
 	// Mock expectations
-	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Success", mock.Anything, mock.Anything).Return()
 	mockRepo.On("DeleteMessage", ctx, mockTx, "msg-123").Return(nil)
 
 	// Act
@@ -349,23 +321,20 @@ func TestDeleteMessageFromDB_Success(t *testing.T) {
 	assert.NoError(t, err)
 
 	mockRepo.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }
 
 func TestDeleteMessageFromDB_Error(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockRepo := new(MockMessageRepository)
-	mockLogger := new(mocks.MockLogger)
+
 	mockTx := new(mocks.MockTx)
 
-	service := services.NewMessageService(mockRepo, mockLogger)
+	service := services.NewMessageService(mockRepo)
 
 	dbError := errors.New("delete failed")
 
 	// Mock expectations
-	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Error", mock.Anything, mock.Anything).Return()
 	mockRepo.On("DeleteMessage", ctx, mockTx, "msg-123").Return(dbError)
 
 	// Act
@@ -376,5 +345,4 @@ func TestDeleteMessageFromDB_Error(t *testing.T) {
 	assert.Equal(t, dbError, err)
 
 	mockRepo.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }

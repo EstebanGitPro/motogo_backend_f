@@ -12,8 +12,8 @@ import (
 
 const (
 	queryInsert = `
-		INSERT INTO motorcycles (id, license_plate, reference_id, owner_id, year, current_mileage, owner_notes)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO motorcycles (id, license_plate, reference_id, owner_id, year, current_mileage, owner_notes, profile_image_url)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	queryValidateReference = `SELECT EXISTS(SELECT 1 FROM motorcycle_references WHERE id = ?)`
 	queryCheckLicensePlate = `SELECT EXISTS(SELECT 1 FROM motorcycles WHERE license_plate = ?)`
@@ -41,6 +41,7 @@ func (r *repository) Save(ctx context.Context, tx output.Tx, motorcycle *domain.
 		motorcycle.Year,
 		motorcycle.CurrentMileage,
 		motorcycle.OwnerNotes,
+		motorcycle.ProfileImageURL,
 	)
 	if err != nil {
 		log.Error(logger.LogMotorcycleRepoSaveError, "error", err, "license_plate", motorcycle.LicensePlate)

@@ -1036,3 +1036,72 @@ func TestDeleteScheduleDetail_InvalidTransaction(t *testing.T) {
 
 	assert.Equal(t, domain.ErrInvalidTransaction, err)
 }
+
+// ============================================
+// GetExceptionsByScheduleIDForUpdate Tests
+// ============================================
+
+func TestGetExceptionsByScheduleIDForUpdate_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	now := time.Now()
+	rows := sqlmock.NewRows([]string{
+		"id", "schedule_id", "entry_type", "day_of_week",
+		"exception_start_date", "exception_end_date",
+		"opening_time", "closing_time", "is_closed", "active",
+		"created_at", "updated_at",
+	}).
+		AddRow("exc-001", "schedule-123", "EXCEPTION", nil, now, now.Add(24*time.Hour), nil, nil, true, true, now, now).
+		AddRow("exc-002", "schedule-123", "EXCEPTION", nil, now.Add(48*time.Hour), now.Add(72*time.Hour), nil, nil, true, true, now, now)
+
+	mock.ExpectBegin()
+	mock.ExpectQuery("SELECT id, schedule_id").
+		WithArgs("schedule-123").
+		WillReturnRows(rows)
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	exceptions, err := repo.GetExceptionsByScheduleIDForUpdate(context.Background(), sqlTx, "schedule-123")
+
+	assert.NoError(t, err)
+	assert.Len(t, exceptions, 2)
+	assert.Equal(t, "exc-001", exceptions[0].ID)
+	assert.Equal(t, domain.EntryType("EXCEPTION"), exceptions[0].EntryType)
+}
+
+func TestGetExceptionsByScheduleIDForUpdate_InvalidTransaction(t *testing.T) {
+	repo := &repository{}
+
+	exceptions, err := repo.GetExceptionsByScheduleIDForUpdate(context.Background(), nil, "schedule-123")
+
+	assert.Nil(t, exceptions)
+	assert.Equal(t, domain.ErrInternalServer, err)
+}
+
+func TestGetExceptionsByScheduleIDForUpdate_DBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectQuery("SELECT id, schedule_id").
+		WithArgs("schedule-error").
+		WillReturnError(sql.ErrConnDone)
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	exceptions, err := repo.GetExceptionsByScheduleIDForUpdate(context.Background(), sqlTx, "schedule-error")
+
+	assert.Nil(t, exceptions)
+	assert.Error(t, err)
+}

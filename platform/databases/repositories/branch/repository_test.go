@@ -417,7 +417,7 @@ func TestGetBranchesByRepresentative_Empty(t *testing.T) {
 
 	rows := sqlmock.NewRows([]string{
 		"id", "representative_id", "franchise_id", "name", "establishment_type", "profile_image_url", "status",
-		"location_id", "city_id", "address", "latitude", "longitude", "department_id",
+		"location_id", "city_id", "address", "latitude", "longitude", "department_id", "phone_number",
 	})
 
 	stmt := mock.ExpectPrepare("SELECT b.id, b.representative_id")
@@ -464,13 +464,13 @@ func TestGetBranchesNearby_Success(t *testing.T) {
 
 	rows := sqlmock.NewRows([]string{
 		"id", "name", "establishment_type", "profile_image_url", "status",
-		"address", "latitude", "longitude", "city_name", "department_name", "distance_km",
+		"address", "latitude", "longitude", "city_name", "department_name", "phone_number", "distance_km",
 	}).AddRow(
 		"branch-001", "Taller Central", "WORKSHOP", "http://example.com/img.jpg", "ACTIVE",
-		"Calle 123 #45-67", 4.7110, -74.0721, "Bogotá", "Cundinamarca", 1.5,
+		"Calle 123 #45-67", 4.7110, -74.0721, "Bogotá", "Cundinamarca", "3001234567", 1.5,
 	).AddRow(
 		"branch-002", "Tienda Norte", "STORE", nil, "ACTIVE",
-		"Carrera 15 #80-45", 4.7200, -74.0650, "Bogotá", "Cundinamarca", 2.3,
+		"Carrera 15 #80-45", 4.7200, -74.0650, "Bogotá", "Cundinamarca", nil, 2.3,
 	)
 
 	stmt := mock.ExpectPrepare("SELECT")
@@ -503,7 +503,7 @@ func TestGetBranchesNearby_Empty(t *testing.T) {
 
 	rows := sqlmock.NewRows([]string{
 		"id", "name", "establishment_type", "profile_image_url", "status",
-		"address", "latitude", "longitude", "city_name", "department_name", "distance_km",
+		"address", "latitude", "longitude", "city_name", "department_name", "phone_number", "distance_km",
 	})
 
 	stmt := mock.ExpectPrepare("SELECT")

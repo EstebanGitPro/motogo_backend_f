@@ -80,6 +80,11 @@ var fieldNameMapping = map[string]string{
 	"year":            "Año del modelo",
 	"current_mileage": "Kilometraje actual",
 	"owner_notes":     "Notas del propietario",
+
+	// Evidence (HU16-19)
+	"angle":       "Ángulo de la foto",
+	"image_url":   "URL de imagen",
+	"description": "Descripción",
 }
 
 // translateFieldNames converts technical field names to Spanish labels
@@ -157,6 +162,11 @@ func (b *Builder) WithValidateFranchise() gin.HandlerFunc {
 // WithValidateRegisterMotorcycle validates motorcycle registration request (HU43)
 func (b *Builder) WithValidateRegisterMotorcycle() gin.HandlerFunc {
 	return b.jsonValidator(b.Validators.RegisterMotorcycleValidator)
+}
+
+// WithValidateEvidence validates evidence creation request (HU16)
+func (b *Builder) WithValidateEvidence() gin.HandlerFunc {
+	return b.jsonValidator(b.Validators.CreateEvidenceValidator)
 }
 
 func (b *Builder) jsonValidator(schema *jsonschema.Schema) gin.HandlerFunc {

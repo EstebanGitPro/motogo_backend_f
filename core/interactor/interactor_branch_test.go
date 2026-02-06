@@ -12,18 +12,6 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// setupBranchMockLogger configures a MockLogger for branch tests
-func setupBranchMockLogger() *mocks.MockLogger {
-	mockLogger := new(mocks.MockLogger)
-	mockLogger.On("WithTraceID", mock.Anything).Return(mockLogger)
-	mockLogger.On("Info", mock.Anything, mock.Anything).Maybe()
-	mockLogger.On("Success", mock.Anything, mock.Anything).Maybe()
-	mockLogger.On("Error", mock.Anything, mock.Anything).Maybe()
-	mockLogger.On("Warn", mock.Anything, mock.Anything).Maybe()
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Maybe()
-	return mockLogger
-}
-
 // ============================================
 // RegisterBranch Tests (HU59)
 // ============================================
@@ -32,10 +20,10 @@ func TestRegisterBranch_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := setupBranchMockLogger()
+
 	mockTx := new(mocks.MockTx)
 
-	branchInteractor := interactor.NewBranchInteractor(mockBranchService, mockLogger)
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
 
 	lat := 4.710989
 	lng := -74.072092
@@ -89,9 +77,8 @@ func TestRegisterBranch_InvalidBrands(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := setupBranchMockLogger()
 
-	branchInteractor := interactor.NewBranchInteractor(mockBranchService, mockLogger)
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
 
 	branch := domain.Branch{
 		Name:   "Taller Norte",
@@ -117,9 +104,8 @@ func TestRegisterBranch_TxError(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := setupBranchMockLogger()
 
-	branchInteractor := interactor.NewBranchInteractor(mockBranchService, mockLogger)
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
 
 	branch := domain.Branch{
 		Name: "Taller Norte",
@@ -145,10 +131,10 @@ func TestRegisterBranch_SaveError_Rollback(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := setupBranchMockLogger()
+
 	mockTx := new(mocks.MockTx)
 
-	branchInteractor := interactor.NewBranchInteractor(mockBranchService, mockLogger)
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
 
 	branch := domain.Branch{
 		Name: "Taller Norte",
@@ -177,10 +163,10 @@ func TestRegisterBranch_CommitError(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := setupBranchMockLogger()
+
 	mockTx := new(mocks.MockTx)
 
-	branchInteractor := interactor.NewBranchInteractor(mockBranchService, mockLogger)
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
 
 	branch := domain.Branch{
 		Name: "Taller Norte",
@@ -213,10 +199,10 @@ func TestRegisterBranch_RollbackError(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := setupBranchMockLogger()
+
 	mockTx := new(mocks.MockTx)
 
-	branchInteractor := interactor.NewBranchInteractor(mockBranchService, mockLogger)
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
 
 	branch := domain.Branch{
 		Name: "Taller Norte",
@@ -249,9 +235,8 @@ func TestGetBranchByID_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := setupBranchMockLogger()
 
-	branchInteractor := interactor.NewBranchInteractor(mockBranchService, mockLogger)
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
 
 	branchID := "branch-123"
 	expectedBranch := &domain.Branch{
@@ -280,9 +265,8 @@ func TestGetBranchByID_NotFound(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := setupBranchMockLogger()
 
-	branchInteractor := interactor.NewBranchInteractor(mockBranchService, mockLogger)
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
 
 	branchID := "non-existent"
 
@@ -308,9 +292,8 @@ func TestGetBranchesByRepresentative_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := setupBranchMockLogger()
 
-	branchInteractor := interactor.NewBranchInteractor(mockBranchService, mockLogger)
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
 
 	representativeID := "rep-123"
 	expectedBranches := []domain.Branch{
@@ -335,9 +318,8 @@ func TestGetBranchesByRepresentative_Empty(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := setupBranchMockLogger()
 
-	branchInteractor := interactor.NewBranchInteractor(mockBranchService, mockLogger)
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
 
 	representativeID := "rep-new"
 
@@ -358,9 +340,8 @@ func TestGetBranchesByRepresentative_Error(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := setupBranchMockLogger()
 
-	branchInteractor := interactor.NewBranchInteractor(mockBranchService, mockLogger)
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
 
 	representativeID := "rep-123"
 	dbError := errors.New("database error")
@@ -386,10 +367,10 @@ func TestUpdateBranch_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := setupBranchMockLogger()
+
 	mockTx := new(mocks.MockTx)
 
-	branchInteractor := interactor.NewBranchInteractor(mockBranchService, mockLogger)
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
 
 	branchID := "branch-123"
 	personID := "rep-123"
@@ -439,9 +420,8 @@ func TestUpdateBranch_NotOwned(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := setupBranchMockLogger()
 
-	branchInteractor := interactor.NewBranchInteractor(mockBranchService, mockLogger)
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
 
 	branchID := "branch-123"
 	personID := "rep-other" // Different from owner
@@ -471,9 +451,8 @@ func TestUpdateBranch_NotFound(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := setupBranchMockLogger()
 
-	branchInteractor := interactor.NewBranchInteractor(mockBranchService, mockLogger)
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
 
 	branchID := "non-existent"
 	personID := "rep-123"
@@ -497,9 +476,8 @@ func TestUpdateBranch_InvalidBrands(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := setupBranchMockLogger()
 
-	branchInteractor := interactor.NewBranchInteractor(mockBranchService, mockLogger)
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
 
 	branchID := "branch-123"
 	personID := "rep-123"
@@ -533,9 +511,8 @@ func TestUpdateBranch_TxError(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := setupBranchMockLogger()
 
-	branchInteractor := interactor.NewBranchInteractor(mockBranchService, mockLogger)
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
 
 	branchID := "branch-123"
 	personID := "rep-123"
@@ -564,10 +541,10 @@ func TestUpdateBranch_ServiceError_Rollback(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := setupBranchMockLogger()
+
 	mockTx := new(mocks.MockTx)
 
-	branchInteractor := interactor.NewBranchInteractor(mockBranchService, mockLogger)
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
 
 	branchID := "branch-123"
 	personID := "rep-123"
@@ -600,10 +577,10 @@ func TestUpdateBranch_CommitError(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := setupBranchMockLogger()
+
 	mockTx := new(mocks.MockTx)
 
-	branchInteractor := interactor.NewBranchInteractor(mockBranchService, mockLogger)
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
 
 	branchID := "branch-123"
 	personID := "rep-123"
@@ -637,10 +614,10 @@ func TestUpdateBranch_RefetchError_ReturnsOriginal(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := setupBranchMockLogger()
+
 	mockTx := new(mocks.MockTx)
 
-	branchInteractor := interactor.NewBranchInteractor(mockBranchService, mockLogger)
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
 
 	branchID := "branch-123"
 	personID := "rep-123"
@@ -680,10 +657,10 @@ func TestUpdateBranch_WithLocation_Geocoding(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := setupBranchMockLogger()
+
 	mockTx := new(mocks.MockTx)
 
-	branchInteractor := interactor.NewBranchInteractor(mockBranchService, mockLogger)
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
 
 	branchID := "branch-123"
 	personID := "rep-123"
@@ -735,10 +712,10 @@ func TestDeleteBranch_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := setupBranchMockLogger()
+
 	mockTx := new(mocks.MockTx)
 
-	branchInteractor := interactor.NewBranchInteractor(mockBranchService, mockLogger)
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
 
 	branchID := "branch-123"
 	personID := "rep-123"
@@ -770,9 +747,8 @@ func TestDeleteBranch_NotOwned(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := setupBranchMockLogger()
 
-	branchInteractor := interactor.NewBranchInteractor(mockBranchService, mockLogger)
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
 
 	branchID := "branch-123"
 	personID := "rep-other" // Different from owner
@@ -799,9 +775,8 @@ func TestDeleteBranch_NotFound(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := setupBranchMockLogger()
 
-	branchInteractor := interactor.NewBranchInteractor(mockBranchService, mockLogger)
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
 
 	branchID := "non-existent"
 	personID := "rep-123"
@@ -823,10 +798,10 @@ func TestDeleteBranch_HasAssociations(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := setupBranchMockLogger()
+
 	mockTx := new(mocks.MockTx)
 
-	branchInteractor := interactor.NewBranchInteractor(mockBranchService, mockLogger)
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
 
 	branchID := "branch-with-diagnostics"
 	personID := "rep-123"
@@ -859,9 +834,8 @@ func TestDeleteBranch_TxError(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := setupBranchMockLogger()
 
-	branchInteractor := interactor.NewBranchInteractor(mockBranchService, mockLogger)
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
 
 	branchID := "branch-123"
 	personID := "rep-123"
@@ -888,10 +862,10 @@ func TestDeleteBranch_CommitError(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := setupBranchMockLogger()
+
 	mockTx := new(mocks.MockTx)
 
-	branchInteractor := interactor.NewBranchInteractor(mockBranchService, mockLogger)
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
 
 	branchID := "branch-123"
 	personID := "rep-123"
@@ -922,10 +896,10 @@ func TestDeleteBranch_ServiceError_NonFK(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := setupBranchMockLogger()
+
 	mockTx := new(mocks.MockTx)
 
-	branchInteractor := interactor.NewBranchInteractor(mockBranchService, mockLogger)
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
 
 	branchID := "branch-123"
 	personID := "rep-123"
@@ -962,9 +936,8 @@ func TestGeocodeLocation_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := setupBranchMockLogger()
 
-	branchInteractor := interactor.NewBranchInteractor(mockBranchService, mockLogger)
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
 
 	lat := 4.710989
 	lng := -74.072092
@@ -995,9 +968,8 @@ func TestGeocodeLocation_FailsGracefully(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := setupBranchMockLogger()
 
-	branchInteractor := interactor.NewBranchInteractor(mockBranchService, mockLogger)
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
 
 	location := &domain.Location{
 		Address: "Unknown Address",
@@ -1026,9 +998,8 @@ func TestGetBranchesNearby_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := setupBranchMockLogger()
 
-	branchInteractor := interactor.NewBranchInteractor(mockBranchService, mockLogger)
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
 
 	lat := 4.710989
 	lng := -74.072092
@@ -1067,9 +1038,8 @@ func TestGetBranchesNearby_EmptyResults(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := setupBranchMockLogger()
 
-	branchInteractor := interactor.NewBranchInteractor(mockBranchService, mockLogger)
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
 
 	lat := 0.0 // Middle of nowhere
 	lng := 0.0
@@ -1093,9 +1063,8 @@ func TestGetBranchesNearby_Error(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := setupBranchMockLogger()
 
-	branchInteractor := interactor.NewBranchInteractor(mockBranchService, mockLogger)
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
 
 	lat := 4.710989
 	lng := -74.072092

@@ -5,6 +5,7 @@ import (
 
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/middleware"
+	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 	"github.com/gin-gonic/gin"
 )
 
@@ -38,6 +39,7 @@ type GeocodingTestResponse struct {
 // @Tags Dev Tools
 // @Accept json
 // @Produce json
+// @Security     BearerAuth
 // @Param request body GeocodingTestRequest true "Address to geocode"
 // @Success 200 {object} middleware.APIResponse{data=GeocodingTestResponse}
 // @Failure 400 {object} middleware.APIResponse
@@ -47,14 +49,14 @@ func (h *handler) TestGeocoding() gin.HandlerFunc {
 		traceID := middleware.GetRequestID(c)
 		log := Logger.WithTraceID(traceID)
 
-		log.Info("Geocoding test request received",
+		log.Info(logger.LogGeocodingControllerTestRequest,
 			"method", c.Request.Method,
 			"path", c.Request.URL.Path,
 			"client_ip", c.ClientIP())
 
 		var req GeocodingTestRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
-			log.Warn("Invalid geocoding test request", "error", err)
+			log.Warn(logger.LogGeocodingControllerTestInvalid, "error", err)
 			c.JSON(http.StatusBadRequest, middleware.APIResponse{
 				Success: false,
 				Code:    "ERR_INVALID_REQUEST",
@@ -85,7 +87,7 @@ func (h *handler) TestGeocoding() gin.HandlerFunc {
 			response.Longitude = *location.Longitude
 			response.FormattedAddress = req.Address + ", " + req.CityName + ", " + req.DepartmentName + ", Colombia"
 			response.Confidence = 0.8 // OpenCage confidence aproximado
-			log.Success("Geocoding test successful",
+			log.Success(logger.LogGeocodingControllerTestSuccess,
 				"latitude", response.Latitude,
 				"longitude", response.Longitude)
 		} else {
@@ -93,7 +95,7 @@ func (h *handler) TestGeocoding() gin.HandlerFunc {
 			if err != nil {
 				response.Error = err.Error()
 			}
-			log.Warn("Geocoding test failed", "error", response.Error)
+			log.Warn(logger.LogGeocodingControllerTestFailed, "error", response.Error)
 		}
 
 		c.JSON(http.StatusOK, middleware.APIResponse{

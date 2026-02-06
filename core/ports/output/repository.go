@@ -207,7 +207,9 @@ type MotorcycleRepository interface {
 	// Motorcycle operations - write (HU43, HU44, HU45)
 	Save(ctx context.Context, tx Tx, motorcycle *domain.Motorcycle) error
 	Update(ctx context.Context, tx Tx, motorcycle *domain.Motorcycle) error
-	Delete(ctx context.Context, tx Tx, motorcycleID string) error
+	Delete(ctx context.Context, tx Tx, motorcycleID string) error               // Soft delete
+	HardDelete(ctx context.Context, tx Tx, motorcycleID string) error           // Hard delete (HU45 hybrid)
+	ClearProfileImageURL(ctx context.Context, tx Tx, motorcycleID string) error // HU39
 
 	// Motorcycle operations - read (HU46, HU47)
 	GetByID(ctx context.Context, motorcycleID string) (*domain.Motorcycle, error)
@@ -221,4 +223,24 @@ type MotorcycleRepository interface {
 	// Validation methods (HU43, HU44)
 	ValidateReferenceExists(ctx context.Context, referenceID string) (bool, error)
 	CheckLicensePlateExists(ctx context.Context, licensePlate string) (bool, error)
+
+	// History check (HU45 hybrid delete)
+	HasServiceHistory(ctx context.Context, motorcycleID string) (bool, error)
+}
+
+// EvidenceRepository interface for Motorcycle Evidence operations (HU16-19)
+type EvidenceRepository interface {
+	BeginTx(ctx context.Context) (Tx, error)
+
+	// Evidence operations - write (HU16, HU17, HU19)
+	Save(ctx context.Context, tx Tx, evidence *domain.MotorcycleEvidence) error
+	Update(ctx context.Context, tx Tx, evidence *domain.MotorcycleEvidence) error
+	Delete(ctx context.Context, tx Tx, evidenceID string) error
+
+	// Evidence operations - read (HU18)
+	GetByID(ctx context.Context, evidenceID string) (*domain.MotorcycleEvidence, error)
+	GetByMotorcycleID(ctx context.Context, motorcycleID string) ([]domain.MotorcycleEvidence, error)
+
+	// Validation methods (HU16)
+	CountByMotorcycleID(ctx context.Context, motorcycleID string) (int, error)
 }

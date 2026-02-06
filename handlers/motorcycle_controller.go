@@ -166,6 +166,9 @@ func (h *handler) RegisterMotorcycle() gin.HandlerFunc {
 			return
 		}
 
+		// Sanitize input
+		req.Sanitize()
+
 		// 3. Convert to domain object
 		motorcycle := req.ToDomain(person.ID)
 
@@ -460,6 +463,9 @@ func (h *handler) UpdateMotorcycle() gin.HandlerFunc {
 			return
 		}
 
+		// Sanitize input
+		req.Sanitize()
+
 		log.Debug(logger.LogMotorcycleControllerUpdateDebug,
 			"motorcycle_id", motorcycleID,
 			"encoded_id", encodedID,
@@ -713,7 +719,7 @@ func (h *handler) GetBrandLines() gin.HandlerFunc {
 			return
 		}
 
-		log.Debug("Decoded brand ID", "encoded", encodedBrandID, "decoded", brandID)
+		log.Debug(logger.LogMotorcycleControllerBrandIDDecoded, "encoded", encodedBrandID, "decoded", brandID)
 
 		// 2. Call interactor to get references by brand
 		references, err := h.MotorcycleInteractor.GetReferencesByBrandID(c.Request.Context(), brandID)

@@ -14,7 +14,7 @@ func createServiceTestEncoder() *idencoder.HashidsEncoder {
 	encoder, _ := idencoder.NewHashidsEncoder(idencoder.Config{
 		Secret:    "test-secret-key-for-testing",
 		MinLength: 8,
-	}, nil)
+	})
 	return encoder
 }
 
@@ -228,4 +228,143 @@ func TestNewServiceTypeListResponse_Success(t *testing.T) {
 	assert.Equal(t, "Reparación", response.Types[1].Value)
 	assert.Equal(t, "Llantas", response.Types[2].Value)
 	assert.Len(t, response.Links, 1)
+}
+
+// ============================================
+// UpdateServiceRequest.Sanitize Tests
+// ============================================
+
+func TestUpdateServiceRequest_Sanitize(t *testing.T) {
+	// Arrange
+	isActive := true
+	req := &handlers.UpdateServiceRequest{
+		Name:        "  Cambio de aceite  ",
+		Description: "  Cambio completo de aceite\t",
+		ServiceType: "  Mantenimiento\n",
+		IsActive:    &isActive,
+	}
+
+	// Act
+	req.Sanitize()
+
+	// Assert
+	assert.Equal(t, "Cambio de aceite", req.Name)
+	assert.Equal(t, "Cambio completo de aceite", req.Description)
+	assert.Equal(t, "Mantenimiento", req.ServiceType)
+}
+
+func TestUpdateServiceRequest_Sanitize_EmptyDescription(t *testing.T) {
+	// Arrange
+	req := &handlers.UpdateServiceRequest{
+		Name:        "  Test  ",
+		Description: "",
+		ServiceType: "Reparación",
+	}
+
+	// Act
+	req.Sanitize()
+
+	// Assert
+	assert.Equal(t, "Test", req.Name)
+	assert.Empty(t, req.Description)
+	assert.Equal(t, "Reparación", req.ServiceType)
+}
+
+// ============================================
+// NewServiceDetailResponse Tests
+// ============================================
+
+func TestNewServiceDetailResponse_Success(t *testing.T) {
+	// Arrange
+	service := &domain.Service{
+		ID:          "uuid-123",
+		Name:        "Cambio de aceite",
+		Description: "Servicio completo",
+		ServiceType: domain.ServiceTypeMaintenance,
+		IsActive:    true,
+	}
+	links := []handlers.Link{
+		{Rel: "self", Href: "/services/abc", Method: "GET"},
+	}
+
+	// Act
+	response := handlers.NewServiceDetailResponse(service, links)
+
+	// Assert
+	assert.Equal(t, "uuid-123", response.ID)
+	assert.Equal(t, "Cambio de aceite", response.Name)
+	assert.Equal(t, "Servicio completo", response.Description)
+	assert.Equal(t, "Mantenimiento", response.ServiceType)
+	assert.Len(t, response.Links, 1)
+}
+
+func TestNewServiceDetailResponse_EmptyDescription(t *testing.T) {
+	// Arrange
+	service := &domain.Service{
+		ID:          "uuid-456",
+		Name:        "Reparación de frenos",
+		Description: "",
+		ServiceType: domain.ServiceTypeRepair,
+		IsActive:    false,
+	}
+	links := []handlers.Link{}
+
+	// Act
+	response := handlers.NewServiceDetailResponse(service, links)
+
+	// Assert
+	assert.Equal(t, "uuid-456", response.ID)
+	assert.Equal(t, "Reparación de frenos", response.Name)
+	assert.Empty(t, response.Description)
+	assert.Equal(t, "Reparación", response.ServiceType)
+	assert.Empty(t, response.Links)
+}
+
+// ============================================
+// NewServiceDetailResponseWithEncoder Tests
+// ============================================
+
+func TestNewServiceDetailResponseWithEncoder_Success(t *testing.T) {
+	// Arrange
+	encoder := createServiceTestEncoder()
+	service := &domain.Service{
+		ID:          "a1234567-89ab-cdef-0123-456789abcdef",
+		Name:        "Cambio de aceite",
+		Description: "Servicio completo",
+		ServiceType: domain.ServiceTypeMaintenance,
+		IsActive:    true,
+	}
+	links := []handlers.Link{
+		{Rel: "self", Href: "/services/abc", Method: "GET"},
+	}
+
+	// Act
+	response, err := handlers.NewServiceDetailResponseWithEncoder(service, links, encoder)
+
+	// Assert
+	assert.NoError(t, err)
+	assert.NotEqual(t, "a1234567-89ab-cdef-0123-456789abcdef", response.ID) // ID should be encoded
+	assert.NotEmpty(t, response.ID)
+	assert.Equal(t, "Cambio de aceite", response.Name)
+	assert.Equal(t, "Servicio completo", response.Description)
+	assert.Equal(t, "Mantenimiento", response.ServiceType)
+	assert.True(t, response.IsActive)
+}
+
+func TestNewServiceDetailResponseWithEncoder_InvalidUUID(t *testing.T) {
+	// Arrange
+	encoder := createServiceTestEncoder()
+	service := &domain.Service{
+		ID:          "invalid-uuid",
+		Name:        "Test Service",
+		ServiceType: domain.ServiceTypeMaintenance,
+	}
+	links := []handlers.Link{}
+
+	// Act
+	response, err := handlers.NewServiceDetailResponseWithEncoder(service, links, encoder)
+
+	// Assert
+	assert.Error(t, err)
+	assert.Empty(t, response.ID)
 }

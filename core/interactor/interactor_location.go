@@ -11,41 +11,39 @@ import (
 // LocationInteractor handles location-related use cases
 type LocationInteractor struct {
 	locationService input.LocationService
-	log             logger.Logger
 }
 
 // NewLocationInteractor creates a new LocationInteractor
-func NewLocationInteractor(locationService input.LocationService, log logger.Logger) *LocationInteractor {
+func NewLocationInteractor(locationService input.LocationService) *LocationInteractor {
 	return &LocationInteractor{
 		locationService: locationService,
-		log:             log,
 	}
 }
 
 // GetAllDepartments retrieves all departments
 func (i *LocationInteractor) GetAllDepartments(ctx context.Context) ([]domain.Department, error) {
-	i.log.Info(logger.LogLocationInteractorGetDepartments)
+	log.Info(logger.LogLocationInteractorGetDepartments)
 
 	departments, err := i.locationService.GetAllDepartments(ctx)
 	if err != nil {
-		i.log.Error(logger.LogLocationInteractorGetDepartmentsError, "error", err)
+		log.Error(logger.LogLocationInteractorGetDepartmentsError, "error", err)
 		return nil, err
 	}
 
-	i.log.Success(logger.LogLocationInteractorGetDepartmentsOK, "count", len(departments))
+	log.Success(logger.LogLocationInteractorGetDepartmentsOK, "count", len(departments))
 	return departments, nil
 }
 
 // GetCitiesByDepartment retrieves all cities for a specific department
 func (i *LocationInteractor) GetCitiesByDepartment(ctx context.Context, departmentID string) ([]domain.City, error) {
-	i.log.Info(logger.LogLocationInteractorGetCities, "department_id", departmentID)
+	log.Info(logger.LogLocationInteractorGetCities, "department_id", departmentID)
 
 	cities, err := i.locationService.GetCitiesByDepartment(ctx, departmentID)
 	if err != nil {
-		i.log.Error(logger.LogLocationInteractorGetCitiesError, "error", err, "department_id", departmentID)
+		log.Error(logger.LogLocationInteractorGetCitiesError, "error", err, "department_id", departmentID)
 		return nil, err
 	}
 
-	i.log.Success(logger.LogLocationInteractorGetCitiesOK, "count", len(cities), "department_id", departmentID)
+	log.Success(logger.LogLocationInteractorGetCitiesOK, "count", len(cities), "department_id", departmentID)
 	return cities, nil
 }

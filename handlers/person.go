@@ -34,10 +34,8 @@ type LoginRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
-// Sanitize trims whitespace from email (password intentionally not trimmed)
 func (r *LoginRequest) Sanitize() {
 	r.Email = TrimString(r.Email)
-	// Password is intentionally NOT trimmed - spaces may be valid
 }
 
 type LoginResponse struct {

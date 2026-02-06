@@ -24,11 +24,25 @@ type CreateScheduleExceptionRequest struct {
 	IsClosed           bool    `json:"is_closed"`
 }
 
+// Sanitize trims whitespace from all string fields
+func (r *CreateScheduleExceptionRequest) Sanitize() {
+	r.ExceptionStartDate = TrimString(r.ExceptionStartDate)
+	r.ExceptionEndDate = TrimString(r.ExceptionEndDate)
+	r.OpeningTime = TrimStringPtr(r.OpeningTime)
+	r.ClosingTime = TrimStringPtr(r.ClosingTime)
+}
+
 // UpdateScheduleExceptionRequest represents the request body for updating an exception
 type UpdateScheduleExceptionRequest struct {
 	OpeningTime *string `json:"opening_time"` // HH:mm
 	ClosingTime *string `json:"closing_time"` // HH:mm
 	IsClosed    bool    `json:"is_closed"`
+}
+
+// Sanitize trims whitespace from all string fields
+func (r *UpdateScheduleExceptionRequest) Sanitize() {
+	r.OpeningTime = TrimStringPtr(r.OpeningTime)
+	r.ClosingTime = TrimStringPtr(r.ClosingTime)
 }
 
 // ScheduleExceptionResponse represents the response for a schedule exception
@@ -166,6 +180,9 @@ func (h *handler) CreateScheduleException(
 			h.Response.Error(c, domain.MsgValBadFormat)
 			return
 		}
+
+		// Sanitize input
+		req.Sanitize()
 
 		// 4. Get schedule for this branch
 		schedule, err := scheduleInteractor.GetScheduleByBranchID(c.Request.Context(), branchID, person.ID)
@@ -378,6 +395,9 @@ func (h *handler) UpdateScheduleException(
 			h.Response.Error(c, domain.MsgValBadFormat)
 			return
 		}
+
+		// Sanitize input
+		req.Sanitize()
 
 		// 4. Build domain object
 		exception := domain.ScheduleDetail{

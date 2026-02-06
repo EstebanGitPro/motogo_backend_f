@@ -25,6 +25,7 @@ type Validators struct {
 	UpdateScheduleExceptionValidator *jsonschema.Schema // HU21 (update exception)
 	FranchiseValidator               *jsonschema.Schema // HU26-29 (franchises)
 	RegisterMotorcycleValidator      *jsonschema.Schema // HU43 (register motorcycle)
+	CreateEvidenceValidator          *jsonschema.Schema // HU16 (create evidence)
 }
 
 type FileReaderInterface interface {
@@ -124,6 +125,11 @@ func NewValidator(fileReader FileReaderInterface) (*Validators, error) {
 		return nil, err
 	}
 
+	createEvidence, err := validator.createSchema("create_evidence_schema.json")
+	if err != nil {
+		return nil, err
+	}
+
 	validator.RegisterValidator = register
 	validator.MessageValidator = message
 	validator.ResendVerificationValidator = resendVerification
@@ -138,6 +144,7 @@ func NewValidator(fileReader FileReaderInterface) (*Validators, error) {
 	validator.UpdateScheduleExceptionValidator = updateScheduleException
 	validator.FranchiseValidator = franchise
 	validator.RegisterMotorcycleValidator = registerMotorcycle
+	validator.CreateEvidenceValidator = createEvidence
 
 	return validator, nil
 }
