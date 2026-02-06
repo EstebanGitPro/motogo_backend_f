@@ -12,18 +12,6 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// setupMotorcycleMockLogger configures a MockLogger for motorcycle tests
-func setupMotorcycleMockLogger() *mocks.MockLogger {
-	mockLogger := new(mocks.MockLogger)
-	mockLogger.On("WithTraceID", mock.Anything).Return(mockLogger)
-	mockLogger.On("Info", mock.Anything, mock.Anything).Maybe()
-	mockLogger.On("Success", mock.Anything, mock.Anything).Maybe()
-	mockLogger.On("Error", mock.Anything, mock.Anything).Maybe()
-	mockLogger.On("Warn", mock.Anything, mock.Anything).Maybe()
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Maybe()
-	return mockLogger
-}
-
 // ============================================
 // RegisterMotorcycle Tests (HU43)
 // ============================================
@@ -32,10 +20,10 @@ func TestRegisterMotorcycle_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	mockLogger := setupMotorcycleMockLogger()
+
 	mockTx := new(mocks.MockTx)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
 
 	year := 2023
 	mileage := 5000
@@ -71,9 +59,8 @@ func TestRegisterMotorcycle_ReferenceRequired(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	mockLogger := setupMotorcycleMockLogger()
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
 
 	motorcycle := &domain.Motorcycle{
 		LicensePlate: "ABC123",
@@ -94,9 +81,8 @@ func TestRegisterMotorcycle_ReferenceNotFound(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	mockLogger := setupMotorcycleMockLogger()
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
 
 	motorcycle := &domain.Motorcycle{
 		LicensePlate: "ABC123",
@@ -122,9 +108,8 @@ func TestRegisterMotorcycle_DuplicateLicensePlate(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	mockLogger := setupMotorcycleMockLogger()
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
 
 	motorcycle := &domain.Motorcycle{
 		LicensePlate: "ABC123",
@@ -151,9 +136,8 @@ func TestRegisterMotorcycle_TxError(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	mockLogger := setupMotorcycleMockLogger()
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
 
 	motorcycle := &domain.Motorcycle{
 		LicensePlate: "ABC123",
@@ -183,10 +167,10 @@ func TestRegisterMotorcycle_SaveError_Rollback(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	mockLogger := setupMotorcycleMockLogger()
+
 	mockTx := new(mocks.MockTx)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
 
 	motorcycle := &domain.Motorcycle{
 		LicensePlate: "ABC123",
@@ -223,9 +207,8 @@ func TestGetMotorcycleByID_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	mockLogger := setupMotorcycleMockLogger()
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
 
 	motorcycleID := "moto-123"
 	expectedMotorcycle := &domain.Motorcycle{
@@ -252,9 +235,8 @@ func TestGetMotorcycleByID_NotFound(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	mockLogger := setupMotorcycleMockLogger()
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
 
 	motorcycleID := "non-existent"
 
@@ -280,9 +262,8 @@ func TestGetMotorcyclesByOwner_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	mockLogger := setupMotorcycleMockLogger()
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
 
 	ownerID := "owner-123"
 	expectedMotorcycles := []domain.Motorcycle{
@@ -307,9 +288,8 @@ func TestGetMotorcyclesByOwner_Empty(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	mockLogger := setupMotorcycleMockLogger()
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
 
 	ownerID := "new-owner"
 
@@ -330,9 +310,8 @@ func TestGetMotorcyclesByOwner_Error(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	mockLogger := setupMotorcycleMockLogger()
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
 
 	ownerID := "owner-123"
 	dbError := errors.New("database error")
@@ -358,9 +337,8 @@ func TestGetMotorcycleByLicensePlate_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	mockLogger := setupMotorcycleMockLogger()
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
 
 	licensePlate := "ABC123"
 	expectedMotorcycle := &domain.Motorcycle{
@@ -387,9 +365,8 @@ func TestGetMotorcycleByLicensePlate_NotFound(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	mockLogger := setupMotorcycleMockLogger()
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
 
 	licensePlate := "INVALID"
 
@@ -415,10 +392,10 @@ func TestUpdateMotorcycle_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	mockLogger := setupMotorcycleMockLogger()
+
 	mockTx := new(mocks.MockTx)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
 
 	motorcycleID := "moto-123"
 	ownerID := "owner-123"
@@ -460,9 +437,8 @@ func TestUpdateMotorcycle_NotFound(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	mockLogger := setupMotorcycleMockLogger()
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
 
 	motorcycleID := "non-existent"
 	ownerID := "owner-123"
@@ -486,9 +462,8 @@ func TestUpdateMotorcycle_NotOwner(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	mockLogger := setupMotorcycleMockLogger()
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
 
 	motorcycleID := "moto-123"
 	ownerID := "other-owner" // Different from actual owner
@@ -519,9 +494,8 @@ func TestUpdateMotorcycle_ReferenceNotFound(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	mockLogger := setupMotorcycleMockLogger()
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
 
 	motorcycleID := "moto-123"
 	ownerID := "owner-123"
@@ -560,10 +534,10 @@ func TestDeleteMotorcycle_Success_SoftDelete(t *testing.T) {
 	// Arrange - motorcycle WITH service history -> soft delete
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	mockLogger := setupMotorcycleMockLogger()
+
 	mockTx := new(mocks.MockTx)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
 
 	motorcycleID := "moto-123"
 	ownerID := "owner-123"
@@ -596,10 +570,10 @@ func TestDeleteMotorcycle_Success_HardDelete(t *testing.T) {
 	// Arrange - motorcycle WITHOUT service history -> hard delete
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	mockLogger := setupMotorcycleMockLogger()
+
 	mockTx := new(mocks.MockTx)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
 
 	motorcycleID := "moto-456"
 	ownerID := "owner-123"
@@ -632,9 +606,8 @@ func TestDeleteMotorcycle_NotFound(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	mockLogger := setupMotorcycleMockLogger()
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
 
 	motorcycleID := "non-existent"
 	ownerID := "owner-123"
@@ -656,9 +629,8 @@ func TestDeleteMotorcycle_NotOwner(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	mockLogger := setupMotorcycleMockLogger()
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
 
 	motorcycleID := "moto-123"
 	ownerID := "other-owner" // Different from actual owner
@@ -686,10 +658,10 @@ func TestDeleteMotorcycle_TxError_Rollback(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	mockLogger := setupMotorcycleMockLogger()
+
 	mockTx := new(mocks.MockTx)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
 
 	motorcycleID := "moto-123"
 	ownerID := "owner-123"
@@ -727,9 +699,8 @@ func TestGetMotorcycleReferences_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	mockLogger := setupMotorcycleMockLogger()
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
 
 	expectedRefs := []domain.MotorcycleReference{
 		{ID: "ref-1", Model: "CBR 600"},
@@ -753,9 +724,8 @@ func TestGetMotorcycleReferences_Error(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	mockLogger := setupMotorcycleMockLogger()
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
 
 	dbError := errors.New("database error")
 
@@ -780,9 +750,8 @@ func TestGetReferencesByBrandID_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	mockLogger := setupMotorcycleMockLogger()
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
 
 	brandID := "brand-honda"
 	expectedRefs := []domain.MotorcycleReference{
@@ -807,9 +776,8 @@ func TestGetReferencesByBrandID_Error(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	mockLogger := setupMotorcycleMockLogger()
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
 
 	brandID := "brand-honda"
 	dbError := errors.New("database error")
@@ -835,11 +803,10 @@ func TestDeleteProfileImage_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	mockLogger := setupMotorcycleMockLogger()
 	mockTx := new(mocks.MockTx)
 	mockStorage := new(mocks.MockStorageClient)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger).
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo).
 		WithStorageClient(mockStorage)
 
 	motorcycleID := "moto-123"
@@ -876,9 +843,8 @@ func TestDeleteProfileImage_Success_NoImage(t *testing.T) {
 	// Arrange - motorcycle without profile image
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	mockLogger := setupMotorcycleMockLogger()
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
 
 	motorcycleID := "moto-123"
 	ownerID := "owner-123"
@@ -906,9 +872,8 @@ func TestDeleteProfileImage_Success_EmptyImageURL(t *testing.T) {
 	// Arrange - motorcycle with empty profile image URL
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	mockLogger := setupMotorcycleMockLogger()
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
 
 	motorcycleID := "moto-123"
 	ownerID := "owner-123"
@@ -937,9 +902,8 @@ func TestDeleteProfileImage_NotFound(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	mockLogger := setupMotorcycleMockLogger()
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
 
 	motorcycleID := "non-existent"
 	ownerID := "owner-123"
@@ -961,9 +925,8 @@ func TestDeleteProfileImage_NotOwner(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	mockLogger := setupMotorcycleMockLogger()
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
 
 	motorcycleID := "moto-123"
 	ownerID := "other-owner" // Different from actual owner
@@ -991,11 +954,10 @@ func TestDeleteProfileImage_StorageError_ContinuesSuccessfully(t *testing.T) {
 	// Arrange - storage deletion fails but operation continues
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	mockLogger := setupMotorcycleMockLogger()
 	mockTx := new(mocks.MockTx)
 	mockStorage := new(mocks.MockStorageClient)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger).
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo).
 		WithStorageClient(mockStorage)
 
 	motorcycleID := "moto-123"
@@ -1032,11 +994,10 @@ func TestDeleteProfileImage_ClearURLError_Rollback(t *testing.T) {
 	// Arrange - database clear fails
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	mockLogger := setupMotorcycleMockLogger()
 	mockTx := new(mocks.MockTx)
 	mockStorage := new(mocks.MockStorageClient)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger).
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo).
 		WithStorageClient(mockStorage)
 
 	motorcycleID := "moto-123"
@@ -1073,11 +1034,10 @@ func TestDeleteProfileImage_CommitError(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	mockLogger := setupMotorcycleMockLogger()
 	mockTx := new(mocks.MockTx)
 	mockStorage := new(mocks.MockStorageClient)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger).
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo).
 		WithStorageClient(mockStorage)
 
 	motorcycleID := "moto-123"
@@ -1114,11 +1074,10 @@ func TestDeleteProfileImage_Success_WithoutStorageClient(t *testing.T) {
 	// Arrange - no storage client configured (skips storage deletion)
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	mockLogger := setupMotorcycleMockLogger()
 	mockTx := new(mocks.MockTx)
 
 	// No storage client configured
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, mockLogger)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
 
 	motorcycleID := "moto-123"
 	ownerID := "owner-123"

@@ -17,10 +17,10 @@ func TestRegisterPerson_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockService := new(mocks.MockService)
-	mockLogger := new(mocks.MockLogger)
+
 	mockTx := new(mocks.MockTx)
 
-	personInteractor := interactor.NewInteractor(mockService, mockLogger) // Corrected: Pass mockService directly
+	personInteractor := interactor.NewInteractor(mockService) // Corrected: Pass mockService directly
 
 	person := domain.Person{
 		Email:     "test@example.com",
@@ -39,10 +39,6 @@ func TestRegisterPerson_Success(t *testing.T) {
 	// Mock expectations
 
 	// WithTraceID and Logging
-	mockLogger.On("WithTraceID", mock.Anything).Return(mockLogger)
-	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Success", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
 
 	// Step 1: RegisterPerson (validaciones)
 	mockService.On("RegisterPerson", ctx, mock.AnythingOfType("domain.Person")).Return(registrationResult, nil)
@@ -85,7 +81,6 @@ func TestRegisterPerson_Success(t *testing.T) {
 	assert.Equal(t, "Usuario registrado exitosamente", result.Message)
 
 	mockService.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 	mockTx.AssertExpectations(t)
 }
 
@@ -93,10 +88,10 @@ func TestRegisterPerson_FailsAtKeycloakCreation_RollsBack(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockService := new(mocks.MockService)
-	mockLogger := new(mocks.MockLogger)
+
 	mockTx := new(mocks.MockTx)
 
-	personInteractor := interactor.NewInteractor(mockService, mockLogger) // Corrected: Pass mockService directly
+	personInteractor := interactor.NewInteractor(mockService) // Corrected: Pass mockService directly
 
 	person := domain.Person{
 		Email:     "test@example.com",
@@ -113,12 +108,6 @@ func TestRegisterPerson_FailsAtKeycloakCreation_RollsBack(t *testing.T) {
 	keycloakError := errors.New("keycloak service unavailable")
 
 	// Mock expectations
-	mockLogger.On("WithTraceID", mock.Anything).Return(mockLogger)
-	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Success", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Error", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Warn", mock.Anything, mock.Anything).Return()
 
 	mockService.On("RegisterPerson", ctx, mock.AnythingOfType("domain.Person")).Return(registrationResult, nil)
 	mockService.On("CheckAndCleanInconsistentState", ctx, person.Email).Return(nil)
@@ -140,7 +129,6 @@ func TestRegisterPerson_FailsAtKeycloakCreation_RollsBack(t *testing.T) {
 	assert.Equal(t, domain.ErrKeycloakUserCreationFailed, err)
 
 	mockService.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 	mockTx.AssertExpectations(t)
 }
 
@@ -148,10 +136,10 @@ func TestRegisterPerson_FailsAtSaveDB_RollsBackKeycloak(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockService := new(mocks.MockService)
-	mockLogger := new(mocks.MockLogger)
+
 	mockTx := new(mocks.MockTx)
 
-	personInteractor := interactor.NewInteractor(mockService, mockLogger) // Corrected: Pass mockService directly
+	personInteractor := interactor.NewInteractor(mockService) // Corrected: Pass mockService directly
 
 	person := domain.Person{
 		Email:     "test@example.com",
@@ -169,12 +157,6 @@ func TestRegisterPerson_FailsAtSaveDB_RollsBackKeycloak(t *testing.T) {
 	dbError := errors.New("update keycloak ID failed")
 
 	// Mock expectations
-	mockLogger.On("WithTraceID", mock.Anything).Return(mockLogger)
-	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Success", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Error", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Warn", mock.Anything, mock.Anything).Return()
 
 	mockService.On("RegisterPerson", ctx, mock.AnythingOfType("domain.Person")).Return(registrationResult, nil)
 	mockService.On("CheckAndCleanInconsistentState", ctx, person.Email).Return(nil)
@@ -204,6 +186,5 @@ func TestRegisterPerson_FailsAtSaveDB_RollsBackKeycloak(t *testing.T) {
 	mockTx.AssertCalled(t, "Rollback")
 
 	mockService.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 	mockTx.AssertExpectations(t)
 }

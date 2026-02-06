@@ -21,10 +21,10 @@ func TestCreateFranchiseWithBranches_Success(t *testing.T) {
 	ctx := context.Background()
 	mockFranchiseService := new(mocks.MockFranchiseService)
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := new(mocks.MockLogger)
+
 	mockTx := new(mocks.MockTx)
 
-	franchiseInteractor := interactor.NewFranchiseInteractor(mockFranchiseService, mockBranchService, mockLogger)
+	franchiseInteractor := interactor.NewFranchiseInteractor(mockFranchiseService, mockBranchService)
 
 	franchise := domain.Franchise{
 		Name:        "Motozona Colombia",
@@ -67,9 +67,8 @@ func TestCreateFranchiseWithBranches_NoBranches(t *testing.T) {
 	ctx := context.Background()
 	mockFranchiseService := new(mocks.MockFranchiseService)
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := new(mocks.MockLogger)
 
-	franchiseInteractor := interactor.NewFranchiseInteractor(mockFranchiseService, mockBranchService, mockLogger)
+	franchiseInteractor := interactor.NewFranchiseInteractor(mockFranchiseService, mockBranchService)
 
 	franchise := domain.Franchise{Name: "Motozona"}
 	branchIDs := []string{} // Empty - should fail
@@ -89,9 +88,8 @@ func TestCreateFranchiseWithBranches_BranchNotFound(t *testing.T) {
 	ctx := context.Background()
 	mockFranchiseService := new(mocks.MockFranchiseService)
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := new(mocks.MockLogger)
 
-	franchiseInteractor := interactor.NewFranchiseInteractor(mockFranchiseService, mockBranchService, mockLogger)
+	franchiseInteractor := interactor.NewFranchiseInteractor(mockFranchiseService, mockBranchService)
 
 	franchise := domain.Franchise{Name: "Motozona"}
 	branchIDs := []string{"non-existent-branch"}
@@ -116,9 +114,8 @@ func TestCreateFranchiseWithBranches_BranchNotOwned(t *testing.T) {
 	ctx := context.Background()
 	mockFranchiseService := new(mocks.MockFranchiseService)
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := new(mocks.MockLogger)
 
-	franchiseInteractor := interactor.NewFranchiseInteractor(mockFranchiseService, mockBranchService, mockLogger)
+	franchiseInteractor := interactor.NewFranchiseInteractor(mockFranchiseService, mockBranchService)
 
 	franchise := domain.Franchise{Name: "Motozona"}
 	branchIDs := []string{"branch-1"}
@@ -149,9 +146,8 @@ func TestCreateFranchiseWithBranches_BranchAlreadyInFranchise(t *testing.T) {
 	ctx := context.Background()
 	mockFranchiseService := new(mocks.MockFranchiseService)
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := new(mocks.MockLogger)
 
-	franchiseInteractor := interactor.NewFranchiseInteractor(mockFranchiseService, mockBranchService, mockLogger)
+	franchiseInteractor := interactor.NewFranchiseInteractor(mockFranchiseService, mockBranchService)
 
 	franchise := domain.Franchise{Name: "Motozona"}
 	branchIDs := []string{"branch-1"}
@@ -183,10 +179,10 @@ func TestCreateFranchiseWithBranches_CreateFails_Rollback(t *testing.T) {
 	ctx := context.Background()
 	mockFranchiseService := new(mocks.MockFranchiseService)
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := new(mocks.MockLogger)
+
 	mockTx := new(mocks.MockTx)
 
-	franchiseInteractor := interactor.NewFranchiseInteractor(mockFranchiseService, mockBranchService, mockLogger)
+	franchiseInteractor := interactor.NewFranchiseInteractor(mockFranchiseService, mockBranchService)
 
 	franchise := domain.Franchise{Name: "Motozona"}
 	branchIDs := []string{"branch-1"}
@@ -223,10 +219,10 @@ func TestDeleteFranchise_Success(t *testing.T) {
 	ctx := context.Background()
 	mockFranchiseService := new(mocks.MockFranchiseService)
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := new(mocks.MockLogger)
+
 	mockTx := new(mocks.MockTx)
 
-	franchiseInteractor := interactor.NewFranchiseInteractor(mockFranchiseService, mockBranchService, mockLogger)
+	franchiseInteractor := interactor.NewFranchiseInteractor(mockFranchiseService, mockBranchService)
 
 	franchiseID := "franchise-123"
 	representativeID := "rep-123"
@@ -252,10 +248,10 @@ func TestDeleteFranchise_NotFound(t *testing.T) {
 	ctx := context.Background()
 	mockFranchiseService := new(mocks.MockFranchiseService)
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := new(mocks.MockLogger)
+
 	mockTx := new(mocks.MockTx)
 
-	franchiseInteractor := interactor.NewFranchiseInteractor(mockFranchiseService, mockBranchService, mockLogger)
+	franchiseInteractor := interactor.NewFranchiseInteractor(mockFranchiseService, mockBranchService)
 
 	franchiseID := "non-existent"
 	representativeID := "rep-123"
@@ -285,9 +281,8 @@ func TestGetFranchiseByID_Success(t *testing.T) {
 	ctx := context.Background()
 	mockFranchiseService := new(mocks.MockFranchiseService)
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := new(mocks.MockLogger)
 
-	franchiseInteractor := interactor.NewFranchiseInteractor(mockFranchiseService, mockBranchService, mockLogger)
+	franchiseInteractor := interactor.NewFranchiseInteractor(mockFranchiseService, mockBranchService)
 
 	expectedFranchise := &domain.Franchise{
 		ID:   "franchise-123",
@@ -313,9 +308,8 @@ func TestGetFranchiseByID_NotFound(t *testing.T) {
 	ctx := context.Background()
 	mockFranchiseService := new(mocks.MockFranchiseService)
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := new(mocks.MockLogger)
 
-	franchiseInteractor := interactor.NewFranchiseInteractor(mockFranchiseService, mockBranchService, mockLogger)
+	franchiseInteractor := interactor.NewFranchiseInteractor(mockFranchiseService, mockBranchService)
 
 	// Mock expectations
 	mockFranchiseService.On("GetFranchiseByID", ctx, "not-found").Return(nil, domain.ErrFranchiseNotFound)
@@ -340,9 +334,8 @@ func TestGetFranchisesByRepresentative_Success(t *testing.T) {
 	ctx := context.Background()
 	mockFranchiseService := new(mocks.MockFranchiseService)
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := new(mocks.MockLogger)
 
-	franchiseInteractor := interactor.NewFranchiseInteractor(mockFranchiseService, mockBranchService, mockLogger)
+	franchiseInteractor := interactor.NewFranchiseInteractor(mockFranchiseService, mockBranchService)
 
 	expectedFranchises := []domain.Franchise{
 		{ID: "f1", Name: "Motozona Norte"},
@@ -379,10 +372,10 @@ func TestUpdateFranchise_Success(t *testing.T) {
 	ctx := context.Background()
 	mockFranchiseService := new(mocks.MockFranchiseService)
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := new(mocks.MockLogger)
+
 	mockTx := new(mocks.MockTx)
 
-	franchiseInteractor := interactor.NewFranchiseInteractor(mockFranchiseService, mockBranchService, mockLogger)
+	franchiseInteractor := interactor.NewFranchiseInteractor(mockFranchiseService, mockBranchService)
 
 	franchise := domain.Franchise{ID: "franchise-123", Name: "Updated Name"}
 	representativeID := "rep-123"
@@ -408,9 +401,8 @@ func TestUpdateFranchise_NotFound(t *testing.T) {
 	ctx := context.Background()
 	mockFranchiseService := new(mocks.MockFranchiseService)
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := new(mocks.MockLogger)
 
-	franchiseInteractor := interactor.NewFranchiseInteractor(mockFranchiseService, mockBranchService, mockLogger)
+	franchiseInteractor := interactor.NewFranchiseInteractor(mockFranchiseService, mockBranchService)
 
 	franchise := domain.Franchise{ID: "non-existent", Name: "Name"}
 	representativeID := "rep-123"
@@ -432,9 +424,8 @@ func TestUpdateFranchise_CountBranchesError(t *testing.T) {
 	ctx := context.Background()
 	mockFranchiseService := new(mocks.MockFranchiseService)
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := new(mocks.MockLogger)
 
-	franchiseInteractor := interactor.NewFranchiseInteractor(mockFranchiseService, mockBranchService, mockLogger)
+	franchiseInteractor := interactor.NewFranchiseInteractor(mockFranchiseService, mockBranchService)
 
 	franchise := domain.Franchise{ID: "franchise-123", Name: "Name"}
 	representativeID := "rep-123"
@@ -459,10 +450,10 @@ func TestAddBranchToFranchise_Success(t *testing.T) {
 	ctx := context.Background()
 	mockFranchiseService := new(mocks.MockFranchiseService)
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := new(mocks.MockLogger)
+
 	mockTx := new(mocks.MockTx)
 
-	franchiseInteractor := interactor.NewFranchiseInteractor(mockFranchiseService, mockBranchService, mockLogger)
+	franchiseInteractor := interactor.NewFranchiseInteractor(mockFranchiseService, mockBranchService)
 
 	franchiseID := "franchise-123"
 	branchID := "branch-456"
@@ -490,9 +481,8 @@ func TestAddBranchToFranchise_BranchNotFound(t *testing.T) {
 	ctx := context.Background()
 	mockFranchiseService := new(mocks.MockFranchiseService)
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := new(mocks.MockLogger)
 
-	franchiseInteractor := interactor.NewFranchiseInteractor(mockFranchiseService, mockBranchService, mockLogger)
+	franchiseInteractor := interactor.NewFranchiseInteractor(mockFranchiseService, mockBranchService)
 
 	mockBranchService.On("GetBranchByID", ctx, "non-existent").Return(nil, domain.ErrBranchNotFound)
 
@@ -509,9 +499,8 @@ func TestAddBranchToFranchise_BranchNotOwned(t *testing.T) {
 	ctx := context.Background()
 	mockFranchiseService := new(mocks.MockFranchiseService)
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := new(mocks.MockLogger)
 
-	franchiseInteractor := interactor.NewFranchiseInteractor(mockFranchiseService, mockBranchService, mockLogger)
+	franchiseInteractor := interactor.NewFranchiseInteractor(mockFranchiseService, mockBranchService)
 
 	branch := &domain.Branch{ID: "branch-1", RepresentativeID: "other-rep"}
 	mockBranchService.On("GetBranchByID", ctx, "branch-1").Return(branch, nil)
@@ -533,10 +522,10 @@ func TestRemoveBranchFromFranchise_Success(t *testing.T) {
 	ctx := context.Background()
 	mockFranchiseService := new(mocks.MockFranchiseService)
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := new(mocks.MockLogger)
+
 	mockTx := new(mocks.MockTx)
 
-	franchiseInteractor := interactor.NewFranchiseInteractor(mockFranchiseService, mockBranchService, mockLogger)
+	franchiseInteractor := interactor.NewFranchiseInteractor(mockFranchiseService, mockBranchService)
 
 	franchiseID := "franchise-123"
 	branchID := "branch-456"
@@ -561,9 +550,8 @@ func TestRemoveBranchFromFranchise_LastBranch(t *testing.T) {
 	ctx := context.Background()
 	mockFranchiseService := new(mocks.MockFranchiseService)
 	mockBranchService := new(mocks.MockBranchService)
-	mockLogger := new(mocks.MockLogger)
 
-	franchiseInteractor := interactor.NewFranchiseInteractor(mockFranchiseService, mockBranchService, mockLogger)
+	franchiseInteractor := interactor.NewFranchiseInteractor(mockFranchiseService, mockBranchService)
 
 	franchiseID := "franchise-123"
 	branchID := "branch-456"

@@ -83,10 +83,10 @@ func TestCreateMessage_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockService := new(MockMessageService)
-	mockLogger := new(mocks.MockLogger)
+
 	mockTx := new(mocks.MockTx)
 
-	messageInteractor := interactor.NewMessageInteractor(mockService, mockLogger)
+	messageInteractor := interactor.NewMessageInteractor(mockService)
 
 	message := domain.Message{
 		Code:    "TEST_001",
@@ -95,9 +95,6 @@ func TestCreateMessage_Success(t *testing.T) {
 	}
 
 	// Mock expectations
-	mockLogger.On("WithTraceID", mock.Anything).Return(mockLogger)
-	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Success", mock.Anything, mock.Anything).Return()
 
 	mockService.On("ValidateMessage", ctx, mock.AnythingOfType("domain.Message")).Return(nil)
 	mockService.On("BeginTx", ctx).Return(mockTx, nil)
@@ -113,7 +110,6 @@ func TestCreateMessage_Success(t *testing.T) {
 	assert.Equal(t, message.Code, result.Code)
 
 	mockService.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 	mockTx.AssertExpectations(t)
 }
 
@@ -121,9 +117,8 @@ func TestCreateMessage_ValidationError(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockService := new(MockMessageService)
-	mockLogger := new(mocks.MockLogger)
 
-	messageInteractor := interactor.NewMessageInteractor(mockService, mockLogger)
+	messageInteractor := interactor.NewMessageInteractor(mockService)
 
 	message := domain.Message{
 		// Missing required Code
@@ -134,9 +129,6 @@ func TestCreateMessage_ValidationError(t *testing.T) {
 	validationError := domain.ErrMessageCodeRequired
 
 	// Mock expectations
-	mockLogger.On("WithTraceID", mock.Anything).Return(mockLogger)
-	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Error", mock.Anything, mock.Anything).Return()
 
 	mockService.On("ValidateMessage", ctx, mock.AnythingOfType("domain.Message")).Return(validationError)
 
@@ -149,16 +141,14 @@ func TestCreateMessage_ValidationError(t *testing.T) {
 	assert.Nil(t, result)
 
 	mockService.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }
 
 func TestGetMessageByID_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockService := new(MockMessageService)
-	mockLogger := new(mocks.MockLogger)
 
-	messageInteractor := interactor.NewMessageInteractor(mockService, mockLogger)
+	messageInteractor := interactor.NewMessageInteractor(mockService)
 
 	expectedMessage := &domain.Message{
 		ID:    "msg-123",
@@ -167,8 +157,6 @@ func TestGetMessageByID_Success(t *testing.T) {
 	}
 
 	// Mock expectations
-	mockLogger.On("WithTraceID", mock.Anything).Return(mockLogger)
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
 	mockService.On("GetMessageByID", ctx, "msg-123").Return(expectedMessage, nil)
 
 	// Act
@@ -180,16 +168,14 @@ func TestGetMessageByID_Success(t *testing.T) {
 	assert.Equal(t, expectedMessage.ID, message.ID)
 
 	mockService.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }
 
 func TestListActiveMessages_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockService := new(MockMessageService)
-	mockLogger := new(mocks.MockLogger)
 
-	messageInteractor := interactor.NewMessageInteractor(mockService, mockLogger)
+	messageInteractor := interactor.NewMessageInteractor(mockService)
 
 	expectedMessages := []domain.Message{
 		{ID: "msg-1", Code: "CODE_001"},
@@ -197,8 +183,6 @@ func TestListActiveMessages_Success(t *testing.T) {
 	}
 
 	// Mock expectations
-	mockLogger.On("WithTraceID", mock.Anything).Return(mockLogger)
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
 	mockService.On("ListActiveMessages", ctx).Return(expectedMessages, nil)
 
 	// Act
@@ -209,17 +193,16 @@ func TestListActiveMessages_Success(t *testing.T) {
 	assert.Len(t, messages, 2)
 
 	mockService.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }
 
 func TestDeleteMessage_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockService := new(MockMessageService)
-	mockLogger := new(mocks.MockLogger)
+
 	mockTx := new(mocks.MockTx)
 
-	messageInteractor := interactor.NewMessageInteractor(mockService, mockLogger)
+	messageInteractor := interactor.NewMessageInteractor(mockService)
 
 	existingMessage := &domain.Message{
 		ID:   "msg-123",
@@ -227,9 +210,6 @@ func TestDeleteMessage_Success(t *testing.T) {
 	}
 
 	// Mock expectations
-	mockLogger.On("WithTraceID", mock.Anything).Return(mockLogger)
-	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Success", mock.Anything, mock.Anything).Return()
 
 	mockService.On("GetMessageByID", ctx, "msg-123").Return(existingMessage, nil)
 	mockService.On("BeginTx", ctx).Return(mockTx, nil)
@@ -243,7 +223,6 @@ func TestDeleteMessage_Success(t *testing.T) {
 	assert.NoError(t, err)
 
 	mockService.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 	mockTx.AssertExpectations(t)
 }
 
@@ -251,16 +230,12 @@ func TestDeleteMessage_NotFound(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockService := new(MockMessageService)
-	mockLogger := new(mocks.MockLogger)
 
-	messageInteractor := interactor.NewMessageInteractor(mockService, mockLogger)
+	messageInteractor := interactor.NewMessageInteractor(mockService)
 
 	notFoundError := domain.ErrMessageNotFound
 
 	// Mock expectations
-	mockLogger.On("WithTraceID", mock.Anything).Return(mockLogger)
-	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Error", mock.Anything, mock.Anything).Return()
 
 	mockService.On("GetMessageByID", ctx, "not-found").Return(nil, notFoundError)
 
@@ -272,17 +247,16 @@ func TestDeleteMessage_NotFound(t *testing.T) {
 	assert.Equal(t, notFoundError, err)
 
 	mockService.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }
 
 func TestUpdateMessage_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockService := new(MockMessageService)
-	mockLogger := new(mocks.MockLogger)
+
 	mockTx := new(mocks.MockTx)
 
-	messageInteractor := interactor.NewMessageInteractor(mockService, mockLogger)
+	messageInteractor := interactor.NewMessageInteractor(mockService)
 
 	message := domain.Message{
 		ID:      "msg-123",
@@ -297,9 +271,6 @@ func TestUpdateMessage_Success(t *testing.T) {
 	}
 
 	// Mock expectations
-	mockLogger.On("WithTraceID", mock.Anything).Return(mockLogger)
-	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Success", mock.Anything, mock.Anything).Return()
 
 	mockService.On("GetMessageByID", ctx, message.ID).Return(existingMessage, nil)
 	mockService.On("ValidateMessage", ctx, mock.AnythingOfType("domain.Message")).Return(nil)
@@ -316,7 +287,6 @@ func TestUpdateMessage_Success(t *testing.T) {
 	assert.Equal(t, message.ID, result.ID)
 
 	mockService.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 	mockTx.AssertExpectations(t)
 }
 
@@ -328,9 +298,8 @@ func TestGetMessageByCode_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockService := new(MockMessageService)
-	mockLogger := new(mocks.MockLogger)
 
-	messageInteractor := interactor.NewMessageInteractor(mockService, mockLogger)
+	messageInteractor := interactor.NewMessageInteractor(mockService)
 
 	expectedMessage := &domain.Message{
 		ID:    "msg-123",
@@ -339,8 +308,6 @@ func TestGetMessageByCode_Success(t *testing.T) {
 	}
 
 	// Mock expectations
-	mockLogger.On("WithTraceID", mock.Anything).Return(mockLogger)
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
 	mockService.On("GetMessageByCode", ctx, "ERR_USER_NOT_FOUND").Return(expectedMessage, nil)
 
 	// Act
@@ -352,21 +319,16 @@ func TestGetMessageByCode_Success(t *testing.T) {
 	assert.Equal(t, "ERR_USER_NOT_FOUND", message.Code)
 
 	mockService.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }
 
 func TestGetMessageByCode_NotFound(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockService := new(MockMessageService)
-	mockLogger := new(mocks.MockLogger)
 
-	messageInteractor := interactor.NewMessageInteractor(mockService, mockLogger)
+	messageInteractor := interactor.NewMessageInteractor(mockService)
 
 	// Mock expectations
-	mockLogger.On("WithTraceID", mock.Anything).Return(mockLogger)
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
-	mockLogger.On("Error", mock.Anything, mock.Anything).Return()
 	mockService.On("GetMessageByCode", ctx, "NON_EXISTENT_CODE").Return(nil, domain.ErrMessageNotFound)
 
 	// Act
@@ -378,7 +340,6 @@ func TestGetMessageByCode_NotFound(t *testing.T) {
 	assert.Equal(t, domain.ErrMessageNotFound, err)
 
 	mockService.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }
 
 // ============================================
@@ -389,9 +350,8 @@ func TestListMessages_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockService := new(MockMessageService)
-	mockLogger := new(mocks.MockLogger)
 
-	messageInteractor := interactor.NewMessageInteractor(mockService, mockLogger)
+	messageInteractor := interactor.NewMessageInteractor(mockService)
 
 	filters := map[string]interface{}{"active": true}
 	expectedMessages := []domain.Message{
@@ -400,8 +360,6 @@ func TestListMessages_Success(t *testing.T) {
 	}
 
 	// Mock expectations
-	mockLogger.On("WithTraceID", mock.Anything).Return(mockLogger)
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
 	mockService.On("ListMessages", ctx, filters).Return(expectedMessages, nil)
 
 	// Act
@@ -412,22 +370,18 @@ func TestListMessages_Success(t *testing.T) {
 	assert.Len(t, messages, 2)
 
 	mockService.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }
 
 func TestListMessages_Empty(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockService := new(MockMessageService)
-	mockLogger := new(mocks.MockLogger)
 
-	messageInteractor := interactor.NewMessageInteractor(mockService, mockLogger)
+	messageInteractor := interactor.NewMessageInteractor(mockService)
 
 	filters := map[string]interface{}{"type": "NONEXISTENT"}
 
 	// Mock expectations
-	mockLogger.On("WithTraceID", mock.Anything).Return(mockLogger)
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
 	mockService.On("ListMessages", ctx, filters).Return([]domain.Message{}, nil)
 
 	// Act
@@ -438,5 +392,4 @@ func TestListMessages_Empty(t *testing.T) {
 	assert.Empty(t, messages)
 
 	mockService.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
 }

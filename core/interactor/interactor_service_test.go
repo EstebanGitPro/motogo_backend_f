@@ -9,20 +9,7 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/mocks"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
-
-// setupMockLogger configures a MockLogger to return itself on WithTraceID calls
-func setupMockLogger() *mocks.MockLogger {
-	mockLogger := new(mocks.MockLogger)
-	mockLogger.On("WithTraceID", mock.Anything).Return(mockLogger)
-	mockLogger.On("Info", mock.Anything, mock.Anything).Maybe()
-	mockLogger.On("Success", mock.Anything, mock.Anything).Maybe()
-	mockLogger.On("Error", mock.Anything, mock.Anything).Maybe()
-	mockLogger.On("Warn", mock.Anything, mock.Anything).Maybe()
-	mockLogger.On("Debug", mock.Anything, mock.Anything).Maybe()
-	return mockLogger
-}
 
 // ============================================
 // GetServiceTypes Tests (HU75)
@@ -32,9 +19,8 @@ func TestGetServiceTypes_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockService := new(mocks.MockServiceCatalogService)
-	mockLogger := setupMockLogger()
 
-	serviceInteractor := interactor.NewServiceInteractor(mockService, mockLogger)
+	serviceInteractor := interactor.NewServiceInteractor(mockService)
 
 	expectedTypes := []domain.ServiceType{
 		domain.ServiceTypeMaintenance,
@@ -63,9 +49,8 @@ func TestGetAllServices_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockService := new(mocks.MockServiceCatalogService)
-	mockLogger := setupMockLogger()
 
-	serviceInteractor := interactor.NewServiceInteractor(mockService, mockLogger)
+	serviceInteractor := interactor.NewServiceInteractor(mockService)
 
 	expectedServices := []domain.Service{
 		{ID: "svc-1", Name: "Cambio de Aceite", ServiceType: domain.ServiceTypeMaintenance, IsActive: true},
@@ -90,9 +75,8 @@ func TestGetAllServices_Error(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockService := new(mocks.MockServiceCatalogService)
-	mockLogger := setupMockLogger()
 
-	serviceInteractor := interactor.NewServiceInteractor(mockService, mockLogger)
+	serviceInteractor := interactor.NewServiceInteractor(mockService)
 
 	dbError := errors.New("database connection failed")
 
@@ -118,9 +102,8 @@ func TestGetServicesByType_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockService := new(mocks.MockServiceCatalogService)
-	mockLogger := setupMockLogger()
 
-	serviceInteractor := interactor.NewServiceInteractor(mockService, mockLogger)
+	serviceInteractor := interactor.NewServiceInteractor(mockService)
 
 	serviceType := domain.ServiceTypeMaintenance
 	expectedServices := []domain.Service{
@@ -148,9 +131,8 @@ func TestGetServicesByType_Error(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockService := new(mocks.MockServiceCatalogService)
-	mockLogger := setupMockLogger()
 
-	serviceInteractor := interactor.NewServiceInteractor(mockService, mockLogger)
+	serviceInteractor := interactor.NewServiceInteractor(mockService)
 
 	serviceType := domain.ServiceTypeRepair
 	dbError := errors.New("query failed")
@@ -176,9 +158,8 @@ func TestGetServiceByID_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockService := new(mocks.MockServiceCatalogService)
-	mockLogger := setupMockLogger()
 
-	serviceInteractor := interactor.NewServiceInteractor(mockService, mockLogger)
+	serviceInteractor := interactor.NewServiceInteractor(mockService)
 
 	serviceID := "svc-123"
 	expectedService := &domain.Service{
@@ -208,9 +189,8 @@ func TestGetServiceByID_NotFound(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockService := new(mocks.MockServiceCatalogService)
-	mockLogger := setupMockLogger()
 
-	serviceInteractor := interactor.NewServiceInteractor(mockService, mockLogger)
+	serviceInteractor := interactor.NewServiceInteractor(mockService)
 
 	serviceID := "non-existent"
 
@@ -236,9 +216,8 @@ func TestGetServicesByBranch_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockService := new(mocks.MockServiceCatalogService)
-	mockLogger := setupMockLogger()
 
-	serviceInteractor := interactor.NewServiceInteractor(mockService, mockLogger)
+	serviceInteractor := interactor.NewServiceInteractor(mockService)
 
 	branchID := "branch-123"
 	expectedServices := []domain.BranchServiceInfo{
@@ -271,9 +250,8 @@ func TestGetServicesByBranch_Error(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockService := new(mocks.MockServiceCatalogService)
-	mockLogger := setupMockLogger()
 
-	serviceInteractor := interactor.NewServiceInteractor(mockService, mockLogger)
+	serviceInteractor := interactor.NewServiceInteractor(mockService)
 
 	branchID := "branch-123"
 	dbError := errors.New("database error")
@@ -299,10 +277,10 @@ func TestUpdateService_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockService := new(mocks.MockServiceCatalogService)
-	mockLogger := setupMockLogger()
+
 	mockTx := new(mocks.MockTx)
 
-	serviceInteractor := interactor.NewServiceInteractor(mockService, mockLogger)
+	serviceInteractor := interactor.NewServiceInteractor(mockService)
 
 	service := domain.Service{
 		ID:          "svc-123",
@@ -332,10 +310,10 @@ func TestUpdateService_NotFound(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockService := new(mocks.MockServiceCatalogService)
-	mockLogger := setupMockLogger()
+
 	mockTx := new(mocks.MockTx)
 
-	serviceInteractor := interactor.NewServiceInteractor(mockService, mockLogger)
+	serviceInteractor := interactor.NewServiceInteractor(mockService)
 
 	service := domain.Service{
 		ID:          "non-existent",
@@ -362,9 +340,8 @@ func TestUpdateService_TxError(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockService := new(mocks.MockServiceCatalogService)
-	mockLogger := setupMockLogger()
 
-	serviceInteractor := interactor.NewServiceInteractor(mockService, mockLogger)
+	serviceInteractor := interactor.NewServiceInteractor(mockService)
 
 	service := domain.Service{
 		ID:          "svc-123",
@@ -395,9 +372,8 @@ func TestValidateServiceIDs_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockService := new(mocks.MockServiceCatalogService)
-	mockLogger := setupMockLogger()
 
-	serviceInteractor := interactor.NewServiceInteractor(mockService, mockLogger)
+	serviceInteractor := interactor.NewServiceInteractor(mockService)
 
 	serviceIDs := []string{"svc-1", "svc-2", "svc-3"}
 
@@ -417,9 +393,8 @@ func TestValidateServiceIDs_NotFound(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockService := new(mocks.MockServiceCatalogService)
-	mockLogger := setupMockLogger()
 
-	serviceInteractor := interactor.NewServiceInteractor(mockService, mockLogger)
+	serviceInteractor := interactor.NewServiceInteractor(mockService)
 
 	serviceIDs := []string{"svc-1", "invalid-id"}
 
@@ -444,10 +419,10 @@ func TestAssociateBranchServices_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockService := new(mocks.MockServiceCatalogService)
-	mockLogger := setupMockLogger()
+
 	mockTx := new(mocks.MockTx)
 
-	serviceInteractor := interactor.NewServiceInteractor(mockService, mockLogger)
+	serviceInteractor := interactor.NewServiceInteractor(mockService)
 
 	branchID := "branch-123"
 	serviceIDs := []string{"svc-1", "svc-2"}
@@ -472,10 +447,10 @@ func TestDissociateBranchService_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockService := new(mocks.MockServiceCatalogService)
-	mockLogger := setupMockLogger()
+
 	mockTx := new(mocks.MockTx)
 
-	serviceInteractor := interactor.NewServiceInteractor(mockService, mockLogger)
+	serviceInteractor := interactor.NewServiceInteractor(mockService)
 
 	branchID := "branch-123"
 	serviceID := "svc-1"
@@ -496,10 +471,10 @@ func TestDissociateBranchService_NotFound(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockService := new(mocks.MockServiceCatalogService)
-	mockLogger := setupMockLogger()
+
 	mockTx := new(mocks.MockTx)
 
-	serviceInteractor := interactor.NewServiceInteractor(mockService, mockLogger)
+	serviceInteractor := interactor.NewServiceInteractor(mockService)
 
 	branchID := "branch-123"
 	serviceID := "non-existent"
@@ -525,10 +500,10 @@ func TestBeginTx_Success(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockService := new(mocks.MockServiceCatalogService)
-	mockLogger := setupMockLogger()
+
 	mockTx := new(mocks.MockTx)
 
-	serviceInteractor := interactor.NewServiceInteractor(mockService, mockLogger)
+	serviceInteractor := interactor.NewServiceInteractor(mockService)
 
 	// Mock expectations
 	mockService.On("BeginTx", ctx).Return(mockTx, nil)
@@ -547,9 +522,8 @@ func TestBeginTx_Error(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 	mockService := new(mocks.MockServiceCatalogService)
-	mockLogger := setupMockLogger()
 
-	serviceInteractor := interactor.NewServiceInteractor(mockService, mockLogger)
+	serviceInteractor := interactor.NewServiceInteractor(mockService)
 
 	txError := errors.New("connection failed")
 
