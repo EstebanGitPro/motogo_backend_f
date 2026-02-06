@@ -34,7 +34,6 @@ type LoginRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
-
 func (r *LoginRequest) Sanitize() {
 	r.Email = TrimString(r.Email)
 }
