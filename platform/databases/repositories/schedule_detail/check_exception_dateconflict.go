@@ -17,7 +17,7 @@ func (r *repository) CheckExceptionDateConflict(
 		excludeExceptionID = "00000000-0000-0000-0000-000000000000" // UUID that won't match any real ID
 	}
 
-	log.Info("DEBUG_CheckExceptionDateConflict_QUERY_PARAMS",
+	log.Info(logger.LogScheduleDetailDebugQueryParams,
 		"scheduleID", scheduleID,
 		"excludeExceptionID", excludeExceptionID,
 		"startDate", startDate,
@@ -31,7 +31,7 @@ func (r *repository) CheckExceptionDateConflict(
 		startDate,
 	).Scan(&count)
 
-	log.Info("DEBUG_CheckExceptionDateConflict_QUERY_RESULT",
+	log.Info(logger.LogScheduleDetailDebugQueryResult,
 		"count", count,
 		"error", err)
 

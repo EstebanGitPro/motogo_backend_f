@@ -566,3 +566,172 @@ func TestGetServicesByBranch_DBError(t *testing.T) {
 	assert.Nil(t, services)
 	assert.Error(t, err)
 }
+
+// ============================================
+// UpdateService Tests
+// ============================================
+
+func TestUpdateService_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	stmt := mock.ExpectPrepare("UPDATE services")
+	stmt.ExpectExec().
+		WithArgs("New Name", "New Description", "MAINTENANCE", true, "svc-123").
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	repo := &repository{db: db}
+	repo.stmtUpdateService, _ = db.Prepare("UPDATE services SET name=?, description=?, service_type=?, is_active=? WHERE id=?")
+
+	service := domain.Service{
+		ID:          "svc-123",
+		Name:        "New Name",
+		Description: "New Description",
+		ServiceType: domain.ServiceType("MAINTENANCE"),
+		IsActive:    true,
+	}
+
+	err = repo.UpdateService(context.Background(), nil, service)
+
+	assert.NoError(t, err)
+}
+
+func TestUpdateService_DBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	stmt := mock.ExpectPrepare("UPDATE services")
+	stmt.ExpectExec().
+		WithArgs("Name", "Desc", "CLEANING", false, "svc-error").
+		WillReturnError(sql.ErrConnDone)
+
+	repo := &repository{db: db}
+	repo.stmtUpdateService, _ = db.Prepare("UPDATE services SET name=?, description=?, service_type=?, is_active=? WHERE id=?")
+
+	service := domain.Service{
+		ID:          "svc-error",
+		Name:        "Name",
+		Description: "Desc",
+		ServiceType: domain.ServiceType("CLEANING"),
+		IsActive:    false,
+	}
+
+	err = repo.UpdateService(context.Background(), nil, service)
+
+	assert.Error(t, err)
+}
+
+// ============================================
+// AssociateBranchServices Tests
+// ============================================
+
+func TestAssociateBranchServices_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	stmt := mock.ExpectPrepare("INSERT INTO branch_services")
+	stmt.ExpectExec().
+		WithArgs(sqlmock.AnyArg(), "branch-123", "svc-001").
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	stmt.ExpectExec().
+		WithArgs(sqlmock.AnyArg(), "branch-123", "svc-002").
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	repo := &repository{db: db}
+	repo.stmtInsertBranchService, _ = db.Prepare("INSERT INTO branch_services VALUES (?, ?, ?)")
+
+	err = repo.AssociateBranchServices(context.Background(), nil, "branch-123", []string{"svc-001", "svc-002"})
+
+	assert.NoError(t, err)
+}
+
+func TestAssociateBranchServices_Empty(t *testing.T) {
+	db, _, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	repo := &repository{db: db}
+
+	err = repo.AssociateBranchServices(context.Background(), nil, "branch-123", []string{})
+
+	assert.NoError(t, err)
+}
+
+func TestAssociateBranchServices_DBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	stmt := mock.ExpectPrepare("INSERT INTO branch_services")
+	stmt.ExpectExec().
+		WithArgs(sqlmock.AnyArg(), "branch-123", "svc-error").
+		WillReturnError(sql.ErrConnDone)
+
+	repo := &repository{db: db}
+	repo.stmtInsertBranchService, _ = db.Prepare("INSERT INTO branch_services VALUES (?, ?, ?)")
+
+	err = repo.AssociateBranchServices(context.Background(), nil, "branch-123", []string{"svc-error"})
+
+	assert.Error(t, err)
+}
+
+// ============================================
+// DissociateBranchService Tests
+// ============================================
+
+func TestDissociateBranchService_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	stmt := mock.ExpectPrepare("DELETE FROM branch_services")
+	stmt.ExpectExec().
+		WithArgs("branch-123", "svc-456").
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	repo := &repository{db: db}
+	repo.stmtDeleteBranchService, _ = db.Prepare("DELETE FROM branch_services WHERE branch_id=? AND service_id=?")
+
+	err = repo.DissociateBranchService(context.Background(), nil, "branch-123", "svc-456")
+
+	assert.NoError(t, err)
+}
+
+func TestDissociateBranchService_NotFound(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	stmt := mock.ExpectPrepare("DELETE FROM branch_services")
+	stmt.ExpectExec().
+		WithArgs("branch-123", "svc-notfound").
+		WillReturnResult(sqlmock.NewResult(0, 0)) // 0 rows affected
+
+	repo := &repository{db: db}
+	repo.stmtDeleteBranchService, _ = db.Prepare("DELETE FROM branch_services WHERE branch_id=? AND service_id=?")
+
+	err = repo.DissociateBranchService(context.Background(), nil, "branch-123", "svc-notfound")
+
+	assert.Equal(t, domain.ErrServiceNotFound, err)
+}
+
+func TestDissociateBranchService_DBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	stmt := mock.ExpectPrepare("DELETE FROM branch_services")
+	stmt.ExpectExec().
+		WithArgs("branch-error", "svc-error").
+		WillReturnError(sql.ErrConnDone)
+
+	repo := &repository{db: db}
+	repo.stmtDeleteBranchService, _ = db.Prepare("DELETE FROM branch_services WHERE branch_id=? AND service_id=?")
+
+	err = repo.DissociateBranchService(context.Background(), nil, "branch-error", "svc-error")
+
+	assert.Error(t, err)
+}
