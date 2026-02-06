@@ -14,7 +14,7 @@ func createServiceTestEncoder() *idencoder.HashidsEncoder {
 	encoder, _ := idencoder.NewHashidsEncoder(idencoder.Config{
 		Secret:    "test-secret-key-for-testing",
 		MinLength: 8,
-	}, nil)
+	})
 	return encoder
 }
 
