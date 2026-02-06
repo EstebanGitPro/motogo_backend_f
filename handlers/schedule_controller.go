@@ -21,6 +21,7 @@ import (
 // @Tags Schedules
 // @Accept json
 // @Produce json
+// @Security     BearerAuth
 // @Param id path string true "Branch ID (encoded)"
 // @Success 201 {object} StandardResponse
 // @Failure 400 {object} StandardResponse
@@ -94,6 +95,7 @@ func (h *handler) CreateBranchSchedule(scheduleInteractor *interactor.ScheduleIn
 // @Description Retrieves the schedule configuration for a branch
 // @Tags Schedules
 // @Produce json
+// @Security     BearerAuth
 // @Param id path string true "Branch ID (encoded)"
 // @Success 200 {object} StandardResponse
 // @Failure 404 {object} StandardResponse
@@ -153,6 +155,7 @@ func (h *handler) GetBranchSchedule(scheduleInteractor *interactor.ScheduleInter
 // @Tags Schedules
 // @Accept json
 // @Produce json
+// @Security     BearerAuth
 // @Param id path string true "Branch ID (encoded)"
 // @Param schedule body UpdateScheduleRequest true "Schedule update data"
 // @Success 200 {object} StandardResponse
@@ -269,6 +272,7 @@ func (h *handler) UpdateBranchSchedule(scheduleInteractor *interactor.ScheduleIn
 // @Description Removes the schedule configuration for a branch
 // @Tags Schedules
 // @Produce json
+// @Security     BearerAuth
 // @Param id path string true "Branch ID (encoded)"
 // @Success 200 {object} StandardResponse
 // @Failure 403 {object} StandardResponse
@@ -332,6 +336,7 @@ func (h *handler) DeleteBranchSchedule(scheduleInteractor *interactor.ScheduleIn
 // @Description Activates the schedule configuration for a branch
 // @Tags Schedules
 // @Produce json
+// @Security     BearerAuth
 // @Param id path string true "Branch ID (encoded)"
 // @Success 200 {object} StandardResponse
 // @Failure 403 {object} StandardResponse
@@ -402,6 +407,7 @@ func (h *handler) ActivateBranchSchedule(scheduleInteractor *interactor.Schedule
 // @Description Deactivates the schedule configuration for a branch
 // @Tags Schedules
 // @Produce json
+// @Security     BearerAuth
 // @Param id path string true "Branch ID (encoded)"
 // @Success 200 {object} StandardResponse
 // @Failure 403 {object} StandardResponse
@@ -472,6 +478,7 @@ func (h *handler) DeactivateBranchSchedule(scheduleInteractor *interactor.Schedu
 // @Description Returns the catalog of available days of week for schedules
 // @Tags Schedules
 // @Produce json
+// @Security     BearerAuth
 // @Success 200 {object} StandardResponse
 // @Router /schedules/days [get]
 func (h *handler) GetDaysOfWeek() gin.HandlerFunc {

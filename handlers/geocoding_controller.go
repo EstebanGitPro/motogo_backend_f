@@ -38,6 +38,7 @@ type GeocodingTestResponse struct {
 // @Tags Dev Tools
 // @Accept json
 // @Produce json
+// @Security     BearerAuth
 // @Param request body GeocodingTestRequest true "Address to geocode"
 // @Success 200 {object} middleware.APIResponse{data=GeocodingTestResponse}
 // @Failure 400 {object} middleware.APIResponse

@@ -14,6 +14,7 @@ import (
 // @Description Adds or updates the profile image URL for a motorcycle. Only the owner can update.
 // @Accept json
 // @Produce json
+// @Security     BearerAuth
 // @Param id path string true "Motorcycle ID (obfuscated)"
 // @Param image body ProfileImageRequest true "Profile image URL"
 // @Success 200 {object} StandardResponse{data=ProfileImageResponse} "Image updated successfully"
@@ -83,6 +84,7 @@ func (h *handler) UpdateProfileImage() gin.HandlerFunc {
 // @Description Gets the profile image URL for a motorcycle. Only the owner can view.
 // @Accept json
 // @Produce json
+// @Security     BearerAuth
 // @Param id path string true "Motorcycle ID (obfuscated)"
 // @Success 200 {object} StandardResponse{data=ProfileImageResponse} "Image retrieved successfully"
 // @Failure 401 {object} StandardResponse "Unauthorized"
@@ -147,6 +149,7 @@ func (h *handler) GetProfileImage() gin.HandlerFunc {
 // @Description Removes the profile image from a motorcycle. Only the owner can delete.
 // @Accept json
 // @Produce json
+// @Security     BearerAuth
 // @Param id path string true "Motorcycle ID (obfuscated)"
 // @Success 200 {object} StandardResponse{data=ProfileImageResponse} "Image deleted successfully"
 // @Failure 401 {object} StandardResponse "Unauthorized"

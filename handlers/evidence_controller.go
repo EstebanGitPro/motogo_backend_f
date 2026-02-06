@@ -14,6 +14,7 @@ import (
 // @Description Upload photographic evidence for a motorcycle. The image must already be uploaded to Firebase Storage.
 // @Accept json
 // @Produce json
+// @Security     BearerAuth
 // @Param id path string true "Motorcycle ID (obfuscated)"
 // @Param evidence body CreateEvidenceRequest true "Evidence data"
 // @Success 201 {object} StandardResponse{data=EvidenceResponse} "Evidence created successfully"
@@ -96,6 +97,7 @@ func (h *handler) CreateEvidence() gin.HandlerFunc {
 // @Description Lists all photographic evidence for a motorcycle owned by authenticated user
 // @Accept json
 // @Produce json
+// @Security     BearerAuth
 // @Param id path string true "Motorcycle ID (obfuscated)"
 // @Success 200 {object} StandardResponse{data=[]EvidenceResponse} "Evidence list"
 // @Failure 401 {object} StandardResponse "Unauthorized - missing or invalid token"
@@ -170,6 +172,7 @@ func (h *handler) ListEvidence() gin.HandlerFunc {
 // @Description Updates photographic evidence for a motorcycle. Only the owner can update.
 // @Accept json
 // @Produce json
+// @Security     BearerAuth
 // @Param id path string true "Motorcycle ID (obfuscated)"
 // @Param evidenceId path string true "Evidence ID (obfuscated)"
 // @Param evidence body CreateEvidenceRequest true "Updated evidence data"
@@ -252,6 +255,7 @@ func (h *handler) UpdateEvidence() gin.HandlerFunc {
 // @Description Deletes photographic evidence for a motorcycle. Only the owner can delete.
 // @Accept json
 // @Produce json
+// @Security     BearerAuth
 // @Param id path string true "Motorcycle ID (obfuscated)"
 // @Param evidenceId path string true "Evidence ID (obfuscated)"
 // @Success 200 {object} StandardResponse{data=map[string]interface{}} "Evidence deleted, includes navigation links"

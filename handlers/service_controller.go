@@ -14,6 +14,7 @@ import (
 // @Description Retrieves the complete list of service types available in the system
 // @Tags Services
 // @Produce json
+// @Security     BearerAuth
 // @Success 200 {object} StandardResponse{data=ServiceTypeListResponse}
 // @Failure 500 {object} StandardResponse
 // @Router /service-types [get]
@@ -52,6 +53,7 @@ func (h *handler) GetServiceTypes() gin.HandlerFunc {
 // @Description Retrieves the complete list of services available in the catalog, optionally filtered by type
 // @Tags Services
 // @Produce json
+// @Security     BearerAuth
 // @Param type query string false "Filter by service type (e.g., Maintenance, Repair)"
 // @Success 200 {object} StandardResponse{data=ServiceListResponse}
 // @Failure 500 {object} StandardResponse
@@ -122,6 +124,7 @@ func (h *handler) GetServices() gin.HandlerFunc {
 // @Description Retrieves all services associated with a specific branch, including when they were added
 // @Tags Branches
 // @Produce json
+// @Security     BearerAuth
 // @Param id path string true "Branch ID"
 // @Success 200 {object} StandardResponse{data=BranchServiceListResponse}
 // @Failure 400 {object} StandardResponse
@@ -200,6 +203,7 @@ type AssociateBranchServicesResponse struct {
 // @Tags Branches
 // @Accept json
 // @Produce json
+// @Security     BearerAuth
 // @Param id path string true "Branch ID"
 // @Param body body AssociateBranchServicesRequest true "Service IDs to associate"
 // @Success 201 {object} StandardResponse{data=AssociateBranchServicesResponse}
@@ -292,6 +296,7 @@ func (h *handler) AssociateBranchServices() gin.HandlerFunc {
 // @Description Removes a service association from a specific branch
 // @Tags Branches
 // @Produce json
+// @Security     BearerAuth
 // @Param id path string true "Branch ID"
 // @Param serviceId path string true "Service ID"
 // @Success 200 {object} StandardResponse
@@ -360,6 +365,7 @@ func (h *handler) DissociateBranchService() gin.HandlerFunc {
 // @Tags Admin
 // @Accept json
 // @Produce json
+// @Security     BearerAuth
 // @Param id path string true "Service ID"
 // @Param body body UpdateServiceRequest true "Service data to update"
 // @Success 200 {object} StandardResponse{data=ServiceDetailResponse}

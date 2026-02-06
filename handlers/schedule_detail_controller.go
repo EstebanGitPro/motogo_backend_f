@@ -20,6 +20,7 @@ import (
 // @Tags Schedule Details
 // @Accept json
 // @Produce json
+// @Security     BearerAuth
 // @Param id path string true "Branch ID (encoded)"
 // @Param body body CreateScheduleDetailRequest true "Schedule detail data"
 // @Success 201 {object} StandardResponse
@@ -149,6 +150,7 @@ func (h *handler) CreateScheduleDetail(
 // @Description Retrieves all time slots (schedule details) for a branch
 // @Tags Schedule Details
 // @Produce json
+// @Security     BearerAuth
 // @Param id path string true "Branch ID (encoded)"
 // @Success 200 {object} StandardResponse
 // @Failure 404 {object} StandardResponse
@@ -230,6 +232,7 @@ func (h *handler) ListScheduleDetails(
 // @Tags Schedule Details
 // @Accept json
 // @Produce json
+// @Security     BearerAuth
 // @Param id path string true "Schedule Detail ID (encoded)"
 // @Param body body UpdateScheduleDetailRequest true "Update data"
 // @Success 200 {object} StandardResponse
@@ -311,6 +314,7 @@ func (h *handler) UpdateScheduleDetail(
 // @Description Deletes an existing time slot (schedule detail)
 // @Tags Schedule Details
 // @Produce json
+// @Security     BearerAuth
 // @Param id path string true "Schedule Detail ID (encoded)"
 // @Success 200 {object} StandardResponse
 // @Failure 403 {object} StandardResponse
