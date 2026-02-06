@@ -1089,134 +1089,139 @@ const (
 // ============================================
 const (
 	// Motorcycle Controller - GET (HU46)
-	LogMotorcycleControllerGetRequest      = "Motorcycle get request received"
-	LogMotorcycleControllerIDDecodeError   = "Error decoding motorcycle ID"
-	LogMotorcycleControllerGetByID         = "Searching motorcycle by ID"
-	LogMotorcycleControllerGetError        = "Error getting motorcycle"
-	LogMotorcycleControllerGetSuccess      = "Motorcycle retrieved successfully"
-	LogMotorcycleControllerOwnershipDenied = "Ownership denied - motorcycle belongs to another user"
+	LogMotorcycleControllerGetRequest      = "Solicitud de consulta de motocicleta recibida"
+	LogMotorcycleControllerIDDecodeError   = "Error decodificando ID de motocicleta"
+	LogMotorcycleControllerGetByID         = "Buscando motocicleta por ID"
+	LogMotorcycleControllerGetError        = "Error obteniendo motocicleta"
+	LogMotorcycleControllerGetSuccess      = "Motocicleta consultada exitosamente"
+	LogMotorcycleControllerOwnershipDenied = "Acceso denegado - la motocicleta pertenece a otro usuario"
 
 	// Motorcycle Controller - POST (HU43)
-	LogMotorcycleControllerRegRequest  = "Motorcycle registration request received"
-	LogMotorcycleControllerRegBody     = "Motorcycle registration body parsed"
-	LogMotorcycleControllerAuthError   = "Motorcycle registration auth error"
-	LogMotorcycleControllerBindError   = "Error binding motorcycle request body"
-	LogMotorcycleControllerRefDecError = "Error decoding motorcycle reference ID"
-	LogMotorcycleControllerRegError    = "Error registering motorcycle"
-	LogMotorcycleControllerIDEncError  = "Error encoding motorcycle ID"
-	LogMotorcycleControllerRegSuccess  = "Motorcycle registered successfully"
+	LogMotorcycleControllerRegRequest  = "Solicitud de registro de motocicleta recibida"
+	LogMotorcycleControllerRegBody     = "Cuerpo de registro de motocicleta parseado"
+	LogMotorcycleControllerAuthError   = "Error de autenticación en registro de motocicleta"
+	LogMotorcycleControllerBindError   = "Error parseando cuerpo de solicitud de motocicleta"
+	LogMotorcycleControllerRefDecError = "Error decodificando ID de referencia de motocicleta"
+	LogMotorcycleControllerRegError    = "Error registrando motocicleta"
+	LogMotorcycleControllerIDEncError  = "Error codificando ID de motocicleta"
+	LogMotorcycleControllerRegSuccess  = "Motocicleta registrada exitosamente"
 
 	// Motorcycle Controller - LIST (HU47)
-	LogMotorcycleControllerListRequest = "Motorcycle list request received"
-	LogMotorcycleControllerListError   = "Error listing motorcycles"
-	LogMotorcycleControllerListSuccess = "Motorcycles listed successfully"
+	LogMotorcycleControllerListRequest = "Solicitud de listado de motocicletas recibida"
+	LogMotorcycleControllerListError   = "Error listando motocicletas"
+	LogMotorcycleControllerListSuccess = "Motocicletas listadas exitosamente"
 
 	// Motorcycle Interactor (HU43-47)
-	LogMotorcycleInteractorRegStart        = "Motorcycle registration started"
-	LogMotorcycleInteractorValidateRef     = "Validating motorcycle reference exists"
-	LogMotorcycleInteractorRefError        = "Error validating motorcycle reference"
-	LogMotorcycleInteractorRefNotFound     = "Motorcycle reference not found"
-	LogMotorcycleInteractorRefRequired     = "Motorcycle reference_id is required"
-	LogMotorcycleInteractorCheckPlate      = "Checking license plate uniqueness"
-	LogMotorcycleInteractorCheckPlateErr   = "Error checking license plate uniqueness"
-	LogMotorcycleInteractorDupPlate        = "Duplicate license plate detected"
-	LogMotorcycleInteractorIDGenerated     = "Motorcycle ID generated"
-	LogMotorcycleInteractorBeginTxError    = "Error beginning transaction for motorcycle"
-	LogMotorcycleInteractorSaveError       = "Error saving motorcycle"
-	LogMotorcycleInteractorCommitError     = "Error committing motorcycle transaction"
-	LogMotorcycleInteractorRegSuccess      = "Motorcycle registered successfully"
-	LogMotorcycleInteractorGetStart        = "Motorcycle get by ID started"
-	LogMotorcycleInteractorGetError        = "Error getting motorcycle by ID"
-	LogMotorcycleInteractorGetSuccess      = "Motorcycle get by ID success"
-	LogMotorcycleInteractorGetOwnerStart   = "Motorcycle get by owner started"
-	LogMotorcycleInteractorGetOwnerError   = "Error getting motorcycles by owner"
-	LogMotorcycleInteractorGetOwnerSuccess = "Motorcycles by owner retrieved successfully"
-	LogMotorcycleInteractorGetPlateStart   = "Motorcycle get by license plate started"
-	LogMotorcycleInteractorGetPlateError   = "Error getting motorcycle by license plate"
-	LogMotorcycleInteractorGetPlateSuccess = "Motorcycle by license plate retrieved successfully"
+	LogMotorcycleInteractorRegStart        = "Registro de motocicleta iniciado"
+	LogMotorcycleInteractorValidateRef     = "Validando existencia de referencia de motocicleta"
+	LogMotorcycleInteractorRefError        = "Error validando referencia de motocicleta"
+	LogMotorcycleInteractorRefNotFound     = "Referencia de motocicleta no encontrada"
+	LogMotorcycleInteractorRefRequired     = "El reference_id de motocicleta es requerido"
+	LogMotorcycleInteractorCheckPlate      = "Verificando unicidad de placa"
+	LogMotorcycleInteractorCheckPlateErr   = "Error verificando unicidad de placa"
+	LogMotorcycleInteractorDupPlate        = "Placa duplicada detectada"
+	LogMotorcycleInteractorIDGenerated     = "ID de motocicleta generado"
+	LogMotorcycleInteractorBeginTxError    = "Error iniciando transacción para motocicleta"
+	LogMotorcycleInteractorSaveError       = "Error guardando motocicleta"
+	LogMotorcycleInteractorCommitError     = "Error confirmando transacción de motocicleta"
+	LogMotorcycleInteractorRegSuccess      = "Motocicleta registrada exitosamente"
+	LogMotorcycleInteractorGetStart        = "Consulta de motocicleta por ID iniciada"
+	LogMotorcycleInteractorGetError        = "Error obteniendo motocicleta por ID"
+	LogMotorcycleInteractorGetSuccess      = "Motocicleta obtenida exitosamente"
+	LogMotorcycleInteractorGetOwnerStart   = "Consulta de motocicletas por propietario iniciada"
+	LogMotorcycleInteractorGetOwnerError   = "Error obteniendo motocicletas por propietario"
+	LogMotorcycleInteractorGetOwnerSuccess = "Motocicletas por propietario obtenidas exitosamente"
+	LogMotorcycleInteractorGetPlateStart   = "Consulta de motocicleta por placa iniciada"
+	LogMotorcycleInteractorGetPlateError   = "Error obteniendo motocicleta por placa"
+	LogMotorcycleInteractorGetPlateSuccess = "Motocicleta por placa obtenida exitosamente"
 
 	// Motorcycle Controller - GET BY PLATE (HU47)
-	LogMotorcycleControllerPlateRequest = "Motorcycle lookup by plate request received"
-	LogMotorcycleControllerPlateError   = "Error looking up motorcycle by plate"
-	LogMotorcycleControllerPlateSuccess = "Motorcycle by plate retrieved successfully"
+	LogMotorcycleControllerPlateRequest = "Solicitud de búsqueda por placa recibida"
+	LogMotorcycleControllerPlateError   = "Error buscando motocicleta por placa"
+	LogMotorcycleControllerPlateSuccess = "Motocicleta por placa obtenida exitosamente"
 
 	// Motorcycle Repository (HU43-47)
-	LogMotorcycleRepoGetByID         = "Repository getting motorcycle by ID"
-	LogMotorcycleRepoGetByIDError    = "Repository error getting motorcycle by ID"
-	LogMotorcycleRepoGetByOwner      = "Repository getting motorcycles by owner"
-	LogMotorcycleRepoGetByOwnerError = "Repository error getting motorcycles by owner"
-	LogMotorcycleRepoGetByOwnerScan  = "Repository error scanning motorcycle row"
-	LogMotorcycleRepoGetByOwnerIter  = "Repository error iterating motorcycle rows"
-	LogMotorcycleRepoGetByPlate      = "Repository getting motorcycle by license plate"
-	LogMotorcycleRepoGetByPlateError = "Repository error getting motorcycle by license plate"
-	LogMotorcycleRepoInvalidTx       = "Repository invalid transaction type"
-	LogMotorcycleRepoSave            = "Repository saving motorcycle"
-	LogMotorcycleRepoSaveError       = "Repository save motorcycle error"
-	LogMotorcycleRepoSaveSuccess     = "Repository motorcycle saved"
-	LogMotorcycleRepoValidateRef     = "Repository validating reference"
-	LogMotorcycleRepoValidateRefErr  = "Repository error validating reference"
-	LogMotorcycleRepoCheckPlate      = "Repository checking license plate"
-	LogMotorcycleRepoCheckPlateErr   = "Repository error checking license plate"
-	LogMotorcycleRepoUpdate          = "Repository updating motorcycle"
-	LogMotorcycleRepoUpdateError     = "Repository error updating motorcycle"
-	LogMotorcycleRepoUpdateSuccess   = "Repository motorcycle updated"
+	LogMotorcycleRepoGetByID         = "Repositorio obteniendo motocicleta por ID"
+	LogMotorcycleRepoGetByIDError    = "Error de repositorio obteniendo motocicleta por ID"
+	LogMotorcycleRepoGetByOwner      = "Repositorio obteniendo motocicletas por propietario"
+	LogMotorcycleRepoGetByOwnerError = "Error de repositorio obteniendo motocicletas por propietario"
+	LogMotorcycleRepoGetByOwnerScan  = "Error de repositorio escaneando fila de motocicleta"
+	LogMotorcycleRepoGetByOwnerIter  = "Error de repositorio iterando filas de motocicletas"
+	LogMotorcycleRepoGetByPlate      = "Repositorio obteniendo motocicleta por placa"
+	LogMotorcycleRepoGetByPlateError = "Error de repositorio obteniendo motocicleta por placa"
+	LogMotorcycleRepoInvalidTx       = "Tipo de transacción inválido en repositorio"
+	LogMotorcycleRepoSave            = "Repositorio guardando motocicleta"
+	LogMotorcycleRepoSaveError       = "Error de repositorio guardando motocicleta"
+	LogMotorcycleRepoSaveSuccess     = "Motocicleta guardada en repositorio"
+	LogMotorcycleRepoValidateRef     = "Repositorio validando referencia"
+	LogMotorcycleRepoValidateRefErr  = "Error de repositorio validando referencia"
+	LogMotorcycleRepoCheckPlate      = "Repositorio verificando placa"
+	LogMotorcycleRepoCheckPlateErr   = "Error de repositorio verificando placa"
+	LogMotorcycleRepoUpdate          = "Repositorio actualizando motocicleta"
+	LogMotorcycleRepoUpdateError     = "Error de repositorio actualizando motocicleta"
+	LogMotorcycleRepoUpdateSuccess   = "Motocicleta actualizada en repositorio"
 
 	// Motorcycle Interactor - UPDATE (HU44)
-	LogMotorcycleInteractorUpdateStart   = "Motorcycle update started"
-	LogMotorcycleInteractorUpdateError   = "Error updating motorcycle"
-	LogMotorcycleInteractorUpdateSuccess = "Motorcycle updated successfully"
+	LogMotorcycleInteractorUpdateStart   = "Actualización de motocicleta iniciada"
+	LogMotorcycleInteractorUpdateError   = "Error actualizando motocicleta"
+	LogMotorcycleInteractorUpdateSuccess = "Motocicleta actualizada exitosamente"
 
 	// Motorcycle Controller - UPDATE (HU44)
-	LogMotorcycleControllerUpdateRequest  = "Motorcycle update request received"
-	LogMotorcycleControllerUpdateError    = "Error updating motorcycle"
-	LogMotorcycleControllerUpdateSuccess  = "Motorcycle updated successfully"
-	LogMotorcycleControllerUpdateDebug    = "Updating motorcycle"
-	LogMotorcycleControllerOwnershipDebug = "Ownership check debug"
-	LogMotorcycleControllerNoAuthUser     = "No authenticated user in context"
-	LogMotorcycleControllerPlateDebug     = "Looking up motorcycle by plate"
-	LogMotorcycleControllerMissingPlate   = "Missing plate query parameter"
+	LogMotorcycleControllerUpdateRequest  = "Solicitud de actualización de motocicleta recibida"
+	LogMotorcycleControllerUpdateError    = "Error actualizando motocicleta"
+	LogMotorcycleControllerUpdateSuccess  = "Motocicleta actualizada exitosamente"
+	LogMotorcycleControllerUpdateDebug    = "Actualizando motocicleta"
+	LogMotorcycleControllerOwnershipDebug = "Verificación de propiedad (debug)"
+	LogMotorcycleControllerNoAuthUser     = "Usuario no autenticado en contexto"
+	LogMotorcycleControllerPlateDebug     = "Buscando motocicleta por placa"
+	LogMotorcycleControllerMissingPlate   = "Parámetro de placa faltante"
 
 	// Motorcycle Repository - DELETE (HU45)
-	LogMotorcycleRepoDelete        = "Repository deleting motorcycle"
-	LogMotorcycleRepoDeleteError   = "Repository error deleting motorcycle"
-	LogMotorcycleRepoDeleteSuccess = "Repository motorcycle deleted"
+	LogMotorcycleRepoDelete        = "Repositorio eliminando motocicleta"
+	LogMotorcycleRepoDeleteError   = "Error de repositorio eliminando motocicleta"
+	LogMotorcycleRepoDeleteSuccess = "Motocicleta eliminada en repositorio"
 
 	// Motorcycle Interactor - DELETE (HU45)
-	LogMotorcycleInteractorDeleteStart   = "Motorcycle delete started"
-	LogMotorcycleInteractorDeleteError   = "Error deleting motorcycle"
-	LogMotorcycleInteractorDeleteSuccess = "Motorcycle deleted successfully"
+	LogMotorcycleInteractorDeleteStart   = "Eliminación de motocicleta iniciada"
+	LogMotorcycleInteractorDeleteError   = "Error eliminando motocicleta"
+	LogMotorcycleInteractorDeleteSuccess = "Motocicleta eliminada exitosamente"
 
 	// Motorcycle Controller - DELETE (HU45)
-	LogMotorcycleControllerDeleteRequest = "Motorcycle delete request received"
-	LogMotorcycleControllerDeleteError   = "Error deleting motorcycle"
-	LogMotorcycleControllerDeleteSuccess = "Motorcycle deleted successfully"
+	LogMotorcycleControllerDeleteRequest = "Solicitud de eliminación de motocicleta recibida"
+	LogMotorcycleControllerDeleteError   = "Error eliminando motocicleta"
+	LogMotorcycleControllerDeleteSuccess = "Motocicleta eliminada exitosamente"
 
 	// Dependency initialization
-	LogDepMotorcycleRepoInitOK       = "Motorcycle repository initialized"
-	LogDepMotorcycleRepoInitErr      = "Error initializing motorcycle repository"
-	LogDepMotorcycleInteractorInitOK = "Motorcycle interactor initialized"
+	LogDepMotorcycleRepoInitOK       = "Repositorio de motocicletas inicializado"
+	LogDepMotorcycleRepoInitErr      = "Error inicializando repositorio de motocicletas"
+	LogDepMotorcycleInteractorInitOK = "Interactor de motocicletas inicializado"
+
+	// Evidence dependency initialization (HU16-19)
+	LogDepEvidenceRepoInitOK       = "Repositorio de evidencias inicializado"
+	LogDepEvidenceRepoInitErr      = "Error inicializando repositorio de evidencias"
+	LogDepEvidenceInteractorInitOK = "Interactor de evidencias inicializado"
 
 	// Motorcycle Reference Catalog (HU50)
-	LogMotorcycleRepoGetAllRefQuery     = "Repository getting all motorcycle references"
-	LogMotorcycleRepoGetAllRefScanError = "Repository error scanning motorcycle reference row"
-	LogMotorcycleRepoGetAllRefIterError = "Repository error iterating motorcycle reference rows"
-	LogMotorcycleInteractorGetRefsStart = "Motorcycle get references started"
-	LogMotorcycleInteractorGetRefsError = "Error getting motorcycle references"
-	LogMotorcycleControllerRefsRequest  = "Motorcycle references request received"
-	LogMotorcycleControllerRefsError    = "Error getting motorcycle references"
-	LogMotorcycleControllerRefsSuccess  = "Motorcycle references retrieved successfully"
+	LogMotorcycleRepoGetAllRefQuery     = "Repositorio obteniendo todas las referencias de motocicletas"
+	LogMotorcycleRepoGetAllRefScanError = "Error de repositorio escaneando fila de referencia"
+	LogMotorcycleRepoGetAllRefIterError = "Error de repositorio iterando filas de referencias"
+	LogMotorcycleInteractorGetRefsStart = "Consulta de referencias de motocicletas iniciada"
+	LogMotorcycleInteractorGetRefsError = "Error obteniendo referencias de motocicletas"
+	LogMotorcycleControllerRefsRequest  = "Solicitud de referencias de motocicletas recibida"
+	LogMotorcycleControllerRefsError    = "Error obteniendo referencias de motocicletas"
+	LogMotorcycleControllerRefsSuccess  = "Referencias de motocicletas obtenidas exitosamente"
 
 	// Motorcycle Brand Lines (HU40)
-	LogMotorcycleRepoBrandLinesQuery         = "Repository getting motorcycle references by brand"
-	LogMotorcycleRepoBrandLinesError         = "Repository error getting references by brand"
-	LogMotorcycleRepoBrandLinesScanError     = "Repository error scanning brand line row"
-	LogMotorcycleRepoBrandLinesIterError     = "Repository error iterating brand line rows"
-	LogMotorcycleInteractorBrandLinesStart   = "Getting motorcycle references by brand started"
-	LogMotorcycleInteractorBrandLinesError   = "Error getting motorcycle references by brand"
-	LogMotorcycleInteractorBrandLinesSuccess = "Motorcycle references by brand retrieved successfully"
-	LogMotorcycleControllerBrandLinesRequest = "Brand lines request received"
-	LogMotorcycleControllerBrandLinesError   = "Error getting brand lines"
-	LogMotorcycleControllerBrandLinesSuccess = "Brand lines retrieved successfully"
+	LogMotorcycleRepoBrandLinesQuery         = "Repositorio obteniendo referencias por marca"
+	LogMotorcycleRepoBrandLinesError         = "Error de repositorio obteniendo referencias por marca"
+	LogMotorcycleRepoBrandLinesScanError     = "Error de repositorio escaneando fila de línea de marca"
+	LogMotorcycleRepoBrandLinesIterError     = "Error de repositorio iterando filas de líneas de marca"
+	LogMotorcycleInteractorBrandLinesStart   = "Consulta de referencias por marca iniciada"
+	LogMotorcycleInteractorBrandLinesError   = "Error obteniendo referencias por marca"
+	LogMotorcycleInteractorBrandLinesSuccess = "Referencias por marca obtenidas exitosamente"
+	LogMotorcycleControllerBrandLinesRequest = "Solicitud de líneas de marca recibida"
+	LogMotorcycleControllerBrandLinesError   = "Error obteniendo líneas de marca"
+	LogMotorcycleControllerBrandLinesSuccess = "Líneas de marca obtenidas exitosamente"
 )
 
 // ============================================
@@ -1224,56 +1229,173 @@ const (
 // ============================================
 const (
 	// Evidence Create (HU16)
-	LogEvidenceInteractorCreateStart     = "Evidence creation started"
-	LogEvidenceInteractorMotorcycleError = "Error getting motorcycle for evidence"
-	LogEvidenceInteractorOwnerError      = "User is not the owner of this motorcycle"
-	LogEvidenceInteractorURLInvalid      = "Invalid Firebase Storage URL"
-	LogEvidenceInteractorAngleInvalid    = "Invalid evidence angle provided"
-	LogEvidenceInteractorCountError      = "Error counting evidence for motorcycle"
-	LogEvidenceInteractorLimitExceeded   = "Maximum evidence limit exceeded"
-	LogEvidenceInteractorIDGenerated     = "Evidence ID generated"
-	LogEvidenceInteractorBeginTxError    = "Error beginning transaction for evidence"
-	LogEvidenceInteractorSaveError       = "Error saving evidence"
-	LogEvidenceInteractorCommitError     = "Error committing evidence transaction"
-	LogEvidenceInteractorCreateSuccess   = "Evidence created successfully"
+	LogEvidenceInteractorCreateStart     = "Creación de evidencia iniciada"
+	LogEvidenceInteractorMotorcycleError = "Error obteniendo motocicleta para evidencia"
+	LogEvidenceInteractorOwnerError      = "El usuario no es propietario de esta motocicleta"
+	LogEvidenceInteractorURLInvalid      = "URL de Firebase Storage inválida"
+	LogEvidenceInteractorAngleInvalid    = "Ángulo de evidencia proporcionado inválido"
+	LogEvidenceInteractorCountError      = "Error contando evidencias de la motocicleta"
+	LogEvidenceInteractorLimitExceeded   = "Límite máximo de evidencias excedido"
+	LogEvidenceInteractorIDGenerated     = "ID de evidencia generado"
+	LogEvidenceInteractorBeginTxError    = "Error iniciando transacción para evidencia"
+	LogEvidenceInteractorSaveError       = "Error guardando evidencia"
+	LogEvidenceInteractorCommitError     = "Error confirmando transacción de evidencia"
+	LogEvidenceInteractorCreateSuccess   = "Evidencia creada exitosamente"
 
 	// Evidence Get (HU18)
-	LogEvidenceInteractorGetStart   = "Evidence get by ID started"
-	LogEvidenceInteractorGetError   = "Error getting evidence by ID"
-	LogEvidenceInteractorGetSuccess = "Evidence get by ID success"
+	LogEvidenceInteractorGetStart   = "Consulta de evidencia por ID iniciada"
+	LogEvidenceInteractorGetError   = "Error obteniendo evidencia por ID"
+	LogEvidenceInteractorGetSuccess = "Evidencia obtenida exitosamente"
 
 	// Evidence List (HU18)
-	LogEvidenceInteractorListStart   = "Evidence list by motorcycle started"
-	LogEvidenceInteractorListError   = "Error listing evidence by motorcycle"
-	LogEvidenceInteractorListSuccess = "Evidence list retrieved successfully"
+	LogEvidenceInteractorListStart   = "Listado de evidencias por motocicleta iniciado"
+	LogEvidenceInteractorListError   = "Error listando evidencias por motocicleta"
+	LogEvidenceInteractorListSuccess = "Evidencias listadas exitosamente"
+
+	// Evidence Update (HU17)
+	LogEvidenceInteractorUpdateStart   = "Actualización de evidencia iniciada"
+	LogEvidenceInteractorUpdateError   = "Error actualizando evidencia"
+	LogEvidenceInteractorUpdateSuccess = "Evidencia actualizada exitosamente"
 
 	// Evidence Delete (HU19)
-	LogEvidenceInteractorDeleteStart   = "Evidence delete started"
-	LogEvidenceInteractorDeleteError   = "Error deleting evidence"
-	LogEvidenceInteractorDeleteSuccess = "Evidence deleted successfully"
+	LogEvidenceInteractorDeleteStart   = "Eliminación de evidencia iniciada"
+	LogEvidenceInteractorDeleteError   = "Error eliminando evidencia"
+	LogEvidenceInteractorDeleteSuccess = "Evidencia eliminada exitosamente"
 )
 
 // ============================================
 // MOTORCYCLE EVIDENCE CONTROLLER (HU16-19)
 // ============================================
 const (
-	LogEvidenceControllerCreateRequest = "Create evidence request received"
-	LogEvidenceControllerCreateError   = "Error creating evidence"
-	LogEvidenceControllerCreateSuccess = "Evidence created successfully"
-	LogEvidenceControllerListRequest   = "List evidence request received"
-	LogEvidenceControllerListError     = "Error listing evidence"
-	LogEvidenceControllerListSuccess   = "Evidence listed successfully"
-	LogEvidenceControllerGetRequest    = "Get evidence request received"
-	LogEvidenceControllerGetError      = "Error getting evidence"
-	LogEvidenceControllerGetSuccess    = "Evidence retrieved successfully"
-	LogEvidenceControllerDeleteRequest = "Delete evidence request received"
-	LogEvidenceControllerDeleteError   = "Error deleting evidence"
-	LogEvidenceControllerDeleteSuccess = "Evidence deleted successfully"
+	LogEvidenceControllerCreateRequest = "Solicitud de creación de evidencia recibida"
+	LogEvidenceControllerCreateError   = "Error creando evidencia"
+	LogEvidenceControllerCreateSuccess = "Evidencia creada exitosamente"
+	LogEvidenceControllerListRequest   = "Solicitud de listado de evidencias recibida"
+	LogEvidenceControllerListError     = "Error listando evidencias"
+	LogEvidenceControllerListSuccess   = "Evidencias listadas exitosamente"
+	LogEvidenceControllerGetRequest    = "Solicitud de consulta de evidencia recibida"
+	LogEvidenceControllerGetError      = "Error obteniendo evidencia"
+	LogEvidenceControllerGetSuccess    = "Evidencia obtenida exitosamente"
+	LogEvidenceControllerUpdateRequest = "Solicitud de actualización de evidencia recibida"
+	LogEvidenceControllerUpdateError   = "Error actualizando evidencia"
+	LogEvidenceControllerUpdateSuccess = "Evidencia actualizada exitosamente"
+	LogEvidenceControllerDeleteRequest = "Solicitud de eliminación de evidencia recibida"
+	LogEvidenceControllerDeleteError   = "Error eliminando evidencia"
+	LogEvidenceControllerDeleteSuccess = "Evidencia eliminada exitosamente"
 )
 
 // ============================================
 // MOTORCYCLE EVIDENCE REPOSITORY (HU16-19)
 // ============================================
 const (
-	LogDatabaseError = "Database error"
+	LogDatabaseError = "Error de base de datos"
+	// Evidence Repository operations
+	LogEvidenceRepoSaveError          = "Error guardando evidencia en BD"
+	LogEvidenceRepoGetByIDError       = "Error obteniendo evidencia por ID"
+	LogEvidenceRepoListByMotoError    = "Error listando evidencias por motocicleta"
+	LogEvidenceRepoScanError          = "Error escaneando fila de evidencia"
+	LogEvidenceRepoCountError         = "Error contando evidencias"
+	LogEvidenceRepoUpdateError        = "Error actualizando evidencia"
+	LogEvidenceRepoDeleteError        = "Error eliminando evidencia"
+	LogEvidenceRepoPrepareInsertError = "Error preparando statement de inserción de evidencia"
+	LogEvidenceRepoPrepareUpdateError = "Error preparando statement de actualización de evidencia"
+	LogEvidenceRepoPrepareDeleteError = "Error preparando statement de eliminación de evidencia"
+	LogEvidenceRepoPrepareGetIDError  = "Error preparando statement de consulta por ID de evidencia"
+	LogEvidenceRepoPrepareGetMotoErr  = "Error preparando statement de consulta por motocicleta"
+	LogEvidenceRepoPrepareCountError  = "Error preparando statement de conteo de evidencia"
+)
+
+// ============================================
+// FRANCHISE OPERATIONS (Centralized)
+// ============================================
+const (
+	LogFranchiseNameExists       = "Nombre de franquicia ya existe"
+	LogFranchiseCreated          = "Franquicia creada"
+	LogFranchiseUpdated          = "Franquicia actualizada"
+	LogFranchiseDeleted          = "Franquicia eliminada"
+	LogFranchiseBranchAdded      = "Sede agregada a franquicia"
+	LogFranchiseBranchRemoved    = "Sede removida de franquicia"
+	LogFranchiseCannotRemoveLast = "No se puede remover la última sede de la franquicia"
+)
+
+// ============================================
+// PERSON OPERATIONS (Centralized)
+// ============================================
+const (
+	LogPersonRefreshTokenStart     = "Inicio de refresh token"
+	LogPersonRefreshTokenError     = "Error en refresh token"
+	LogPersonGetPublicContactStart = "Obteniendo información de contacto público"
+	LogPersonGetPublicContactError = "Error obteniendo persona para contacto público"
+	LogPersonDeleteKeycloakStart   = "Eliminando usuario de Keycloak"
+	LogPersonDeleteKeycloakError   = "Error eliminando usuario de Keycloak"
+	LogPersonDeleteDBStart         = "Eliminando persona de base de datos"
+	LogPersonDeleteDBError         = "Error eliminando persona de base de datos"
+	LogPersonAuthNotFoundInContext = "Usuario autenticado no encontrado en contexto"
+	LogPersonRetrievingProfile     = "Obteniendo perfil de usuario autenticado"
+	LogPersonIDEncodeError         = "Error codificando ID de usuario"
+	LogPersonDeleteSelfRequest     = "Solicitud de eliminación de cuenta propia recibida"
+	LogPersonCheckBranchesError    = "Error verificando sedes del usuario"
+	LogPersonHasActiveBranches     = "Usuario tiene sedes activas, no se puede eliminar"
+	LogPersonDeleteKeycloakFailed  = "Error eliminando de Keycloak"
+	LogPersonDeleteDBFailed        = "Error eliminando de base de datos"
+	LogPersonMissingIDInURL        = "ID de persona faltante en URL"
+	LogPersonIDDecodeError         = "Error decodificando ID de persona"
+	LogPersonGetError              = "Error obteniendo persona"
+)
+
+// ============================================
+// BRANCH OPERATIONS (Centralized)
+// ============================================
+const (
+	LogBranchGeocodingFailed     = "Paso de geocodificación falló"
+	LogBranchGeocodingGenerated  = "Coordenadas de geocodificación generadas"
+	LogBranchRefetchFailed       = "Error re-obteniendo sede"
+	LogBranchDeleteProcessing    = "Procesando eliminación de sede"
+	LogBranchNearbyMissingLat    = "Latitud faltante en búsqueda de sedes cercanas"
+	LogBranchNearbyInvalidLat    = "Latitud inválida en búsqueda de sedes cercanas"
+	LogBranchNearbyMissingLng    = "Longitud faltante en búsqueda de sedes cercanas"
+	LogBranchNearbyInvalidLng    = "Longitud inválida en búsqueda de sedes cercanas"
+	LogBranchNearbyInvalidRadius = "Radio inválido en búsqueda de sedes cercanas"
+	LogBranchNearbyInvalidType   = "Tipo de establecimiento inválido"
+	LogBranchNearbySearch        = "Búsqueda de sedes cercanas"
+	LogBranchNearbyError         = "Error en búsqueda de sedes cercanas"
+)
+
+// ============================================
+// GEOCODING OPERATIONS (Centralized)
+// ============================================
+const (
+	LogGeocodingTestRequest    = "Solicitud de prueba de geocodificación recibida"
+	LogGeocodingTestInvalid    = "Solicitud de prueba de geocodificación inválida"
+	LogGeocodingTestFailed     = "Prueba de geocodificación falló"
+	LogGeocodingPrimaryQuota   = "Cuota del servicio primario de geocodificación excedida"
+	LogGeocodingFallbackFailed = "Servicio de respaldo de geocodificación también falló"
+	LogGeocodingFallbackOK     = "Geocodificación exitosa con servicio de respaldo"
+)
+
+// ============================================
+// SCHEDULE DETAIL DEBUG (Centralized)
+// ============================================
+const (
+	LogScheduleDetailDebugQueryParams   = "Parámetros de consulta de verificación de conflicto de excepción"
+	LogScheduleDetailDebugQueryResult   = "Resultado de consulta de verificación de conflicto de excepción"
+	LogScheduleDetailDebugGetError      = "Error obteniendo excepciones para verificación de conflicto"
+	LogScheduleDetailDebugExplicitCheck = "Verificación explícita de conflicto de excepciones"
+	LogScheduleDetailDebugCheckOverlap  = "Verificación de solapamiento de excepciones"
+)
+
+// ============================================
+// PERSON CONTROLLER (Centralized)
+// ============================================
+const (
+	LogPersonControllerRefreshRequest  = "Solicitud de refresh token recibida"
+	LogPersonControllerRefreshError    = "Error en refresh token"
+	LogPersonControllerGetContactStart = "Obteniendo información de contacto"
+)
+
+// ============================================
+// MOTORCYCLE CONTROLLER DEBUG
+// ============================================
+const (
+	LogMotorcycleControllerBrandIDDecoded = "ID de marca decodificado"
 )

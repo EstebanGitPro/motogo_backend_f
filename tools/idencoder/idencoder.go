@@ -10,10 +10,11 @@ import (
 	hashids "github.com/speps/go-hashids/v2"
 )
 
+var log logger.Logger = logger.NewSlogLogger()
+
 // HashidsEncoder maneja la ofuscación y desofuscación de IDs usando Hashids
 type HashidsEncoder struct {
 	hashData *hashids.HashIDData
-	logger   logger.Logger
 }
 
 // Config contiene la configuración para el encoder
@@ -23,7 +24,7 @@ type Config struct {
 }
 
 // NewHashidsEncoder crea una nueva instancia del encoder basado en Hashids
-func NewHashidsEncoder(cfg Config, log logger.Logger) (*HashidsEncoder, error) {
+func NewHashidsEncoder(cfg Config) (*HashidsEncoder, error) {
 	if cfg.Secret == "" {
 		return nil, fmt.Errorf("secret no puede estar vacío")
 	}
@@ -40,7 +41,6 @@ func NewHashidsEncoder(cfg Config, log logger.Logger) (*HashidsEncoder, error) {
 
 	return &HashidsEncoder{
 		hashData: hd,
-		logger:   log,
 	}, nil
 }
 
@@ -49,8 +49,8 @@ func (e *HashidsEncoder) Encode(uuidStr string) (string, error) {
 	// Validar que sea un UUID válido
 	parsedUUID, err := uuid.Parse(uuidStr)
 	if err != nil {
-		if e.logger != nil {
-			e.logger.Error(logger.LogIDEncoderInvalidUUID, "error", err, "uuid", uuidStr)
+		if log != nil {
+			log.Error(logger.LogIDEncoderInvalidUUID, "error", err, "uuid", uuidStr)
 		}
 		return "", err
 	}
@@ -68,16 +68,16 @@ func (e *HashidsEncoder) Encode(uuidStr string) (string, error) {
 	// Crear hashids y encodear
 	h, err := hashids.NewWithData(e.hashData)
 	if err != nil {
-		if e.logger != nil {
-			e.logger.Error(logger.LogIDEncoderHashidsCreate, "error", err)
+		if log != nil {
+			log.Error(logger.LogIDEncoderHashidsCreate, "error", err)
 		}
 		return "", err
 	}
 
 	encoded, err := h.Encode(numbers)
 	if err != nil {
-		if e.logger != nil {
-			e.logger.Error(logger.LogIDEncoderEncodingError, "error", err, "uuid", uuidStr)
+		if log != nil {
+			log.Error(logger.LogIDEncoderEncodingError, "error", err, "uuid", uuidStr)
 		}
 		return "", err
 	}
@@ -89,8 +89,8 @@ func (e *HashidsEncoder) Encode(uuidStr string) (string, error) {
 func (e *HashidsEncoder) Decode(encoded string) (string, error) {
 	if encoded == "" {
 		err := errors.New("ID ofuscado no puede estar vacío")
-		if e.logger != nil {
-			e.logger.Error(logger.LogIDEncoderEmptyID, "error", err)
+		if log != nil {
+			log.Error(logger.LogIDEncoderEmptyID, "error", err)
 		}
 		return "", err
 	}
@@ -98,24 +98,24 @@ func (e *HashidsEncoder) Decode(encoded string) (string, error) {
 	// Crear hashids y decodear
 	h, err := hashids.NewWithData(e.hashData)
 	if err != nil {
-		if e.logger != nil {
-			e.logger.Error(logger.LogIDEncoderHashidsCreate, "error", err)
+		if log != nil {
+			log.Error(logger.LogIDEncoderHashidsCreate, "error", err)
 		}
 		return "", err
 	}
 
 	numbers, err := h.DecodeWithError(encoded)
 	if err != nil {
-		if e.logger != nil {
-			e.logger.Error(logger.LogIDEncoderDecodingError, "error", err, "encoded", encoded)
+		if log != nil {
+			log.Error(logger.LogIDEncoderDecodingError, "error", err, "encoded", encoded)
 		}
 		return "", err
 	}
 
 	if len(numbers) != 8 {
 		err := errors.New("ID ofuscado tiene formato incorrecto")
-		if e.logger != nil {
-			e.logger.Error(logger.LogIDEncoderInvalidFormat, "error", err, "encoded", encoded, "numbers_length", len(numbers))
+		if log != nil {
+			log.Error(logger.LogIDEncoderInvalidFormat, "error", err, "encoded", encoded, "numbers_length", len(numbers))
 		}
 		return "", err
 	}
@@ -130,8 +130,8 @@ func (e *HashidsEncoder) Decode(encoded string) (string, error) {
 	// Crear UUID desde bytes
 	parsedUUID, err := uuid.FromBytes(uuidBytes)
 	if err != nil {
-		if e.logger != nil {
-			e.logger.Error(logger.LogIDEncoderUUIDError, "error", err, "encoded", encoded)
+		if log != nil {
+			log.Error(logger.LogIDEncoderUUIDError, "error", err, "encoded", encoded)
 		}
 		return "", err
 	}
@@ -143,8 +143,8 @@ func (e *HashidsEncoder) Decode(encoded string) (string, error) {
 func (e *HashidsEncoder) MustEncode(uuidStr string) string {
 	encoded, err := e.Encode(uuidStr)
 	if err != nil {
-		if e.logger != nil {
-			e.logger.Error(logger.LogIDEncoderEncodingError, "error", err, "uuid", uuidStr)
+		if log != nil {
+			log.Error(logger.LogIDEncoderEncodingError, "error", err, "uuid", uuidStr)
 		}
 	}
 	return encoded

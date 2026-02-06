@@ -23,7 +23,7 @@ type client struct {
 	tokenMutex     sync.RWMutex
 }
 
-func NewClient(cfg *config.KeycloakConfig, log logger.Logger) (output.AuthClient, error) {
+func NewClient(cfg *config.KeycloakConfig) (output.AuthClient, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("keycloak config cannot be nil")
 	}

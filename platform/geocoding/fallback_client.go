@@ -38,21 +38,21 @@ func (c *fallbackClient) Geocode(ctx context.Context, address, city, department 
 
 	// Check if this is a quota-related error that warrants fallback
 	if isQuotaError(err) {
-		log.Warn("geocoding_primary_quota_exceeded",
+		log.Warn(logger.LogGeocodingPrimaryQuota,
 			"error", err.Error(),
 			"action", "falling_back_to_secondary_provider")
 
 		// Try fallback provider (Mapbox)
 		fallbackCoords, fallbackErr := c.fallback.Geocode(ctx, address, city, department)
 		if fallbackErr != nil {
-			log.Error("geocoding_fallback_also_failed",
+			log.Error(logger.LogGeocodingFallbackFailed,
 				"primary_error", err.Error(),
 				"fallback_error", fallbackErr.Error())
 			// Return the fallback error but could also return primary
 			return nil, fallbackErr
 		}
 
-		log.Info("geocoding_fallback_succeeded",
+		log.Info(logger.LogGeocodingFallbackOK,
 			"lat", fallbackCoords.Latitude,
 			"lng", fallbackCoords.Longitude,
 			"provider", "fallback")
