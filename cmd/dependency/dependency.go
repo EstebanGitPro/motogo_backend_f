@@ -246,28 +246,28 @@ func Init() (*Dependencies, error) {
 
 	scheduleRepository, err := scheduleRepo.NewRepository(db)
 	if err != nil {
-		log.Error("Error initializing schedule repository", "error", err)
+		log.Error(logger.LogDepScheduleRepoInitErr, "error", err)
 		return nil, err
 	}
-	log.Success("Schedule repository initialized")
+	log.Success(logger.LogDepScheduleRepoInitOK)
 
 	scheduleService := services.NewScheduleService(scheduleRepository, branchRepository)
 	scheduleInteractor := interactor.NewScheduleInteractor(scheduleService, branchService)
-	log.Success("Schedule interactor initialized")
+	log.Success(logger.LogDepScheduleIntInitOK)
 
 	scheduleDetailRepository, err := scheduleDetailRepo.NewRepository(db)
 	if err != nil {
-		log.Error("Error initializing schedule detail repository", "error", err)
+		log.Error(logger.LogDepScheduleDetailRepoInitErr, "error", err)
 		return nil, err
 	}
-	log.Success("Schedule detail repository initialized")
+	log.Success(logger.LogDepScheduleDetailRepoInitOK)
 
 	scheduleDetailService := services.NewScheduleDetailService(scheduleDetailRepository, scheduleRepository)
 	scheduleDetailInteractor := interactor.NewScheduleDetailInteractor(scheduleDetailService, scheduleService, branchService)
-	log.Success("Schedule detail interactor initialized")
+	log.Success(logger.LogDepScheduleDetailIntInitOK)
 
 	scheduleExceptionInteractor := interactor.NewScheduleExceptionInteractor(scheduleDetailService, scheduleService, branchService)
-	log.Success("Schedule exception interactor initialized")
+	log.Success(logger.LogDepScheduleExceptionIntInitOK)
 
 	motorcycleRepository, err := motorcycleRepo.NewRepository(db)
 	if err != nil {
@@ -300,10 +300,10 @@ func Init() (*Dependencies, error) {
 				firebaseCredPath = filepath.Join(root, firebaseCredPath)
 			}
 		}
-		log.Debug("Firebase credentials path resolved", "path", firebaseCredPath)
+		log.Debug(logger.LogDepFirebaseCredPathResolved, "path", firebaseCredPath)
 		firebaseClient, err = firebase.NewClient(firebaseCredPath)
 		if err != nil {
-			log.Warn("Firebase initialization skipped", "error", err)
+			log.Warn(logger.LogDepFirebaseInitSkipped, "error", err)
 			// Don't fail startup if Firebase is not configured
 		} else {
 			log.Success(logger.LogDepFirebaseClientInitOK)
@@ -318,7 +318,7 @@ func Init() (*Dependencies, error) {
 			log.Success(logger.LogDepBranchInteractorInitOK, "with_storage", true)
 		}
 	} else {
-		log.Warn("Firebase credentials not configured, skipping initialization")
+		log.Warn(logger.LogDepFirebaseCredNotConfig)
 	}
 
 	var jwtValidator *jwt.JWKSValidator
@@ -329,7 +329,7 @@ func Init() (*Dependencies, error) {
 	}
 	jwtValidator, err = jwt.NewJWKSValidator(context.Background(), jwtConfig)
 	if err != nil {
-		log.Warn("JWKS validator initialization failed, using fallback validation", "error", err)
+		log.Warn(logger.LogDepJWKSValidatorInitErr, "error", err)
 		jwtValidator = nil
 	} else {
 		log.Success(logger.LogDepJWKSValidatorInitOK, "jwks_url", jwtConfig.JWKSURL)

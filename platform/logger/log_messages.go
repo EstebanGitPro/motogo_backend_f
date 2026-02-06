@@ -769,15 +769,22 @@ const (
 // ============================================
 const (
 	// Repository initialization
-	LogDepBranchRepoInit       = "Inicializando repositorio de sedes"
-	LogDepBranchRepoInitOK     = "Repositorio de sedes inicializado"
-	LogDepBranchRepoInitErr    = "Error inicializando repositorio de sedes"
-	LogDepLocationRepoInitOK   = "Repositorio de ubicaciones inicializado"
-	LogDepLocationRepoInitErr  = "Error inicializando repositorio de ubicaciones"
-	LogDepBrandRepoInitOK      = "Repositorio de marcas inicializado"
-	LogDepBrandRepoInitErr     = "Error inicializando repositorio de marcas"
-	LogDepFranchiseRepoInitOK  = "Repositorio de franquicias inicializado"
-	LogDepFranchiseRepoInitErr = "Error inicializando repositorio de franquicias"
+	LogDepBranchRepoInit             = "Inicializando repositorio de sedes"
+	LogDepBranchRepoInitOK           = "Repositorio de sedes inicializado"
+	LogDepBranchRepoInitErr          = "Error inicializando repositorio de sedes"
+	LogDepLocationRepoInitOK         = "Repositorio de ubicaciones inicializado"
+	LogDepLocationRepoInitErr        = "Error inicializando repositorio de ubicaciones"
+	LogDepBrandRepoInitOK            = "Repositorio de marcas inicializado"
+	LogDepBrandRepoInitErr           = "Error inicializando repositorio de marcas"
+	LogDepFranchiseRepoInitOK        = "Repositorio de franquicias inicializado"
+	LogDepFranchiseRepoInitErr       = "Error inicializando repositorio de franquicias"
+	LogDepScheduleRepoInitErr        = "Error inicializando repositorio de horarios"
+	LogDepScheduleRepoInitOK         = "Repositorio de horarios inicializado"
+	LogDepScheduleIntInitOK          = "Interactor de horarios inicializado"
+	LogDepScheduleDetailRepoInitErr  = "Error inicializando repositorio de detalles de horario"
+	LogDepScheduleDetailRepoInitOK   = "Repositorio de detalles de horario inicializado"
+	LogDepScheduleDetailIntInitOK    = "Interactor de detalles de horario inicializado"
+	LogDepScheduleExceptionIntInitOK = "Interactor de excepciones de horario inicializado"
 
 	// Interactor initialization
 	LogDepBranchInteractorInitOK    = "Interactor de sedes inicializado"
@@ -789,6 +796,12 @@ const (
 	LogDepGeocodingClientInitOK = "Cliente de geocodificación inicializado"
 	LogDepFirebaseClientInitOK  = "Cliente de Firebase inicializado"
 	LogDepJWKSValidatorInitOK   = "Validador JWKS inicializado"
+	LogDepJWKSValidatorInitErr  = "Error inicializando validador JWKS - usando validación fallback"
+
+	// Firebase initialization
+	LogDepFirebaseCredPathResolved = "Ruta de credenciales Firebase resuelta"
+	LogDepFirebaseInitSkipped      = "Inicialización de Firebase omitida"
+	LogDepFirebaseCredNotConfig    = "Credenciales de Firebase no configuradas - omitiendo inicialización"
 )
 
 // ============================================
