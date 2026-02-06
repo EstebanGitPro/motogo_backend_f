@@ -4,7 +4,6 @@ import (
 	"log/slog"
 
 	"github.com/EstebanGitPro/motogo-backend/server"
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -37,15 +36,7 @@ func main() {
 	app.Use(gin.Logger())
 	app.Use(gin.Recovery())
 
-	// Configurar CORS para permitir requests desde Swagger UI y Keycloak
-	app.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3001", "http://localhost:8085", "http://localhost:8080"},
-		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
-		ExposeHeaders:    []string{"Content-Length"},
-		AllowCredentials: true,
-	}))
-
+	// CORS is configured in server.routing() to centralize all route-related configuration
 	dependencies := server.Boostrap(app)
 
 	serverAddr := dependencies.Config.GetServerAddress()

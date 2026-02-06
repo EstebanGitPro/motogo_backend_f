@@ -74,14 +74,14 @@ func Init() (*Dependencies, error) {
 	middleware.PrometheusInit()
 	log.Success(logger.LogPrometheusInitOK)
 
-	db, err := mysql.GetDB(cfg.Database, log)
+	db, err := mysql.GetDB(cfg.Database)
 	if err != nil {
 		log.Error(logger.LogAppDatabaseError, "error", err)
 		return nil, err
 	}
 	log.Success(logger.LogAppDatabaseConnected)
 
-	keycloakClient, err := keycloak.NewClient(&cfg.Keycloak, log)
+	keycloakClient, err := keycloak.NewClient(&cfg.Keycloak)
 	if err != nil {
 		log.Error(logger.LogKeycloakClientError, "error", err)
 		return nil, err
@@ -94,14 +94,14 @@ func Init() (*Dependencies, error) {
 		return nil, err
 	}
 
-	personService := services.NewService(personRepo, keycloakClient, log)
+	personService := services.NewService(personRepo, keycloakClient)
 
-	interactorFacade := interactor.NewInteractor(personService, log)
+	interactorFacade := interactor.NewInteractor(personService)
 
 	encoder, err := idencoder.NewHashidsEncoder(idencoder.Config{
 		Secret:    cfg.IDEncoder.Secret,
 		MinLength: cfg.IDEncoder.MinLength,
-	}, log)
+	})
 	if err != nil {
 		log.Error(logger.LogIDEncoderInitError, "error", err)
 		return nil, err
@@ -127,8 +127,8 @@ func Init() (*Dependencies, error) {
 
 	responseHandler := middleware.NewResponseHandler(messagingCache)
 
-	messageService := services.NewMessageService(msgRepo, log)
-	messageInteractor := interactor.NewMessageInteractor(messageService, log)
+	messageService := services.NewMessageService(msgRepo)
+	messageInteractor := interactor.NewMessageInteractor(messageService)
 	log.Success(logger.LogDependencyMessageIntInit)
 
 	branchRepository, err := branchRepo.NewRepository(db)
@@ -203,8 +203,8 @@ func Init() (*Dependencies, error) {
 	}
 	log.Success(logger.LogDepLocationRepoInitOK)
 
-	branchService := services.NewBranchService(branchRepository, locationRepository, geocodingClient, log)
-	branchInteractor := interactor.NewBranchInteractor(branchService, log)
+	branchService := services.NewBranchService(branchRepository, locationRepository, geocodingClient)
+	branchInteractor := interactor.NewBranchInteractor(branchService)
 	log.Success(logger.LogDepBranchInteractorInitOK)
 
 	brandRepository, err := brandRepo.NewRepository(db)
@@ -215,11 +215,11 @@ func Init() (*Dependencies, error) {
 	log.Success(logger.LogDepBrandRepoInitOK)
 
 	brandService := services.NewBrandService(brandRepository)
-	brandInteractor := interactor.NewBrandInteractor(brandService, log)
+	brandInteractor := interactor.NewBrandInteractor(brandService)
 	log.Success(logger.LogDepBrandInteractorInitOK)
 
 	locationService := services.NewLocationService(locationRepository)
-	locationInteractor := interactor.NewLocationInteractor(locationService, log)
+	locationInteractor := interactor.NewLocationInteractor(locationService)
 	log.Success(logger.LogDepLocationInteractorInitOK)
 
 	serviceRepository, err := serviceRepo.NewRepository(db)
@@ -230,7 +230,7 @@ func Init() (*Dependencies, error) {
 	log.Success(logger.LogDepServiceRepoInitOK)
 
 	serviceCatalogService := services.NewServiceCatalogService(serviceRepository)
-	serviceInteractor := interactor.NewServiceInteractor(serviceCatalogService, log)
+	serviceInteractor := interactor.NewServiceInteractor(serviceCatalogService)
 	log.Success(logger.LogDepServiceInteractorInitOK)
 
 	franchiseRepository, err := franchiseRepo.NewRepository(db)
@@ -240,8 +240,8 @@ func Init() (*Dependencies, error) {
 	}
 	log.Success(logger.LogDepFranchiseRepoInitOK)
 
-	franchiseService := services.NewFranchiseService(franchiseRepository, log)
-	franchiseInteractor := interactor.NewFranchiseInteractor(franchiseService, branchService, log)
+	franchiseService := services.NewFranchiseService(franchiseRepository)
+	franchiseInteractor := interactor.NewFranchiseInteractor(franchiseService, branchService)
 	log.Success(logger.LogDepFranchiseInteractorInitOK)
 
 	scheduleRepository, err := scheduleRepo.NewRepository(db)
@@ -277,19 +277,19 @@ func Init() (*Dependencies, error) {
 	log.Success(logger.LogDepMotorcycleRepoInitOK)
 
 	// Create motorcycle interactor - will connect Firebase Storage later if available
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(motorcycleRepository, log)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(motorcycleRepository)
 	log.Success(logger.LogDepMotorcycleInteractorInitOK)
 
 	// Evidence feature (HU16-19)
 	evidenceRepository, err := evidenceRepo.NewRepository(db)
 	if err != nil {
-		log.Error("Error initializing evidence repository", "error", err)
+		log.Error(logger.LogDepEvidenceRepoInitErr, "error", err)
 		return nil, err
 	}
-	log.Success("Evidence repository initialized")
+	log.Success(logger.LogDepEvidenceRepoInitOK)
 
-	evidenceInteractor := interactor.NewEvidenceInteractor(evidenceRepository, motorcycleRepository, log)
-	log.Success("Evidence interactor initialized")
+	evidenceInteractor := interactor.NewEvidenceInteractor(evidenceRepository, motorcycleRepository)
+	log.Success(logger.LogDepEvidenceInteractorInitOK)
 
 	var firebaseClient *firebase.Client
 	if cfg.Firebase.CredentialsPath != "" {
@@ -310,6 +310,12 @@ func Init() (*Dependencies, error) {
 			// Connect Firebase Storage to MotorcycleInteractor for image deletion (HU45)
 			motorcycleInteractor.WithStorageClient(firebaseClient)
 			log.Success(logger.LogDepMotorcycleInteractorInitOK, "with_storage", true)
+			// Connect Firebase Storage to EvidenceInteractor for evidence deletion (HU19)
+			evidenceInteractor.WithStorageClient(firebaseClient)
+			log.Success(logger.LogDepEvidenceInteractorInitOK, "with_storage", true)
+			// Connect Firebase Storage to BranchInteractor for profile image deletion (HU60-61)
+			branchInteractor.WithStorageClient(firebaseClient)
+			log.Success(logger.LogDepBranchInteractorInitOK, "with_storage", true)
 		}
 	} else {
 		log.Warn("Firebase credentials not configured, skipping initialization")

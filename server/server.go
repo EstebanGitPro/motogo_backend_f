@@ -296,6 +296,12 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 			handler.ListEvidence(),
 		)
 
+		// PUT /motorcycles/:id/evidence/:evidenceId - Update evidence (HU17)
+		protected.PUT("/motorcycles/:id/evidence/:evidenceId",
+			middleware.RequireRole(domain.RoleUser),
+			handler.UpdateEvidence(),
+		)
+
 		// DELETE /motorcycles/:id/evidence/:evidenceId - Delete evidence (HU19)
 		protected.DELETE("/motorcycles/:id/evidence/:evidenceId",
 			middleware.RequireRole(domain.RoleUser),
