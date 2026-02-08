@@ -811,13 +811,11 @@ func TestDeleteBranch_HasAssociations(t *testing.T) {
 		RepresentativeID: personID,
 	}
 
-	// Simulate FK constraint error
-	fkError := errors.New("Error 1451: Cannot delete or update a parent row: a foreign key constraint fails")
-
+	// The service now interprets FK constraint errors internally and returns domain error
 	// Mock expectations
 	mockBranchService.On("GetBranchByID", ctx, branchID).Return(existingBranch, nil)
 	mockBranchService.On("BeginTx", ctx).Return(mockTx, nil)
-	mockBranchService.On("DeleteBranch", ctx, mockTx, branchID).Return(fkError)
+	mockBranchService.On("DeleteBranch", ctx, mockTx, branchID).Return(domain.ErrBranchCannotDelete)
 	mockTx.On("Rollback").Return(nil)
 
 	// Act

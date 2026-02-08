@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/input"
@@ -244,11 +245,25 @@ func (s *branchService) UpdateBranch(ctx context.Context, tx output.Tx, branch d
 func (s *branchService) DeleteBranch(ctx context.Context, tx output.Tx, branchID string) error {
 	if err := s.repository.DeleteBranch(ctx, tx, branchID); err != nil {
 		log.Error(logger.LogBranchServiceDelError, "error", err, "branch_id", branchID)
+		// Interpret FK constraint violations as domain errors
+		if isForeignKeyError(err) {
+			return domain.ErrBranchCannotDelete
+		}
 		return err
 	}
 
 	log.Info(logger.LogBranchServiceDelComplete, "branch_id", branchID)
 	return nil
+}
+
+// isForeignKeyError checks if the error is a MySQL foreign key constraint violation
+func isForeignKeyError(err error) bool {
+	if err == nil {
+		return false
+	}
+	errStr := err.Error()
+	// MySQL error code 1451: Cannot delete or update a parent row: a foreign key constraint fails
+	return strings.Contains(errStr, "1451") || strings.Contains(errStr, "foreign key constraint")
 }
 
 // GetBranchesNearby retrieves branches within radius of given coordinates (HU89)
