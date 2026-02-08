@@ -393,7 +393,7 @@ func TestActivateException_Success(t *testing.T) {
 	}, nil)
 
 	mockDetailService.On("BeginTx", ctx).Return(mockTx, nil)
-	mockDetailService.On("UpdateException", ctx, mockTx, mock.AnythingOfType("domain.ScheduleDetail")).Return(nil)
+	mockDetailService.On("SetExceptionActive", ctx, mockTx, exceptionID, true).Return(nil)
 	mockTx.On("Commit").Return(nil)
 	mockTx.On("Rollback").Return(nil)
 
@@ -451,7 +451,7 @@ func TestDeactivateException_Success(t *testing.T) {
 	}, nil)
 
 	mockDetailService.On("BeginTx", ctx).Return(mockTx, nil)
-	mockDetailService.On("UpdateException", ctx, mockTx, mock.AnythingOfType("domain.ScheduleDetail")).Return(nil)
+	mockDetailService.On("SetExceptionActive", ctx, mockTx, exceptionID, false).Return(nil)
 	mockTx.On("Commit").Return(nil)
 	mockTx.On("Rollback").Return(nil)
 

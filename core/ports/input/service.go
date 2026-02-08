@@ -142,6 +142,7 @@ type FranchiseService interface {
 	DissociateBranches(ctx context.Context, tx output.Tx, franchiseID string) error
 	DissociateSingleBranch(ctx context.Context, tx output.Tx, branchID string) error
 	CountBranches(ctx context.Context, franchiseID string) (int, error)
+	CanRemoveBranch(ctx context.Context, franchiseID string) error
 }
 
 // ServiceCatalogService - Use Cases for Service catalog operations (HU63, HU68, HU75)
@@ -218,5 +219,6 @@ type ScheduleDetailService interface {
 	GetExceptionByID(ctx context.Context, exceptionID string) (*domain.ScheduleDetail, error)
 	UpdateException(ctx context.Context, tx output.Tx, exception domain.ScheduleDetail) error
 	DeleteException(ctx context.Context, tx output.Tx, exceptionID string) error
+	SetExceptionActive(ctx context.Context, tx output.Tx, exceptionID string, active bool) error
 	CheckExceptionDateConflict(ctx context.Context, scheduleID, excludeExceptionID, startDate, endDate string) (bool, error)
 }

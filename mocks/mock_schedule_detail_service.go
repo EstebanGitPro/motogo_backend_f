@@ -107,6 +107,11 @@ func (m *MockScheduleDetailService) DeleteException(ctx context.Context, tx outp
 	return args.Error(0)
 }
 
+func (m *MockScheduleDetailService) SetExceptionActive(ctx context.Context, tx output.Tx, exceptionID string, active bool) error {
+	args := m.Called(ctx, tx, exceptionID, active)
+	return args.Error(0)
+}
+
 func (m *MockScheduleDetailService) CheckExceptionDateConflict(ctx context.Context, scheduleID, excludeExceptionID, startDate, endDate string) (bool, error) {
 	args := m.Called(ctx, scheduleID, excludeExceptionID, startDate, endDate)
 	return args.Bool(0), args.Error(1)

@@ -2,7 +2,6 @@ package interactor
 
 import (
 	"context"
-	"time"
 
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/input"
@@ -251,10 +250,8 @@ func (i *ScheduleExceptionInteractor) setExceptionActive(
 		return err
 	}
 
-	// 4. Update exception with new active status
-	existing.Active = active
-	existing.UpdatedAt = time.Now()
-	if err := i.detailService.UpdateException(ctx, tx, *existing); err != nil {
+	// 4. Delegate active status change to service
+	if err := i.detailService.SetExceptionActive(ctx, tx, exceptionID, active); err != nil {
 		tx.Rollback()
 		return err
 	}
