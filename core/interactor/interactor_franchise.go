@@ -203,16 +203,9 @@ func (i *FranchiseInteractor) AddBranchToFranchise(ctx context.Context, franchis
 // RemoveBranchFromFranchise removes a branch from a franchise
 // If this is the last branch, returns an error (franchise must have at least 1 branch)
 func (i *FranchiseInteractor) RemoveBranchFromFranchise(ctx context.Context, franchiseID, branchID, representativeID string) error {
-	// 1. Check branch count
-	count, err := i.franchiseService.CountBranches(ctx, franchiseID)
-	if err != nil {
+	// 1. Validate minimum branches - cannot remove last branch
+	if err := i.franchiseService.CanRemoveBranch(ctx, franchiseID); err != nil {
 		return err
-	}
-
-	// 2. Validate minimum branches - cannot remove last branch
-	if count <= 1 {
-		log.Warn(logger.LogFranchiseCannotRemoveLast, "franchise_id", franchiseID, "branch_id", branchID)
-		return domain.ErrFranchiseMinBranches
 	}
 
 	// 3. Begin transaction

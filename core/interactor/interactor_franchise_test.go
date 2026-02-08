@@ -531,8 +531,8 @@ func TestRemoveBranchFromFranchise_Success(t *testing.T) {
 	branchID := "branch-456"
 	representativeID := "rep-123"
 
-	// Mock expectations - note: interactor checks count first, not ownership
-	mockFranchiseService.On("CountBranches", ctx, franchiseID).Return(2, nil) // More than 1 branch
+	// Mock expectations - note: interactor checks CanRemoveBranch first, not ownership
+	mockFranchiseService.On("CanRemoveBranch", ctx, franchiseID).Return(nil) // More than 1 branch
 	mockFranchiseService.On("BeginTx", ctx).Return(mockTx, nil)
 	mockFranchiseService.On("DissociateSingleBranch", ctx, mockTx, branchID).Return(nil)
 	mockTx.On("Commit").Return(nil)
@@ -557,7 +557,7 @@ func TestRemoveBranchFromFranchise_LastBranch(t *testing.T) {
 	branchID := "branch-456"
 	representativeID := "rep-123"
 
-	mockFranchiseService.On("CountBranches", ctx, franchiseID).Return(1, nil) // Only 1 branch - cannot remove
+	mockFranchiseService.On("CanRemoveBranch", ctx, franchiseID).Return(domain.ErrFranchiseMinBranches) // Only 1 branch - cannot remove
 
 	// Act
 	err := franchiseInteractor.RemoveBranchFromFranchise(ctx, franchiseID, branchID, representativeID)

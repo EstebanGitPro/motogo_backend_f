@@ -151,3 +151,17 @@ func (s *franchiseService) DissociateSingleBranch(ctx context.Context, tx output
 func (s *franchiseService) CountBranches(ctx context.Context, franchiseID string) (int, error) {
 	return s.repository.CountBranchesByFranchise(ctx, franchiseID)
 }
+
+// CanRemoveBranch checks if a branch can be removed from a franchise
+// Business rule: a franchise must have at least 1 branch
+func (s *franchiseService) CanRemoveBranch(ctx context.Context, franchiseID string) error {
+	count, err := s.repository.CountBranchesByFranchise(ctx, franchiseID)
+	if err != nil {
+		return err
+	}
+	if count <= 1 {
+		log.Warn(logger.LogFranchiseCannotRemoveLast, "franchise_id", franchiseID)
+		return domain.ErrFranchiseMinBranches
+	}
+	return nil
+}

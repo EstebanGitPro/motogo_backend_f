@@ -74,3 +74,8 @@ func (m *MockFranchiseService) CountBranches(ctx context.Context, franchiseID st
 	args := m.Called(ctx, franchiseID)
 	return args.Int(0), args.Error(1)
 }
+
+func (m *MockFranchiseService) CanRemoveBranch(ctx context.Context, franchiseID string) error {
+	args := m.Called(ctx, franchiseID)
+	return args.Error(0)
+}
