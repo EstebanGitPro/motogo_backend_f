@@ -309,7 +309,8 @@ func Init() (*Dependencies, error) {
 	}
 	log.Success(logger.LogDepDiagnosticRepoInitOK)
 
-	diagnosticInteractor := interactor.NewDiagnosticInteractor(diagnosticRepository, motorcycleRepository, branchRepository)
+	diagnosticService := services.NewDiagnosticService(diagnosticRepository, motorcycleRepository, branchRepository)
+	diagnosticInteractor := interactor.NewDiagnosticInteractor(diagnosticService)
 	log.Success(logger.LogDepDiagnosticInteractorInitOK)
 
 	var firebaseClient *firebase.Client

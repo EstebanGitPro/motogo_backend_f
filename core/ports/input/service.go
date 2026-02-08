@@ -222,3 +222,21 @@ type ScheduleDetailService interface {
 	SetExceptionActive(ctx context.Context, tx output.Tx, exceptionID string, active bool) error
 	CheckExceptionDateConflict(ctx context.Context, scheduleID, excludeExceptionID, startDate, endDate string) (bool, error)
 }
+
+// DiagnosticService - Use Cases for Diagnostic operations (HU11-14)
+type DiagnosticService interface {
+	// Transacciones
+	BeginTx(ctx context.Context) (output.Tx, error)
+
+	// Validaciones
+	ValidateMotorcycleOwnership(ctx context.Context, motorcycleID, ownerID string) error
+	ValidateBranchExists(ctx context.Context, branchID string) error
+
+	// CRUD operations
+	UpsertDiagnostic(ctx context.Context, tx output.Tx, motorcycleID, branchID string, problemDescription *string, evidenceURLs []string) (*domain.Diagnostic, error)
+	GetDiagnosticByID(ctx context.Context, diagnosticID string) (*domain.Diagnostic, error)
+	GetDiagnosticsByMotorcycleID(ctx context.Context, motorcycleID string) ([]domain.Diagnostic, error)
+	ApplyDiagnosticUpdates(existing *domain.Diagnostic, updates *domain.Diagnostic)
+	UpdateDiagnostic(ctx context.Context, tx output.Tx, diagnostic *domain.Diagnostic) error
+	DeleteDiagnostic(ctx context.Context, tx output.Tx, diagnosticID string) error
+}
