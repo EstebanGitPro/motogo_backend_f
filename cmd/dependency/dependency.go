@@ -287,7 +287,8 @@ func Init() (*Dependencies, error) {
 	}
 	log.Success(logger.LogDepDiagPermRepoInitOK)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(motorcycleRepository, diagnosticPermissionRepository)
+	motorcycleService := services.NewMotorcycleService(motorcycleRepository, diagnosticPermissionRepository)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(motorcycleService)
 	log.Success(logger.LogDepMotorcycleInteractorInitOK)
 
 	// Evidence feature (HU16-19)

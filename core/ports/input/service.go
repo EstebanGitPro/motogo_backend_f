@@ -261,3 +261,36 @@ type EvidenceService interface {
 	// Optional dependency injection
 	WithStorageClient(client output.StorageClient)
 }
+
+// MotorcycleService encapsulates motorcycle business logic (HU43-47, HU39, HU50, HU40)
+type MotorcycleService interface {
+	// Transaction management
+	BeginTx(ctx context.Context) (output.Tx, error)
+	// Validation
+	ValidateMotorcycleOwnership(ctx context.Context, motorcycleID, ownerID string) (*domain.Motorcycle, error)
+	ValidateReferenceExists(ctx context.Context, referenceID string) error
+	ValidateLicensePlateUnique(ctx context.Context, licensePlate string) error
+	// CRUD
+	CreateMotorcycle(ctx context.Context, tx output.Tx, motorcycle *domain.Motorcycle) (*domain.Motorcycle, error)
+	GetMotorcycleByID(ctx context.Context, motorcycleID string) (*domain.Motorcycle, error)
+	GetMotorcyclesByOwner(ctx context.Context, ownerID string) ([]domain.Motorcycle, error)
+	GetMotorcycleByLicensePlate(ctx context.Context, licensePlate string) (*domain.Motorcycle, error)
+	ApplyMotorcycleUpdates(ctx context.Context, motorcycle *domain.Motorcycle, updates *domain.Motorcycle) error
+	UpdateMotorcycle(ctx context.Context, tx output.Tx, motorcycle *domain.Motorcycle) error
+	// Delete strategy (hybrid: soft/hard based on history)
+	CheckServiceHistory(ctx context.Context, motorcycleID string) (bool, error)
+	DeleteMotorcycle(ctx context.Context, tx output.Tx, motorcycleID string, hasHistory bool) error
+	// Profile image management
+	DeleteProfileImage(ctx context.Context, tx output.Tx, motorcycleID string) error
+	DeleteStorageFile(ctx context.Context, imageURL string)
+	// References catalog
+	GetAllReferences(ctx context.Context) ([]domain.MotorcycleReference, error)
+	GetReferencesByBrandID(ctx context.Context, brandID string) ([]domain.MotorcycleReference, error)
+	// Diagnostic permissions
+	GrantDiagnosticPermission(ctx context.Context, tx output.Tx, motorcycleID, branchID string) (*domain.DiagnosticPermission, error)
+	RevokeDiagnosticPermission(ctx context.Context, tx output.Tx, motorcycleID, branchID string) error
+	ListDiagnosticPermissions(ctx context.Context, motorcycleID string) ([]domain.DiagnosticPermission, error)
+	BeginPermissionTx(ctx context.Context) (output.Tx, error)
+	// Optional dependency injection
+	WithStorageClient(client output.StorageClient)
+}

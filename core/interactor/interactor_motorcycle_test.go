@@ -17,186 +17,138 @@ import (
 // ============================================
 
 func TestRegisterMotorcycle_Success(t *testing.T) {
-	// Arrange
-	ctx := context.Background()
-	mockRepo := new(mocks.MockMotorcycleRepository)
-
+	mockService := new(mocks.MockMotorcycleService)
 	mockTx := new(mocks.MockTx)
-
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
-
-	year := 2023
-	mileage := 5000
-	motorcycle := &domain.Motorcycle{
-		LicensePlate:   "ABC123",
-		OwnerID:        "owner-123",
-		ReferenceID:    "ref-honda-cbr",
-		Year:           &year,
-		CurrentMileage: &mileage,
-	}
-
-	// Mock expectations
-	mockRepo.On("ValidateReferenceExists", ctx, "ref-honda-cbr").Return(true, nil)
-	mockRepo.On("CheckLicensePlateExists", ctx, "ABC123").Return(false, nil)
-	mockRepo.On("BeginTx", ctx).Return(mockTx, nil)
-	mockRepo.On("Save", ctx, mockTx, mock.AnythingOfType("*domain.Motorcycle")).Return(nil)
-	mockTx.On("Commit").Return(nil)
-	mockTx.On("Rollback").Return(nil)
-
-	// Act
-	result, err := motorcycleInteractor.RegisterMotorcycle(ctx, motorcycle)
-
-	// Assert
-	assert.NoError(t, err)
-	assert.NotNil(t, result)
-	assert.NotEmpty(t, result.ID) // UUID should be generated
-
-	mockRepo.AssertExpectations(t)
-	mockTx.AssertCalled(t, "Commit")
-}
-
-func TestRegisterMotorcycle_ReferenceRequired(t *testing.T) {
-	// Arrange
-	ctx := context.Background()
-	mockRepo := new(mocks.MockMotorcycleRepository)
-
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
+	i := interactor.NewMotorcycleInteractor(mockService)
 
 	motorcycle := &domain.Motorcycle{
 		LicensePlate: "ABC123",
-		OwnerID:      "owner-123",
-		ReferenceID:  "", // Missing reference
+		OwnerID:      "owner-1",
+		ReferenceID:  "ref-1",
 	}
 
-	// Act
-	result, err := motorcycleInteractor.RegisterMotorcycle(ctx, motorcycle)
+	created := &domain.Motorcycle{
+		ID:           "new-uuid",
+		LicensePlate: "ABC123",
+		OwnerID:      "owner-1",
+		ReferenceID:  "ref-1",
+	}
 
-	// Assert
+	mockService.On("ValidateReferenceExists", mock.Anything, "ref-1").Return(nil)
+	mockService.On("ValidateLicensePlateUnique", mock.Anything, "ABC123").Return(nil)
+	mockService.On("BeginTx", mock.Anything).Return(mockTx, nil)
+	mockService.On("CreateMotorcycle", mock.Anything, mockTx, motorcycle).Return(created, nil)
+	mockTx.On("Commit").Return(nil)
+
+	result, err := i.RegisterMotorcycle(context.Background(), motorcycle)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Equal(t, "new-uuid", result.ID)
+	mockService.AssertExpectations(t)
+}
+
+func TestRegisterMotorcycle_ReferenceRequired(t *testing.T) {
+	mockService := new(mocks.MockMotorcycleService)
+	i := interactor.NewMotorcycleInteractor(mockService)
+
+	motorcycle := &domain.Motorcycle{
+		LicensePlate: "ABC123",
+		OwnerID:      "owner-1",
+		ReferenceID:  "",
+	}
+
+	mockService.On("ValidateReferenceExists", mock.Anything, "").Return(domain.ErrReferenceRequired)
+
+	result, err := i.RegisterMotorcycle(context.Background(), motorcycle)
+
 	assert.Error(t, err)
 	assert.Nil(t, result)
 	assert.Equal(t, domain.ErrReferenceRequired, err)
 }
 
 func TestRegisterMotorcycle_ReferenceNotFound(t *testing.T) {
-	// Arrange
-	ctx := context.Background()
-	mockRepo := new(mocks.MockMotorcycleRepository)
-
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
+	mockService := new(mocks.MockMotorcycleService)
+	i := interactor.NewMotorcycleInteractor(mockService)
 
 	motorcycle := &domain.Motorcycle{
 		LicensePlate: "ABC123",
-		OwnerID:      "owner-123",
+		OwnerID:      "owner-1",
 		ReferenceID:  "invalid-ref",
 	}
 
-	// Mock expectations
-	mockRepo.On("ValidateReferenceExists", ctx, "invalid-ref").Return(false, nil)
+	mockService.On("ValidateReferenceExists", mock.Anything, "invalid-ref").Return(domain.ErrReferenceNotFound)
 
-	// Act
-	result, err := motorcycleInteractor.RegisterMotorcycle(ctx, motorcycle)
+	result, err := i.RegisterMotorcycle(context.Background(), motorcycle)
 
-	// Assert
 	assert.Error(t, err)
 	assert.Nil(t, result)
 	assert.Equal(t, domain.ErrReferenceNotFound, err)
-
-	mockRepo.AssertExpectations(t)
 }
 
 func TestRegisterMotorcycle_DuplicateLicensePlate(t *testing.T) {
-	// Arrange
-	ctx := context.Background()
-	mockRepo := new(mocks.MockMotorcycleRepository)
-
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
+	mockService := new(mocks.MockMotorcycleService)
+	i := interactor.NewMotorcycleInteractor(mockService)
 
 	motorcycle := &domain.Motorcycle{
-		LicensePlate: "ABC123",
-		OwnerID:      "owner-123",
-		ReferenceID:  "ref-honda-cbr",
+		LicensePlate: "DUP123",
+		OwnerID:      "owner-1",
+		ReferenceID:  "ref-1",
 	}
 
-	// Mock expectations
-	mockRepo.On("ValidateReferenceExists", ctx, "ref-honda-cbr").Return(true, nil)
-	mockRepo.On("CheckLicensePlateExists", ctx, "ABC123").Return(true, nil) // Already exists
+	mockService.On("ValidateReferenceExists", mock.Anything, "ref-1").Return(nil)
+	mockService.On("ValidateLicensePlateUnique", mock.Anything, "DUP123").Return(domain.ErrDuplicateLicensePlate)
 
-	// Act
-	result, err := motorcycleInteractor.RegisterMotorcycle(ctx, motorcycle)
+	result, err := i.RegisterMotorcycle(context.Background(), motorcycle)
 
-	// Assert
 	assert.Error(t, err)
 	assert.Nil(t, result)
 	assert.Equal(t, domain.ErrDuplicateLicensePlate, err)
-
-	mockRepo.AssertExpectations(t)
 }
 
 func TestRegisterMotorcycle_TxError(t *testing.T) {
-	// Arrange
-	ctx := context.Background()
-	mockRepo := new(mocks.MockMotorcycleRepository)
-
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
+	mockService := new(mocks.MockMotorcycleService)
+	i := interactor.NewMotorcycleInteractor(mockService)
 
 	motorcycle := &domain.Motorcycle{
 		LicensePlate: "ABC123",
-		OwnerID:      "owner-123",
-		ReferenceID:  "ref-honda-cbr",
+		OwnerID:      "owner-1",
+		ReferenceID:  "ref-1",
 	}
 
-	txError := errors.New("transaction error")
+	mockService.On("ValidateReferenceExists", mock.Anything, "ref-1").Return(nil)
+	mockService.On("ValidateLicensePlateUnique", mock.Anything, "ABC123").Return(nil)
+	mockService.On("BeginTx", mock.Anything).Return(nil, errors.New("tx error"))
 
-	// Mock expectations
-	mockRepo.On("ValidateReferenceExists", ctx, "ref-honda-cbr").Return(true, nil)
-	mockRepo.On("CheckLicensePlateExists", ctx, "ABC123").Return(false, nil)
-	mockRepo.On("BeginTx", ctx).Return(nil, txError)
+	result, err := i.RegisterMotorcycle(context.Background(), motorcycle)
 
-	// Act
-	result, err := motorcycleInteractor.RegisterMotorcycle(ctx, motorcycle)
-
-	// Assert
 	assert.Error(t, err)
 	assert.Nil(t, result)
 	assert.Equal(t, domain.ErrMotorcycleCannotSave, err)
-
-	mockRepo.AssertExpectations(t)
 }
 
 func TestRegisterMotorcycle_SaveError_Rollback(t *testing.T) {
-	// Arrange
-	ctx := context.Background()
-	mockRepo := new(mocks.MockMotorcycleRepository)
-
+	mockService := new(mocks.MockMotorcycleService)
 	mockTx := new(mocks.MockTx)
-
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
+	i := interactor.NewMotorcycleInteractor(mockService)
 
 	motorcycle := &domain.Motorcycle{
 		LicensePlate: "ABC123",
-		OwnerID:      "owner-123",
-		ReferenceID:  "ref-honda-cbr",
+		OwnerID:      "owner-1",
+		ReferenceID:  "ref-1",
 	}
 
-	saveError := errors.New("database error")
-
-	// Mock expectations
-	mockRepo.On("ValidateReferenceExists", ctx, "ref-honda-cbr").Return(true, nil)
-	mockRepo.On("CheckLicensePlateExists", ctx, "ABC123").Return(false, nil)
-	mockRepo.On("BeginTx", ctx).Return(mockTx, nil)
-	mockRepo.On("Save", ctx, mockTx, mock.AnythingOfType("*domain.Motorcycle")).Return(saveError)
+	mockService.On("ValidateReferenceExists", mock.Anything, "ref-1").Return(nil)
+	mockService.On("ValidateLicensePlateUnique", mock.Anything, "ABC123").Return(nil)
+	mockService.On("BeginTx", mock.Anything).Return(mockTx, nil)
+	mockService.On("CreateMotorcycle", mock.Anything, mockTx, motorcycle).Return(nil, domain.ErrMotorcycleCannotSave)
 	mockTx.On("Rollback").Return(nil)
 
-	// Act
-	result, err := motorcycleInteractor.RegisterMotorcycle(ctx, motorcycle)
+	result, err := i.RegisterMotorcycle(context.Background(), motorcycle)
 
-	// Assert
 	assert.Error(t, err)
 	assert.Nil(t, result)
 	assert.Equal(t, domain.ErrMotorcycleCannotSave, err)
-
-	mockTx.AssertCalled(t, "Rollback")
-	mockRepo.AssertExpectations(t)
 }
 
 // ============================================
@@ -204,54 +156,35 @@ func TestRegisterMotorcycle_SaveError_Rollback(t *testing.T) {
 // ============================================
 
 func TestGetMotorcycleByID_Success(t *testing.T) {
-	// Arrange
-	ctx := context.Background()
-	mockRepo := new(mocks.MockMotorcycleRepository)
+	mockService := new(mocks.MockMotorcycleService)
+	i := interactor.NewMotorcycleInteractor(mockService)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
-
-	motorcycleID := "moto-123"
-	expectedMotorcycle := &domain.Motorcycle{
-		ID:           motorcycleID,
+	motorcycle := &domain.Motorcycle{
+		ID:           "moto-1",
 		LicensePlate: "ABC123",
-		OwnerID:      "owner-123",
+		OwnerID:      "owner-1",
 	}
 
-	// Mock expectations
-	mockRepo.On("GetByID", ctx, motorcycleID).Return(expectedMotorcycle, nil)
+	mockService.On("GetMotorcycleByID", mock.Anything, "moto-1").Return(motorcycle, nil)
 
-	// Act
-	result, err := motorcycleInteractor.GetMotorcycleByID(ctx, motorcycleID)
+	result, err := i.GetMotorcycleByID(context.Background(), "moto-1")
 
-	// Assert
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
-	assert.Equal(t, motorcycleID, result.ID)
-
-	mockRepo.AssertExpectations(t)
+	assert.Equal(t, "moto-1", result.ID)
 }
 
 func TestGetMotorcycleByID_NotFound(t *testing.T) {
-	// Arrange
-	ctx := context.Background()
-	mockRepo := new(mocks.MockMotorcycleRepository)
+	mockService := new(mocks.MockMotorcycleService)
+	i := interactor.NewMotorcycleInteractor(mockService)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
+	mockService.On("GetMotorcycleByID", mock.Anything, "moto-999").Return(nil, domain.ErrMotorcycleNotFound)
 
-	motorcycleID := "non-existent"
+	result, err := i.GetMotorcycleByID(context.Background(), "moto-999")
 
-	// Mock expectations
-	mockRepo.On("GetByID", ctx, motorcycleID).Return(nil, domain.ErrMotorcycleNotFound)
-
-	// Act
-	result, err := motorcycleInteractor.GetMotorcycleByID(ctx, motorcycleID)
-
-	// Assert
 	assert.Error(t, err)
 	assert.Nil(t, result)
 	assert.Equal(t, domain.ErrMotorcycleNotFound, err)
-
-	mockRepo.AssertExpectations(t)
 }
 
 // ============================================
@@ -259,74 +192,44 @@ func TestGetMotorcycleByID_NotFound(t *testing.T) {
 // ============================================
 
 func TestGetMotorcyclesByOwner_Success(t *testing.T) {
-	// Arrange
-	ctx := context.Background()
-	mockRepo := new(mocks.MockMotorcycleRepository)
+	mockService := new(mocks.MockMotorcycleService)
+	i := interactor.NewMotorcycleInteractor(mockService)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
-
-	ownerID := "owner-123"
-	expectedMotorcycles := []domain.Motorcycle{
-		{ID: "moto-1", LicensePlate: "ABC123", OwnerID: ownerID},
-		{ID: "moto-2", LicensePlate: "DEF456", OwnerID: ownerID},
+	motorcycles := []domain.Motorcycle{
+		{ID: "moto-1", OwnerID: "owner-1"},
+		{ID: "moto-2", OwnerID: "owner-1"},
 	}
 
-	// Mock expectations
-	mockRepo.On("GetByOwnerID", ctx, ownerID).Return(expectedMotorcycles, nil)
+	mockService.On("GetMotorcyclesByOwner", mock.Anything, "owner-1").Return(motorcycles, nil)
 
-	// Act
-	result, err := motorcycleInteractor.GetMotorcyclesByOwner(ctx, ownerID)
+	result, err := i.GetMotorcyclesByOwner(context.Background(), "owner-1")
 
-	// Assert
 	assert.NoError(t, err)
 	assert.Len(t, result, 2)
-
-	mockRepo.AssertExpectations(t)
 }
 
 func TestGetMotorcyclesByOwner_Empty(t *testing.T) {
-	// Arrange
-	ctx := context.Background()
-	mockRepo := new(mocks.MockMotorcycleRepository)
+	mockService := new(mocks.MockMotorcycleService)
+	i := interactor.NewMotorcycleInteractor(mockService)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
+	mockService.On("GetMotorcyclesByOwner", mock.Anything, "owner-1").Return([]domain.Motorcycle{}, nil)
 
-	ownerID := "new-owner"
+	result, err := i.GetMotorcyclesByOwner(context.Background(), "owner-1")
 
-	// Mock expectations
-	mockRepo.On("GetByOwnerID", ctx, ownerID).Return([]domain.Motorcycle{}, nil)
-
-	// Act
-	result, err := motorcycleInteractor.GetMotorcyclesByOwner(ctx, ownerID)
-
-	// Assert
 	assert.NoError(t, err)
 	assert.Empty(t, result)
-
-	mockRepo.AssertExpectations(t)
 }
 
 func TestGetMotorcyclesByOwner_Error(t *testing.T) {
-	// Arrange
-	ctx := context.Background()
-	mockRepo := new(mocks.MockMotorcycleRepository)
+	mockService := new(mocks.MockMotorcycleService)
+	i := interactor.NewMotorcycleInteractor(mockService)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
+	mockService.On("GetMotorcyclesByOwner", mock.Anything, "owner-1").Return(nil, errors.New("db error"))
 
-	ownerID := "owner-123"
-	dbError := errors.New("database error")
+	result, err := i.GetMotorcyclesByOwner(context.Background(), "owner-1")
 
-	// Mock expectations
-	mockRepo.On("GetByOwnerID", ctx, ownerID).Return(nil, dbError)
-
-	// Act
-	result, err := motorcycleInteractor.GetMotorcyclesByOwner(ctx, ownerID)
-
-	// Assert
 	assert.Error(t, err)
 	assert.Nil(t, result)
-
-	mockRepo.AssertExpectations(t)
 }
 
 // ============================================
@@ -334,54 +237,33 @@ func TestGetMotorcyclesByOwner_Error(t *testing.T) {
 // ============================================
 
 func TestGetMotorcycleByLicensePlate_Success(t *testing.T) {
-	// Arrange
-	ctx := context.Background()
-	mockRepo := new(mocks.MockMotorcycleRepository)
+	mockService := new(mocks.MockMotorcycleService)
+	i := interactor.NewMotorcycleInteractor(mockService)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
-
-	licensePlate := "ABC123"
-	expectedMotorcycle := &domain.Motorcycle{
-		ID:           "moto-123",
-		LicensePlate: licensePlate,
-		OwnerID:      "owner-123",
+	motorcycle := &domain.Motorcycle{
+		ID:           "moto-1",
+		LicensePlate: "ABC123",
 	}
 
-	// Mock expectations
-	mockRepo.On("GetByLicensePlate", ctx, licensePlate).Return(expectedMotorcycle, nil)
+	mockService.On("GetMotorcycleByLicensePlate", mock.Anything, "ABC123").Return(motorcycle, nil)
 
-	// Act
-	result, err := motorcycleInteractor.GetMotorcycleByLicensePlate(ctx, licensePlate)
+	result, err := i.GetMotorcycleByLicensePlate(context.Background(), "ABC123")
 
-	// Assert
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
-	assert.Equal(t, licensePlate, result.LicensePlate)
-
-	mockRepo.AssertExpectations(t)
+	assert.Equal(t, "ABC123", result.LicensePlate)
 }
 
 func TestGetMotorcycleByLicensePlate_NotFound(t *testing.T) {
-	// Arrange
-	ctx := context.Background()
-	mockRepo := new(mocks.MockMotorcycleRepository)
+	mockService := new(mocks.MockMotorcycleService)
+	i := interactor.NewMotorcycleInteractor(mockService)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
+	mockService.On("GetMotorcycleByLicensePlate", mock.Anything, "ZZZ999").Return(nil, domain.ErrMotorcycleNotFound)
 
-	licensePlate := "INVALID"
+	result, err := i.GetMotorcycleByLicensePlate(context.Background(), "ZZZ999")
 
-	// Mock expectations
-	mockRepo.On("GetByLicensePlate", ctx, licensePlate).Return(nil, domain.ErrMotorcycleNotFound)
-
-	// Act
-	result, err := motorcycleInteractor.GetMotorcycleByLicensePlate(ctx, licensePlate)
-
-	// Assert
 	assert.Error(t, err)
 	assert.Nil(t, result)
-	assert.Equal(t, domain.ErrMotorcycleNotFound, err)
-
-	mockRepo.AssertExpectations(t)
 }
 
 // ============================================
@@ -389,141 +271,93 @@ func TestGetMotorcycleByLicensePlate_NotFound(t *testing.T) {
 // ============================================
 
 func TestUpdateMotorcycle_Success(t *testing.T) {
-	// Arrange
-	ctx := context.Background()
-	mockRepo := new(mocks.MockMotorcycleRepository)
-
+	mockService := new(mocks.MockMotorcycleService)
 	mockTx := new(mocks.MockTx)
+	i := interactor.NewMotorcycleInteractor(mockService)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
-
-	motorcycleID := "moto-123"
-	ownerID := "owner-123"
-	year := 2023
-	mileage := 10000
-
-	existingMotorcycle := &domain.Motorcycle{
-		ID:           motorcycleID,
+	motorcycle := &domain.Motorcycle{
+		ID:           "moto-1",
 		LicensePlate: "ABC123",
-		OwnerID:      ownerID,
-		ReferenceID:  "ref-honda-cbr",
+		OwnerID:      "owner-1",
+		ReferenceID:  "ref-1",
 	}
 
-	updates := &domain.Motorcycle{
-		Year:           &year,
-		CurrentMileage: &mileage,
+	year := 2023
+	updates := &domain.Motorcycle{Year: &year}
+
+	updated := &domain.Motorcycle{
+		ID:           "moto-1",
+		LicensePlate: "ABC123",
+		OwnerID:      "owner-1",
+		ReferenceID:  "ref-1",
+		Year:         &year,
 	}
 
-	// Mock expectations
-	mockRepo.On("GetByID", ctx, motorcycleID).Return(existingMotorcycle, nil).Once()
-	mockRepo.On("BeginTx", ctx).Return(mockTx, nil)
-	mockRepo.On("Update", ctx, mockTx, mock.AnythingOfType("*domain.Motorcycle")).Return(nil)
+	mockService.On("ValidateMotorcycleOwnership", mock.Anything, "moto-1", "owner-1").Return(motorcycle, nil)
+	mockService.On("ApplyMotorcycleUpdates", mock.Anything, motorcycle, updates).Return(nil)
+	mockService.On("BeginTx", mock.Anything).Return(mockTx, nil)
+	mockService.On("UpdateMotorcycle", mock.Anything, mockTx, motorcycle).Return(nil)
 	mockTx.On("Commit").Return(nil)
-	mockTx.On("Rollback").Return(nil)
-	mockRepo.On("GetByID", ctx, motorcycleID).Return(existingMotorcycle, nil).Once()
+	mockService.On("GetMotorcycleByID", mock.Anything, "moto-1").Return(updated, nil)
 
-	// Act
-	result, err := motorcycleInteractor.UpdateMotorcycle(ctx, motorcycleID, ownerID, updates)
+	result, err := i.UpdateMotorcycle(context.Background(), "moto-1", "owner-1", updates)
 
-	// Assert
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
-
-	mockRepo.AssertExpectations(t)
-	mockTx.AssertCalled(t, "Commit")
+	assert.Equal(t, 2023, *result.Year)
+	mockService.AssertExpectations(t)
 }
 
 func TestUpdateMotorcycle_NotFound(t *testing.T) {
-	// Arrange
-	ctx := context.Background()
-	mockRepo := new(mocks.MockMotorcycleRepository)
+	mockService := new(mocks.MockMotorcycleService)
+	i := interactor.NewMotorcycleInteractor(mockService)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
-
-	motorcycleID := "non-existent"
-	ownerID := "owner-123"
 	updates := &domain.Motorcycle{}
 
-	// Mock expectations
-	mockRepo.On("GetByID", ctx, motorcycleID).Return(nil, domain.ErrMotorcycleNotFound)
+	mockService.On("ValidateMotorcycleOwnership", mock.Anything, "moto-999", "owner-1").Return(nil, domain.ErrMotorcycleNotFound)
 
-	// Act
-	result, err := motorcycleInteractor.UpdateMotorcycle(ctx, motorcycleID, ownerID, updates)
+	result, err := i.UpdateMotorcycle(context.Background(), "moto-999", "owner-1", updates)
 
-	// Assert
 	assert.Error(t, err)
 	assert.Nil(t, result)
 	assert.Equal(t, domain.ErrMotorcycleNotFound, err)
-
-	mockRepo.AssertExpectations(t)
 }
 
 func TestUpdateMotorcycle_NotOwner(t *testing.T) {
-	// Arrange
-	ctx := context.Background()
-	mockRepo := new(mocks.MockMotorcycleRepository)
-
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
-
-	motorcycleID := "moto-123"
-	ownerID := "other-owner" // Different from actual owner
-
-	existingMotorcycle := &domain.Motorcycle{
-		ID:           motorcycleID,
-		LicensePlate: "ABC123",
-		OwnerID:      "owner-123", // Actual owner
-	}
+	mockService := new(mocks.MockMotorcycleService)
+	i := interactor.NewMotorcycleInteractor(mockService)
 
 	updates := &domain.Motorcycle{}
 
-	// Mock expectations
-	mockRepo.On("GetByID", ctx, motorcycleID).Return(existingMotorcycle, nil)
+	mockService.On("ValidateMotorcycleOwnership", mock.Anything, "moto-1", "wrong-owner").Return(nil, domain.ErrMotorcycleNotFound)
 
-	// Act
-	result, err := motorcycleInteractor.UpdateMotorcycle(ctx, motorcycleID, ownerID, updates)
+	result, err := i.UpdateMotorcycle(context.Background(), "moto-1", "wrong-owner", updates)
 
-	// Assert
 	assert.Error(t, err)
 	assert.Nil(t, result)
-	assert.Equal(t, domain.ErrMotorcycleNotFound, err) // Returns 404 for security
-
-	mockRepo.AssertExpectations(t)
+	assert.Equal(t, domain.ErrMotorcycleNotFound, err)
 }
 
 func TestUpdateMotorcycle_ReferenceNotFound(t *testing.T) {
-	// Arrange
-	ctx := context.Background()
-	mockRepo := new(mocks.MockMotorcycleRepository)
+	mockService := new(mocks.MockMotorcycleService)
+	i := interactor.NewMotorcycleInteractor(mockService)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
-
-	motorcycleID := "moto-123"
-	ownerID := "owner-123"
-
-	existingMotorcycle := &domain.Motorcycle{
-		ID:           motorcycleID,
-		LicensePlate: "ABC123",
-		OwnerID:      ownerID,
-		ReferenceID:  "ref-honda-cbr",
+	motorcycle := &domain.Motorcycle{
+		ID:          "moto-1",
+		OwnerID:     "owner-1",
+		ReferenceID: "ref-1",
 	}
 
-	updates := &domain.Motorcycle{
-		ReferenceID: "invalid-ref", // New invalid reference
-	}
+	updates := &domain.Motorcycle{ReferenceID: "invalid-ref"}
 
-	// Mock expectations
-	mockRepo.On("GetByID", ctx, motorcycleID).Return(existingMotorcycle, nil)
-	mockRepo.On("ValidateReferenceExists", ctx, "invalid-ref").Return(false, nil)
+	mockService.On("ValidateMotorcycleOwnership", mock.Anything, "moto-1", "owner-1").Return(motorcycle, nil)
+	mockService.On("ApplyMotorcycleUpdates", mock.Anything, motorcycle, updates).Return(domain.ErrReferenceNotFound)
 
-	// Act
-	result, err := motorcycleInteractor.UpdateMotorcycle(ctx, motorcycleID, ownerID, updates)
+	result, err := i.UpdateMotorcycle(context.Background(), "moto-1", "owner-1", updates)
 
-	// Assert
 	assert.Error(t, err)
 	assert.Nil(t, result)
 	assert.Equal(t, domain.ErrReferenceNotFound, err)
-
-	mockRepo.AssertExpectations(t)
 }
 
 // ============================================
@@ -531,164 +365,114 @@ func TestUpdateMotorcycle_ReferenceNotFound(t *testing.T) {
 // ============================================
 
 func TestDeleteMotorcycle_Success_SoftDelete(t *testing.T) {
-	// Arrange - motorcycle WITH service history -> soft delete
-	ctx := context.Background()
-	mockRepo := new(mocks.MockMotorcycleRepository)
-
+	mockService := new(mocks.MockMotorcycleService)
 	mockTx := new(mocks.MockTx)
+	i := interactor.NewMotorcycleInteractor(mockService)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
-
-	motorcycleID := "moto-123"
-	ownerID := "owner-123"
-
-	existingMotorcycle := &domain.Motorcycle{
-		ID:           motorcycleID,
-		LicensePlate: "ABC123",
-		OwnerID:      ownerID,
+	motorcycle := &domain.Motorcycle{
+		ID:      "moto-1",
+		OwnerID: "owner-1",
 	}
 
-	// Mock expectations - has history -> soft delete
-	mockRepo.On("GetByID", ctx, motorcycleID).Return(existingMotorcycle, nil)
-	mockRepo.On("HasServiceHistory", ctx, motorcycleID).Return(true, nil) // Has history
-	mockRepo.On("BeginTx", ctx).Return(mockTx, nil)
-	mockRepo.On("Delete", ctx, mockTx, motorcycleID).Return(nil) // Soft delete
+	mockService.On("ValidateMotorcycleOwnership", mock.Anything, "moto-1", "owner-1").Return(motorcycle, nil)
+	mockService.On("CheckServiceHistory", mock.Anything, "moto-1").Return(true, nil)
+	mockService.On("BeginTx", mock.Anything).Return(mockTx, nil)
+	mockService.On("DeleteMotorcycle", mock.Anything, mockTx, "moto-1", true).Return(nil)
 	mockTx.On("Commit").Return(nil)
-	mockTx.On("Rollback").Return(nil)
 
-	// Act
-	err := motorcycleInteractor.DeleteMotorcycle(ctx, motorcycleID, ownerID)
+	err := i.DeleteMotorcycle(context.Background(), "moto-1", "owner-1")
 
-	// Assert
 	assert.NoError(t, err)
-
-	mockRepo.AssertExpectations(t)
-	mockTx.AssertCalled(t, "Commit")
+	mockService.AssertExpectations(t)
 }
 
 func TestDeleteMotorcycle_Success_HardDelete(t *testing.T) {
-	// Arrange - motorcycle WITHOUT service history -> hard delete
-	ctx := context.Background()
-	mockRepo := new(mocks.MockMotorcycleRepository)
-
+	mockService := new(mocks.MockMotorcycleService)
 	mockTx := new(mocks.MockTx)
+	i := interactor.NewMotorcycleInteractor(mockService)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
-
-	motorcycleID := "moto-456"
-	ownerID := "owner-123"
-
-	existingMotorcycle := &domain.Motorcycle{
-		ID:           motorcycleID,
-		LicensePlate: "DEF456",
-		OwnerID:      ownerID,
+	motorcycle := &domain.Motorcycle{
+		ID:      "moto-1",
+		OwnerID: "owner-1",
 	}
 
-	// Mock expectations - no history -> hard delete
-	mockRepo.On("GetByID", ctx, motorcycleID).Return(existingMotorcycle, nil)
-	mockRepo.On("HasServiceHistory", ctx, motorcycleID).Return(false, nil) // No history
-	mockRepo.On("BeginTx", ctx).Return(mockTx, nil)
-	mockRepo.On("HardDelete", ctx, mockTx, motorcycleID).Return(nil) // Hard delete
+	mockService.On("ValidateMotorcycleOwnership", mock.Anything, "moto-1", "owner-1").Return(motorcycle, nil)
+	mockService.On("CheckServiceHistory", mock.Anything, "moto-1").Return(false, nil)
+	mockService.On("BeginTx", mock.Anything).Return(mockTx, nil)
+	mockService.On("DeleteMotorcycle", mock.Anything, mockTx, "moto-1", false).Return(nil)
 	mockTx.On("Commit").Return(nil)
-	mockTx.On("Rollback").Return(nil)
 
-	// Act
-	err := motorcycleInteractor.DeleteMotorcycle(ctx, motorcycleID, ownerID)
+	err := i.DeleteMotorcycle(context.Background(), "moto-1", "owner-1")
 
-	// Assert
 	assert.NoError(t, err)
-
-	mockRepo.AssertExpectations(t)
-	mockTx.AssertCalled(t, "Commit")
 }
 
 func TestDeleteMotorcycle_NotFound(t *testing.T) {
-	// Arrange
-	ctx := context.Background()
-	mockRepo := new(mocks.MockMotorcycleRepository)
+	mockService := new(mocks.MockMotorcycleService)
+	i := interactor.NewMotorcycleInteractor(mockService)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
+	mockService.On("ValidateMotorcycleOwnership", mock.Anything, "moto-999", "owner-1").Return(nil, domain.ErrMotorcycleNotFound)
 
-	motorcycleID := "non-existent"
-	ownerID := "owner-123"
+	err := i.DeleteMotorcycle(context.Background(), "moto-999", "owner-1")
 
-	// Mock expectations
-	mockRepo.On("GetByID", ctx, motorcycleID).Return(nil, domain.ErrMotorcycleNotFound)
-
-	// Act
-	err := motorcycleInteractor.DeleteMotorcycle(ctx, motorcycleID, ownerID)
-
-	// Assert
 	assert.Error(t, err)
 	assert.Equal(t, domain.ErrMotorcycleNotFound, err)
-
-	mockRepo.AssertExpectations(t)
 }
 
 func TestDeleteMotorcycle_NotOwner(t *testing.T) {
-	// Arrange
-	ctx := context.Background()
-	mockRepo := new(mocks.MockMotorcycleRepository)
+	mockService := new(mocks.MockMotorcycleService)
+	i := interactor.NewMotorcycleInteractor(mockService)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
+	mockService.On("ValidateMotorcycleOwnership", mock.Anything, "moto-1", "wrong-owner").Return(nil, domain.ErrMotorcycleNotFound)
 
-	motorcycleID := "moto-123"
-	ownerID := "other-owner" // Different from actual owner
+	err := i.DeleteMotorcycle(context.Background(), "moto-1", "wrong-owner")
 
-	existingMotorcycle := &domain.Motorcycle{
-		ID:           motorcycleID,
-		LicensePlate: "ABC123",
-		OwnerID:      "owner-123", // Actual owner
-	}
-
-	// Mock expectations
-	mockRepo.On("GetByID", ctx, motorcycleID).Return(existingMotorcycle, nil)
-
-	// Act
-	err := motorcycleInteractor.DeleteMotorcycle(ctx, motorcycleID, ownerID)
-
-	// Assert
 	assert.Error(t, err)
-	assert.Equal(t, domain.ErrMotorcycleNotFound, err) // Returns 404 for security
-
-	mockRepo.AssertExpectations(t)
+	assert.Equal(t, domain.ErrMotorcycleNotFound, err)
 }
 
 func TestDeleteMotorcycle_TxError_Rollback(t *testing.T) {
-	// Arrange
-	ctx := context.Background()
-	mockRepo := new(mocks.MockMotorcycleRepository)
+	mockService := new(mocks.MockMotorcycleService)
+	i := interactor.NewMotorcycleInteractor(mockService)
 
-	mockTx := new(mocks.MockTx)
-
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
-
-	motorcycleID := "moto-123"
-	ownerID := "owner-123"
-
-	existingMotorcycle := &domain.Motorcycle{
-		ID:      motorcycleID,
-		OwnerID: ownerID,
+	motorcycle := &domain.Motorcycle{
+		ID:      "moto-1",
+		OwnerID: "owner-1",
 	}
 
-	deleteError := errors.New("delete failed")
+	mockService.On("ValidateMotorcycleOwnership", mock.Anything, "moto-1", "owner-1").Return(motorcycle, nil)
+	mockService.On("CheckServiceHistory", mock.Anything, "moto-1").Return(false, nil)
+	mockService.On("BeginTx", mock.Anything).Return(nil, errors.New("tx error"))
 
-	// Mock expectations
-	mockRepo.On("GetByID", ctx, motorcycleID).Return(existingMotorcycle, nil)
-	mockRepo.On("HasServiceHistory", ctx, motorcycleID).Return(true, nil)
-	mockRepo.On("BeginTx", ctx).Return(mockTx, nil)
-	mockRepo.On("Delete", ctx, mockTx, motorcycleID).Return(deleteError)
-	mockTx.On("Rollback").Return(nil)
+	err := i.DeleteMotorcycle(context.Background(), "moto-1", "owner-1")
 
-	// Act
-	err := motorcycleInteractor.DeleteMotorcycle(ctx, motorcycleID, ownerID)
-
-	// Assert
 	assert.Error(t, err)
 	assert.Equal(t, domain.ErrMotorcycleCannotDelete, err)
+}
 
-	mockTx.AssertCalled(t, "Rollback")
-	mockRepo.AssertExpectations(t)
+func TestDeleteMotorcycle_WithProfileImage(t *testing.T) {
+	mockService := new(mocks.MockMotorcycleService)
+	mockTx := new(mocks.MockTx)
+	i := interactor.NewMotorcycleInteractor(mockService)
+
+	imageURL := "https://firebasestorage.googleapis.com/v0/b/test/o/image.jpg"
+	motorcycle := &domain.Motorcycle{
+		ID:              "moto-1",
+		OwnerID:         "owner-1",
+		ProfileImageURL: &imageURL,
+	}
+
+	mockService.On("ValidateMotorcycleOwnership", mock.Anything, "moto-1", "owner-1").Return(motorcycle, nil)
+	mockService.On("CheckServiceHistory", mock.Anything, "moto-1").Return(false, nil)
+	mockService.On("DeleteStorageFile", mock.Anything, imageURL).Return()
+	mockService.On("BeginTx", mock.Anything).Return(mockTx, nil)
+	mockService.On("DeleteMotorcycle", mock.Anything, mockTx, "moto-1", false).Return(nil)
+	mockTx.On("Commit").Return(nil)
+
+	err := i.DeleteMotorcycle(context.Background(), "moto-1", "owner-1")
+
+	assert.NoError(t, err)
+	mockService.AssertExpectations(t)
 }
 
 // ============================================
@@ -696,50 +480,32 @@ func TestDeleteMotorcycle_TxError_Rollback(t *testing.T) {
 // ============================================
 
 func TestGetMotorcycleReferences_Success(t *testing.T) {
-	// Arrange
-	ctx := context.Background()
-	mockRepo := new(mocks.MockMotorcycleRepository)
+	mockService := new(mocks.MockMotorcycleService)
+	i := interactor.NewMotorcycleInteractor(mockService)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
-
-	expectedRefs := []domain.MotorcycleReference{
-		{ID: "ref-1", Model: "CBR 600"},
-		{ID: "ref-2", Model: "Ninja 650"},
+	refs := []domain.MotorcycleReference{
+		{ID: "ref-1", Model: "Reference 1"},
+		{ID: "ref-2", Model: "Reference 2"},
 	}
 
-	// Mock expectations
-	mockRepo.On("GetAllReferences", ctx).Return(expectedRefs, nil)
+	mockService.On("GetAllReferences", mock.Anything).Return(refs, nil)
 
-	// Act
-	result, err := motorcycleInteractor.GetMotorcycleReferences(ctx)
+	result, err := i.GetMotorcycleReferences(context.Background())
 
-	// Assert
 	assert.NoError(t, err)
 	assert.Len(t, result, 2)
-
-	mockRepo.AssertExpectations(t)
 }
 
 func TestGetMotorcycleReferences_Error(t *testing.T) {
-	// Arrange
-	ctx := context.Background()
-	mockRepo := new(mocks.MockMotorcycleRepository)
+	mockService := new(mocks.MockMotorcycleService)
+	i := interactor.NewMotorcycleInteractor(mockService)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
+	mockService.On("GetAllReferences", mock.Anything).Return(nil, errors.New("db error"))
 
-	dbError := errors.New("database error")
+	result, err := i.GetMotorcycleReferences(context.Background())
 
-	// Mock expectations
-	mockRepo.On("GetAllReferences", ctx).Return(nil, dbError)
-
-	// Act
-	result, err := motorcycleInteractor.GetMotorcycleReferences(ctx)
-
-	// Assert
 	assert.Error(t, err)
 	assert.Nil(t, result)
-
-	mockRepo.AssertExpectations(t)
 }
 
 // ============================================
@@ -747,52 +513,31 @@ func TestGetMotorcycleReferences_Error(t *testing.T) {
 // ============================================
 
 func TestGetReferencesByBrandID_Success(t *testing.T) {
-	// Arrange
-	ctx := context.Background()
-	mockRepo := new(mocks.MockMotorcycleRepository)
+	mockService := new(mocks.MockMotorcycleService)
+	i := interactor.NewMotorcycleInteractor(mockService)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
-
-	brandID := "brand-honda"
-	expectedRefs := []domain.MotorcycleReference{
-		{ID: "ref-1", Model: "CBR 600", BrandID: brandID},
-		{ID: "ref-2", Model: "CBR 1000", BrandID: brandID},
+	refs := []domain.MotorcycleReference{
+		{ID: "ref-1", Model: "Reference 1"},
 	}
 
-	// Mock expectations
-	mockRepo.On("GetReferencesByBrandID", ctx, brandID).Return(expectedRefs, nil)
+	mockService.On("GetReferencesByBrandID", mock.Anything, "brand-1").Return(refs, nil)
 
-	// Act
-	result, err := motorcycleInteractor.GetReferencesByBrandID(ctx, brandID)
+	result, err := i.GetReferencesByBrandID(context.Background(), "brand-1")
 
-	// Assert
 	assert.NoError(t, err)
-	assert.Len(t, result, 2)
-
-	mockRepo.AssertExpectations(t)
+	assert.Len(t, result, 1)
 }
 
 func TestGetReferencesByBrandID_Error(t *testing.T) {
-	// Arrange
-	ctx := context.Background()
-	mockRepo := new(mocks.MockMotorcycleRepository)
+	mockService := new(mocks.MockMotorcycleService)
+	i := interactor.NewMotorcycleInteractor(mockService)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
+	mockService.On("GetReferencesByBrandID", mock.Anything, "brand-1").Return(nil, errors.New("db error"))
 
-	brandID := "brand-honda"
-	dbError := errors.New("database error")
+	result, err := i.GetReferencesByBrandID(context.Background(), "brand-1")
 
-	// Mock expectations
-	mockRepo.On("GetReferencesByBrandID", ctx, brandID).Return(nil, dbError)
-
-	// Act
-	result, err := motorcycleInteractor.GetReferencesByBrandID(ctx, brandID)
-
-	// Assert
 	assert.Error(t, err)
 	assert.Nil(t, result)
-
-	mockRepo.AssertExpectations(t)
 }
 
 // ============================================
@@ -800,308 +545,327 @@ func TestGetReferencesByBrandID_Error(t *testing.T) {
 // ============================================
 
 func TestDeleteProfileImage_Success(t *testing.T) {
-	// Arrange
-	ctx := context.Background()
-	mockRepo := new(mocks.MockMotorcycleRepository)
+	mockService := new(mocks.MockMotorcycleService)
 	mockTx := new(mocks.MockTx)
-	mockStorage := new(mocks.MockStorageClient)
+	i := interactor.NewMotorcycleInteractor(mockService)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{}).
-		WithStorageClient(mockStorage)
-
-	motorcycleID := "moto-123"
-	ownerID := "owner-123"
-	imageURL := "https://firebasestorage.googleapis.com/v0/b/motogo.appspot.com/o/motorcycles%2Fprofile.jpg"
-
-	existingMotorcycle := &domain.Motorcycle{
-		ID:              motorcycleID,
-		LicensePlate:    "ABC123",
-		OwnerID:         ownerID,
+	imageURL := "https://firebasestorage.googleapis.com/v0/b/test/o/image.jpg"
+	motorcycle := &domain.Motorcycle{
+		ID:              "moto-1",
+		OwnerID:         "owner-1",
 		ProfileImageURL: &imageURL,
 	}
 
-	// Mock expectations
-	mockRepo.On("GetByID", ctx, motorcycleID).Return(existingMotorcycle, nil)
-	mockStorage.On("DeleteStorageFile", ctx, imageURL).Return(nil)
-	mockRepo.On("BeginTx", ctx).Return(mockTx, nil)
-	mockRepo.On("ClearProfileImageURL", ctx, mockTx, motorcycleID).Return(nil)
+	mockService.On("ValidateMotorcycleOwnership", mock.Anything, "moto-1", "owner-1").Return(motorcycle, nil)
+	mockService.On("DeleteStorageFile", mock.Anything, imageURL).Return()
+	mockService.On("BeginTx", mock.Anything).Return(mockTx, nil)
+	mockService.On("DeleteProfileImage", mock.Anything, mockTx, "moto-1").Return(nil)
 	mockTx.On("Commit").Return(nil)
-	mockTx.On("Rollback").Return(nil)
 
-	// Act
-	err := motorcycleInteractor.DeleteProfileImage(ctx, motorcycleID, ownerID)
+	err := i.DeleteProfileImage(context.Background(), "moto-1", "owner-1")
 
-	// Assert
 	assert.NoError(t, err)
-
-	mockRepo.AssertExpectations(t)
-	mockStorage.AssertExpectations(t)
-	mockTx.AssertCalled(t, "Commit")
+	mockService.AssertExpectations(t)
 }
 
 func TestDeleteProfileImage_Success_NoImage(t *testing.T) {
-	// Arrange - motorcycle without profile image
-	ctx := context.Background()
-	mockRepo := new(mocks.MockMotorcycleRepository)
+	mockService := new(mocks.MockMotorcycleService)
+	i := interactor.NewMotorcycleInteractor(mockService)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
-
-	motorcycleID := "moto-123"
-	ownerID := "owner-123"
-
-	existingMotorcycle := &domain.Motorcycle{
-		ID:              motorcycleID,
-		LicensePlate:    "ABC123",
-		OwnerID:         ownerID,
-		ProfileImageURL: nil, // No image
+	motorcycle := &domain.Motorcycle{
+		ID:              "moto-1",
+		OwnerID:         "owner-1",
+		ProfileImageURL: nil,
 	}
 
-	// Mock expectations
-	mockRepo.On("GetByID", ctx, motorcycleID).Return(existingMotorcycle, nil)
+	mockService.On("ValidateMotorcycleOwnership", mock.Anything, "moto-1", "owner-1").Return(motorcycle, nil)
 
-	// Act
-	err := motorcycleInteractor.DeleteProfileImage(ctx, motorcycleID, ownerID)
+	err := i.DeleteProfileImage(context.Background(), "moto-1", "owner-1")
 
-	// Assert - should succeed without doing anything
 	assert.NoError(t, err)
-
-	mockRepo.AssertExpectations(t)
 }
 
 func TestDeleteProfileImage_Success_EmptyImageURL(t *testing.T) {
-	// Arrange - motorcycle with empty profile image URL
-	ctx := context.Background()
-	mockRepo := new(mocks.MockMotorcycleRepository)
+	mockService := new(mocks.MockMotorcycleService)
+	i := interactor.NewMotorcycleInteractor(mockService)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
-
-	motorcycleID := "moto-123"
-	ownerID := "owner-123"
 	emptyURL := ""
-
-	existingMotorcycle := &domain.Motorcycle{
-		ID:              motorcycleID,
-		LicensePlate:    "ABC123",
-		OwnerID:         ownerID,
-		ProfileImageURL: &emptyURL, // Empty string
+	motorcycle := &domain.Motorcycle{
+		ID:              "moto-1",
+		OwnerID:         "owner-1",
+		ProfileImageURL: &emptyURL,
 	}
 
-	// Mock expectations
-	mockRepo.On("GetByID", ctx, motorcycleID).Return(existingMotorcycle, nil)
+	mockService.On("ValidateMotorcycleOwnership", mock.Anything, "moto-1", "owner-1").Return(motorcycle, nil)
 
-	// Act
-	err := motorcycleInteractor.DeleteProfileImage(ctx, motorcycleID, ownerID)
+	err := i.DeleteProfileImage(context.Background(), "moto-1", "owner-1")
 
-	// Assert - should succeed without doing anything
 	assert.NoError(t, err)
-
-	mockRepo.AssertExpectations(t)
 }
 
 func TestDeleteProfileImage_NotFound(t *testing.T) {
-	// Arrange
-	ctx := context.Background()
-	mockRepo := new(mocks.MockMotorcycleRepository)
+	mockService := new(mocks.MockMotorcycleService)
+	i := interactor.NewMotorcycleInteractor(mockService)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
+	mockService.On("ValidateMotorcycleOwnership", mock.Anything, "moto-999", "owner-1").Return(nil, domain.ErrMotorcycleNotFound)
 
-	motorcycleID := "non-existent"
-	ownerID := "owner-123"
+	err := i.DeleteProfileImage(context.Background(), "moto-999", "owner-1")
 
-	// Mock expectations
-	mockRepo.On("GetByID", ctx, motorcycleID).Return(nil, domain.ErrMotorcycleNotFound)
-
-	// Act
-	err := motorcycleInteractor.DeleteProfileImage(ctx, motorcycleID, ownerID)
-
-	// Assert
 	assert.Error(t, err)
 	assert.Equal(t, domain.ErrMotorcycleNotFound, err)
-
-	mockRepo.AssertExpectations(t)
 }
 
 func TestDeleteProfileImage_NotOwner(t *testing.T) {
-	// Arrange
-	ctx := context.Background()
-	mockRepo := new(mocks.MockMotorcycleRepository)
+	mockService := new(mocks.MockMotorcycleService)
+	i := interactor.NewMotorcycleInteractor(mockService)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
+	mockService.On("ValidateMotorcycleOwnership", mock.Anything, "moto-1", "wrong-owner").Return(nil, domain.ErrMotorcycleNotFound)
 
-	motorcycleID := "moto-123"
-	ownerID := "other-owner" // Different from actual owner
+	err := i.DeleteProfileImage(context.Background(), "moto-1", "wrong-owner")
 
-	existingMotorcycle := &domain.Motorcycle{
-		ID:           motorcycleID,
-		LicensePlate: "ABC123",
-		OwnerID:      "owner-123", // Actual owner
-	}
-
-	// Mock expectations
-	mockRepo.On("GetByID", ctx, motorcycleID).Return(existingMotorcycle, nil)
-
-	// Act
-	err := motorcycleInteractor.DeleteProfileImage(ctx, motorcycleID, ownerID)
-
-	// Assert
 	assert.Error(t, err)
-	assert.Equal(t, domain.ErrMotorcycleNotFound, err) // Returns 404 for security
-
-	mockRepo.AssertExpectations(t)
-}
-
-func TestDeleteProfileImage_StorageError_ContinuesSuccessfully(t *testing.T) {
-	// Arrange - storage deletion fails but operation continues
-	ctx := context.Background()
-	mockRepo := new(mocks.MockMotorcycleRepository)
-	mockTx := new(mocks.MockTx)
-	mockStorage := new(mocks.MockStorageClient)
-
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{}).
-		WithStorageClient(mockStorage)
-
-	motorcycleID := "moto-123"
-	ownerID := "owner-123"
-	imageURL := "https://firebasestorage.googleapis.com/v0/b/motogo.appspot.com/o/motorcycles%2Fprofile.jpg"
-
-	existingMotorcycle := &domain.Motorcycle{
-		ID:              motorcycleID,
-		OwnerID:         ownerID,
-		ProfileImageURL: &imageURL,
-	}
-
-	storageError := errors.New("storage unavailable")
-
-	// Mock expectations
-	mockRepo.On("GetByID", ctx, motorcycleID).Return(existingMotorcycle, nil)
-	mockStorage.On("DeleteStorageFile", ctx, imageURL).Return(storageError)
-	mockRepo.On("BeginTx", ctx).Return(mockTx, nil)
-	mockRepo.On("ClearProfileImageURL", ctx, mockTx, motorcycleID).Return(nil)
-	mockTx.On("Commit").Return(nil)
-	mockTx.On("Rollback").Return(nil)
-
-	// Act
-	err := motorcycleInteractor.DeleteProfileImage(ctx, motorcycleID, ownerID)
-
-	// Assert - should succeed even with storage error (best effort)
-	assert.NoError(t, err)
-
-	mockRepo.AssertExpectations(t)
-	mockStorage.AssertExpectations(t)
+	assert.Equal(t, domain.ErrMotorcycleNotFound, err)
 }
 
 func TestDeleteProfileImage_ClearURLError_Rollback(t *testing.T) {
-	// Arrange - database clear fails
-	ctx := context.Background()
-	mockRepo := new(mocks.MockMotorcycleRepository)
+	mockService := new(mocks.MockMotorcycleService)
 	mockTx := new(mocks.MockTx)
-	mockStorage := new(mocks.MockStorageClient)
+	i := interactor.NewMotorcycleInteractor(mockService)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{}).
-		WithStorageClient(mockStorage)
-
-	motorcycleID := "moto-123"
-	ownerID := "owner-123"
-	imageURL := "https://firebasestorage.googleapis.com/v0/b/motogo.appspot.com/o/motorcycles%2Fprofile.jpg"
-
-	existingMotorcycle := &domain.Motorcycle{
-		ID:              motorcycleID,
-		OwnerID:         ownerID,
+	imageURL := "https://firebasestorage.googleapis.com/v0/b/test/o/image.jpg"
+	motorcycle := &domain.Motorcycle{
+		ID:              "moto-1",
+		OwnerID:         "owner-1",
 		ProfileImageURL: &imageURL,
 	}
 
-	dbError := errors.New("database error")
-
-	// Mock expectations
-	mockRepo.On("GetByID", ctx, motorcycleID).Return(existingMotorcycle, nil)
-	mockStorage.On("DeleteStorageFile", ctx, imageURL).Return(nil)
-	mockRepo.On("BeginTx", ctx).Return(mockTx, nil)
-	mockRepo.On("ClearProfileImageURL", ctx, mockTx, motorcycleID).Return(dbError)
+	mockService.On("ValidateMotorcycleOwnership", mock.Anything, "moto-1", "owner-1").Return(motorcycle, nil)
+	mockService.On("DeleteStorageFile", mock.Anything, imageURL).Return()
+	mockService.On("BeginTx", mock.Anything).Return(mockTx, nil)
+	mockService.On("DeleteProfileImage", mock.Anything, mockTx, "moto-1").Return(errors.New("clear error"))
 	mockTx.On("Rollback").Return(nil)
 
-	// Act
-	err := motorcycleInteractor.DeleteProfileImage(ctx, motorcycleID, ownerID)
+	err := i.DeleteProfileImage(context.Background(), "moto-1", "owner-1")
 
-	// Assert
 	assert.Error(t, err)
 	assert.Equal(t, domain.ErrMotorcycleCannotUpdate, err)
-
-	mockTx.AssertCalled(t, "Rollback")
-	mockRepo.AssertExpectations(t)
 }
 
 func TestDeleteProfileImage_CommitError(t *testing.T) {
-	// Arrange
-	ctx := context.Background()
-	mockRepo := new(mocks.MockMotorcycleRepository)
+	mockService := new(mocks.MockMotorcycleService)
 	mockTx := new(mocks.MockTx)
-	mockStorage := new(mocks.MockStorageClient)
+	i := interactor.NewMotorcycleInteractor(mockService)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{}).
-		WithStorageClient(mockStorage)
-
-	motorcycleID := "moto-123"
-	ownerID := "owner-123"
-	imageURL := "https://firebasestorage.googleapis.com/v0/b/motogo.appspot.com/o/motorcycles%2Fprofile.jpg"
-
-	existingMotorcycle := &domain.Motorcycle{
-		ID:              motorcycleID,
-		OwnerID:         ownerID,
+	imageURL := "https://firebasestorage.googleapis.com/v0/b/test/o/image.jpg"
+	motorcycle := &domain.Motorcycle{
+		ID:              "moto-1",
+		OwnerID:         "owner-1",
 		ProfileImageURL: &imageURL,
 	}
 
-	commitError := errors.New("commit failed")
-
-	// Mock expectations
-	mockRepo.On("GetByID", ctx, motorcycleID).Return(existingMotorcycle, nil)
-	mockStorage.On("DeleteStorageFile", ctx, imageURL).Return(nil)
-	mockRepo.On("BeginTx", ctx).Return(mockTx, nil)
-	mockRepo.On("ClearProfileImageURL", ctx, mockTx, motorcycleID).Return(nil)
-	mockTx.On("Commit").Return(commitError)
+	mockService.On("ValidateMotorcycleOwnership", mock.Anything, "moto-1", "owner-1").Return(motorcycle, nil)
+	mockService.On("DeleteStorageFile", mock.Anything, imageURL).Return()
+	mockService.On("BeginTx", mock.Anything).Return(mockTx, nil)
+	mockService.On("DeleteProfileImage", mock.Anything, mockTx, "moto-1").Return(nil)
+	mockTx.On("Commit").Return(errors.New("commit error"))
 	mockTx.On("Rollback").Return(nil)
 
-	// Act
-	err := motorcycleInteractor.DeleteProfileImage(ctx, motorcycleID, ownerID)
+	err := i.DeleteProfileImage(context.Background(), "moto-1", "owner-1")
 
-	// Assert
 	assert.Error(t, err)
 	assert.Equal(t, domain.ErrMotorcycleCannotUpdate, err)
-
-	mockRepo.AssertExpectations(t)
 }
 
-func TestDeleteProfileImage_Success_WithoutStorageClient(t *testing.T) {
-	// Arrange - no storage client configured (skips storage deletion)
-	ctx := context.Background()
-	mockRepo := new(mocks.MockMotorcycleRepository)
+// ============================================
+// GrantDiagnosticPermission Tests
+// ============================================
+
+func TestGrantDiagnosticPermission_Success(t *testing.T) {
+	mockService := new(mocks.MockMotorcycleService)
 	mockTx := new(mocks.MockTx)
+	i := interactor.NewMotorcycleInteractor(mockService)
 
-	// No storage client configured
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
-
-	motorcycleID := "moto-123"
-	ownerID := "owner-123"
-	imageURL := "https://firebasestorage.googleapis.com/v0/b/motogo.appspot.com/o/motorcycles%2Fprofile.jpg"
-
-	existingMotorcycle := &domain.Motorcycle{
-		ID:              motorcycleID,
-		OwnerID:         ownerID,
-		ProfileImageURL: &imageURL,
+	motorcycle := &domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}
+	permission := &domain.DiagnosticPermission{
+		ID:           "perm-1",
+		MotorcycleID: "moto-1",
+		BranchID:     "branch-1",
+		Active:       true,
 	}
 
-	// Mock expectations - no storage deletion expected
-	mockRepo.On("GetByID", ctx, motorcycleID).Return(existingMotorcycle, nil)
-	mockRepo.On("BeginTx", ctx).Return(mockTx, nil)
-	mockRepo.On("ClearProfileImageURL", ctx, mockTx, motorcycleID).Return(nil)
+	mockService.On("ValidateMotorcycleOwnership", mock.Anything, "moto-1", "owner-1").Return(motorcycle, nil)
+	mockService.On("BeginPermissionTx", mock.Anything).Return(mockTx, nil)
+	mockService.On("GrantDiagnosticPermission", mock.Anything, mockTx, "moto-1", "branch-1").Return(permission, nil)
 	mockTx.On("Commit").Return(nil)
+
+	result, err := i.GrantDiagnosticPermission(context.Background(), "moto-1", "branch-1", "owner-1")
+
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Equal(t, "moto-1", result.MotorcycleID)
+	mockService.AssertExpectations(t)
+}
+
+func TestGrantDiagnosticPermission_NotOwner(t *testing.T) {
+	mockService := new(mocks.MockMotorcycleService)
+	i := interactor.NewMotorcycleInteractor(mockService)
+
+	mockService.On("ValidateMotorcycleOwnership", mock.Anything, "moto-1", "wrong-owner").Return(nil, domain.ErrMotorcycleNotFound)
+
+	result, err := i.GrantDiagnosticPermission(context.Background(), "moto-1", "branch-1", "wrong-owner")
+
+	assert.Error(t, err)
+	assert.Nil(t, result)
+}
+
+func TestGrantDiagnosticPermission_TxError(t *testing.T) {
+	mockService := new(mocks.MockMotorcycleService)
+	i := interactor.NewMotorcycleInteractor(mockService)
+
+	motorcycle := &domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}
+
+	mockService.On("ValidateMotorcycleOwnership", mock.Anything, "moto-1", "owner-1").Return(motorcycle, nil)
+	mockService.On("BeginPermissionTx", mock.Anything).Return(nil, errors.New("tx error"))
+
+	result, err := i.GrantDiagnosticPermission(context.Background(), "moto-1", "branch-1", "owner-1")
+
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Equal(t, domain.ErrPermissionCannotSave, err)
+}
+
+func TestGrantDiagnosticPermission_SaveError(t *testing.T) {
+	mockService := new(mocks.MockMotorcycleService)
+	mockTx := new(mocks.MockTx)
+	i := interactor.NewMotorcycleInteractor(mockService)
+
+	motorcycle := &domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}
+
+	mockService.On("ValidateMotorcycleOwnership", mock.Anything, "moto-1", "owner-1").Return(motorcycle, nil)
+	mockService.On("BeginPermissionTx", mock.Anything).Return(mockTx, nil)
+	mockService.On("GrantDiagnosticPermission", mock.Anything, mockTx, "moto-1", "branch-1").Return(nil, domain.ErrPermissionCannotSave)
 	mockTx.On("Rollback").Return(nil)
 
-	// Act
-	err := motorcycleInteractor.DeleteProfileImage(ctx, motorcycleID, ownerID)
+	result, err := i.GrantDiagnosticPermission(context.Background(), "moto-1", "branch-1", "owner-1")
 
-	// Assert
+	assert.Error(t, err)
+	assert.Nil(t, result)
+}
+
+// ============================================
+// RevokeDiagnosticPermission Tests
+// ============================================
+
+func TestRevokeDiagnosticPermission_Success(t *testing.T) {
+	mockService := new(mocks.MockMotorcycleService)
+	mockTx := new(mocks.MockTx)
+	i := interactor.NewMotorcycleInteractor(mockService)
+
+	motorcycle := &domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}
+
+	mockService.On("ValidateMotorcycleOwnership", mock.Anything, "moto-1", "owner-1").Return(motorcycle, nil)
+	mockService.On("BeginPermissionTx", mock.Anything).Return(mockTx, nil)
+	mockService.On("RevokeDiagnosticPermission", mock.Anything, mockTx, "moto-1", "branch-1").Return(nil)
+	mockTx.On("Commit").Return(nil)
+
+	err := i.RevokeDiagnosticPermission(context.Background(), "moto-1", "branch-1", "owner-1")
+
 	assert.NoError(t, err)
+	mockService.AssertExpectations(t)
+}
 
-	mockRepo.AssertExpectations(t)
-	mockTx.AssertCalled(t, "Commit")
+func TestRevokeDiagnosticPermission_NotOwner(t *testing.T) {
+	mockService := new(mocks.MockMotorcycleService)
+	i := interactor.NewMotorcycleInteractor(mockService)
+
+	mockService.On("ValidateMotorcycleOwnership", mock.Anything, "moto-1", "wrong-owner").Return(nil, domain.ErrMotorcycleNotFound)
+
+	err := i.RevokeDiagnosticPermission(context.Background(), "moto-1", "branch-1", "wrong-owner")
+
+	assert.Error(t, err)
+}
+
+func TestRevokeDiagnosticPermission_DeleteError(t *testing.T) {
+	mockService := new(mocks.MockMotorcycleService)
+	mockTx := new(mocks.MockTx)
+	i := interactor.NewMotorcycleInteractor(mockService)
+
+	motorcycle := &domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}
+
+	mockService.On("ValidateMotorcycleOwnership", mock.Anything, "moto-1", "owner-1").Return(motorcycle, nil)
+	mockService.On("BeginPermissionTx", mock.Anything).Return(mockTx, nil)
+	mockService.On("RevokeDiagnosticPermission", mock.Anything, mockTx, "moto-1", "branch-1").Return(domain.ErrPermissionNotFound)
+	mockTx.On("Rollback").Return(nil)
+
+	err := i.RevokeDiagnosticPermission(context.Background(), "moto-1", "branch-1", "owner-1")
+
+	assert.Error(t, err)
+	assert.Equal(t, domain.ErrPermissionNotFound, err)
+}
+
+// ============================================
+// ListDiagnosticPermissions Tests
+// ============================================
+
+func TestListDiagnosticPermissions_Success(t *testing.T) {
+	mockService := new(mocks.MockMotorcycleService)
+	i := interactor.NewMotorcycleInteractor(mockService)
+
+	motorcycle := &domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}
+	permissions := []domain.DiagnosticPermission{
+		{ID: "perm-1", MotorcycleID: "moto-1", BranchID: "branch-1"},
+	}
+
+	mockService.On("ValidateMotorcycleOwnership", mock.Anything, "moto-1", "owner-1").Return(motorcycle, nil)
+	mockService.On("ListDiagnosticPermissions", mock.Anything, "moto-1").Return(permissions, nil)
+
+	result, err := i.ListDiagnosticPermissions(context.Background(), "moto-1", "owner-1")
+
+	assert.NoError(t, err)
+	assert.Len(t, result, 1)
+}
+
+func TestListDiagnosticPermissions_NotOwner(t *testing.T) {
+	mockService := new(mocks.MockMotorcycleService)
+	i := interactor.NewMotorcycleInteractor(mockService)
+
+	mockService.On("ValidateMotorcycleOwnership", mock.Anything, "moto-1", "wrong-owner").Return(nil, domain.ErrMotorcycleNotFound)
+
+	result, err := i.ListDiagnosticPermissions(context.Background(), "moto-1", "wrong-owner")
+
+	assert.Error(t, err)
+	assert.Nil(t, result)
+}
+
+func TestListDiagnosticPermissions_Error(t *testing.T) {
+	mockService := new(mocks.MockMotorcycleService)
+	i := interactor.NewMotorcycleInteractor(mockService)
+
+	motorcycle := &domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}
+
+	mockService.On("ValidateMotorcycleOwnership", mock.Anything, "moto-1", "owner-1").Return(motorcycle, nil)
+	mockService.On("ListDiagnosticPermissions", mock.Anything, "moto-1").Return(nil, errors.New("db error"))
+
+	result, err := i.ListDiagnosticPermissions(context.Background(), "moto-1", "owner-1")
+
+	assert.Error(t, err)
+	assert.Nil(t, result)
+}
+
+// ============================================
+// WithStorageClient Tests
+// ============================================
+
+func TestMotorcycleWithStorageClient(t *testing.T) {
+	mockService := new(mocks.MockMotorcycleService)
+	mockStorage := new(mocks.MockStorageClient)
+	i := interactor.NewMotorcycleInteractor(mockService)
+
+	mockService.On("WithStorageClient", mockStorage).Return()
+
+	result := i.WithStorageClient(mockStorage)
+
+	assert.NotNil(t, result)
+	assert.Equal(t, i, result)
+	mockService.AssertExpectations(t)
 }
