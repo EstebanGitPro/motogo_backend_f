@@ -34,6 +34,10 @@ type MotorcycleInteractorInterface interface {
 	DeleteProfileImage(ctx context.Context, motorcycleID string, ownerID string) error // HU39
 	GetMotorcycleReferences(ctx context.Context) ([]domain.MotorcycleReference, error)
 	GetReferencesByBrandID(ctx context.Context, brandID string) ([]domain.MotorcycleReference, error)
+	// Diagnostic Permissions
+	GrantDiagnosticPermission(ctx context.Context, motorcycleID, branchID, ownerID string) (*domain.DiagnosticPermission, error)
+	RevokeDiagnosticPermission(ctx context.Context, motorcycleID, branchID, ownerID string) error
+	ListDiagnosticPermissions(ctx context.Context, motorcycleID, ownerID string) ([]domain.DiagnosticPermission, error)
 }
 
 // EvidenceInteractorInterface defines the contract for motorcycle evidence operations (HU16-19)

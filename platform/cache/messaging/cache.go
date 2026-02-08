@@ -476,6 +476,33 @@ var messageCodeToHTTPStatus = map[string]int{
 	"MOD_EVD_URL_ERR_00001":       http.StatusBadRequest, // 400 - URL de imagen inválida
 	"MOD_EVD_ANGLE_ERR_00001":     http.StatusBadRequest, // 400 - Ángulo de foto inválido
 
+	// ========================================
+	// Diagnostic Module (MOD_DGN_*) - HU11-14
+	// ========================================
+	// Success messages
+	"MOD_DGN_CREATE_EXI_00001": http.StatusCreated, // 201 - Diagnóstico creado (HU11)
+	"MOD_DGN_GET_EXI_00001":    http.StatusOK,      // 200 - Diagnóstico consultado (HU14)
+	"MOD_DGN_UPDATE_EXI_00001": http.StatusOK,      // 200 - Diagnóstico actualizado (HU12)
+	"MOD_DGN_DELETE_EXI_00001": http.StatusOK,      // 200 - Diagnóstico eliminado (HU13)
+	"MOD_DGN_LIST_EXI_00001":   http.StatusOK,      // 200 - Diagnósticos listados (HU14)
+	// Error messages
+	"MOD_DGN_NOT_FOUND_ERR_00001": http.StatusNotFound,   // 404 - Diagnóstico no encontrado
+	"MOD_DGN_CREATE_ERR_00001":    http.StatusBadRequest, // 400 - Error al crear diagnóstico
+	"MOD_DGN_UPDATE_ERR_00001":    http.StatusBadRequest, // 400 - Error al actualizar diagnóstico
+	"MOD_DGN_DELETE_ERR_00001":    http.StatusBadRequest, // 400 - Error al eliminar diagnóstico
+
+	// ========================================
+	// Diagnostic Permission Module (MOD_DGP_*)
+	// ========================================
+	// Success messages
+	"MOD_DGP_GRANT_EXI_00001":  http.StatusCreated, // 201 - Permiso concedido
+	"MOD_DGP_REVOKE_EXI_00001": http.StatusOK,      // 200 - Permiso revocado
+	"MOD_DGP_LIST_EXI_00001":   http.StatusOK,      // 200 - Permisos listados
+	// Error messages
+	"MOD_DGP_NOT_FOUND_ERR_00001": http.StatusNotFound,   // 404 - Permiso no encontrado
+	"MOD_DGP_SAVE_ERR_00001":      http.StatusBadRequest, // 400 - Error al guardar permiso
+	"MOD_DGP_DELETE_ERR_00001":    http.StatusBadRequest, // 400 - Error al eliminar permiso
+
 }
 
 // GetHTTPStatus returns the HTTP status for a message code

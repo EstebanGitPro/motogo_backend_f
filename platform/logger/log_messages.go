@@ -1458,3 +1458,153 @@ const (
 const (
 	LogMotorcycleControllerBrandIDDecoded = "ID de marca decodificado"
 )
+
+// ============================================
+// DIAGNOSTIC REPOSITORY (HU11-14)
+// ============================================
+const (
+	LogDiagnosticRepoSaveError           = "Error guardando diagnóstico en BD"
+	LogDiagnosticRepoSaveEvidenceError   = "Error guardando evidencia de diagnóstico en BD"
+	LogDiagnosticRepoGetByIDError        = "Error obteniendo diagnóstico por ID"
+	LogDiagnosticRepoListByMotoError     = "Error listando diagnósticos por motocicleta"
+	LogDiagnosticRepoListEvidenceError   = "Error listando evidencias de diagnóstico"
+	LogDiagnosticRepoScanError           = "Error escaneando fila de diagnóstico"
+	LogDiagnosticRepoUpdateError         = "Error actualizando diagnóstico en BD"
+	LogDiagnosticRepoDeleteError         = "Error eliminando diagnóstico de BD"
+	LogDiagnosticRepoPrepareInsertError  = "Error preparando statement de inserción de diagnóstico"
+	LogDiagnosticRepoPrepareUpdateError  = "Error preparando statement de actualización de diagnóstico"
+	LogDiagnosticRepoPrepareDeleteError  = "Error preparando statement de eliminación de diagnóstico"
+	LogDiagnosticRepoPrepareGetIDError   = "Error preparando statement de consulta por ID de diagnóstico"
+	LogDiagnosticRepoPrepareGetMotoError = "Error preparando statement de consulta por motocicleta de diagnóstico"
+	LogDiagnosticRepoPrepareEvidInsError = "Error preparando statement de inserción de evidencia de diagnóstico"
+	LogDiagnosticRepoPrepareEvidGetError = "Error preparando statement de consulta de evidencia de diagnóstico"
+
+	// UPSERT support (diagnostic deduplication by motorcycle+branch)
+	LogDiagnosticRepoPrepareGetMotoBranchError = "Error preparando statement de consulta por moto+sede de diagnóstico"
+	LogDiagnosticRepoPrepareEvidDelError       = "Error preparando statement de eliminación de evidencias de diagnóstico"
+	LogDiagnosticRepoGetByMotoBranchError      = "Error obteniendo diagnóstico por moto+sede"
+	LogDiagnosticRepoDeleteEvidenceError       = "Error eliminando evidencias de diagnóstico"
+)
+
+// ============================================
+// DIAGNOSTIC INTERACTOR (HU11-14)
+// ============================================
+const (
+	// Diagnostic Create (HU11)
+	LogDiagnosticInteractorCreateStart   = "Creación de diagnóstico iniciada"
+	LogDiagnosticInteractorMotoError     = "Error obteniendo motocicleta para diagnóstico"
+	LogDiagnosticInteractorOwnerError    = "El usuario no es propietario de esta motocicleta"
+	LogDiagnosticInteractorBranchError   = "Error validando sede para diagnóstico"
+	LogDiagnosticInteractorIDGenerated   = "ID de diagnóstico generado"
+	LogDiagnosticInteractorBeginTxError  = "Error iniciando transacción para diagnóstico"
+	LogDiagnosticInteractorSaveError     = "Error guardando diagnóstico"
+	LogDiagnosticInteractorSaveEvidError = "Error guardando evidencia de diagnóstico"
+	LogDiagnosticInteractorCommitError   = "Error confirmando transacción de diagnóstico"
+	LogDiagnosticInteractorCreateSuccess = "Diagnóstico creado exitosamente"
+
+	// Diagnostic UPSERT (same moto+branch → update)
+	LogDiagnosticInteractorExistingFound    = "Diagnóstico existente encontrado para moto+sede, actualizando"
+	LogDiagnosticInteractorEvidCleanupError = "Error limpiando evidencias del diagnóstico existente"
+	LogDiagnosticInteractorUpsertUpdateErr  = "Error actualizando diagnóstico existente"
+	LogDiagnosticInteractorUpsertSuccess    = "Diagnóstico actualizado por UPSERT"
+
+	// Diagnostic Get (HU14)
+	LogDiagnosticInteractorGetStart   = "Consulta de diagnóstico por ID iniciada"
+	LogDiagnosticInteractorGetError   = "Error obteniendo diagnóstico por ID"
+	LogDiagnosticInteractorGetSuccess = "Diagnóstico obtenido exitosamente"
+
+	// Diagnostic List
+	LogDiagnosticInteractorListStart   = "Listado de diagnósticos por motocicleta iniciado"
+	LogDiagnosticInteractorListError   = "Error listando diagnósticos por motocicleta"
+	LogDiagnosticInteractorListSuccess = "Diagnósticos listados exitosamente"
+
+	// Diagnostic Update (HU12)
+	LogDiagnosticInteractorUpdateStart   = "Actualización de diagnóstico iniciada"
+	LogDiagnosticInteractorUpdateError   = "Error actualizando diagnóstico"
+	LogDiagnosticInteractorUpdateSuccess = "Diagnóstico actualizado exitosamente"
+
+	// Diagnostic Delete (HU13)
+	LogDiagnosticInteractorDeleteStart   = "Eliminación de diagnóstico iniciada"
+	LogDiagnosticInteractorDeleteError   = "Error eliminando diagnóstico"
+	LogDiagnosticInteractorDeleteSuccess = "Diagnóstico eliminado exitosamente"
+)
+
+// ============================================
+// DIAGNOSTIC CONTROLLER (HU11-14)
+// ============================================
+const (
+	LogDiagnosticControllerCreateRequest = "Solicitud de creación de diagnóstico recibida"
+	LogDiagnosticControllerCreateError   = "Error creando diagnóstico"
+	LogDiagnosticControllerCreateSuccess = "Diagnóstico creado exitosamente"
+	LogDiagnosticControllerListRequest   = "Solicitud de listado de diagnósticos recibida"
+	LogDiagnosticControllerListError     = "Error listando diagnósticos"
+	LogDiagnosticControllerListSuccess   = "Diagnósticos listados exitosamente"
+	LogDiagnosticControllerGetRequest    = "Solicitud de consulta de diagnóstico recibida"
+	LogDiagnosticControllerGetError      = "Error obteniendo diagnóstico"
+	LogDiagnosticControllerGetSuccess    = "Diagnóstico obtenido exitosamente"
+	LogDiagnosticControllerUpdateRequest = "Solicitud de actualización de diagnóstico recibida"
+	LogDiagnosticControllerUpdateError   = "Error actualizando diagnóstico"
+	LogDiagnosticControllerUpdateSuccess = "Diagnóstico actualizado exitosamente"
+	LogDiagnosticControllerDeleteRequest = "Solicitud de eliminación de diagnóstico recibida"
+	LogDiagnosticControllerDeleteError   = "Error eliminando diagnóstico"
+	LogDiagnosticControllerDeleteSuccess = "Diagnóstico eliminado exitosamente"
+
+	// Dependency initialization
+	LogDepDiagnosticRepoInitOK       = "Repositorio de diagnósticos inicializado"
+	LogDepDiagnosticRepoInitErr      = "Error inicializando repositorio de diagnósticos"
+	LogDepDiagnosticInteractorInitOK = "Interactor de diagnósticos inicializado"
+)
+
+// ============================================
+// DIAGNOSTIC PERMISSION REPOSITORY
+// ============================================
+const (
+	LogDiagPermRepoSaveError          = "Error guardando permiso de diagnóstico en BD"
+	LogDiagPermRepoDeleteError        = "Error eliminando permiso de diagnóstico de BD"
+	LogDiagPermRepoGetError           = "Error obteniendo permiso de diagnóstico"
+	LogDiagPermRepoListError          = "Error listando permisos de diagnóstico"
+	LogDiagPermRepoScanError          = "Error escaneando fila de permiso de diagnóstico"
+	LogDiagPermRepoPrepareSaveError   = "Error preparando statement de inserción de permiso de diagnóstico"
+	LogDiagPermRepoPrepareDeleteError = "Error preparando statement de eliminación de permiso de diagnóstico"
+	LogDiagPermRepoPrepareGetError    = "Error preparando statement de consulta de permiso de diagnóstico"
+	LogDiagPermRepoPrepareListError   = "Error preparando statement de listado de permiso de diagnóstico"
+)
+
+// ============================================
+// DIAGNOSTIC PERMISSION INTERACTOR
+// ============================================
+const (
+	LogDiagPermInteractorGrantStart    = "Concesión de permiso de diagnóstico iniciada"
+	LogDiagPermInteractorMotoError     = "Error obteniendo motocicleta para permiso"
+	LogDiagPermInteractorOwnerError    = "El usuario no es propietario de la motocicleta"
+	LogDiagPermInteractorBranchError   = "Error validando sede para permiso"
+	LogDiagPermInteractorBeginTxError  = "Error iniciando transacción para permiso"
+	LogDiagPermInteractorSaveError     = "Error guardando permiso de diagnóstico"
+	LogDiagPermInteractorCommitError   = "Error confirmando transacción de permiso"
+	LogDiagPermInteractorGrantSuccess  = "Permiso de diagnóstico concedido exitosamente"
+	LogDiagPermInteractorRevokeStart   = "Revocación de permiso de diagnóstico iniciada"
+	LogDiagPermInteractorDeleteError   = "Error revocando permiso de diagnóstico"
+	LogDiagPermInteractorRevokeSuccess = "Permiso de diagnóstico revocado exitosamente"
+	LogDiagPermInteractorListStart     = "Listado de permisos de diagnóstico iniciado"
+	LogDiagPermInteractorListError     = "Error listando permisos de diagnóstico"
+	LogDiagPermInteractorListSuccess   = "Permisos de diagnóstico listados exitosamente"
+)
+
+// ============================================
+// DIAGNOSTIC PERMISSION CONTROLLER
+// ============================================
+const (
+	LogDiagPermControllerGrantRequest  = "Solicitud de concesión de permiso de diagnóstico recibida"
+	LogDiagPermControllerGrantError    = "Error concediendo permiso de diagnóstico"
+	LogDiagPermControllerGrantSuccess  = "Permiso de diagnóstico concedido exitosamente"
+	LogDiagPermControllerRevokeRequest = "Solicitud de revocación de permiso de diagnóstico recibida"
+	LogDiagPermControllerRevokeError   = "Error revocando permiso de diagnóstico"
+	LogDiagPermControllerRevokeSuccess = "Permiso de diagnóstico revocado exitosamente"
+	LogDiagPermControllerListRequest   = "Solicitud de listado de permisos de diagnóstico recibida"
+	LogDiagPermControllerListError     = "Error listando permisos de diagnóstico"
+	LogDiagPermControllerListSuccess   = "Permisos de diagnóstico listados exitosamente"
+
+	// Dependency initialization
+	LogDepDiagPermRepoInitOK  = "Repositorio de permisos de diagnóstico inicializado"
+	LogDepDiagPermRepoInitErr = "Error inicializando repositorio de permisos de diagnóstico"
+)

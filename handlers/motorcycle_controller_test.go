@@ -49,7 +49,7 @@ func TestGetMotorcycle_Integration_Success(t *testing.T) {
 	responseHandler := middleware.NewResponseHandler(msgCache)
 
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
 	h := handlers.NewForTest(nil, nil, motorcycleInteractor, nil, msgCache, encoder, responseHandler)
 
 	encodedID, _ := encoder.Encode(testMotorcycle.ID)
@@ -84,7 +84,7 @@ func TestListMotorcycles_Integration_Success(t *testing.T) {
 	responseHandler := middleware.NewResponseHandler(msgCache)
 
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
 	h := handlers.NewForTest(nil, nil, motorcycleInteractor, nil, msgCache, encoder, responseHandler)
 
 	motorcycles := []domain.Motorcycle{
@@ -129,7 +129,7 @@ func TestUpdateMotorcycle_Integration_Success(t *testing.T) {
 	responseHandler := middleware.NewResponseHandler(msgCache)
 
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
 	h := handlers.NewForTest(nil, nil, motorcycleInteractor, nil, msgCache, encoder, responseHandler)
 
 	encodedID, _ := encoder.Encode(testMotorcycle.ID)
@@ -178,7 +178,7 @@ func TestDeleteMotorcycle_Integration_Success(t *testing.T) {
 	responseHandler := middleware.NewResponseHandler(msgCache)
 
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
 	h := handlers.NewForTest(nil, nil, motorcycleInteractor, nil, msgCache, encoder, responseHandler)
 
 	encodedID, _ := encoder.Encode(testMotorcycle.ID)
@@ -216,7 +216,7 @@ func TestGetMotorcycleReferences_Integration_Success(t *testing.T) {
 	responseHandler := middleware.NewResponseHandler(msgCache)
 
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
 	h := handlers.NewForTest(nil, nil, motorcycleInteractor, nil, msgCache, encoder, responseHandler)
 
 	refs := []domain.MotorcycleReference{
@@ -251,7 +251,7 @@ func TestGetBrandLines_Integration_Success(t *testing.T) {
 	responseHandler := middleware.NewResponseHandler(msgCache)
 
 	mockRepo := new(mocks.MockMotorcycleRepository)
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
 	h := handlers.NewForTest(nil, nil, motorcycleInteractor, nil, msgCache, encoder, responseHandler)
 
 	brandID := "e5555555-5555-4000-8000-555555555555"

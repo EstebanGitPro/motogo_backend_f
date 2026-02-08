@@ -24,6 +24,8 @@ import (
 
 	branchRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/branch"
 	brandRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/brand"
+	diagnosticRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/diagnostic" // HU11-14
+	diagPermRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/diagnostic_permission"
 	evidenceRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/evidence" // HU16-19
 	franchiseRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/franchise"
 	locationRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/location"
@@ -51,6 +53,7 @@ type Dependencies struct {
 	ScheduleExceptionInteractor *interactor.ScheduleExceptionInteractor // HU20-25
 	MotorcycleInteractor        *interactor.MotorcycleInteractor        // HU43-47
 	EvidenceInteractor          *interactor.EvidenceInteractor          // HU16-19
+	DiagnosticInteractor        *interactor.DiagnosticInteractor        // HU11-14
 	FirebaseClient              *firebase.Client                        // Firebase Auth
 	JWTValidator                *jwt.JWKSValidator                      // JWT validation with JWKS
 	Config                      *config.Config
@@ -276,8 +279,15 @@ func Init() (*Dependencies, error) {
 	}
 	log.Success(logger.LogDepMotorcycleRepoInitOK)
 
-	// Create motorcycle interactor - will connect Firebase Storage later if available
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(motorcycleRepository)
+	// Create motorcycle interactor with diagnostic permission repository
+	diagnosticPermissionRepository, err := diagPermRepo.NewRepository(db)
+	if err != nil {
+		log.Error(logger.LogDepDiagPermRepoInitErr, "error", err)
+		return nil, err
+	}
+	log.Success(logger.LogDepDiagPermRepoInitOK)
+
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(motorcycleRepository, diagnosticPermissionRepository)
 	log.Success(logger.LogDepMotorcycleInteractorInitOK)
 
 	// Evidence feature (HU16-19)
@@ -290,6 +300,17 @@ func Init() (*Dependencies, error) {
 
 	evidenceInteractor := interactor.NewEvidenceInteractor(evidenceRepository, motorcycleRepository)
 	log.Success(logger.LogDepEvidenceInteractorInitOK)
+
+	// Diagnostic feature (HU11-14)
+	diagnosticRepository, err := diagnosticRepo.NewRepository(db)
+	if err != nil {
+		log.Error(logger.LogDepDiagnosticRepoInitErr, "error", err)
+		return nil, err
+	}
+	log.Success(logger.LogDepDiagnosticRepoInitOK)
+
+	diagnosticInteractor := interactor.NewDiagnosticInteractor(diagnosticRepository, motorcycleRepository, branchRepository)
+	log.Success(logger.LogDepDiagnosticInteractorInitOK)
 
 	var firebaseClient *firebase.Client
 	if cfg.Firebase.CredentialsPath != "" {
@@ -350,7 +371,8 @@ func Init() (*Dependencies, error) {
 		ScheduleDetailInteractor:    scheduleDetailInteractor,
 		ScheduleExceptionInteractor: scheduleExceptionInteractor,
 		MotorcycleInteractor:        motorcycleInteractor,
-		EvidenceInteractor:          evidenceInteractor, // HU16-19
+		EvidenceInteractor:          evidenceInteractor,   // HU16-19
+		DiagnosticInteractor:        diagnosticInteractor, // HU11-14
 		FirebaseClient:              firebaseClient,
 		JWTValidator:                jwtValidator,
 		Config:                      cfg,

@@ -35,6 +35,7 @@ type MotorcycleLookupResponse struct {
 	CurrentMileage  *int                          `json:"current_mileage,omitempty"`
 	ProfileImageURL *string                       `json:"profile_image_url,omitempty"`
 	Reference       *MotorcycleLookupReferenceDTO `json:"reference,omitempty"`
+	Diagnostics     []DiagnosticResponse          `json:"diagnostics,omitempty"`
 	Links           []Link                        `json:"_links,omitempty"`
 }
 

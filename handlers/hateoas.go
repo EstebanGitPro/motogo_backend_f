@@ -609,3 +609,19 @@ func BuildEvidenceDeletedLinks(baseURL, motorcycleID string) []Link {
 		{Href: motorcycleURL, Rel: "motorcycle", Method: "GET"},
 	}
 }
+
+// ============================================
+// DIAGNOSTIC PERMISSION HATEOAS
+// ============================================
+
+// BuildPermissionLinks constructs HATEOAS links for diagnostic permission operations
+func BuildPermissionLinks(baseURL, motorcycleID string) []Link {
+	permissionsURL := fmt.Sprintf("%s/motogo/api/v1/motorcycles/%s/permissions", baseURL, motorcycleID)
+	motorcycleURL := BuildResourceURL(baseURL, "motorcycles", motorcycleID)
+
+	return []Link{
+		{Href: permissionsURL, Rel: "list-permissions", Method: "GET"},
+		{Href: permissionsURL, Rel: "grant-permission", Method: "POST"},
+		{Href: motorcycleURL, Rel: "motorcycle", Method: "GET"},
+	}
+}

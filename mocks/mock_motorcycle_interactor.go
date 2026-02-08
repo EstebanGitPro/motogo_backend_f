@@ -86,3 +86,27 @@ func (m *MockMotorcycleInteractor) GetReferencesByBrandID(ctx context.Context, b
 	}
 	return args.Get(0).([]domain.MotorcycleReference), args.Error(1)
 }
+
+// GrantDiagnosticPermission mocks the GrantDiagnosticPermission method
+func (m *MockMotorcycleInteractor) GrantDiagnosticPermission(ctx context.Context, motorcycleID, branchID, ownerID string) (*domain.DiagnosticPermission, error) {
+	args := m.Called(ctx, motorcycleID, branchID, ownerID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.DiagnosticPermission), args.Error(1)
+}
+
+// RevokeDiagnosticPermission mocks the RevokeDiagnosticPermission method
+func (m *MockMotorcycleInteractor) RevokeDiagnosticPermission(ctx context.Context, motorcycleID, branchID, ownerID string) error {
+	args := m.Called(ctx, motorcycleID, branchID, ownerID)
+	return args.Error(0)
+}
+
+// ListDiagnosticPermissions mocks the ListDiagnosticPermissions method
+func (m *MockMotorcycleInteractor) ListDiagnosticPermissions(ctx context.Context, motorcycleID, ownerID string) ([]domain.DiagnosticPermission, error) {
+	args := m.Called(ctx, motorcycleID, ownerID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]domain.DiagnosticPermission), args.Error(1)
+}

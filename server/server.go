@@ -66,7 +66,8 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		dependencies.ServiceInteractor,
 		dependencies.FranchiseInteractor,
 		dependencies.MotorcycleInteractor,
-		dependencies.EvidenceInteractor, // HU16-19
+		dependencies.EvidenceInteractor,   // HU16-19
+		dependencies.DiagnosticInteractor, // HU11-14
 		dependencies.FirebaseClient,
 		dependencies.MessagingCache,
 		dependencies.IDEncoder,
@@ -285,6 +286,60 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		protected.DELETE("/motorcycles/:id/evidence/:evidenceId",
 			middleware.RequireRole(domain.RoleUser),
 			handler.DeleteEvidence(),
+		)
+
+		// === MOTORCYCLE DIAGNOSTIC ENDPOINTS (HU11-14) ===
+		// Diagnostic requests for motorcycles
+
+		// POST /motorcycles/:id/diagnostics - Create diagnostic (HU11)
+		protected.POST("/motorcycles/:id/diagnostics",
+			middleware.RequireRole(domain.RoleUser),
+			handler.CreateDiagnostic(),
+		)
+
+		// GET /motorcycles/:id/diagnostics - List diagnostics for a motorcycle (HU14)
+		protected.GET("/motorcycles/:id/diagnostics",
+			middleware.RequireRole(domain.RoleUser),
+			handler.ListDiagnostics(),
+		)
+
+		// GET /motorcycles/:id/diagnostics/:diagnosticId - Get diagnostic detail (HU14)
+		protected.GET("/motorcycles/:id/diagnostics/:diagnosticId",
+			middleware.RequireRole(domain.RoleUser),
+			handler.GetDiagnostic(),
+		)
+
+		// PUT /motorcycles/:id/diagnostics/:diagnosticId - Update diagnostic (HU12)
+		protected.PUT("/motorcycles/:id/diagnostics/:diagnosticId",
+			middleware.RequireRole(domain.RoleUser),
+			handler.UpdateDiagnostic(),
+		)
+
+		// DELETE /motorcycles/:id/diagnostics/:diagnosticId - Delete diagnostic (HU13)
+		protected.DELETE("/motorcycles/:id/diagnostics/:diagnosticId",
+			middleware.RequireRole(domain.RoleUser),
+			handler.DeleteDiagnostic(),
+		)
+
+		// === DIAGNOSTIC PERMISSION ENDPOINTS ===
+		// Per-branch diagnostic permissions (permisos_moto_sede)
+
+		// POST /motorcycles/:id/permissions - Grant permission to a branch
+		protected.POST("/motorcycles/:id/permissions",
+			middleware.RequireRole(domain.RoleUser),
+			handler.GrantDiagnosticPermission(),
+		)
+
+		// GET /motorcycles/:id/permissions - List permissions for a motorcycle
+		protected.GET("/motorcycles/:id/permissions",
+			middleware.RequireRole(domain.RoleUser),
+			handler.ListDiagnosticPermissions(),
+		)
+
+		// DELETE /motorcycles/:id/permissions/:branchId - Revoke permission from a branch
+		protected.DELETE("/motorcycles/:id/permissions/:branchId",
+			middleware.RequireRole(domain.RoleUser),
+			handler.RevokeDiagnosticPermission(),
 		)
 
 		// POST /branches/:id/services - Asociar servicios a una sede (solo REPRESENTANTE)

@@ -23,7 +23,7 @@ func TestRegisterMotorcycle_Success(t *testing.T) {
 
 	mockTx := new(mocks.MockTx)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
 
 	year := 2023
 	mileage := 5000
@@ -60,7 +60,7 @@ func TestRegisterMotorcycle_ReferenceRequired(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
 
 	motorcycle := &domain.Motorcycle{
 		LicensePlate: "ABC123",
@@ -82,7 +82,7 @@ func TestRegisterMotorcycle_ReferenceNotFound(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
 
 	motorcycle := &domain.Motorcycle{
 		LicensePlate: "ABC123",
@@ -109,7 +109,7 @@ func TestRegisterMotorcycle_DuplicateLicensePlate(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
 
 	motorcycle := &domain.Motorcycle{
 		LicensePlate: "ABC123",
@@ -137,7 +137,7 @@ func TestRegisterMotorcycle_TxError(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
 
 	motorcycle := &domain.Motorcycle{
 		LicensePlate: "ABC123",
@@ -170,7 +170,7 @@ func TestRegisterMotorcycle_SaveError_Rollback(t *testing.T) {
 
 	mockTx := new(mocks.MockTx)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
 
 	motorcycle := &domain.Motorcycle{
 		LicensePlate: "ABC123",
@@ -208,7 +208,7 @@ func TestGetMotorcycleByID_Success(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
 
 	motorcycleID := "moto-123"
 	expectedMotorcycle := &domain.Motorcycle{
@@ -236,7 +236,7 @@ func TestGetMotorcycleByID_NotFound(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
 
 	motorcycleID := "non-existent"
 
@@ -263,7 +263,7 @@ func TestGetMotorcyclesByOwner_Success(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
 
 	ownerID := "owner-123"
 	expectedMotorcycles := []domain.Motorcycle{
@@ -289,7 +289,7 @@ func TestGetMotorcyclesByOwner_Empty(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
 
 	ownerID := "new-owner"
 
@@ -311,7 +311,7 @@ func TestGetMotorcyclesByOwner_Error(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
 
 	ownerID := "owner-123"
 	dbError := errors.New("database error")
@@ -338,7 +338,7 @@ func TestGetMotorcycleByLicensePlate_Success(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
 
 	licensePlate := "ABC123"
 	expectedMotorcycle := &domain.Motorcycle{
@@ -366,7 +366,7 @@ func TestGetMotorcycleByLicensePlate_NotFound(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
 
 	licensePlate := "INVALID"
 
@@ -395,7 +395,7 @@ func TestUpdateMotorcycle_Success(t *testing.T) {
 
 	mockTx := new(mocks.MockTx)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
 
 	motorcycleID := "moto-123"
 	ownerID := "owner-123"
@@ -438,7 +438,7 @@ func TestUpdateMotorcycle_NotFound(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
 
 	motorcycleID := "non-existent"
 	ownerID := "owner-123"
@@ -463,7 +463,7 @@ func TestUpdateMotorcycle_NotOwner(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
 
 	motorcycleID := "moto-123"
 	ownerID := "other-owner" // Different from actual owner
@@ -495,7 +495,7 @@ func TestUpdateMotorcycle_ReferenceNotFound(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
 
 	motorcycleID := "moto-123"
 	ownerID := "owner-123"
@@ -537,7 +537,7 @@ func TestDeleteMotorcycle_Success_SoftDelete(t *testing.T) {
 
 	mockTx := new(mocks.MockTx)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
 
 	motorcycleID := "moto-123"
 	ownerID := "owner-123"
@@ -573,7 +573,7 @@ func TestDeleteMotorcycle_Success_HardDelete(t *testing.T) {
 
 	mockTx := new(mocks.MockTx)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
 
 	motorcycleID := "moto-456"
 	ownerID := "owner-123"
@@ -607,7 +607,7 @@ func TestDeleteMotorcycle_NotFound(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
 
 	motorcycleID := "non-existent"
 	ownerID := "owner-123"
@@ -630,7 +630,7 @@ func TestDeleteMotorcycle_NotOwner(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
 
 	motorcycleID := "moto-123"
 	ownerID := "other-owner" // Different from actual owner
@@ -661,7 +661,7 @@ func TestDeleteMotorcycle_TxError_Rollback(t *testing.T) {
 
 	mockTx := new(mocks.MockTx)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
 
 	motorcycleID := "moto-123"
 	ownerID := "owner-123"
@@ -700,7 +700,7 @@ func TestGetMotorcycleReferences_Success(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
 
 	expectedRefs := []domain.MotorcycleReference{
 		{ID: "ref-1", Model: "CBR 600"},
@@ -725,7 +725,7 @@ func TestGetMotorcycleReferences_Error(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
 
 	dbError := errors.New("database error")
 
@@ -751,7 +751,7 @@ func TestGetReferencesByBrandID_Success(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
 
 	brandID := "brand-honda"
 	expectedRefs := []domain.MotorcycleReference{
@@ -777,7 +777,7 @@ func TestGetReferencesByBrandID_Error(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
 
 	brandID := "brand-honda"
 	dbError := errors.New("database error")
@@ -806,7 +806,7 @@ func TestDeleteProfileImage_Success(t *testing.T) {
 	mockTx := new(mocks.MockTx)
 	mockStorage := new(mocks.MockStorageClient)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo).
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{}).
 		WithStorageClient(mockStorage)
 
 	motorcycleID := "moto-123"
@@ -844,7 +844,7 @@ func TestDeleteProfileImage_Success_NoImage(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
 
 	motorcycleID := "moto-123"
 	ownerID := "owner-123"
@@ -873,7 +873,7 @@ func TestDeleteProfileImage_Success_EmptyImageURL(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
 
 	motorcycleID := "moto-123"
 	ownerID := "owner-123"
@@ -903,7 +903,7 @@ func TestDeleteProfileImage_NotFound(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
 
 	motorcycleID := "non-existent"
 	ownerID := "owner-123"
@@ -926,7 +926,7 @@ func TestDeleteProfileImage_NotOwner(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockMotorcycleRepository)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
 
 	motorcycleID := "moto-123"
 	ownerID := "other-owner" // Different from actual owner
@@ -957,7 +957,7 @@ func TestDeleteProfileImage_StorageError_ContinuesSuccessfully(t *testing.T) {
 	mockTx := new(mocks.MockTx)
 	mockStorage := new(mocks.MockStorageClient)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo).
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{}).
 		WithStorageClient(mockStorage)
 
 	motorcycleID := "moto-123"
@@ -997,7 +997,7 @@ func TestDeleteProfileImage_ClearURLError_Rollback(t *testing.T) {
 	mockTx := new(mocks.MockTx)
 	mockStorage := new(mocks.MockStorageClient)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo).
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{}).
 		WithStorageClient(mockStorage)
 
 	motorcycleID := "moto-123"
@@ -1037,7 +1037,7 @@ func TestDeleteProfileImage_CommitError(t *testing.T) {
 	mockTx := new(mocks.MockTx)
 	mockStorage := new(mocks.MockStorageClient)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo).
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{}).
 		WithStorageClient(mockStorage)
 
 	motorcycleID := "moto-123"
@@ -1077,7 +1077,7 @@ func TestDeleteProfileImage_Success_WithoutStorageClient(t *testing.T) {
 	mockTx := new(mocks.MockTx)
 
 	// No storage client configured
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
 
 	motorcycleID := "moto-123"
 	ownerID := "owner-123"

@@ -7,19 +7,22 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
 	"github.com/EstebanGitPro/motogo-backend/middleware"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
+	"github.com/EstebanGitPro/motogo-backend/tools/utils"
 	"github.com/google/uuid"
 )
 
 // MotorcycleInteractor handles motorcycle-related use cases (HU43-47)
 type MotorcycleInteractor struct {
 	motorcycleRepo output.MotorcycleRepository
-	storageClient  output.StorageClient // Optional: Firebase Storage for image deletion
+	diagPermRepo   output.DiagnosticPermissionRepository // Diagnostic permissions pivot
+	storageClient  output.StorageClient                  // Optional: Firebase Storage for image deletion
 }
 
 // NewMotorcycleInteractor creates a new MotorcycleInteractor instance
-func NewMotorcycleInteractor(motorcycleRepo output.MotorcycleRepository) *MotorcycleInteractor {
+func NewMotorcycleInteractor(motorcycleRepo output.MotorcycleRepository, diagPermRepo output.DiagnosticPermissionRepository) *MotorcycleInteractor {
 	return &MotorcycleInteractor{
 		motorcycleRepo: motorcycleRepo,
+		diagPermRepo:   diagPermRepo,
 	}
 }
 
@@ -388,4 +391,128 @@ func (i *MotorcycleInteractor) GetReferencesByBrandID(ctx context.Context, brand
 
 	log.Success(logger.LogMotorcycleInteractorBrandLinesSuccess, "brand_id", brandID, "count", len(references))
 	return references, nil
+}
+
+// GrantDiagnosticPermission grants a branch permission to view motorcycle diagnostic details
+// Only the motorcycle owner can grant permissions
+func (i *MotorcycleInteractor) GrantDiagnosticPermission(ctx context.Context, motorcycleID, branchID, ownerID string) (*domain.DiagnosticPermission, error) {
+	traceID := middleware.GetTraceIDFromContext(ctx)
+	log := log.WithTraceID(traceID)
+
+	log.Info(logger.LogDiagPermInteractorGrantStart, "motorcycle_id", motorcycleID, "branch_id", branchID, "owner_id", ownerID)
+
+	// Step 1: Validate motorcycle exists and belongs to owner
+	motorcycle, err := i.motorcycleRepo.GetByID(ctx, motorcycleID)
+	if err != nil {
+		log.Error(logger.LogDiagPermInteractorMotoError, "error", err, "motorcycle_id", motorcycleID)
+		return nil, err
+	}
+	if motorcycle.OwnerID != ownerID {
+		log.Warn(logger.LogDiagPermInteractorOwnerError, "motorcycle_id", motorcycleID, "owner_id", ownerID)
+		return nil, domain.ErrMotorcycleNotFound
+	}
+
+	// Step 2: Create permission entity
+	permission := &domain.DiagnosticPermission{
+		ID:           utils.Generate(),
+		MotorcycleID: motorcycleID,
+		BranchID:     branchID,
+		Active:       true,
+	}
+
+	// Step 3: Begin transaction
+	tx, err := i.diagPermRepo.BeginTx(ctx)
+	if err != nil {
+		log.Error(logger.LogDiagPermInteractorBeginTxError, "error", err)
+		return nil, domain.ErrPermissionCannotSave
+	}
+
+	// Step 4: Save permission (upsert)
+	if err := i.diagPermRepo.Save(ctx, tx, permission); err != nil {
+		log.Error(logger.LogDiagPermInteractorSaveError, "error", err)
+		tx.Rollback()
+		return nil, domain.ErrPermissionCannotSave
+	}
+
+	// Step 5: Commit
+	if err := tx.Commit(); err != nil {
+		log.Error(logger.LogDiagPermInteractorCommitError, "error", err)
+		return nil, domain.ErrPermissionCannotSave
+	}
+
+	log.Success(logger.LogDiagPermInteractorGrantSuccess, "motorcycle_id", motorcycleID, "branch_id", branchID)
+	return permission, nil
+}
+
+// RevokeDiagnosticPermission revokes a branch's permission to view motorcycle diagnostic details
+// Only the motorcycle owner can revoke permissions
+func (i *MotorcycleInteractor) RevokeDiagnosticPermission(ctx context.Context, motorcycleID, branchID, ownerID string) error {
+	traceID := middleware.GetTraceIDFromContext(ctx)
+	log := log.WithTraceID(traceID)
+
+	log.Info(logger.LogDiagPermInteractorRevokeStart, "motorcycle_id", motorcycleID, "branch_id", branchID, "owner_id", ownerID)
+
+	// Step 1: Validate motorcycle exists and belongs to owner
+	motorcycle, err := i.motorcycleRepo.GetByID(ctx, motorcycleID)
+	if err != nil {
+		log.Error(logger.LogDiagPermInteractorMotoError, "error", err, "motorcycle_id", motorcycleID)
+		return err
+	}
+	if motorcycle.OwnerID != ownerID {
+		log.Warn(logger.LogDiagPermInteractorOwnerError, "motorcycle_id", motorcycleID, "owner_id", ownerID)
+		return domain.ErrMotorcycleNotFound
+	}
+
+	// Step 2: Begin transaction
+	tx, err := i.diagPermRepo.BeginTx(ctx)
+	if err != nil {
+		log.Error(logger.LogDiagPermInteractorBeginTxError, "error", err)
+		return domain.ErrPermissionCannotDelete
+	}
+
+	// Step 3: Delete permission
+	if err := i.diagPermRepo.Delete(ctx, tx, motorcycleID, branchID); err != nil {
+		log.Error(logger.LogDiagPermInteractorDeleteError, "error", err)
+		tx.Rollback()
+		return err // Return the specific error (could be ErrPermissionNotFound)
+	}
+
+	// Step 4: Commit
+	if err := tx.Commit(); err != nil {
+		log.Error(logger.LogDiagPermInteractorCommitError, "error", err)
+		return domain.ErrPermissionCannotDelete
+	}
+
+	log.Success(logger.LogDiagPermInteractorRevokeSuccess, "motorcycle_id", motorcycleID, "branch_id", branchID)
+	return nil
+}
+
+// ListDiagnosticPermissions retrieves all active diagnostic permissions for a motorcycle
+// Only the motorcycle owner can list permissions
+func (i *MotorcycleInteractor) ListDiagnosticPermissions(ctx context.Context, motorcycleID, ownerID string) ([]domain.DiagnosticPermission, error) {
+	traceID := middleware.GetTraceIDFromContext(ctx)
+	log := log.WithTraceID(traceID)
+
+	log.Info(logger.LogDiagPermInteractorListStart, "motorcycle_id", motorcycleID, "owner_id", ownerID)
+
+	// Step 1: Validate motorcycle exists and belongs to owner
+	motorcycle, err := i.motorcycleRepo.GetByID(ctx, motorcycleID)
+	if err != nil {
+		log.Error(logger.LogDiagPermInteractorMotoError, "error", err, "motorcycle_id", motorcycleID)
+		return nil, err
+	}
+	if motorcycle.OwnerID != ownerID {
+		log.Warn(logger.LogDiagPermInteractorOwnerError, "motorcycle_id", motorcycleID, "owner_id", ownerID)
+		return nil, domain.ErrMotorcycleNotFound
+	}
+
+	// Step 2: Retrieve permissions
+	permissions, err := i.diagPermRepo.GetByMotorcycleID(ctx, motorcycleID)
+	if err != nil {
+		log.Error(logger.LogDiagPermInteractorListError, "error", err, "motorcycle_id", motorcycleID)
+		return nil, err
+	}
+
+	log.Success(logger.LogDiagPermInteractorListSuccess, "motorcycle_id", motorcycleID, "count", len(permissions))
+	return permissions, nil
 }

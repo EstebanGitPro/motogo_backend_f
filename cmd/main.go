@@ -36,7 +36,6 @@ func main() {
 	app.Use(gin.Logger())
 	app.Use(gin.Recovery())
 
-	// CORS is configured in server.routing() to centralize all route-related configuration
 	dependencies := server.Boostrap(app)
 
 	serverAddr := dependencies.Config.GetServerAddress()
