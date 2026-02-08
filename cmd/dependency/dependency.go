@@ -298,7 +298,8 @@ func Init() (*Dependencies, error) {
 	}
 	log.Success(logger.LogDepEvidenceRepoInitOK)
 
-	evidenceInteractor := interactor.NewEvidenceInteractor(evidenceRepository, motorcycleRepository)
+	evidenceService := services.NewEvidenceService(evidenceRepository, motorcycleRepository)
+	evidenceInteractor := interactor.NewEvidenceInteractor(evidenceService)
 	log.Success(logger.LogDepEvidenceInteractorInitOK)
 
 	// Diagnostic feature (HU11-14)

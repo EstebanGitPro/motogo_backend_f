@@ -240,3 +240,24 @@ type DiagnosticService interface {
 	UpdateDiagnostic(ctx context.Context, tx output.Tx, diagnostic *domain.Diagnostic) error
 	DeleteDiagnostic(ctx context.Context, tx output.Tx, diagnosticID string) error
 }
+
+// EvidenceService - Use Cases for Motorcycle Evidence operations (HU16-19)
+type EvidenceService interface {
+	// Transacciones
+	BeginTx(ctx context.Context) (output.Tx, error)
+
+	// Validaciones
+	ValidateMotorcycleOwnership(ctx context.Context, motorcycleID, ownerID string) error
+	CheckEvidenceLimit(ctx context.Context, motorcycleID string) error
+	// CRUD operations
+	CreateEvidence(ctx context.Context, tx output.Tx, motorcycleID string, evidence *domain.MotorcycleEvidence) (*domain.MotorcycleEvidence, error)
+	GetEvidenceByID(ctx context.Context, evidenceID string) (*domain.MotorcycleEvidence, error)
+	GetEvidenceByMotorcycleID(ctx context.Context, motorcycleID string) ([]domain.MotorcycleEvidence, error)
+	ApplyEvidenceUpdates(ctx context.Context, existing *domain.MotorcycleEvidence, updates *domain.MotorcycleEvidence)
+	UpdateEvidence(ctx context.Context, tx output.Tx, evidence *domain.MotorcycleEvidence) error
+	DeleteEvidence(ctx context.Context, tx output.Tx, evidenceID string) error
+	// Storage cleanup
+	DeleteStorageFile(ctx context.Context, imageURL string)
+	// Optional dependency injection
+	WithStorageClient(client output.StorageClient)
+}
