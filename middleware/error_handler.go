@@ -93,6 +93,22 @@ var errorToMessageCode = map[error]string{
 	domain.ErrMotorcycleCannotDelete: domain.MsgMotorcycleCannotDelete,
 	domain.ErrDuplicateLicensePlate:  domain.MsgDuplicateLicensePlate,
 	domain.ErrReferenceNotFound:      domain.MsgMotorcycleReferenceNotFound,
+	domain.ErrReferenceRequired:      domain.MsgReferenceRequired,
+	domain.ErrBranchNotAuthorized:    domain.MsgBranchNotAuthorized,
+
+	// Diagnostic Permission errors (MOD_DGP_*)
+	domain.ErrPermissionNotFound:     domain.MsgPermissionNotFound,
+	domain.ErrPermissionCannotSave:   domain.MsgPermissionCannotSave,
+	domain.ErrPermissionCannotDelete: domain.MsgPermissionCannotDelete,
+
+	// Person deletion errors (HU53)
+	domain.ErrPersonHasBranches: domain.MsgPersonHasBranches,
+
+	// Password management errors (HU57)
+	domain.ErrEmailAlreadyVerified:    domain.MsgKCEmailAlreadyVerified,
+	domain.ErrPasswordUpdateFailed:    domain.MsgChangePasswordUpdateError,
+	domain.ErrPasswordPolicyViolation: domain.MsgChangePasswordPolicyError,
+	domain.ErrForbidden:               domain.MsgForbidden,
 
 	// General errors
 	domain.ErrInternalServer: domain.MsgServerError,

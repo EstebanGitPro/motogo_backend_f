@@ -217,13 +217,17 @@ var messageCodeToHTTPStatus = map[string]int{
 	// Users Module (MOD_U_*)
 	// ========================================
 	"MOD_U_DUP_ERR_00001":        http.StatusConflict,     // 409 - Usuario duplicado
+	"MOD_U_SAVE_ERR_00002":       http.StatusBadRequest,   // 400 - Error guardando usuario
 	"MOD_U_EMAIL_NF_ERR_00005":   http.StatusNotFound,     // 404 - Email no encontrado
 	"MOD_U_GET_ERR_00003":        http.StatusNotFound,     // 404 - Usuario no encontrado
+	"MOD_U_EMAIL_ERR_00004":      http.StatusBadRequest,   // 400 - Error de email
 	"MOD_U_TOKEN_NF_ERR_00007":   http.StatusNotFound,     // 404 - Token no encontrado
 	"MOD_U_EMAIL_NV_ERR_00006":   http.StatusForbidden,    // 403 - Email no verificado
 	"MOD_U_TOKEN_EXP_ERR_00008":  http.StatusUnauthorized, // 401 - Token expirado
 	"MOD_U_TOKEN_USED_ERR_00009": http.StatusUnauthorized, // 401 - Token ya usado
+	"MOD_U_REG_ERR_00010":        http.StatusBadRequest,   // 400 - Error de registro
 	"MOD_U_ROLE_REQ_ERR_00011":   http.StatusUnauthorized, // 401 - Rol requerido
+	"MOD_U_DEL_ERR_00012":        http.StatusBadRequest,   // 400 - Error eliminando usuario
 
 	// ========================================
 	// Person Module (MOD_P_*)
@@ -305,15 +309,22 @@ var messageCodeToHTTPStatus = map[string]int{
 	"MOD_B_DUP_NAME_ERR_00001":        http.StatusConflict,   // 409 - Nombre duplicado en franquicia
 	"MOD_B_INVALID_TYPE_ERR_00001":    http.StatusBadRequest, // 400 - Tipo de establecimiento inválido
 	"MOD_B_NOT_FOUND_ERR_00001":       http.StatusNotFound,   // 404 - Sede no encontrada
+	"MOD_B_GET_EXI_00001":             http.StatusOK,         // 200 - Sede encontrada
+	"MOD_B_LIST_EXI_00001":            http.StatusOK,         // 200 - Sedes listadas
+	"MOD_B_TYPES_EXI_00001":           http.StatusOK,         // 200 - Tipos de sede
+	"MOD_B_BRD_EXI_00001":             http.StatusOK,         // 200 - Marcas obtenidas
 	"MOD_B_UPD_EXI_00001":             http.StatusOK,         // 200 - Sede actualizada
+	"MOD_B_UPD_ERR_00001":             http.StatusBadRequest, // 400 - Error al actualizar sede
 	"MOD_B_DEL_EXI_00001":             http.StatusOK,         // 200 - Sede eliminada
 	"MOD_B_BRAND_NOT_FOUND_ERR_00001": http.StatusBadRequest, // 400 - Marca no encontrada
+	"MOD_B_DUP_ADDR_ERR_00001":        http.StatusConflict,   // 409 - Dirección duplicada
 	"MOD_B_DEL_ERR_00001":             http.StatusBadRequest, // 400 - Error al eliminar sede
 	"MOD_B_HAS_ASSOC_ERR_00001":       http.StatusConflict,   // 409 - Sede con asociaciones
 
 	// ========================================
-	// Person Module - Delete (HU53)
+	// Person Module - Delete (HU53) & Contact (HU55)
 	// ========================================
+	"MOD_P_CONTACT_EXI_00001":      http.StatusOK,         // 200 - Contacto obtenido
 	"MOD_P_DEL_EXI_00001":          http.StatusOK,         // 200 - Persona eliminada exitosamente
 	"MOD_P_DEL_ERR_00001":          http.StatusBadRequest, // 400 - Error al eliminar persona
 	"MOD_P_HAS_BRANCHES_ERR_00001": http.StatusConflict,   // 409 - Persona tiene sedes activas
@@ -424,6 +435,8 @@ var messageCodeToHTTPStatus = map[string]int{
 	"MOD_MOT_LIST_EXI_00001":     http.StatusOK,      // 200 - Motocicletas listadas (HU47)
 	"MOD_MOT_REF_LIST_EXI_00001": http.StatusOK,      // 200 - Referencias listadas (HU50)
 	// Error messages
+	"MOD_MOT_BRAND_LINES_EXI_00001": http.StatusOK, // 200 - Líneas de marca obtenidas (HU40)
+	// Error messages
 	"MOD_MOT_NOT_FOUND_ERR_00001":     http.StatusNotFound,   // 404 - Motocicleta no encontrada
 	"MOD_MOT_CREATE_ERR_00001":        http.StatusBadRequest, // 400 - Error al registrar
 	"MOD_MOT_UPDATE_ERR_00001":        http.StatusBadRequest, // 400 - Error al actualizar
@@ -435,6 +448,7 @@ var messageCodeToHTTPStatus = map[string]int{
 	"MOD_MOT_FORBIDDEN_ERR_00001":     http.StatusForbidden,  // 403 - Acceso denegado
 	"MOD_MOT_LIST_ERR_00001":          http.StatusBadRequest, // 400 - Error al listar
 	"MOD_MOT_PLATE_REQ_ERR_00001":     http.StatusBadRequest, // 400 - Placa requerida
+	"MOD_MOT_PERM_ERR_00001":          http.StatusForbidden,  // 403 - Sede no autorizada para moto
 
 	// Profile Image (MOD_MOT_IMG_*) - HU36-39
 	"MOD_MOT_IMG_UPDATE_EXI_00001":    http.StatusOK,         // 200 - Imagen actualizada (HU36/37)
@@ -443,6 +457,12 @@ var messageCodeToHTTPStatus = map[string]int{
 	"MOD_MOT_IMG_UPDATE_ERR_00001":    http.StatusBadRequest, // 400 - Error actualizando imagen
 	"MOD_MOT_IMG_NOT_FOUND_ERR_00001": http.StatusNotFound,   // 404 - Imagen no encontrada
 	"MOD_MOT_IMG_URL_REQ_ERR_00001":   http.StatusBadRequest, // 400 - URL de imagen requerida
+
+	// ========================================
+	// Location Module (MOD_L_*) - Geographic Catalogs
+	// ========================================
+	"MOD_L_DEP_EXI_00001": http.StatusOK, // 200 - Departamentos obtenidos
+	"MOD_L_CIT_EXI_00001": http.StatusOK, // 200 - Ciudades obtenidas
 
 	// ========================================
 	// Geolocation Validation (MOD_V_GEO_*) - HU89
@@ -480,11 +500,12 @@ var messageCodeToHTTPStatus = map[string]int{
 	// Diagnostic Module (MOD_DGN_*) - HU11-14
 	// ========================================
 	// Success messages
-	"MOD_DGN_CREATE_EXI_00001": http.StatusCreated, // 201 - Diagnóstico creado (HU11)
-	"MOD_DGN_GET_EXI_00001":    http.StatusOK,      // 200 - Diagnóstico consultado (HU14)
-	"MOD_DGN_UPDATE_EXI_00001": http.StatusOK,      // 200 - Diagnóstico actualizado (HU12)
-	"MOD_DGN_DELETE_EXI_00001": http.StatusOK,      // 200 - Diagnóstico eliminado (HU13)
-	"MOD_DGN_LIST_EXI_00001":   http.StatusOK,      // 200 - Diagnósticos listados (HU14)
+	"MOD_DGN_CREATE_EXI_00001":   http.StatusCreated, // 201 - Diagnóstico creado (HU11)
+	"MOD_DGN_GET_EXI_00001":      http.StatusOK,      // 200 - Diagnóstico consultado (HU14)
+	"MOD_DGN_UPDATE_EXI_00001":   http.StatusOK,      // 200 - Diagnóstico actualizado (HU12)
+	"MOD_DGN_DELETE_EXI_00001":   http.StatusOK,      // 200 - Diagnóstico eliminado (HU13)
+	"MOD_DGN_LIST_EXI_00001":     http.StatusOK,      // 200 - Diagnósticos listados (HU14)
+	"MOD_DGN_SOLUTION_EXI_00001": http.StatusOK,      // 200 - Solución de diagnóstico establecida
 	// Error messages
 	"MOD_DGN_NOT_FOUND_ERR_00001": http.StatusNotFound,   // 404 - Diagnóstico no encontrado
 	"MOD_DGN_CREATE_ERR_00001":    http.StatusBadRequest, // 400 - Error al crear diagnóstico
