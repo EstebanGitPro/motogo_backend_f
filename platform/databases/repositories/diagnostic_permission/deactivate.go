@@ -9,22 +9,18 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
-// Delete removes a diagnostic permission record by motorcycle and branch IDs
-func (r *repository) Delete(ctx context.Context, tx output.Tx, motorcycleID, branchID string) error {
+// Deactivate sets active = FALSE for a diagnostic permission record by motorcycle and branch IDs.
+// This operation is idempotent: if no matching row exists or it is already inactive, it succeeds silently.
+func (r *repository) Deactivate(ctx context.Context, tx output.Tx, motorcycleID, branchID string) error {
 	sqlTx, ok := tx.(*common.SQLTx)
 	if !ok {
 		return domain.ErrInvalidTransaction
 	}
 
-	result, err := sqlTx.ExecContext(ctx, queryDelete, motorcycleID, branchID)
+	_, err := sqlTx.ExecContext(ctx, queryDeactivate, motorcycleID, branchID)
 	if err != nil {
 		log.Error(logger.LogDiagPermRepoDeleteError, err)
 		return domain.ErrPermissionCannotDelete
-	}
-
-	rowsAffected, _ := result.RowsAffected()
-	if rowsAffected == 0 {
-		return domain.ErrPermissionNotFound
 	}
 
 	return nil

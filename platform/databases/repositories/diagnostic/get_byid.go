@@ -19,9 +19,6 @@ func (r *repository) GetByID(ctx context.Context, diagnosticID string) (*domain.
 		&diag.Date,
 		&diag.ProblemDescription,
 		&diag.PossibleSolution,
-		&diag.LaborQuote,
-		&diag.PartsQuote,
-		&diag.EstimatedTime,
 		&diag.SentViaWhatsApp,
 	)
 	if err != nil {

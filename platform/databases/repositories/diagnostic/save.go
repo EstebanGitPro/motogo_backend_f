@@ -24,9 +24,6 @@ func (r *repository) Save(ctx context.Context, tx output.Tx, diagnostic *domain.
 		dbDiag.Date,
 		dbDiag.ProblemDescription,
 		dbDiag.PossibleSolution,
-		dbDiag.LaborQuote,
-		dbDiag.PartsQuote,
-		dbDiag.EstimatedTime,
 		dbDiag.SentViaWhatsApp,
 	)
 	if err != nil {

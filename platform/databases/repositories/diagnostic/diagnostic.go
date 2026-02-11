@@ -9,16 +9,13 @@ import (
 
 // Diagnostic represents the database model for diagnosticos table
 type Diagnostic struct {
-	ID                 string          `db:"id"`
-	MotorcycleID       string          `db:"motocicleta_id"`
-	BranchID           string          `db:"sede_id"`
-	Date               time.Time       `db:"fecha"`
-	ProblemDescription sql.NullString  `db:"descripcion_problema"`
-	PossibleSolution   sql.NullString  `db:"posible_solucion"`
-	LaborQuote         sql.NullFloat64 `db:"cotizacion_mano_obra"`
-	PartsQuote         sql.NullFloat64 `db:"cotizacion_repuestos"`
-	EstimatedTime      sql.NullString  `db:"tiempo_estimado"`
-	SentViaWhatsApp    bool            `db:"enviado_whatsapp"`
+	ID                 string         `db:"id"`
+	MotorcycleID       string         `db:"motocicleta_id"`
+	BranchID           string         `db:"sede_id"`
+	Date               time.Time      `db:"fecha"`
+	ProblemDescription sql.NullString `db:"descripcion_problema"`
+	PossibleSolution   sql.NullString `db:"posible_solucion"`
+	SentViaWhatsApp    bool           `db:"enviado_whatsapp"`
 }
 
 // DiagnosticEvidence represents the database model for evidencias_diagnostico table
@@ -50,21 +47,6 @@ func (d *Diagnostic) ToDomain() domain.Diagnostic {
 		diagnostic.PossibleSolution = &sol
 	}
 
-	if d.LaborQuote.Valid {
-		lq := d.LaborQuote.Float64
-		diagnostic.LaborQuote = &lq
-	}
-
-	if d.PartsQuote.Valid {
-		pq := d.PartsQuote.Float64
-		diagnostic.PartsQuote = &pq
-	}
-
-	if d.EstimatedTime.Valid {
-		et := d.EstimatedTime.String
-		diagnostic.EstimatedTime = &et
-	}
-
 	return diagnostic
 }
 
@@ -84,18 +66,6 @@ func FromDomain(diagnostic *domain.Diagnostic) *Diagnostic {
 
 	if diagnostic.PossibleSolution != nil {
 		d.PossibleSolution = sql.NullString{String: *diagnostic.PossibleSolution, Valid: true}
-	}
-
-	if diagnostic.LaborQuote != nil {
-		d.LaborQuote = sql.NullFloat64{Float64: *diagnostic.LaborQuote, Valid: true}
-	}
-
-	if diagnostic.PartsQuote != nil {
-		d.PartsQuote = sql.NullFloat64{Float64: *diagnostic.PartsQuote, Valid: true}
-	}
-
-	if diagnostic.EstimatedTime != nil {
-		d.EstimatedTime = sql.NullString{String: *diagnostic.EstimatedTime, Valid: true}
 	}
 
 	return d

@@ -17,8 +17,9 @@ const (
 		ON DUPLICATE KEY UPDATE active = VALUES(active), updated_at = CURRENT_TIMESTAMP
 	`
 
-	queryDelete = `
-		DELETE FROM motorcycle_diagnostic_permissions 
+	queryDeactivate = `
+		UPDATE motorcycle_diagnostic_permissions 
+		SET active = FALSE, updated_at = CURRENT_TIMESTAMP
 		WHERE motorcycle_id = ? AND branch_id = ?
 	`
 
@@ -41,7 +42,7 @@ var log logger.Logger = logger.NewSlogLogger()
 type repository struct {
 	db                           *sql.DB
 	stmtInsert                   *sql.Stmt
-	stmtDelete                   *sql.Stmt
+	stmtDeactivate               *sql.Stmt
 	stmtGetByMotorcycleAndBranch *sql.Stmt
 	stmtGetByMotorcycleID        *sql.Stmt
 }
@@ -58,10 +59,10 @@ func NewRepository(db *sql.DB) (output.DiagnosticPermissionRepository, error) {
 		return nil, fmt.Errorf("error preparing stmtInsert: %w", err)
 	}
 
-	stmtDelete, err := db.Prepare(queryDelete)
+	stmtDeactivate, err := db.Prepare(queryDeactivate)
 	if err != nil {
 		log.Error(logger.LogDiagPermRepoPrepareDeleteError, err)
-		return nil, fmt.Errorf("error preparing stmtDelete: %w", err)
+		return nil, fmt.Errorf("error preparing stmtDeactivate: %w", err)
 	}
 
 	stmtGetByMotorcycleAndBranch, err := db.Prepare(queryGetByMotorcycleAndBranch)
@@ -79,7 +80,7 @@ func NewRepository(db *sql.DB) (output.DiagnosticPermissionRepository, error) {
 	return &repository{
 		db:                           db,
 		stmtInsert:                   stmtInsert,
-		stmtDelete:                   stmtDelete,
+		stmtDeactivate:               stmtDeactivate,
 		stmtGetByMotorcycleAndBranch: stmtGetByMotorcycleAndBranch,
 		stmtGetByMotorcycleID:        stmtGetByMotorcycleID,
 	}, nil
