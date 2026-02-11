@@ -54,6 +54,28 @@ func createTestMessageCache() *messagingCache.MessageCache {
 		{Code: "MOD_MOT_DELETE_EXI_00001", Type: "EXITO", Title: "Moto eliminada", Content: "Motocicleta eliminada exitosamente", Active: true},
 		{Code: "MOD_MOT_REF_LIST_EXI_00001", Type: "EXITO", Title: "Referencias listadas", Content: "Referencias de motocicleta listadas", Active: true},
 		{Code: "MOD_MOT_BRAND_LINES_EXI_00001", Type: "EXITO", Title: "Líneas de marca", Content: "Líneas de marca obtenidas", Active: true},
+		{Code: "MOD_DGN_GET_EXI_00001", Type: "EXITO", Title: "Diagnóstico obtenido", Content: "Diagnóstico obtenido exitosamente", Active: true},
+		{Code: "MOD_DGN_UPDATE_EXI_00001", Type: "EXITO", Title: "Diagnóstico actualizado", Content: "Diagnóstico actualizado exitosamente", Active: true},
+		{Code: "MOD_DGN_DELETE_EXI_00001", Type: "EXITO", Title: "Diagnóstico eliminado", Content: "Diagnóstico eliminado exitosamente", Active: true},
+		{Code: "MOD_DGN_LIST_EXI_00001", Type: "EXITO", Title: "Diagnósticos listados", Content: "Diagnósticos listados exitosamente", Active: true},
+		{Code: "MOD_DGN_SOLUTION_EXI_00001", Type: "EXITO", Title: "Solución establecida", Content: "Solución de diagnóstico establecida", Active: true},
+		{Code: "MOD_DGP_GRANT_EXI_00001", Type: "EXITO", Title: "Permiso concedido", Content: "Permiso de diagnóstico concedido", Active: true},
+		{Code: "MOD_DGP_REVOKE_EXI_00001", Type: "EXITO", Title: "Permiso revocado", Content: "Permiso de diagnóstico revocado", Active: true},
+		{Code: "MOD_DGP_LIST_EXI_00001", Type: "EXITO", Title: "Permisos listados", Content: "Permisos de diagnóstico listados", Active: true},
+		// Error message codes needed by controller error paths
+		{Code: "MOD_MOT_NOT_FOUND_ERR_00001", Type: "ERROR", Title: "Moto no encontrada", Content: "Motocicleta no encontrada", Active: true},
+		{Code: "MOD_DGN_NOT_FOUND_ERR_00001", Type: "ERROR", Title: "Diagnóstico no encontrado", Content: "Diagnóstico no encontrado", Active: true},
+		{Code: "MOD_DGN_CREATE_ERR_00001", Type: "ERROR", Title: "Error creando diagnóstico", Content: "No se pudo crear el diagnóstico", Active: true},
+		{Code: "MOD_DGN_UPDATE_ERR_00001", Type: "ERROR", Title: "Error actualizando", Content: "No se pudo actualizar", Active: true},
+		{Code: "MOD_DGN_DELETE_ERR_00001", Type: "ERROR", Title: "Error eliminando", Content: "No se pudo eliminar", Active: true},
+		{Code: "MOD_DGP_NOT_FOUND_ERR_00001", Type: "ERROR", Title: "Permiso no encontrado", Content: "Permiso no encontrado", Active: true},
+		{Code: "MOD_DGP_SAVE_ERR_00001", Type: "ERROR", Title: "Error guardando permiso", Content: "Error guardando permiso", Active: true},
+		{Code: "MOD_DGP_DELETE_ERR_00001", Type: "ERROR", Title: "Error eliminando permiso", Content: "Error eliminando permiso", Active: true},
+		{Code: "GEN_MSG_INACTIVE_ERR_00002", Type: "ERROR", Title: "Error general", Content: "Error del servidor", Active: true},
+		{Code: "MOD_B_NOT_FOUND_ERR_00001", Type: "ERROR", Title: "Sede no encontrada", Content: "Sede no encontrada", Active: true},
+		{Code: "GEN_OPE_ERR_00001", Type: "ERROR", Title: "Error operación", Content: "Error en la operación", Active: true},
+		{Code: "GEN_AUTH_ERR_00002", Type: "ERROR", Title: "No autorizado", Content: "No está autorizado", Active: true},
+		{Code: "GEN_SRV_ERR_00001", Type: "ERROR", Title: "Error servidor", Content: "Error interno del servidor", Active: true},
 	}, nil)
 	_ = cache.LoadMessages(context.TODO())
 
