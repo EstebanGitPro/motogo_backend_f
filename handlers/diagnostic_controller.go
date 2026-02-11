@@ -385,3 +385,67 @@ func (h *handler) DeleteDiagnostic() gin.HandlerFunc {
 		h.Response.Success(c, domain.MsgDiagnosticDeleted)
 	}
 }
+
+// SetDiagnosticSolution handles PATCH /diagnostics/:id/solution - sets diagnostic solution (Representante)
+// @Summary Set diagnostic possible solution
+// @Description Allows workshop representative to set the possible_solution field on a diagnostic
+// @Accept json
+// @Produce json
+// @Security     BearerAuth
+// @Param id path string true "Diagnostic ID (obfuscated)"
+// @Param solution body SetDiagnosticSolutionRequest true "Solution data"
+// @Success 200 {object} StandardResponse{data=DiagnosticResponse} "Solution set successfully"
+// @Failure 400 {object} StandardResponse "Bad request"
+// @Failure 401 {object} StandardResponse "Unauthorized"
+// @Failure 403 {object} StandardResponse "Forbidden - requires representative role"
+// @Failure 404 {object} StandardResponse "Diagnostic not found"
+// @Failure 500 {object} StandardResponse "Internal server error"
+// @Router /diagnostics/{id}/solution [patch]
+func (h *handler) SetDiagnosticSolution() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		traceID := middleware.GetTraceIDFromContext(c)
+
+		Logger.Info(logger.LogDiagnosticControllerSetSolutionRequest, "trace_id", traceID)
+
+		// Step 1: Decode diagnostic ID
+		encodedDiagnosticID := c.Param("id")
+		diagnosticID, err := h.DecodeID(encodedDiagnosticID)
+		if err != nil {
+			Logger.Error(logger.LogDiagnosticControllerSetSolutionError, "error", err)
+			h.Response.Error(c, domain.MsgDiagnosticNotFound)
+			return
+		}
+
+		// Step 2: Parse request body
+		var request SetDiagnosticSolutionRequest
+		if err := c.ShouldBindJSON(&request); err != nil {
+			Logger.Error(logger.LogDiagnosticControllerSetSolutionError, "bind_error", err)
+			h.Response.Error(c, domain.MsgServerError)
+			return
+		}
+
+		// Sanitize input
+		request.Sanitize()
+
+		// Step 3: Set solution through interactor (no ownership check - representative role handles auth)
+		_, err = h.DiagnosticInteractor.SetDiagnosticSolution(
+			c.Request.Context(),
+			diagnosticID,
+			request.PossibleSolution,
+		)
+		if err != nil {
+			Logger.Error(logger.LogDiagnosticControllerSetSolutionError, "error", err)
+
+			if errors.Is(err, domain.ErrDiagnosticNotFound) {
+				h.Response.Error(c, domain.MsgDiagnosticNotFound)
+			} else {
+				h.Response.Error(c, domain.MsgDiagnosticCannotUpdate)
+			}
+			return
+		}
+
+		Logger.Info(logger.LogDiagnosticControllerSetSolutionSuccess, "id", diagnosticID, "trace_id", traceID)
+
+		h.Response.Success(c, domain.MsgDiagnosticSolutionSet)
+	}
+}

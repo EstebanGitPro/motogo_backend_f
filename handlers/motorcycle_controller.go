@@ -368,8 +368,30 @@ func (h *handler) LookupMotorcycleByPlate() gin.HandlerFunc {
 
 		log.Debug(logger.LogMotorcycleControllerPlateDebug, "license_plate", plate)
 
-		// 2. Call interactor to get motorcycle by plate
-		motorcycle, err := h.MotorcycleInteractor.GetMotorcycleByLicensePlate(c.Request.Context(), plate)
+		// 1b. Get authenticated user (representative)
+		user, exists := middleware.GetAuthenticatedUser(c)
+		if !exists {
+			log.Warn(logger.LogMotorcycleControllerPlateError, "error", "user not found in context", "client_ip", c.ClientIP())
+			h.Response.Error(c, domain.MsgUnauthorized)
+			return
+		}
+
+		// 1c. Get representative's branches
+		branches, err := h.BranchInteractor.GetBranchesByRepresentative(c.Request.Context(), user.ID)
+		if err != nil {
+			log.Error(logger.LogMotorcycleControllerPlateError, "error", err, "representative_id", user.ID, "client_ip", c.ClientIP())
+			h.Response.Error(c, domain.MsgServerError)
+			return
+		}
+
+		// 1d. Extract branch IDs
+		branchIDs := make([]string, len(branches))
+		for i, b := range branches {
+			branchIDs[i] = b.ID
+		}
+
+		// 2. Call interactor to get motorcycle by plate (with branch permission check)
+		motorcycle, err := h.MotorcycleInteractor.GetMotorcycleByLicensePlate(c.Request.Context(), plate, branchIDs)
 		if err != nil {
 			log.Error(logger.LogMotorcycleControllerPlateError,
 				"error", err,
@@ -377,6 +399,8 @@ func (h *handler) LookupMotorcycleByPlate() gin.HandlerFunc {
 				"client_ip", c.ClientIP())
 			if errors.Is(err, domain.ErrMotorcycleNotFound) {
 				h.Response.Error(c, domain.MsgMotorcycleNotFound)
+			} else if errors.Is(err, domain.ErrBranchNotAuthorized) {
+				h.Response.Error(c, domain.MsgBranchNotAuthorized)
 			} else {
 				h.Response.Error(c, domain.MsgServerError)
 			}
@@ -431,10 +455,35 @@ func (h *handler) LookupMotorcycleByPlate() gin.HandlerFunc {
 			}
 		}
 
+		// 4b. Fetch motorcycle evidence photos (workshop enrichment - HU16-19)
+		if h.EvidenceInteractor != nil {
+			evidences, err := h.EvidenceInteractor.ListEvidenceByMotorcycleID(c.Request.Context(), motorcycle.ID)
+			if err != nil {
+				log.Warn(logger.LogEvidenceInteractorListError,
+					"error", err,
+					"motorcycle_id", motorcycle.ID,
+					"client_ip", c.ClientIP())
+				// Non-fatal: proceed without evidence
+			} else if len(evidences) > 0 {
+				evidenceResponses := ToEvidenceResponseList(evidences)
+
+				// Encode evidence IDs
+				for i := range evidenceResponses {
+					if encEvidID, err := h.EncodeID(evidences[i].ID); err == nil {
+						evidenceResponses[i].ID = encEvidID
+					}
+					evidenceResponses[i].MotorcycleID = encodedID
+				}
+
+				response.Evidence = evidenceResponses
+			}
+		}
+
 		log.Success(logger.LogMotorcycleControllerPlateSuccess,
 			"motorcycle_id", motorcycle.ID,
 			"license_plate", plate,
 			"diagnostics_count", len(response.Diagnostics),
+			"evidence_count", len(response.Evidence),
 			"client_ip", c.ClientIP())
 
 		// 5. Send success response (200 OK)

@@ -522,6 +522,13 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 			middleware.RequireRole(domain.RoleRepresentative),
 			handler.RemoveBranchFromFranchise(dependencies.FranchiseInteractor),
 		)
+
+		// === DIAGNOSTIC SOLUTION ENDPOINT ===
+		// PATCH /diagnostics/:id/solution - Registrar solución de diagnóstico (solo REPRESENTANTE)
+		protected.PATCH("/diagnostics/:id/solution",
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.SetDiagnosticSolution(),
+		)
 	}
 
 	// ========================================
@@ -559,6 +566,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		// POST /admin/messages/cache/reload - Recargar caché de mensajes desde BD
 		// Endpoint administration para forzar recarga después de cambios manuals
 		admin.POST("/messages/cache/reload", handler.ReloadMessageCache())
+
 	}
 
 	dependencies.Logger.Success(logger.LogRouteConfigured)

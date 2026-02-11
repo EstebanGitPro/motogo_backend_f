@@ -62,7 +62,13 @@ func (h *handler) GrantDiagnosticPermission() gin.HandlerFunc {
 		}
 		req.Sanitize()
 
-		// 4. Decode branch ID
+		// 4. Resolve active flag (defaults to true if not provided)
+		active := true
+		if req.Active != nil {
+			active = *req.Active
+		}
+
+		// 5. Decode branch ID
 		branchID, err := h.DecodeID(req.BranchID)
 		if err != nil {
 			log.Warn(logger.LogDiagPermControllerGrantError,
@@ -71,9 +77,9 @@ func (h *handler) GrantDiagnosticPermission() gin.HandlerFunc {
 			return
 		}
 
-		// 5. Call interactor
+		// 6. Call interactor
 		permission, err := h.MotorcycleInteractor.GrantDiagnosticPermission(
-			c.Request.Context(), motorcycleID, branchID, person.ID)
+			c.Request.Context(), motorcycleID, branchID, person.ID, active)
 		if err != nil {
 			log.Error(logger.LogDiagPermControllerGrantError,
 				"error", err,
@@ -107,7 +113,13 @@ func (h *handler) GrantDiagnosticPermission() gin.HandlerFunc {
 			"branch_id", branchID,
 			"client_ip", c.ClientIP())
 
-		h.Response.SuccessWithData(c, domain.MsgPermissionGranted, response)
+		// 8. Choose message based on active flag
+		msg := domain.MsgPermissionGranted
+		if !active {
+			msg = domain.MsgPermissionRevoked
+		}
+
+		h.Response.SuccessWithData(c, msg, response)
 	}
 }
 
