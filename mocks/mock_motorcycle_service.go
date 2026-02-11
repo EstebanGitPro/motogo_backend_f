@@ -124,8 +124,8 @@ func (m *MockMotorcycleService) GetReferencesByBrandID(ctx context.Context, bran
 	return args.Get(0).([]domain.MotorcycleReference), args.Error(1)
 }
 
-func (m *MockMotorcycleService) GrantDiagnosticPermission(ctx context.Context, tx output.Tx, motorcycleID, branchID string) (*domain.DiagnosticPermission, error) {
-	args := m.Called(ctx, tx, motorcycleID, branchID)
+func (m *MockMotorcycleService) GrantDiagnosticPermission(ctx context.Context, tx output.Tx, motorcycleID, branchID string, active bool) (*domain.DiagnosticPermission, error) {
+	args := m.Called(ctx, tx, motorcycleID, branchID, active)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
@@ -143,6 +143,11 @@ func (m *MockMotorcycleService) ListDiagnosticPermissions(ctx context.Context, m
 		return nil, args.Error(1)
 	}
 	return args.Get(0).([]domain.DiagnosticPermission), args.Error(1)
+}
+
+func (m *MockMotorcycleService) ValidateBranchPermission(ctx context.Context, motorcycleID string, branchIDs []string) error {
+	args := m.Called(ctx, motorcycleID, branchIDs)
+	return args.Error(0)
 }
 
 func (m *MockMotorcycleService) WithStorageClient(client output.StorageClient) {

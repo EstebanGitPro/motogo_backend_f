@@ -26,7 +26,7 @@ func (m *MockDiagnosticPermissionRepository) Save(ctx context.Context, tx output
 	return args.Error(0)
 }
 
-func (m *MockDiagnosticPermissionRepository) Delete(ctx context.Context, tx output.Tx, motorcycleID, branchID string) error {
+func (m *MockDiagnosticPermissionRepository) Deactivate(ctx context.Context, tx output.Tx, motorcycleID, branchID string) error {
 	args := m.Called(ctx, tx, motorcycleID, branchID)
 	return args.Error(0)
 }

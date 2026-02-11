@@ -40,8 +40,8 @@ func (m *MockMotorcycleInteractor) GetMotorcyclesByOwner(ctx context.Context, ow
 }
 
 // GetMotorcycleByLicensePlate mocks the GetMotorcycleByLicensePlate method
-func (m *MockMotorcycleInteractor) GetMotorcycleByLicensePlate(ctx context.Context, licensePlate string) (*domain.Motorcycle, error) {
-	args := m.Called(ctx, licensePlate)
+func (m *MockMotorcycleInteractor) GetMotorcycleByLicensePlate(ctx context.Context, licensePlate string, branchIDs []string) (*domain.Motorcycle, error) {
+	args := m.Called(ctx, licensePlate, branchIDs)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
@@ -88,8 +88,8 @@ func (m *MockMotorcycleInteractor) GetReferencesByBrandID(ctx context.Context, b
 }
 
 // GrantDiagnosticPermission mocks the GrantDiagnosticPermission method
-func (m *MockMotorcycleInteractor) GrantDiagnosticPermission(ctx context.Context, motorcycleID, branchID, ownerID string) (*domain.DiagnosticPermission, error) {
-	args := m.Called(ctx, motorcycleID, branchID, ownerID)
+func (m *MockMotorcycleInteractor) GrantDiagnosticPermission(ctx context.Context, motorcycleID, branchID, ownerID string, active bool) (*domain.DiagnosticPermission, error) {
+	args := m.Called(ctx, motorcycleID, branchID, ownerID, active)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}

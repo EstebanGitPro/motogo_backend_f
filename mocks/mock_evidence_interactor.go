@@ -53,3 +53,12 @@ func (m *MockEvidenceInteractor) UpdateEvidence(ctx context.Context, evidenceID,
 	}
 	return args.Get(0).(*domain.MotorcycleEvidence), args.Error(1)
 }
+
+// ListEvidenceByMotorcycleID mocks the ListEvidenceByMotorcycleID method (workshop lookup)
+func (m *MockEvidenceInteractor) ListEvidenceByMotorcycleID(ctx context.Context, motorcycleID string) ([]domain.MotorcycleEvidence, error) {
+	args := m.Called(ctx, motorcycleID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]domain.MotorcycleEvidence), args.Error(1)
+}

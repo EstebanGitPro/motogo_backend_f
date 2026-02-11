@@ -1193,6 +1193,7 @@ const (
 	LogMotorcycleInteractorGetPlateStart   = "Consulta de motocicleta por placa iniciada"
 	LogMotorcycleInteractorGetPlateError   = "Error obteniendo motocicleta por placa"
 	LogMotorcycleInteractorGetPlateSuccess = "Motocicleta por placa obtenida exitosamente"
+	LogMotorcycleInteractorPermError       = "La sede no tiene permiso para consultar esta motocicleta"
 
 	// Motorcycle Controller - GET BY PLATE (HU47)
 	LogMotorcycleControllerPlateRequest = "Solicitud de búsqueda por placa recibida"
@@ -1527,6 +1528,10 @@ const (
 	LogDiagnosticInteractorDeleteStart   = "Eliminación de diagnóstico iniciada"
 	LogDiagnosticInteractorDeleteError   = "Error eliminando diagnóstico"
 	LogDiagnosticInteractorDeleteSuccess = "Diagnóstico eliminado exitosamente"
+
+	// Diagnostic Set Solution (Admin)
+	LogDiagnosticInteractorSetSolutionStart   = "Registro de solución de diagnóstico iniciado"
+	LogDiagnosticInteractorSetSolutionSuccess = "Solución de diagnóstico registrada exitosamente"
 )
 
 // ============================================
@@ -1548,6 +1553,11 @@ const (
 	LogDiagnosticControllerDeleteRequest = "Solicitud de eliminación de diagnóstico recibida"
 	LogDiagnosticControllerDeleteError   = "Error eliminando diagnóstico"
 	LogDiagnosticControllerDeleteSuccess = "Diagnóstico eliminado exitosamente"
+
+	// Admin: Set Diagnostic Solution
+	LogDiagnosticControllerSetSolutionRequest = "Solicitud de registro de solución de diagnóstico recibida"
+	LogDiagnosticControllerSetSolutionError   = "Error registrando solución de diagnóstico"
+	LogDiagnosticControllerSetSolutionSuccess = "Solución de diagnóstico registrada exitosamente"
 
 	// Dependency initialization
 	LogDepDiagnosticRepoInitOK       = "Repositorio de diagnósticos inicializado"
