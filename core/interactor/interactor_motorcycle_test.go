@@ -244,10 +244,12 @@ func TestGetMotorcycleByLicensePlate_Success(t *testing.T) {
 		ID:           "moto-1",
 		LicensePlate: "ABC123",
 	}
+	branchIDs := []string{"branch-1"}
 
 	mockService.On("GetMotorcycleByLicensePlate", mock.Anything, "ABC123").Return(motorcycle, nil)
+	mockService.On("ValidateBranchPermission", mock.Anything, "moto-1", branchIDs).Return(nil)
 
-	result, err := i.GetMotorcycleByLicensePlate(context.Background(), "ABC123")
+	result, err := i.GetMotorcycleByLicensePlate(context.Background(), "ABC123", branchIDs)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
@@ -260,9 +262,29 @@ func TestGetMotorcycleByLicensePlate_NotFound(t *testing.T) {
 
 	mockService.On("GetMotorcycleByLicensePlate", mock.Anything, "ZZZ999").Return(nil, domain.ErrMotorcycleNotFound)
 
-	result, err := i.GetMotorcycleByLicensePlate(context.Background(), "ZZZ999")
+	result, err := i.GetMotorcycleByLicensePlate(context.Background(), "ZZZ999", []string{"branch-1"})
 
 	assert.Error(t, err)
+	assert.Nil(t, result)
+}
+
+func TestGetMotorcycleByLicensePlate_BranchNotAuthorized(t *testing.T) {
+	mockService := new(mocks.MockMotorcycleService)
+	i := interactor.NewMotorcycleInteractor(mockService)
+
+	motorcycle := &domain.Motorcycle{
+		ID:           "moto-1",
+		LicensePlate: "ABC123",
+	}
+	branchIDs := []string{"branch-999"}
+
+	mockService.On("GetMotorcycleByLicensePlate", mock.Anything, "ABC123").Return(motorcycle, nil)
+	mockService.On("ValidateBranchPermission", mock.Anything, "moto-1", branchIDs).Return(domain.ErrBranchNotAuthorized)
+
+	result, err := i.GetMotorcycleByLicensePlate(context.Background(), "ABC123", branchIDs)
+
+	assert.Error(t, err)
+	assert.Equal(t, domain.ErrBranchNotAuthorized, err)
 	assert.Nil(t, result)
 }
 
@@ -695,10 +717,10 @@ func TestGrantDiagnosticPermission_Success(t *testing.T) {
 
 	mockService.On("ValidateMotorcycleOwnership", mock.Anything, "moto-1", "owner-1").Return(motorcycle, nil)
 	mockService.On("BeginPermissionTx", mock.Anything).Return(mockTx, nil)
-	mockService.On("GrantDiagnosticPermission", mock.Anything, mockTx, "moto-1", "branch-1").Return(permission, nil)
+	mockService.On("GrantDiagnosticPermission", mock.Anything, mockTx, "moto-1", "branch-1", true).Return(permission, nil)
 	mockTx.On("Commit").Return(nil)
 
-	result, err := i.GrantDiagnosticPermission(context.Background(), "moto-1", "branch-1", "owner-1")
+	result, err := i.GrantDiagnosticPermission(context.Background(), "moto-1", "branch-1", "owner-1", true)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
@@ -712,7 +734,7 @@ func TestGrantDiagnosticPermission_NotOwner(t *testing.T) {
 
 	mockService.On("ValidateMotorcycleOwnership", mock.Anything, "moto-1", "wrong-owner").Return(nil, domain.ErrMotorcycleNotFound)
 
-	result, err := i.GrantDiagnosticPermission(context.Background(), "moto-1", "branch-1", "wrong-owner")
+	result, err := i.GrantDiagnosticPermission(context.Background(), "moto-1", "branch-1", "wrong-owner", true)
 
 	assert.Error(t, err)
 	assert.Nil(t, result)
@@ -727,7 +749,7 @@ func TestGrantDiagnosticPermission_TxError(t *testing.T) {
 	mockService.On("ValidateMotorcycleOwnership", mock.Anything, "moto-1", "owner-1").Return(motorcycle, nil)
 	mockService.On("BeginPermissionTx", mock.Anything).Return(nil, errors.New("tx error"))
 
-	result, err := i.GrantDiagnosticPermission(context.Background(), "moto-1", "branch-1", "owner-1")
+	result, err := i.GrantDiagnosticPermission(context.Background(), "moto-1", "branch-1", "owner-1", true)
 
 	assert.Error(t, err)
 	assert.Nil(t, result)
@@ -743,10 +765,10 @@ func TestGrantDiagnosticPermission_SaveError(t *testing.T) {
 
 	mockService.On("ValidateMotorcycleOwnership", mock.Anything, "moto-1", "owner-1").Return(motorcycle, nil)
 	mockService.On("BeginPermissionTx", mock.Anything).Return(mockTx, nil)
-	mockService.On("GrantDiagnosticPermission", mock.Anything, mockTx, "moto-1", "branch-1").Return(nil, domain.ErrPermissionCannotSave)
+	mockService.On("GrantDiagnosticPermission", mock.Anything, mockTx, "moto-1", "branch-1", true).Return(nil, domain.ErrPermissionCannotSave)
 	mockTx.On("Rollback").Return(nil)
 
-	result, err := i.GrantDiagnosticPermission(context.Background(), "moto-1", "branch-1", "owner-1")
+	result, err := i.GrantDiagnosticPermission(context.Background(), "moto-1", "branch-1", "owner-1", true)
 
 	assert.Error(t, err)
 	assert.Nil(t, result)

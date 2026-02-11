@@ -126,10 +126,11 @@ func TestMockMotorcycleInteractor_GetMotorcyclesByOwner_Success(t *testing.T) {
 func TestMockMotorcycleInteractor_GetMotorcycleByLicensePlate_Success(t *testing.T) {
 	mockMotorcycle := new(mocks.MockMotorcycleInteractor)
 	testMoto := &domain.Motorcycle{ID: "moto-1", LicensePlate: "ABC123", OwnerID: "owner-1"}
-	mockMotorcycle.On("GetMotorcycleByLicensePlate", mock.Anything, "ABC123").Return(testMoto, nil)
+	branchIDs := []string{"branch-1"}
+	mockMotorcycle.On("GetMotorcycleByLicensePlate", mock.Anything, "ABC123", branchIDs).Return(testMoto, nil)
 
 	ctx := context.Background()
-	result, err := mockMotorcycle.GetMotorcycleByLicensePlate(ctx, "ABC123")
+	result, err := mockMotorcycle.GetMotorcycleByLicensePlate(ctx, "ABC123", branchIDs)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
