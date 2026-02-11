@@ -448,8 +448,8 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		)
 
 		// GET /branches/:id/schedules/exceptions - Listar excepciones de horario (HU23)
+		// Accessible by all authenticated users (USER can view, REPRESENTATIVE can manage)
 		protected.GET("/branches/:id/schedules/exceptions",
-			middleware.RequireRole(domain.RoleRepresentative),
 			handler.ListScheduleExceptions(dependencies.ScheduleExceptionInteractor, dependencies.ScheduleInteractor),
 		)
 

@@ -28,7 +28,7 @@ const (
 		SELECT id, schedule_id, entry_type, day_of_week, exception_start_date, exception_end_date,
 			opening_time, closing_time, is_closed, active, created_at, updated_at
 		FROM schedule_details
-		WHERE schedule_id = ?
+		WHERE schedule_id = ? AND entry_type = 'REGULAR'
 		ORDER BY day_of_week, opening_time
 	`
 	queryGetDetailsByScheduleAndDay = `

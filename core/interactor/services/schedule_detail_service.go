@@ -340,10 +340,10 @@ func (s *scheduleDetailService) CreateException(
 		return nil, domain.ErrScheduleExceptionDatePast
 	}
 
-	// 3. Validate exception start date is not in the past
+	// 3. Validate exception start date is in the future (tomorrow or later)
 	today := time.Now().Truncate(24 * time.Hour)
 	exceptionDay := exception.ExceptionStartDate.Truncate(24 * time.Hour)
-	if exceptionDay.Before(today) {
+	if !exceptionDay.After(today) {
 		scheduleDetailLog.Warn(logger.LogScheduleDetailServiceInvalidDay,
 			"exception_start_date", exception.ExceptionStartDate)
 		return nil, domain.ErrScheduleExceptionDatePast
@@ -474,6 +474,13 @@ func (s *scheduleDetailService) GetExceptionsByScheduleID(
 		return nil, err
 	}
 
+	// Normalize: single-day exceptions may have nil EndDate in DB
+	for i := range exceptions {
+		if exceptions[i].ExceptionEndDate == nil && exceptions[i].ExceptionStartDate != nil {
+			exceptions[i].ExceptionEndDate = exceptions[i].ExceptionStartDate
+		}
+	}
+
 	scheduleDetailLog.Info(logger.LogScheduleDetailServiceListOK,
 		"schedule_id", scheduleID,
 		"exceptions_count", len(exceptions))
@@ -491,6 +498,10 @@ func (s *scheduleDetailService) GetExceptionByID(ctx context.Context, exceptionI
 	}
 	if exception == nil {
 		return nil, domain.ErrScheduleExceptionNotFound
+	}
+	// Normalize: single-day exceptions may have nil EndDate in DB
+	if exception.ExceptionEndDate == nil && exception.ExceptionStartDate != nil {
+		exception.ExceptionEndDate = exception.ExceptionStartDate
 	}
 	return exception, nil
 }
