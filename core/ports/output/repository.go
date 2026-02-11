@@ -275,7 +275,7 @@ type DiagnosticPermissionRepository interface {
 
 	// Permission operations - write
 	Save(ctx context.Context, tx Tx, permission *domain.DiagnosticPermission) error
-	Delete(ctx context.Context, tx Tx, motorcycleID, branchID string) error
+	Deactivate(ctx context.Context, tx Tx, motorcycleID, branchID string) error
 
 	// Permission operations - read
 	GetByMotorcycleAndBranch(ctx context.Context, motorcycleID, branchID string) (*domain.DiagnosticPermission, error)

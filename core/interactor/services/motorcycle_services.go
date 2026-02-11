@@ -179,13 +179,13 @@ func (s *motorcycleService) GetReferencesByBrandID(ctx context.Context, brandID 
 	return s.motorcycleRepo.GetReferencesByBrandID(ctx, brandID)
 }
 
-// GrantDiagnosticPermission creates a new diagnostic permission
-func (s *motorcycleService) GrantDiagnosticPermission(ctx context.Context, tx output.Tx, motorcycleID, branchID string) (*domain.DiagnosticPermission, error) {
+// GrantDiagnosticPermission creates or updates a diagnostic permission with the given active state
+func (s *motorcycleService) GrantDiagnosticPermission(ctx context.Context, tx output.Tx, motorcycleID, branchID string, active bool) (*domain.DiagnosticPermission, error) {
 	permission := &domain.DiagnosticPermission{
 		ID:           utils.Generate(),
 		MotorcycleID: motorcycleID,
 		BranchID:     branchID,
-		Active:       true,
+		Active:       active,
 	}
 
 	if err := s.diagPermRepo.Save(ctx, tx, permission); err != nil {
@@ -195,12 +195,24 @@ func (s *motorcycleService) GrantDiagnosticPermission(ctx context.Context, tx ou
 	return permission, nil
 }
 
-// RevokeDiagnosticPermission deletes a diagnostic permission
+// RevokeDiagnosticPermission deactivates a diagnostic permission (sets active = false)
 func (s *motorcycleService) RevokeDiagnosticPermission(ctx context.Context, tx output.Tx, motorcycleID, branchID string) error {
-	return s.diagPermRepo.Delete(ctx, tx, motorcycleID, branchID)
+	return s.diagPermRepo.Deactivate(ctx, tx, motorcycleID, branchID)
 }
 
 // ListDiagnosticPermissions retrieves all active permissions for a motorcycle
 func (s *motorcycleService) ListDiagnosticPermissions(ctx context.Context, motorcycleID string) ([]domain.DiagnosticPermission, error) {
 	return s.diagPermRepo.GetByMotorcycleID(ctx, motorcycleID)
+}
+
+// ValidateBranchPermission checks if any of the given branches has an active diagnostic permission for the motorcycle
+// Returns nil if at least one branch is authorized, ErrBranchNotAuthorized otherwise
+func (s *motorcycleService) ValidateBranchPermission(ctx context.Context, motorcycleID string, branchIDs []string) error {
+	for _, branchID := range branchIDs {
+		_, err := s.diagPermRepo.GetByMotorcycleAndBranch(ctx, motorcycleID, branchID)
+		if err == nil {
+			return nil // At least one branch is authorized
+		}
+	}
+	return domain.ErrBranchNotAuthorized
 }

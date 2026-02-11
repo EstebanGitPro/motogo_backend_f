@@ -168,21 +168,10 @@ func (s *diagnosticService) GetDiagnosticsByMotorcycleID(ctx context.Context, mo
 }
 
 // ApplyDiagnosticUpdates applies partial updates to an existing diagnostic (field-by-field patching)
+// Note: PossibleSolution is NOT patched here — only admin can set it via SetDiagnosticSolution
 func (s *diagnosticService) ApplyDiagnosticUpdates(existing *domain.Diagnostic, updates *domain.Diagnostic) {
 	if updates.ProblemDescription != nil {
 		existing.ProblemDescription = updates.ProblemDescription
-	}
-	if updates.PossibleSolution != nil {
-		existing.PossibleSolution = updates.PossibleSolution
-	}
-	if updates.LaborQuote != nil {
-		existing.LaborQuote = updates.LaborQuote
-	}
-	if updates.PartsQuote != nil {
-		existing.PartsQuote = updates.PartsQuote
-	}
-	if updates.EstimatedTime != nil {
-		existing.EstimatedTime = updates.EstimatedTime
 	}
 }
 

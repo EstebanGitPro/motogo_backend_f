@@ -246,3 +246,53 @@ func (i *DiagnosticInteractor) ListDiagnosticsByMotorcycleID(ctx context.Context
 	log.Success(logger.LogDiagnosticInteractorListSuccess, "motorcycle_id", motorcycleID, "count", len(diagnostics))
 	return diagnostics, nil
 }
+
+// SetDiagnosticSolution sets the possible_solution field on a diagnostic (Admin/Workshop endpoint)
+// This method does NOT validate ownership - authorization is handled by RoleAdmin middleware
+func (i *DiagnosticInteractor) SetDiagnosticSolution(ctx context.Context, diagnosticID string, solution *string) (*domain.Diagnostic, error) {
+	traceID := middleware.GetTraceIDFromContext(ctx)
+	log := log.WithTraceID(traceID)
+
+	log.Info(logger.LogDiagnosticInteractorSetSolutionStart, "diagnostic_id", diagnosticID)
+
+	// 1. Get existing diagnostic
+	diagnostic, err := i.diagnosticService.GetDiagnosticByID(ctx, diagnosticID)
+	if err != nil {
+		log.Error(logger.LogDiagnosticInteractorGetError, "error", err, "diagnostic_id", diagnosticID)
+		return nil, domain.ErrDiagnosticNotFound
+	}
+
+	// 2. Apply solution update
+	diagnostic.PossibleSolution = solution
+
+	// 3. Begin transaction
+	tx, err := i.diagnosticService.BeginTx(ctx)
+	if err != nil {
+		log.Error(logger.LogDiagnosticInteractorBeginTxError, "error", err)
+		return nil, domain.ErrDiagnosticCannotUpdate
+	}
+
+	defer func() {
+		if err != nil {
+			if rbErr := tx.Rollback(); rbErr != nil {
+				log.Error(logger.LogDiagnosticInteractorCommitError, "rollback_error", rbErr, "original_error", err)
+			}
+		}
+	}()
+
+	// 4. Update diagnostic via service
+	if err = i.diagnosticService.UpdateDiagnostic(ctx, tx, diagnostic); err != nil {
+		log.Error(logger.LogDiagnosticInteractorUpdateError, "error", err, "diagnostic_id", diagnosticID)
+		return nil, err
+	}
+
+	// 5. Commit transaction
+	if err = tx.Commit(); err != nil {
+		log.Error(logger.LogDiagnosticInteractorCommitError, "error", err)
+		return nil, domain.ErrDiagnosticCannotUpdate
+	}
+
+	log.Success(logger.LogDiagnosticInteractorSetSolutionSuccess, "diagnostic_id", diagnosticID)
+	err = nil
+	return diagnostic, nil
+}

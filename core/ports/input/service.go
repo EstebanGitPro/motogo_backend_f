@@ -287,9 +287,10 @@ type MotorcycleService interface {
 	GetAllReferences(ctx context.Context) ([]domain.MotorcycleReference, error)
 	GetReferencesByBrandID(ctx context.Context, brandID string) ([]domain.MotorcycleReference, error)
 	// Diagnostic permissions
-	GrantDiagnosticPermission(ctx context.Context, tx output.Tx, motorcycleID, branchID string) (*domain.DiagnosticPermission, error)
+	GrantDiagnosticPermission(ctx context.Context, tx output.Tx, motorcycleID, branchID string, active bool) (*domain.DiagnosticPermission, error)
 	RevokeDiagnosticPermission(ctx context.Context, tx output.Tx, motorcycleID, branchID string) error
 	ListDiagnosticPermissions(ctx context.Context, motorcycleID string) ([]domain.DiagnosticPermission, error)
+	ValidateBranchPermission(ctx context.Context, motorcycleID string, branchIDs []string) error
 	BeginPermissionTx(ctx context.Context) (output.Tx, error)
 	// Optional dependency injection
 	WithStorageClient(client output.StorageClient)

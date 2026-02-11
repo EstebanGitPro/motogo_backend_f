@@ -112,7 +112,8 @@ func (i *MotorcycleInteractor) GetMotorcyclesByOwner(ctx context.Context, ownerI
 
 // GetMotorcycleByLicensePlate retrieves a motorcycle by license plate (HU47)
 // This endpoint is accessible by representatives (workshops) to lookup motorcycle info
-func (i *MotorcycleInteractor) GetMotorcycleByLicensePlate(ctx context.Context, licensePlate string) (*domain.Motorcycle, error) {
+// branchIDs are the branches associated with the representative — at least one must have permission
+func (i *MotorcycleInteractor) GetMotorcycleByLicensePlate(ctx context.Context, licensePlate string, branchIDs []string) (*domain.Motorcycle, error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
 	log := log.WithTraceID(traceID)
 
@@ -121,6 +122,12 @@ func (i *MotorcycleInteractor) GetMotorcycleByLicensePlate(ctx context.Context, 
 	motorcycle, err := i.motorcycleService.GetMotorcycleByLicensePlate(ctx, licensePlate)
 	if err != nil {
 		log.Error(logger.LogMotorcycleInteractorGetPlateError, "error", err, "license_plate", licensePlate)
+		return nil, err
+	}
+
+	// Validate branch permission — at least one of the representative's branches must be authorized
+	if err := i.motorcycleService.ValidateBranchPermission(ctx, motorcycle.ID, branchIDs); err != nil {
+		log.Warn(logger.LogMotorcycleInteractorPermError, "motorcycle_id", motorcycle.ID, "license_plate", licensePlate)
 		return nil, err
 	}
 
@@ -329,7 +336,7 @@ func (i *MotorcycleInteractor) GetReferencesByBrandID(ctx context.Context, brand
 
 // GrantDiagnosticPermission grants a branch permission to view motorcycle diagnostic details
 // Only the motorcycle owner can grant permissions
-func (i *MotorcycleInteractor) GrantDiagnosticPermission(ctx context.Context, motorcycleID, branchID, ownerID string) (*domain.DiagnosticPermission, error) {
+func (i *MotorcycleInteractor) GrantDiagnosticPermission(ctx context.Context, motorcycleID, branchID, ownerID string, active bool) (*domain.DiagnosticPermission, error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
 	log := log.WithTraceID(traceID)
 
@@ -354,7 +361,7 @@ func (i *MotorcycleInteractor) GrantDiagnosticPermission(ctx context.Context, mo
 	}()
 
 	// Step 3: Grant permission
-	permission, err := i.motorcycleService.GrantDiagnosticPermission(ctx, tx, motorcycleID, branchID)
+	permission, err := i.motorcycleService.GrantDiagnosticPermission(ctx, tx, motorcycleID, branchID, active)
 	if err != nil {
 		log.Error(logger.LogDiagPermInteractorSaveError, "error", err)
 		return nil, err

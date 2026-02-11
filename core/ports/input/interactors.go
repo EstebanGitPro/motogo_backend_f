@@ -28,14 +28,14 @@ type MotorcycleInteractorInterface interface {
 	RegisterMotorcycle(ctx context.Context, motorcycle *domain.Motorcycle) (*domain.Motorcycle, error)
 	GetMotorcycleByID(ctx context.Context, motorcycleID string) (*domain.Motorcycle, error)
 	GetMotorcyclesByOwner(ctx context.Context, ownerID string) ([]domain.Motorcycle, error)
-	GetMotorcycleByLicensePlate(ctx context.Context, licensePlate string) (*domain.Motorcycle, error)
+	GetMotorcycleByLicensePlate(ctx context.Context, licensePlate string, branchIDs []string) (*domain.Motorcycle, error)
 	UpdateMotorcycle(ctx context.Context, motorcycleID string, ownerID string, updates *domain.Motorcycle) (*domain.Motorcycle, error)
 	DeleteMotorcycle(ctx context.Context, motorcycleID string, ownerID string) error
 	DeleteProfileImage(ctx context.Context, motorcycleID string, ownerID string) error // HU39
 	GetMotorcycleReferences(ctx context.Context) ([]domain.MotorcycleReference, error)
 	GetReferencesByBrandID(ctx context.Context, brandID string) ([]domain.MotorcycleReference, error)
 	// Diagnostic Permissions
-	GrantDiagnosticPermission(ctx context.Context, motorcycleID, branchID, ownerID string) (*domain.DiagnosticPermission, error)
+	GrantDiagnosticPermission(ctx context.Context, motorcycleID, branchID, ownerID string, active bool) (*domain.DiagnosticPermission, error)
 	RevokeDiagnosticPermission(ctx context.Context, motorcycleID, branchID, ownerID string) error
 	ListDiagnosticPermissions(ctx context.Context, motorcycleID, ownerID string) ([]domain.DiagnosticPermission, error)
 }
@@ -47,4 +47,5 @@ type EvidenceInteractorInterface interface {
 	ListEvidenceByMotorcycle(ctx context.Context, motorcycleID, ownerID string) ([]domain.MotorcycleEvidence, error)
 	UpdateEvidence(ctx context.Context, evidenceID, ownerID string, updates *domain.MotorcycleEvidence) (*domain.MotorcycleEvidence, error) // HU17
 	DeleteEvidence(ctx context.Context, evidenceID, ownerID string) error
+	ListEvidenceByMotorcycleID(ctx context.Context, motorcycleID string) ([]domain.MotorcycleEvidence, error)
 }

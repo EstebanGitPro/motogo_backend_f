@@ -444,6 +444,7 @@ var (
 	ErrDuplicateLicensePlate  = errors.New("ERR_DUPLICATE_LICENSE_PLATE")
 	ErrReferenceNotFound      = errors.New("ERR_REFERENCE_NOT_FOUND")
 	ErrReferenceRequired      = errors.New("ERR_REFERENCE_REQUIRED")
+	ErrBranchNotAuthorized    = errors.New("ERR_BRANCH_NOT_AUTHORIZED_FOR_MOTORCYCLE")
 )
 
 // Motorcycle Module (MOD_MOT_*) - HU43-47
@@ -471,6 +472,7 @@ const (
 	MsgMotorcycleReferenceNotFound = "MOD_MOT_REF_NOT_FOUND_ERR_00001"
 	MsgReferenceRequired           = "MOD_MOT_REF_REQ_ERR_00001"
 	MsgMissingPlateParam           = "MOD_MOT_PLATE_REQ_ERR_00001"
+	MsgBranchNotAuthorized         = "MOD_MOT_PERM_ERR_00001"
 
 	// Profile Image Error Messages (HU36-39)
 	MsgProfileImageUpdateError = "MOD_MOT_IMG_UPDATE_ERR_00001"
@@ -519,11 +521,12 @@ var (
 // Diagnostic Module (MOD_DGN_*) - HU11-14
 const (
 	// Success messages
-	MsgDiagnosticCreated   = "MOD_DGN_CREATE_EXI_00001"
-	MsgDiagnosticRetrieved = "MOD_DGN_GET_EXI_00001"
-	MsgDiagnosticUpdated   = "MOD_DGN_UPDATE_EXI_00001"
-	MsgDiagnosticDeleted   = "MOD_DGN_DELETE_EXI_00001"
-	MsgDiagnosticsListed   = "MOD_DGN_LIST_EXI_00001"
+	MsgDiagnosticCreated     = "MOD_DGN_CREATE_EXI_00001"
+	MsgDiagnosticRetrieved   = "MOD_DGN_GET_EXI_00001"
+	MsgDiagnosticUpdated     = "MOD_DGN_UPDATE_EXI_00001"
+	MsgDiagnosticDeleted     = "MOD_DGN_DELETE_EXI_00001"
+	MsgDiagnosticsListed     = "MOD_DGN_LIST_EXI_00001"
+	MsgDiagnosticSolutionSet = "MOD_DGN_SOLUTION_EXI_00001"
 
 	// Error messages
 	MsgDiagnosticNotFound     = "MOD_DGN_NOT_FOUND_ERR_00001"

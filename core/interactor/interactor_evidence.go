@@ -177,6 +177,24 @@ func (i *EvidenceInteractor) DeleteEvidence(ctx context.Context, evidenceID, own
 	return nil
 }
 
+// ListEvidenceByMotorcycleID retrieves evidence for a motorcycle (used by motorcycle lookup)
+// This method does NOT validate ownership - it's designed for workshop representatives
+func (i *EvidenceInteractor) ListEvidenceByMotorcycleID(ctx context.Context, motorcycleID string) ([]domain.MotorcycleEvidence, error) {
+	traceID := middleware.GetTraceIDFromContext(ctx)
+	log := log.WithTraceID(traceID)
+
+	log.Info(logger.LogEvidenceInteractorListStart, "motorcycle_id", motorcycleID)
+
+	evidences, err := i.evidenceService.GetEvidenceByMotorcycleID(ctx, motorcycleID)
+	if err != nil {
+		log.Error(logger.LogEvidenceInteractorListError, "error", err, "motorcycle_id", motorcycleID)
+		return nil, err
+	}
+
+	log.Success(logger.LogEvidenceInteractorListSuccess, "motorcycle_id", motorcycleID, "count", len(evidences))
+	return evidences, nil
+}
+
 // UpdateEvidence updates an existing evidence (HU17)
 func (i *EvidenceInteractor) UpdateEvidence(ctx context.Context, evidenceID, ownerID string, updates *domain.MotorcycleEvidence) (*domain.MotorcycleEvidence, error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
