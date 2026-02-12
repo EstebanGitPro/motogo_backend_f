@@ -26,7 +26,7 @@ func NewFranchiseInteractor(franchiseService input.FranchiseService, branchServi
 
 // CreateFranchiseWithBranches creates a franchise and associates existing branches (HU26)
 // Business rule: A franchise must have at least 1 branch
-func (i *FranchiseInteractor) CreateFranchiseWithBranches(ctx context.Context, franchise domain.Franchise, branchIDs []string, representativeID string) (*domain.Franchise, error) {
+func (i *FranchiseInteractor) CreateFranchiseWithBranches(ctx context.Context, franchise domain.Franchise, branchIDs []string, representativeID string) (result *domain.Franchise, err error) {
 	// 1. Validate at least 1 branch
 	if len(branchIDs) == 0 {
 		log.Warn(logger.LogFranchiseInteractorNoBranches)
@@ -35,8 +35,8 @@ func (i *FranchiseInteractor) CreateFranchiseWithBranches(ctx context.Context, f
 
 	// 2. Validate branches belong to representative
 	for _, branchID := range branchIDs {
-		branch, err := i.branchService.GetBranchByID(ctx, branchID)
-		if err != nil {
+		branch, branchErr := i.branchService.GetBranchByID(ctx, branchID)
+		if branchErr != nil {
 			return nil, domain.ErrBranchNotFound
 		}
 		if branch.RepresentativeID != representativeID {
@@ -51,25 +51,32 @@ func (i *FranchiseInteractor) CreateFranchiseWithBranches(ctx context.Context, f
 	}
 
 	// 3. Begin transaction
-	tx, err := i.franchiseService.BeginTx(ctx)
-	if err != nil {
-		log.Error(logger.LogFranchiseInteractorTxError, "error", err)
-		return nil, err
+	tx, txErr := i.franchiseService.BeginTx(ctx)
+	if txErr != nil {
+		log.Error(logger.LogFranchiseInteractorTxError, "error", txErr)
+		return nil, txErr
 	}
+
 	defer func() {
 		if err != nil {
-			_ = tx.Rollback() // Intentionally ignoring rollback error
+			if rbErr := tx.Rollback(); rbErr != nil {
+				log.Error(logger.LogFranchiseInteractorRollbackError,
+					"rollback_error", rbErr,
+					"original_error", err)
+			} else {
+				log.Warn(logger.LogFranchiseInteractorRollbackOK)
+			}
 		}
 	}()
 
 	// 4. Create franchise
-	createdFranchise, err := i.franchiseService.CreateFranchise(ctx, tx, franchise)
+	result, err = i.franchiseService.CreateFranchise(ctx, tx, franchise)
 	if err != nil {
 		return nil, err
 	}
 
 	// 5. Associate branches to franchise
-	if err = i.franchiseService.AssociateBranches(ctx, tx, createdFranchise.ID, branchIDs); err != nil {
+	if err = i.franchiseService.AssociateBranches(ctx, tx, result.ID, branchIDs); err != nil {
 		return nil, err
 	}
 
@@ -79,8 +86,10 @@ func (i *FranchiseInteractor) CreateFranchiseWithBranches(ctx context.Context, f
 		return nil, err
 	}
 
-	log.Info(logger.LogFranchiseInteractorCreateComplete, "franchise_id", createdFranchise.ID, "branch_count", len(branchIDs))
-	return createdFranchise, nil
+	log.Info(logger.LogFranchiseInteractorCreateComplete, "franchise_id", result.ID, "branch_count", len(branchIDs))
+
+	err = nil
+	return result, nil
 }
 
 // GetFranchiseByID retrieves a franchise by ID (HU29)
@@ -94,24 +103,31 @@ func (i *FranchiseInteractor) GetFranchisesByRepresentative(ctx context.Context,
 }
 
 // UpdateFranchise updates franchise info (HU27)
-func (i *FranchiseInteractor) UpdateFranchise(ctx context.Context, franchise domain.Franchise, representativeID string) error {
+func (i *FranchiseInteractor) UpdateFranchise(ctx context.Context, franchise domain.Franchise, representativeID string) (err error) {
 	// 1. Verify franchise exists and ownership via branches
-	count, err := i.franchiseService.CountBranches(ctx, franchise.ID)
-	if err != nil {
-		return err
+	count, countErr := i.franchiseService.CountBranches(ctx, franchise.ID)
+	if countErr != nil {
+		return countErr
 	}
 	if count == 0 {
 		return domain.ErrFranchiseNotFound
 	}
 
 	// 2. Begin transaction
-	tx, err := i.franchiseService.BeginTx(ctx)
-	if err != nil {
-		return err
+	tx, txErr := i.franchiseService.BeginTx(ctx)
+	if txErr != nil {
+		return txErr
 	}
+
 	defer func() {
 		if err != nil {
-			_ = tx.Rollback() // Intentionally ignoring rollback error
+			if rbErr := tx.Rollback(); rbErr != nil {
+				log.Error(logger.LogFranchiseInteractorRollbackError,
+					"rollback_error", rbErr,
+					"original_error", err)
+			} else {
+				log.Warn(logger.LogFranchiseInteractorRollbackOK)
+			}
 		}
 	}()
 
@@ -127,20 +143,29 @@ func (i *FranchiseInteractor) UpdateFranchise(ctx context.Context, franchise dom
 	}
 
 	log.Info(logger.LogFranchiseInteractorUpdateComplete, "franchise_id", franchise.ID)
+
+	err = nil
 	return nil
 }
 
 // DeleteFranchise removes a franchise (HU28)
 // This only removes the franchise record, branches remain but with franchise_id = NULL
-func (i *FranchiseInteractor) DeleteFranchise(ctx context.Context, franchiseID, representativeID string) error {
+func (i *FranchiseInteractor) DeleteFranchise(ctx context.Context, franchiseID, representativeID string) (err error) {
 	// 1. Begin transaction
-	tx, err := i.franchiseService.BeginTx(ctx)
-	if err != nil {
-		return err
+	tx, txErr := i.franchiseService.BeginTx(ctx)
+	if txErr != nil {
+		return txErr
 	}
+
 	defer func() {
 		if err != nil {
-			_ = tx.Rollback() // Intentionally ignoring rollback error
+			if rbErr := tx.Rollback(); rbErr != nil {
+				log.Error(logger.LogFranchiseInteractorRollbackError,
+					"rollback_error", rbErr,
+					"original_error", err)
+			} else {
+				log.Warn(logger.LogFranchiseInteractorRollbackOK)
+			}
 		}
 	}()
 
@@ -161,14 +186,16 @@ func (i *FranchiseInteractor) DeleteFranchise(ctx context.Context, franchiseID, 
 	}
 
 	log.Info(logger.LogFranchiseInteractorDeleteComplete, "franchise_id", franchiseID)
+
+	err = nil
 	return nil
 }
 
 // AddBranchToFranchise associates an additional branch to an existing franchise
-func (i *FranchiseInteractor) AddBranchToFranchise(ctx context.Context, franchiseID, branchID, representativeID string) error {
+func (i *FranchiseInteractor) AddBranchToFranchise(ctx context.Context, franchiseID, branchID, representativeID string) (err error) {
 	// 1. Validate branch ownership
-	branch, err := i.branchService.GetBranchByID(ctx, branchID)
-	if err != nil {
+	branch, branchErr := i.branchService.GetBranchByID(ctx, branchID)
+	if branchErr != nil {
 		return domain.ErrBranchNotFound
 	}
 	if branch.RepresentativeID != representativeID {
@@ -176,13 +203,20 @@ func (i *FranchiseInteractor) AddBranchToFranchise(ctx context.Context, franchis
 	}
 
 	// 2. Begin transaction
-	tx, err := i.franchiseService.BeginTx(ctx)
-	if err != nil {
-		return err
+	tx, txErr := i.franchiseService.BeginTx(ctx)
+	if txErr != nil {
+		return txErr
 	}
+
 	defer func() {
 		if err != nil {
-			_ = tx.Rollback() // Intentionally ignoring rollback error
+			if rbErr := tx.Rollback(); rbErr != nil {
+				log.Error(logger.LogFranchiseInteractorRollbackError,
+					"rollback_error", rbErr,
+					"original_error", err)
+			} else {
+				log.Warn(logger.LogFranchiseInteractorRollbackOK)
+			}
 		}
 	}()
 
@@ -197,38 +231,49 @@ func (i *FranchiseInteractor) AddBranchToFranchise(ctx context.Context, franchis
 	}
 
 	log.Info(logger.LogFranchiseBranchAdded, "franchise_id", franchiseID, "branch_id", branchID)
+
+	err = nil
 	return nil
 }
 
 // RemoveBranchFromFranchise removes a branch from a franchise
 // If this is the last branch, returns an error (franchise must have at least 1 branch)
-func (i *FranchiseInteractor) RemoveBranchFromFranchise(ctx context.Context, franchiseID, branchID, representativeID string) error {
+func (i *FranchiseInteractor) RemoveBranchFromFranchise(ctx context.Context, franchiseID, branchID, representativeID string) (err error) {
 	// 1. Validate minimum branches - cannot remove last branch
-	if err := i.franchiseService.CanRemoveBranch(ctx, franchiseID); err != nil {
-		return err
+	if canErr := i.franchiseService.CanRemoveBranch(ctx, franchiseID); canErr != nil {
+		return canErr
 	}
 
-	// 3. Begin transaction
-	tx, err := i.franchiseService.BeginTx(ctx)
-	if err != nil {
-		return err
+	// 2. Begin transaction
+	tx, txErr := i.franchiseService.BeginTx(ctx)
+	if txErr != nil {
+		return txErr
 	}
+
 	defer func() {
 		if err != nil {
-			_ = tx.Rollback() // Intentionally ignoring rollback error
+			if rbErr := tx.Rollback(); rbErr != nil {
+				log.Error(logger.LogFranchiseInteractorRollbackError,
+					"rollback_error", rbErr,
+					"original_error", err)
+			} else {
+				log.Warn(logger.LogFranchiseInteractorRollbackOK)
+			}
 		}
 	}()
 
-	// 4. Remove single branch
+	// 3. Remove single branch
 	if err = i.franchiseService.DissociateSingleBranch(ctx, tx, branchID); err != nil {
 		return err
 	}
 
-	// 5. Commit
+	// 4. Commit
 	if err = tx.Commit(); err != nil {
 		return err
 	}
 
 	log.Info(logger.LogFranchiseBranchRemoved, "franchise_id", franchiseID, "branch_id", branchID)
+
+	err = nil
 	return nil
 }
