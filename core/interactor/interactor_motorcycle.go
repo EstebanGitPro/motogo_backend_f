@@ -353,7 +353,7 @@ func (i *MotorcycleInteractor) GetReferencesByBrandID(ctx context.Context, brand
 
 // GrantDiagnosticPermission grants a branch permission to view motorcycle diagnostic details
 // Only the motorcycle owner can grant permissions
-func (i *MotorcycleInteractor) GrantDiagnosticPermission(ctx context.Context, motorcycleID, branchID, ownerID string) (result *domain.DiagnosticPermission, err error) {
+func (i *MotorcycleInteractor) GrantDiagnosticPermission(ctx context.Context, motorcycleID, branchID, ownerID string, active bool) (result *domain.DiagnosticPermission, err error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
 	log := log.WithTraceID(traceID)
 
@@ -385,7 +385,7 @@ func (i *MotorcycleInteractor) GrantDiagnosticPermission(ctx context.Context, mo
 	}()
 
 	// Step 3: Grant permission (entity creation + save)
-	result, err = i.motorcycleSvc.GrantPermission(ctx, tx, motorcycleID, branchID)
+	result, err = i.motorcycleSvc.GrantPermission(ctx, tx, motorcycleID, branchID, active)
 	if err != nil {
 		log.Error(logger.LogDiagPermInteractorSaveError, "error", err)
 		return nil, err
@@ -476,5 +476,23 @@ func (i *MotorcycleInteractor) ListDiagnosticPermissions(ctx context.Context, mo
 	}
 
 	log.Success(logger.LogDiagPermInteractorListSuccess, "motorcycle_id", motorcycleID, "count", len(permissions))
+	return permissions, nil
+}
+
+// LookupPermissions retrieves active diagnostic permissions for a motorcycle (no ownership check)
+// Used by representatives to verify access during plate lookup
+func (i *MotorcycleInteractor) LookupPermissions(ctx context.Context, motorcycleID string) ([]domain.DiagnosticPermission, error) {
+	traceID := middleware.GetTraceIDFromContext(ctx)
+	log := log.WithTraceID(traceID)
+
+	log.Info(logger.LogDiagPermInteractorLookupStart, "motorcycle_id", motorcycleID)
+
+	permissions, err := i.motorcycleSvc.ListPermissions(ctx, motorcycleID)
+	if err != nil {
+		log.Error(logger.LogDiagPermInteractorLookupError, "error", err, "motorcycle_id", motorcycleID)
+		return nil, err
+	}
+
+	log.Success(logger.LogDiagPermInteractorLookupSuccess, "motorcycle_id", motorcycleID, "count", len(permissions))
 	return permissions, nil
 }

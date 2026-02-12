@@ -1019,11 +1019,11 @@ func TestGrantDiagnosticPermission_Success(t *testing.T) {
 	// Mock expectations
 	mockSvc.On("ValidateOwnership", ctx, motorcycleID, ownerID).Return(existingMotorcycle, nil)
 	mockSvc.On("BeginTx", ctx).Return(mockTx, nil)
-	mockSvc.On("GrantPermission", ctx, mockTx, motorcycleID, branchID).Return(expectedPermission, nil)
+	mockSvc.On("GrantPermission", ctx, mockTx, motorcycleID, branchID, true).Return(expectedPermission, nil)
 	mockTx.On("Commit").Return(nil)
 
 	// Act
-	result, err := motorcycleInteractor.GrantDiagnosticPermission(ctx, motorcycleID, branchID, ownerID)
+	result, err := motorcycleInteractor.GrantDiagnosticPermission(ctx, motorcycleID, branchID, ownerID, true)
 
 	// Assert
 	assert.NoError(t, err)
@@ -1051,7 +1051,7 @@ func TestGrantDiagnosticPermission_NotOwner(t *testing.T) {
 	mockSvc.On("ValidateOwnership", ctx, motorcycleID, ownerID).Return(nil, domain.ErrMotorcycleNotFound)
 
 	// Act
-	result, err := motorcycleInteractor.GrantDiagnosticPermission(ctx, motorcycleID, branchID, ownerID)
+	result, err := motorcycleInteractor.GrantDiagnosticPermission(ctx, motorcycleID, branchID, ownerID, true)
 
 	// Assert
 	assert.Error(t, err)
@@ -1080,11 +1080,11 @@ func TestGrantDiagnosticPermission_SaveError_Rollback(t *testing.T) {
 	// Mock expectations
 	mockSvc.On("ValidateOwnership", ctx, motorcycleID, ownerID).Return(existingMotorcycle, nil)
 	mockSvc.On("BeginTx", ctx).Return(mockTx, nil)
-	mockSvc.On("GrantPermission", ctx, mockTx, motorcycleID, branchID).Return(nil, domain.ErrPermissionCannotSave)
+	mockSvc.On("GrantPermission", ctx, mockTx, motorcycleID, branchID, true).Return(nil, domain.ErrPermissionCannotSave)
 	mockTx.On("Rollback").Return(nil)
 
 	// Act
-	result, err := motorcycleInteractor.GrantDiagnosticPermission(ctx, motorcycleID, branchID, ownerID)
+	result, err := motorcycleInteractor.GrantDiagnosticPermission(ctx, motorcycleID, branchID, ownerID, true)
 
 	// Assert
 	assert.Error(t, err)

@@ -230,14 +230,21 @@ func (s *MotorcycleServiceImpl) GetReferencesByBrandID(ctx context.Context, bran
 // Diagnostic Permissions
 // ============================================
 
-// GrantPermission creates a new diagnostic permission for a branch on a motorcycle
-func (s *MotorcycleServiceImpl) GrantPermission(ctx context.Context, tx output.Tx, motorcycleID, branchID string) (*domain.DiagnosticPermission, error) {
+// GrantPermission creates or updates a diagnostic permission for a branch on a motorcycle
+func (s *MotorcycleServiceImpl) GrantPermission(ctx context.Context, tx output.Tx, motorcycleID, branchID string, active bool) (*domain.DiagnosticPermission, error) {
 	permission := &domain.DiagnosticPermission{
 		MotorcycleID: motorcycleID,
 		BranchID:     branchID,
-		Active:       true,
+		Active:       active,
 	}
-	permission.SetID()
+
+	// Check for existing row to reuse its ID (avoids duplicate rows on upsert)
+	existing, _ := s.diagPermRepo.GetByMotorcycleAndBranch(ctx, motorcycleID, branchID)
+	if existing != nil {
+		permission.ID = existing.ID
+	} else {
+		permission.SetID()
+	}
 
 	if err := s.diagPermRepo.Save(ctx, tx, permission); err != nil {
 		motorcycleLog.Error(logger.LogDiagPermServiceSaveError, "error", err)

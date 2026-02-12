@@ -127,8 +127,8 @@ func (m *MockMotorcycleService) GetReferencesByBrandID(ctx context.Context, bran
 
 // Diagnostic Permissions
 
-func (m *MockMotorcycleService) GrantPermission(ctx context.Context, tx output.Tx, motorcycleID, branchID string) (*domain.DiagnosticPermission, error) {
-	args := m.Called(ctx, tx, motorcycleID, branchID)
+func (m *MockMotorcycleService) GrantPermission(ctx context.Context, tx output.Tx, motorcycleID, branchID string, active bool) (*domain.DiagnosticPermission, error) {
+	args := m.Called(ctx, tx, motorcycleID, branchID, active)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}

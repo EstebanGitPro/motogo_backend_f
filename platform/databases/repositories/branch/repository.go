@@ -80,7 +80,7 @@ const (
 		WHERE b.status = 'ACTIVE'
 		  AND l.latitude IS NOT NULL
 		  AND l.longitude IS NOT NULL
-		  AND (? = '' OR b.establishment_type = ?)
+		  AND (? = '' OR b.establishment_type LIKE CONCAT('%', ?, '%'))
 		  AND l.latitude BETWEEN ? AND ?
 		  AND l.longitude BETWEEN ? AND ?
 		HAVING distance_km <= ?

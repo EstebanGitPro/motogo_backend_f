@@ -321,6 +321,12 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 			handler.DeleteDiagnostic(),
 		)
 
+		// PATCH /diagnostics/:id/solution - Set diagnostic solution (representative)
+		protected.PATCH("/diagnostics/:id/solution",
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.SetDiagnosticSolution(),
+		)
+
 		// === DIAGNOSTIC PERMISSION ENDPOINTS ===
 		// Per-branch diagnostic permissions (permisos_moto_sede)
 
@@ -448,8 +454,8 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		)
 
 		// GET /branches/:id/schedules/exceptions - Listar excepciones de horario (HU23)
+		// Accessible by all authenticated users (USER can view exceptions for isOpenNow, REPRESENTATIVE can manage)
 		protected.GET("/branches/:id/schedules/exceptions",
-			middleware.RequireRole(domain.RoleRepresentative),
 			handler.ListScheduleExceptions(dependencies.ScheduleExceptionInteractor, dependencies.ScheduleInteractor),
 		)
 
