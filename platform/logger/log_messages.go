@@ -784,6 +784,7 @@ const (
 	LogFranchiseInteractorDeleteComplete = "Franquicia eliminada exitosamente"
 	LogFranchiseInteractorCommitError    = "COMMIT FALLÓ - Franquicia"
 	LogFranchiseInteractorRollbackError  = "ROLLBACK FALLÓ - Franquicia"
+	LogFranchiseInteractorRollbackOK     = "Rollback ejecutado correctamente (franquicia)"
 
 	// Franchise Controller
 	LogFranchiseControllerRequest          = "Solicitud recibida - Franquicia"
@@ -864,12 +865,14 @@ const (
 	LogServiceInteractorGetByTypeOK    = "Servicios por tipo obtenidos exitosamente"
 	LogServiceInteractorGetByTypeError = "Error obteniendo servicios por tipo"
 	// HU68: Service Update (Admin)
-	LogServiceInteractorGetByID      = "Obteniendo servicio por ID"
-	LogServiceInteractorGetByIDOK    = "Servicio obtenido por ID exitosamente"
-	LogServiceInteractorGetByIDError = "Error obteniendo servicio por ID"
-	LogServiceInteractorUpdate       = "Actualizando servicio"
-	LogServiceInteractorUpdateOK     = "Servicio actualizado exitosamente"
-	LogServiceInteractorUpdateError  = "Error actualizando servicio"
+	LogServiceInteractorGetByID       = "Obteniendo servicio por ID"
+	LogServiceInteractorGetByIDOK     = "Servicio obtenido por ID exitosamente"
+	LogServiceInteractorGetByIDError  = "Error obteniendo servicio por ID"
+	LogServiceInteractorUpdate        = "Actualizando servicio"
+	LogServiceInteractorUpdateOK      = "Servicio actualizado exitosamente"
+	LogServiceInteractorUpdateError   = "Error actualizando servicio"
+	LogServiceInteractorRollbackError = "ROLLBACK BD FALLÓ - ALERTA CRÍTICA (servicio)"
+	LogServiceInteractorRollbackOK    = "Rollback BD ejecutado correctamente (servicio)"
 
 	// Service Repository
 	LogServiceRepoGetAll         = "Consultando todos los servicios desde BD"
@@ -1104,6 +1107,8 @@ const (
 	LogScheduleDetailInteractorCreateOK       = "Detalle horario creado exitosamente"
 	LogScheduleDetailInteractorListError      = "Error listando detalles horario"
 	LogScheduleDetailInteractorListOK         = "Detalles horario listados exitosamente"
+	LogScheduleDetailInteractorRollbackError  = "ROLLBACK BD FALLÓ - ALERTA CRÍTICA (detalle horario)"
+	LogScheduleDetailInteractorRollbackOK     = "Rollback BD ejecutado correctamente (detalle horario)"
 )
 
 // ============================================
@@ -1183,6 +1188,8 @@ const (
 	LogMotorcycleInteractorBeginTxError    = "Error iniciando transacción para motocicleta"
 	LogMotorcycleInteractorSaveError       = "Error guardando motocicleta"
 	LogMotorcycleInteractorCommitError     = "Error confirmando transacción de motocicleta"
+	LogMotorcycleInteractorRollbackError   = "ROLLBACK BD FALLÓ - ALERTA CRÍTICA (motocicleta)"
+	LogMotorcycleInteractorRollbackOK      = "Rollback BD ejecutado correctamente (motocicleta)"
 	LogMotorcycleInteractorRegSuccess      = "Motocicleta registrada exitosamente"
 	LogMotorcycleInteractorGetStart        = "Consulta de motocicleta por ID iniciada"
 	LogMotorcycleInteractorGetError        = "Error obteniendo motocicleta por ID"
@@ -1284,6 +1291,30 @@ const (
 )
 
 // ============================================
+// MOTORCYCLE SERVICE (HU43-47, HU50, HU40)
+// ============================================
+const (
+	LogMotorcycleServiceRefError         = "Error validando referencia de motocicleta en servicio"
+	LogMotorcycleServiceCheckPlateErr    = "Error verificando unicidad de placa en servicio"
+	LogMotorcycleServiceSaveError        = "Error guardando motocicleta en servicio"
+	LogMotorcycleServiceUpdateError      = "Error actualizando motocicleta en servicio"
+	LogMotorcycleServiceDeleteStart      = "Eliminación de motocicleta en servicio"
+	LogMotorcycleServiceDeleteError      = "Error eliminando motocicleta en servicio"
+	LogMotorcycleServiceStorageDeleteErr = "Error eliminando archivo de almacenamiento (continuando)"
+
+	// Dependency initialization
+	LogDepMotorcycleServiceInitOK = "Servicio de motocicletas inicializado"
+)
+
+// ============================================
+// DIAGNOSTIC PERMISSION SERVICE
+// ============================================
+const (
+	LogDiagPermServiceSaveError   = "Error guardando permiso de diagnóstico en servicio"
+	LogDiagPermServiceDeleteError = "Error eliminando permiso de diagnóstico en servicio"
+)
+
+// ============================================
 // MOTORCYCLE EVIDENCE INTERACTOR (HU16-19)
 // ============================================
 const (
@@ -1299,6 +1330,8 @@ const (
 	LogEvidenceInteractorBeginTxError    = "Error iniciando transacción para evidencia"
 	LogEvidenceInteractorSaveError       = "Error guardando evidencia"
 	LogEvidenceInteractorCommitError     = "Error confirmando transacción de evidencia"
+	LogEvidenceInteractorRollbackError   = "ROLLBACK BD FALLÓ - ALERTA CRÍTICA (evidencia)"
+	LogEvidenceInteractorRollbackOK      = "Rollback BD ejecutado correctamente (evidencia)"
 	LogEvidenceInteractorCreateSuccess   = "Evidencia creada exitosamente"
 
 	// Evidence Get (HU18)
@@ -1500,6 +1533,8 @@ const (
 	LogDiagnosticInteractorSaveError     = "Error guardando diagnóstico"
 	LogDiagnosticInteractorSaveEvidError = "Error guardando evidencia de diagnóstico"
 	LogDiagnosticInteractorCommitError   = "Error confirmando transacción de diagnóstico"
+	LogDiagnosticInteractorRollbackError = "ROLLBACK BD FALLÓ - ALERTA CRÍTICA (diagnóstico)"
+	LogDiagnosticInteractorRollbackOK    = "Rollback BD ejecutado correctamente (diagnóstico)"
 	LogDiagnosticInteractorCreateSuccess = "Diagnóstico creado exitosamente"
 
 	// Diagnostic UPSERT (same moto+branch → update)
@@ -1581,6 +1616,8 @@ const (
 	LogDiagPermInteractorBeginTxError  = "Error iniciando transacción para permiso"
 	LogDiagPermInteractorSaveError     = "Error guardando permiso de diagnóstico"
 	LogDiagPermInteractorCommitError   = "Error confirmando transacción de permiso"
+	LogDiagPermInteractorRollbackError = "ROLLBACK BD FALLÓ - ALERTA CRÍTICA (permiso)"
+	LogDiagPermInteractorRollbackOK    = "Rollback BD ejecutado correctamente (permiso)"
 	LogDiagPermInteractorGrantSuccess  = "Permiso de diagnóstico concedido exitosamente"
 	LogDiagPermInteractorRevokeStart   = "Revocación de permiso de diagnóstico iniciada"
 	LogDiagPermInteractorDeleteError   = "Error revocando permiso de diagnóstico"
