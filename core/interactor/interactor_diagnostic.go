@@ -33,16 +33,16 @@ func NewDiagnosticInteractor(
 // RegisterDiagnostic creates a new diagnostic or updates an existing one for the same motorcycle+branch (UPSERT)
 // If a diagnostic already exists for the same motorcycle and branch, it updates the existing record
 // instead of creating a duplicate. This is transparent to the caller.
-func (i *DiagnosticInteractor) RegisterDiagnostic(ctx context.Context, motorcycleID, branchID, ownerID string, problemDescription *string, evidenceURLs []string) (*domain.Diagnostic, error) {
+func (i *DiagnosticInteractor) RegisterDiagnostic(ctx context.Context, motorcycleID, branchID, ownerID string, problemDescription *string, evidenceURLs []string) (result *domain.Diagnostic, err error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
 	log := log.WithTraceID(traceID)
 
 	log.Info(logger.LogDiagnosticInteractorCreateStart, "motorcycle_id", motorcycleID, "branch_id", branchID, "owner_id", ownerID)
 
 	// Step 1: Validate motorcycle exists and ownership
-	motorcycle, err := i.motorcycleRepo.GetByID(ctx, motorcycleID)
-	if err != nil {
-		log.Error(logger.LogDiagnosticInteractorMotoError, "error", err, "motorcycle_id", motorcycleID)
+	motorcycle, motoErr := i.motorcycleRepo.GetByID(ctx, motorcycleID)
+	if motoErr != nil {
+		log.Error(logger.LogDiagnosticInteractorMotoError, "error", motoErr, "motorcycle_id", motorcycleID)
 		return nil, domain.ErrMotorcycleNotFound
 	}
 
@@ -53,25 +53,37 @@ func (i *DiagnosticInteractor) RegisterDiagnostic(ctx context.Context, motorcycl
 	}
 
 	// Step 3: Validate branch exists
-	_, err = i.branchRepo.GetBranchByID(ctx, branchID)
-	if err != nil {
-		log.Error(logger.LogDiagnosticInteractorBranchError, "error", err, "branch_id", branchID)
+	_, branchErr := i.branchRepo.GetBranchByID(ctx, branchID)
+	if branchErr != nil {
+		log.Error(logger.LogDiagnosticInteractorBranchError, "error", branchErr, "branch_id", branchID)
 		return nil, domain.ErrBranchNotFound
 	}
 
 	// Step 4: Check if diagnostic already exists for this motorcycle+branch (UPSERT)
-	existing, err := i.diagnosticRepo.GetByMotorcycleAndBranch(ctx, motorcycleID, branchID)
-	if err != nil {
-		log.Error(logger.LogDiagnosticInteractorMotoError, "error", err, "motorcycle_id", motorcycleID, "branch_id", branchID)
+	existing, existErr := i.diagnosticRepo.GetByMotorcycleAndBranch(ctx, motorcycleID, branchID)
+	if existErr != nil {
+		log.Error(logger.LogDiagnosticInteractorMotoError, "error", existErr, "motorcycle_id", motorcycleID, "branch_id", branchID)
 		return nil, domain.ErrDiagnosticCannotSave
 	}
 
 	// Step 5: Begin transaction
-	tx, err := i.diagnosticRepo.BeginTx(ctx)
-	if err != nil {
-		log.Error(logger.LogDiagnosticInteractorBeginTxError, "error", err)
+	tx, txErr := i.diagnosticRepo.BeginTx(ctx)
+	if txErr != nil {
+		log.Error(logger.LogDiagnosticInteractorBeginTxError, "error", txErr)
 		return nil, domain.ErrDiagnosticCannotSave
 	}
+
+	defer func() {
+		if err != nil {
+			if rbErr := tx.Rollback(); rbErr != nil {
+				log.Error(logger.LogDiagnosticInteractorRollbackError,
+					"rollback_error", rbErr,
+					"original_error", err)
+			} else {
+				log.Warn(logger.LogDiagnosticInteractorRollbackOK)
+			}
+		}
+	}()
 
 	if existing != nil {
 		// === UPSERT: Update existing diagnostic ===
@@ -81,18 +93,14 @@ func (i *DiagnosticInteractor) RegisterDiagnostic(ctx context.Context, motorcycl
 		services.RefreshDiagnostic(existing, problemDescription)
 
 		// Update diagnostic record
-		err = i.diagnosticRepo.Update(ctx, tx, existing)
-		if err != nil {
+		if err = i.diagnosticRepo.Update(ctx, tx, existing); err != nil {
 			log.Error(logger.LogDiagnosticInteractorUpsertUpdateErr, "error", err, "id", existing.ID)
-			tx.Rollback()
 			return nil, domain.ErrDiagnosticCannotSave
 		}
 
 		// Delete old evidence
-		err = i.diagnosticRepo.DeleteEvidenceByDiagnosticID(ctx, tx, existing.ID)
-		if err != nil {
+		if err = i.diagnosticRepo.DeleteEvidenceByDiagnosticID(ctx, tx, existing.ID); err != nil {
 			log.Error(logger.LogDiagnosticInteractorEvidCleanupError, "error", err, "diagnostic_id", existing.ID)
-			tx.Rollback()
 			return nil, domain.ErrDiagnosticCannotSave
 		}
 
@@ -100,22 +108,22 @@ func (i *DiagnosticInteractor) RegisterDiagnostic(ctx context.Context, motorcycl
 		existing.Evidence = nil
 		for _, url := range evidenceURLs {
 			evidence := services.NewDiagnosticEvidence(existing.ID, url, nil)
-			err = i.diagnosticRepo.SaveEvidence(ctx, tx, evidence)
-			if err != nil {
+			if err = i.diagnosticRepo.SaveEvidence(ctx, tx, evidence); err != nil {
 				log.Error(logger.LogDiagnosticInteractorSaveEvidError, "error", err, "url", url)
-				tx.Rollback()
 				return nil, domain.ErrDiagnosticCannotSave
 			}
 			existing.Evidence = append(existing.Evidence, *evidence)
 		}
 
 		// Commit
-		if err := tx.Commit(); err != nil {
+		if err = tx.Commit(); err != nil {
 			log.Error(logger.LogDiagnosticInteractorCommitError, "error", err)
 			return nil, domain.ErrDiagnosticCannotSave
 		}
 
 		log.Success(logger.LogDiagnosticInteractorUpsertSuccess, "id", existing.ID, "motorcycle_id", motorcycleID)
+
+		err = nil
 		return existing, nil
 	}
 
@@ -124,32 +132,30 @@ func (i *DiagnosticInteractor) RegisterDiagnostic(ctx context.Context, motorcycl
 	log.Debug(logger.LogDiagnosticInteractorIDGenerated, "id", diagnostic.ID)
 
 	// Save diagnostic
-	err = i.diagnosticRepo.Save(ctx, tx, diagnostic)
-	if err != nil {
+	if err = i.diagnosticRepo.Save(ctx, tx, diagnostic); err != nil {
 		log.Error(logger.LogDiagnosticInteractorSaveError, "error", err)
-		tx.Rollback()
 		return nil, domain.ErrDiagnosticCannotSave
 	}
 
 	// Save evidence photos
 	for _, url := range evidenceURLs {
 		evidence := services.NewDiagnosticEvidence(diagnostic.ID, url, nil)
-		err = i.diagnosticRepo.SaveEvidence(ctx, tx, evidence)
-		if err != nil {
+		if err = i.diagnosticRepo.SaveEvidence(ctx, tx, evidence); err != nil {
 			log.Error(logger.LogDiagnosticInteractorSaveEvidError, "error", err, "url", url)
-			tx.Rollback()
 			return nil, domain.ErrDiagnosticCannotSave
 		}
 		diagnostic.Evidence = append(diagnostic.Evidence, *evidence)
 	}
 
 	// Commit
-	if err := tx.Commit(); err != nil {
+	if err = tx.Commit(); err != nil {
 		log.Error(logger.LogDiagnosticInteractorCommitError, "error", err)
 		return nil, domain.ErrDiagnosticCannotSave
 	}
 
 	log.Success(logger.LogDiagnosticInteractorCreateSuccess, "id", diagnostic.ID, "motorcycle_id", motorcycleID)
+
+	err = nil
 	return diagnostic, nil
 }
 
@@ -227,22 +233,22 @@ func (i *DiagnosticInteractor) ListDiagnosticsByMotorcycle(ctx context.Context, 
 }
 
 // UpdateDiagnostic updates an existing diagnostic (HU12)
-func (i *DiagnosticInteractor) UpdateDiagnostic(ctx context.Context, diagnosticID, ownerID string, updates *domain.Diagnostic) (*domain.Diagnostic, error) {
+func (i *DiagnosticInteractor) UpdateDiagnostic(ctx context.Context, diagnosticID, ownerID string, updates *domain.Diagnostic) (result *domain.Diagnostic, err error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
 	log := log.WithTraceID(traceID)
 
 	log.Info(logger.LogDiagnosticInteractorUpdateStart, "diagnostic_id", diagnosticID)
 
 	// Step 1: Get existing diagnostic
-	diagnostic, err := i.diagnosticRepo.GetByID(ctx, diagnosticID)
-	if err != nil {
-		log.Error(logger.LogDiagnosticInteractorGetError, "error", err, "diagnostic_id", diagnosticID)
+	diagnostic, getErr := i.diagnosticRepo.GetByID(ctx, diagnosticID)
+	if getErr != nil {
+		log.Error(logger.LogDiagnosticInteractorGetError, "error", getErr, "diagnostic_id", diagnosticID)
 		return nil, domain.ErrDiagnosticNotFound
 	}
 
 	// Step 2: Validate ownership through motorcycle
-	motorcycle, err := i.motorcycleRepo.GetByID(ctx, diagnostic.MotorcycleID)
-	if err != nil || motorcycle.OwnerID != ownerID {
+	motorcycle, motoErr := i.motorcycleRepo.GetByID(ctx, diagnostic.MotorcycleID)
+	if motoErr != nil || motorcycle.OwnerID != ownerID {
 		log.Warn(logger.LogDiagnosticInteractorOwnerError, "diagnostic_id", diagnosticID, "owner_id", ownerID)
 		return nil, domain.ErrDiagnosticNotFound
 	}
@@ -265,73 +271,97 @@ func (i *DiagnosticInteractor) UpdateDiagnostic(ctx context.Context, diagnosticI
 	}
 
 	// Step 4: Begin transaction
-	tx, err := i.diagnosticRepo.BeginTx(ctx)
-	if err != nil {
-		log.Error(logger.LogDiagnosticInteractorBeginTxError, "error", err)
+	tx, txErr := i.diagnosticRepo.BeginTx(ctx)
+	if txErr != nil {
+		log.Error(logger.LogDiagnosticInteractorBeginTxError, "error", txErr)
 		return nil, domain.ErrDiagnosticCannotUpdate
 	}
 
+	defer func() {
+		if err != nil {
+			if rbErr := tx.Rollback(); rbErr != nil {
+				log.Error(logger.LogDiagnosticInteractorRollbackError,
+					"rollback_error", rbErr,
+					"original_error", err)
+			} else {
+				log.Warn(logger.LogDiagnosticInteractorRollbackOK)
+			}
+		}
+	}()
+
 	// Step 5: Update diagnostic
-	err = i.diagnosticRepo.Update(ctx, tx, diagnostic)
-	if err != nil {
+	if err = i.diagnosticRepo.Update(ctx, tx, diagnostic); err != nil {
 		log.Error(logger.LogDiagnosticInteractorUpdateError, "error", err, "diagnostic_id", diagnosticID)
-		tx.Rollback()
 		return nil, domain.ErrDiagnosticCannotUpdate
 	}
 
 	// Step 6: Commit transaction
-	if err := tx.Commit(); err != nil {
+	if err = tx.Commit(); err != nil {
 		log.Error(logger.LogDiagnosticInteractorCommitError, "error", err)
 		return nil, domain.ErrDiagnosticCannotUpdate
 	}
 
 	log.Success(logger.LogDiagnosticInteractorUpdateSuccess, "diagnostic_id", diagnosticID)
+
+	err = nil
 	return diagnostic, nil
 }
 
 // DeleteDiagnostic deletes a diagnostic and its evidence (HU13)
-func (i *DiagnosticInteractor) DeleteDiagnostic(ctx context.Context, diagnosticID, ownerID string) error {
+func (i *DiagnosticInteractor) DeleteDiagnostic(ctx context.Context, diagnosticID, ownerID string) (err error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
 	log := log.WithTraceID(traceID)
 
 	log.Info(logger.LogDiagnosticInteractorDeleteStart, "diagnostic_id", diagnosticID)
 
 	// Step 1: Get diagnostic
-	diagnostic, err := i.diagnosticRepo.GetByID(ctx, diagnosticID)
-	if err != nil {
-		log.Error(logger.LogDiagnosticInteractorGetError, "error", err, "diagnostic_id", diagnosticID)
-		return err
+	diagnostic, getErr := i.diagnosticRepo.GetByID(ctx, diagnosticID)
+	if getErr != nil {
+		log.Error(logger.LogDiagnosticInteractorGetError, "error", getErr, "diagnostic_id", diagnosticID)
+		return getErr
 	}
 
 	// Step 2: Validate ownership through motorcycle
-	motorcycle, err := i.motorcycleRepo.GetByID(ctx, diagnostic.MotorcycleID)
-	if err != nil || motorcycle.OwnerID != ownerID {
+	motorcycle, motoErr := i.motorcycleRepo.GetByID(ctx, diagnostic.MotorcycleID)
+	if motoErr != nil || motorcycle.OwnerID != ownerID {
 		log.Warn(logger.LogDiagnosticInteractorOwnerError, "diagnostic_id", diagnosticID, "owner_id", ownerID)
 		return domain.ErrDiagnosticNotFound
 	}
 
 	// Step 3: Begin transaction
-	tx, err := i.diagnosticRepo.BeginTx(ctx)
-	if err != nil {
-		log.Error(logger.LogDiagnosticInteractorBeginTxError, "error", err)
+	tx, txErr := i.diagnosticRepo.BeginTx(ctx)
+	if txErr != nil {
+		log.Error(logger.LogDiagnosticInteractorBeginTxError, "error", txErr)
 		return domain.ErrDiagnosticCannotDelete
 	}
 
+	defer func() {
+		if err != nil {
+			if rbErr := tx.Rollback(); rbErr != nil {
+				log.Error(logger.LogDiagnosticInteractorRollbackError,
+					"rollback_error", rbErr,
+					"original_error", err)
+			} else {
+				log.Warn(logger.LogDiagnosticInteractorRollbackOK)
+			}
+		}
+	}()
+
 	// Step 4: Delete diagnostic (cascades to evidence via FK ON DELETE CASCADE)
-	err = i.diagnosticRepo.Delete(ctx, tx, diagnosticID)
-	if err != nil {
+	if err = i.diagnosticRepo.Delete(ctx, tx, diagnosticID); err != nil {
 		log.Error(logger.LogDiagnosticInteractorDeleteError, "error", err, "diagnostic_id", diagnosticID)
-		tx.Rollback()
 		return domain.ErrDiagnosticCannotDelete
 	}
 
 	// Step 5: Commit transaction
-	if err := tx.Commit(); err != nil {
+	if err = tx.Commit(); err != nil {
 		log.Error(logger.LogDiagnosticInteractorCommitError, "error", err)
 		return domain.ErrDiagnosticCannotDelete
 	}
 
 	log.Success(logger.LogDiagnosticInteractorDeleteSuccess, "diagnostic_id", diagnosticID)
+
+	err = nil
 	return nil
 }
 
