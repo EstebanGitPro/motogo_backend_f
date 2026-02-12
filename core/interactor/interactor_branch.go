@@ -202,6 +202,8 @@ func (i *BranchInteractor) UpdateBranch(ctx context.Context, branchID string, br
 		if err != nil {
 			if rbErr := tx.Rollback(); rbErr != nil {
 				log.Error(logger.LogBranchInteractorRollbackError, "rollback_error", rbErr, "original_error", err)
+			} else {
+				log.Warn(logger.LogBranchInteractorRollbackOK)
 			}
 		}
 	}()
@@ -280,6 +282,8 @@ func (i *BranchInteractor) DeleteBranch(ctx context.Context, branchID string, pe
 		if err != nil {
 			if rbErr := tx.Rollback(); rbErr != nil {
 				log.Error(logger.LogBranchInteractorRollbackError, "rollback_error", rbErr, "original_error", err)
+			} else {
+				log.Warn(logger.LogBranchInteractorRollbackOK)
 			}
 		}
 	}()
