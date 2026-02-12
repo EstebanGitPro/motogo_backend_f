@@ -35,16 +35,16 @@ func (i *ScheduleExceptionInteractor) CreateException(
 	ctx context.Context,
 	exception domain.ScheduleDetail,
 	representativeID, branchID string,
-) (*domain.ScheduleDetail, error) {
+) (result *domain.ScheduleDetail, err error) {
 	scheduleExceptionInteractorLog.Info(logger.LogScheduleDetailInteractorCreateStart,
 		"schedule_id", exception.ScheduleID,
 		"exception_start_date", exception.ExceptionStartDate,
 		"representative_id", representativeID)
 
 	// 1. Verify ownership of branch
-	branch, err := i.branchService.GetBranchByID(ctx, branchID)
-	if err != nil {
-		scheduleExceptionInteractorLog.Error(logger.LogScheduleDetailInteractorBranchError, "error", err)
+	branch, branchErr := i.branchService.GetBranchByID(ctx, branchID)
+	if branchErr != nil {
+		scheduleExceptionInteractorLog.Error(logger.LogScheduleDetailInteractorBranchError, "error", branchErr)
 		return nil, domain.ErrBranchNotFound
 	}
 	if branch.RepresentativeID != representativeID {
@@ -54,32 +54,44 @@ func (i *ScheduleExceptionInteractor) CreateException(
 	}
 
 	// 2. Begin transaction
-	tx, err := i.detailService.BeginTx(ctx)
-	if err != nil {
-		scheduleExceptionInteractorLog.Error(logger.LogScheduleDetailInteractorTxError, "error", err)
-		return nil, err
+	tx, txErr := i.detailService.BeginTx(ctx)
+	if txErr != nil {
+		scheduleExceptionInteractorLog.Error(logger.LogScheduleDetailInteractorTxError, "error", txErr)
+		return nil, txErr
 	}
 
+	defer func() {
+		if err != nil {
+			if rbErr := tx.Rollback(); rbErr != nil {
+				scheduleExceptionInteractorLog.Error(logger.LogScheduleDetailInteractorRollbackError,
+					"rollback_error", rbErr,
+					"original_error", err)
+			} else {
+				scheduleExceptionInteractorLog.Warn(logger.LogScheduleDetailInteractorRollbackOK)
+			}
+		}
+	}()
+
 	// 3. Create exception via service
-	createdException, err := i.detailService.CreateException(ctx, tx, exception)
+	result, err = i.detailService.CreateException(ctx, tx, exception)
 	if err != nil {
-		tx.Rollback()
 		scheduleExceptionInteractorLog.Error(logger.LogScheduleDetailInteractorCreateError,
 			"schedule_id", exception.ScheduleID, "error", err)
 		return nil, err
 	}
 
 	// 4. Commit transaction
-	if err := tx.Commit(); err != nil {
+	if err = tx.Commit(); err != nil {
 		scheduleExceptionInteractorLog.Error(logger.LogScheduleDetailInteractorCommitError, "error", err)
 		return nil, err
 	}
 
 	scheduleExceptionInteractorLog.Info(logger.LogScheduleDetailInteractorCreateOK,
-		"exception_id", createdException.ID,
+		"exception_id", result.ID,
 		"schedule_id", exception.ScheduleID)
 
-	return createdException, nil
+	err = nil
+	return result, nil
 }
 
 // ListExceptions retrieves all exceptions for a schedule (HU23)
@@ -114,21 +126,21 @@ func (i *ScheduleExceptionInteractor) UpdateException(
 	ctx context.Context,
 	exception domain.ScheduleDetail,
 	representativeID string,
-) error {
+) (err error) {
 	// 1. Get existing exception
-	existing, err := i.detailService.GetExceptionByID(ctx, exception.ID)
-	if err != nil {
-		return err
+	existing, existErr := i.detailService.GetExceptionByID(ctx, exception.ID)
+	if existErr != nil {
+		return existErr
 	}
 
 	// 2. Get schedule and verify ownership via branch
-	schedule, err := i.scheduleService.GetScheduleByID(ctx, existing.ScheduleID)
-	if err != nil {
-		return err
+	schedule, schedErr := i.scheduleService.GetScheduleByID(ctx, existing.ScheduleID)
+	if schedErr != nil {
+		return schedErr
 	}
 
-	branch, err := i.branchService.GetBranchByID(ctx, schedule.BranchID)
-	if err != nil {
+	branch, branchErr := i.branchService.GetBranchByID(ctx, schedule.BranchID)
+	if branchErr != nil {
 		return domain.ErrBranchNotFound
 	}
 	if branch.RepresentativeID != representativeID {
@@ -136,23 +148,35 @@ func (i *ScheduleExceptionInteractor) UpdateException(
 	}
 
 	// 3. Begin transaction
-	tx, err := i.detailService.BeginTx(ctx)
-	if err != nil {
-		return err
+	tx, txErr := i.detailService.BeginTx(ctx)
+	if txErr != nil {
+		return txErr
 	}
 
+	defer func() {
+		if err != nil {
+			if rbErr := tx.Rollback(); rbErr != nil {
+				scheduleExceptionInteractorLog.Error(logger.LogScheduleDetailInteractorRollbackError,
+					"rollback_error", rbErr,
+					"original_error", err)
+			} else {
+				scheduleExceptionInteractorLog.Warn(logger.LogScheduleDetailInteractorRollbackOK)
+			}
+		}
+	}()
+
 	// 4. Update exception
-	if err := i.detailService.UpdateException(ctx, tx, exception); err != nil {
-		tx.Rollback()
+	if err = i.detailService.UpdateException(ctx, tx, exception); err != nil {
 		return err
 	}
 
 	// 5. Commit
-	if err := tx.Commit(); err != nil {
+	if err = tx.Commit(); err != nil {
 		scheduleExceptionInteractorLog.Error(logger.LogScheduleDetailInteractorCommitError, "error", err)
 		return err
 	}
 
+	err = nil
 	return nil
 }
 
@@ -160,21 +184,21 @@ func (i *ScheduleExceptionInteractor) UpdateException(
 func (i *ScheduleExceptionInteractor) DeleteException(
 	ctx context.Context,
 	exceptionID, representativeID string,
-) error {
+) (err error) {
 	// 1. Get existing exception
-	existing, err := i.detailService.GetExceptionByID(ctx, exceptionID)
-	if err != nil {
-		return err
+	existing, existErr := i.detailService.GetExceptionByID(ctx, exceptionID)
+	if existErr != nil {
+		return existErr
 	}
 
 	// 2. Get schedule and verify ownership via branch
-	schedule, err := i.scheduleService.GetScheduleByID(ctx, existing.ScheduleID)
-	if err != nil {
-		return err
+	schedule, schedErr := i.scheduleService.GetScheduleByID(ctx, existing.ScheduleID)
+	if schedErr != nil {
+		return schedErr
 	}
 
-	branch, err := i.branchService.GetBranchByID(ctx, schedule.BranchID)
-	if err != nil {
+	branch, branchErr := i.branchService.GetBranchByID(ctx, schedule.BranchID)
+	if branchErr != nil {
 		return domain.ErrBranchNotFound
 	}
 	if branch.RepresentativeID != representativeID {
@@ -182,23 +206,35 @@ func (i *ScheduleExceptionInteractor) DeleteException(
 	}
 
 	// 3. Begin transaction
-	tx, err := i.detailService.BeginTx(ctx)
-	if err != nil {
-		return err
+	tx, txErr := i.detailService.BeginTx(ctx)
+	if txErr != nil {
+		return txErr
 	}
 
+	defer func() {
+		if err != nil {
+			if rbErr := tx.Rollback(); rbErr != nil {
+				scheduleExceptionInteractorLog.Error(logger.LogScheduleDetailInteractorRollbackError,
+					"rollback_error", rbErr,
+					"original_error", err)
+			} else {
+				scheduleExceptionInteractorLog.Warn(logger.LogScheduleDetailInteractorRollbackOK)
+			}
+		}
+	}()
+
 	// 4. Delete exception
-	if err := i.detailService.DeleteException(ctx, tx, exceptionID); err != nil {
-		tx.Rollback()
+	if err = i.detailService.DeleteException(ctx, tx, exceptionID); err != nil {
 		return err
 	}
 
 	// 5. Commit
-	if err := tx.Commit(); err != nil {
+	if err = tx.Commit(); err != nil {
 		scheduleExceptionInteractorLog.Error(logger.LogScheduleDetailInteractorCommitError, "error", err)
 		return err
 	}
 
+	err = nil
 	return nil
 }
 
@@ -223,21 +259,21 @@ func (i *ScheduleExceptionInteractor) setExceptionActive(
 	ctx context.Context,
 	exceptionID, representativeID string,
 	active bool,
-) error {
+) (err error) {
 	// 1. Get existing exception
-	existing, err := i.detailService.GetExceptionByID(ctx, exceptionID)
-	if err != nil {
-		return err
+	existing, existErr := i.detailService.GetExceptionByID(ctx, exceptionID)
+	if existErr != nil {
+		return existErr
 	}
 
 	// 2. Get schedule and verify ownership via branch
-	schedule, err := i.scheduleService.GetScheduleByID(ctx, existing.ScheduleID)
-	if err != nil {
-		return err
+	schedule, schedErr := i.scheduleService.GetScheduleByID(ctx, existing.ScheduleID)
+	if schedErr != nil {
+		return schedErr
 	}
 
-	branch, err := i.branchService.GetBranchByID(ctx, schedule.BranchID)
-	if err != nil {
+	branch, branchErr := i.branchService.GetBranchByID(ctx, schedule.BranchID)
+	if branchErr != nil {
 		return domain.ErrBranchNotFound
 	}
 	if branch.RepresentativeID != representativeID {
@@ -245,22 +281,34 @@ func (i *ScheduleExceptionInteractor) setExceptionActive(
 	}
 
 	// 3. Begin transaction
-	tx, err := i.detailService.BeginTx(ctx)
-	if err != nil {
-		return err
+	tx, txErr := i.detailService.BeginTx(ctx)
+	if txErr != nil {
+		return txErr
 	}
 
+	defer func() {
+		if err != nil {
+			if rbErr := tx.Rollback(); rbErr != nil {
+				scheduleExceptionInteractorLog.Error(logger.LogScheduleDetailInteractorRollbackError,
+					"rollback_error", rbErr,
+					"original_error", err)
+			} else {
+				scheduleExceptionInteractorLog.Warn(logger.LogScheduleDetailInteractorRollbackOK)
+			}
+		}
+	}()
+
 	// 4. Delegate active status change to service
-	if err := i.detailService.SetExceptionActive(ctx, tx, exceptionID, active); err != nil {
-		tx.Rollback()
+	if err = i.detailService.SetExceptionActive(ctx, tx, exceptionID, active); err != nil {
 		return err
 	}
 
 	// 5. Commit
-	if err := tx.Commit(); err != nil {
+	if err = tx.Commit(); err != nil {
 		scheduleExceptionInteractorLog.Error(logger.LogScheduleDetailInteractorCommitError, "error", err)
 		return err
 	}
 
+	err = nil
 	return nil
 }
