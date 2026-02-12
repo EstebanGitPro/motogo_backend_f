@@ -29,11 +29,6 @@ func (s *MessageService) BeginTx(ctx context.Context) (output.Tx, error) {
 func (s *MessageService) ValidateMessage(ctx context.Context, message domain.Message) error {
 	log.Debug(logger.LogMessageValidation, "code", message.Code)
 
-	if err := message.Validate(); err != nil {
-		log.Error(logger.LogMessageValidationError, "code", message.Code, "error", err)
-		return err
-	}
-
 	// Check if code already exists (for create operations)
 	if message.ID == "" {
 		existing, err := s.repository.GetByCode(ctx, message.Code)

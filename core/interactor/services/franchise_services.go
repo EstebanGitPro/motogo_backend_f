@@ -15,12 +15,14 @@ var log logger.Logger = logger.NewSlogLogger()
 // franchiseService implements input.FranchiseService
 type franchiseService struct {
 	repository output.FranchiseRepository
+	branchRepo output.BranchRepository
 }
 
 // NewFranchiseService creates a new FranchiseService instance
-func NewFranchiseService(repo output.FranchiseRepository) input.FranchiseService {
+func NewFranchiseService(repo output.FranchiseRepository, branchRepo output.BranchRepository) input.FranchiseService {
 	return &franchiseService{
 		repository: repo,
+		branchRepo: branchRepo,
 	}
 }
 
@@ -150,4 +152,52 @@ func (s *franchiseService) DissociateSingleBranch(ctx context.Context, tx output
 // CountBranches returns the number of branches in a franchise
 func (s *franchiseService) CountBranches(ctx context.Context, franchiseID string) (int, error) {
 	return s.repository.CountBranchesByFranchise(ctx, franchiseID)
+}
+
+// CanRemoveBranch checks if a branch can be removed from a franchise
+// Business rule: a franchise must have at least 1 branch
+func (s *franchiseService) CanRemoveBranch(ctx context.Context, franchiseID string) error {
+	count, err := s.repository.CountBranchesByFranchise(ctx, franchiseID)
+	if err != nil {
+		return err
+	}
+	if count <= 1 {
+		log.Warn(logger.LogFranchiseCannotRemoveLast, "franchise_id", franchiseID)
+		return domain.ErrFranchiseMinBranches
+	}
+	return nil
+}
+
+// ValidateBranchOwnership validates that a branch belongs to the given representative
+// and is not already associated with a franchise
+func (s *franchiseService) ValidateBranchOwnership(ctx context.Context, branchID, representativeID string) error {
+	branch, err := s.branchRepo.GetBranchByID(ctx, branchID)
+	if err != nil {
+		return domain.ErrBranchNotFound
+	}
+	if branch.RepresentativeID != representativeID {
+		log.Warn(logger.LogFranchiseInteractorBranchNotOwned, "branch_id", branchID, "representative_id", representativeID)
+		return domain.ErrFranchiseBranchNotOwned
+	}
+	if branch.FranchiseID != nil && *branch.FranchiseID != "" {
+		log.Warn(logger.LogFranchiseInteractorBranchNotOwned, "branch_id", branchID, "franchise_id", *branch.FranchiseID)
+		return domain.ErrFranchiseBranchNotOwned
+	}
+	return nil
+}
+
+// ValidateBranchesForFranchise validates that all branches belong to the representative
+// and are not already associated with a franchise. Also validates at least 1 branch.
+func (s *franchiseService) ValidateBranchesForFranchise(ctx context.Context, branchIDs []string, representativeID string) error {
+	if len(branchIDs) == 0 {
+		log.Warn(logger.LogFranchiseInteractorNoBranches)
+		return domain.ErrFranchiseNoBranches
+	}
+
+	for _, branchID := range branchIDs {
+		if err := s.ValidateBranchOwnership(ctx, branchID, representativeID); err != nil {
+			return err
+		}
+	}
+	return nil
 }

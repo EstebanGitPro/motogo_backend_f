@@ -1,379 +1,109 @@
 package handlers_test
 
 import (
-	"context"
+	"bytes"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
+	"github.com/EstebanGitPro/motogo-backend/handlers"
+	"github.com/EstebanGitPro/motogo-backend/middleware"
 	"github.com/EstebanGitPro/motogo-backend/mocks"
+	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
-// ============================================
-// EvidenceInteractor Mock Integration Tests
-// These tests verify the mock implementations work correctly
-// ============================================
+// TestCreateEvidence_Integration_Success validates the full HTTP pipeline
+// for POST /motorcycles/:id/evidence (HU16).
+//
+// Exercises: auth → ID decoding → JSON binding → sanitize → interactor →
+// ID encoding → HATEOAS → 201 response.
+func TestCreateEvidence_Integration_Success(t *testing.T) {
+	gin.SetMode(gin.TestMode)
 
-func TestMockEvidenceInteractor_CreateEvidence_Success(t *testing.T) {
-	// Arrange
-	mockEvidence := new(mocks.MockEvidenceInteractor)
+	encoder := createTestEncoder()
+	msgCache := createTestMessageCache()
+	responseHandler := middleware.NewResponseHandler(msgCache)
 
-	angle := "FRONT"
-	inputEvidence := &domain.MotorcycleEvidence{
-		ImageURL: "https://firebasestorage.googleapis.com/v0/b/test/image.jpg",
-		Angle:    &angle,
-	}
+	mockEvidenceInteractor := new(mocks.MockEvidenceInteractor)
+
+	h := handlers.NewForTest(
+		nil, nil, nil,
+		mockEvidenceInteractor,
+		nil,
+		encoder,
+		responseHandler,
+	)
+
+	ownerID := "a1111111-1111-4000-8000-111111111111"
+	motorcycleUUID := "a2222222-2222-4000-8000-222222222222"
+	evidenceUUID := "a3333333-3333-4000-8000-333333333333"
+	angle := "FRONTAL"
+
+	encodedMotorcycleID, err := encoder.Encode(motorcycleUUID)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, encodedMotorcycleID)
 
 	createdEvidence := &domain.MotorcycleEvidence{
-		ID:           "evidence-123",
-		MotorcycleID: "moto-456",
+		ID:           evidenceUUID,
+		MotorcycleID: motorcycleUUID,
+		ImageURL:     "https://firebasestorage.googleapis.com/v0/b/test/evidence.jpg",
 		Angle:        &angle,
-		ImageURL:     "https://firebasestorage.googleapis.com/v0/b/test/image.jpg",
 		CreatedAt:    time.Now(),
 	}
 
-	mockEvidence.On("CreateEvidence",
+	mockEvidenceInteractor.On("CreateEvidence",
 		mock.Anything,
-		"moto-456",
-		"owner-789",
-		inputEvidence,
+		motorcycleUUID,
+		ownerID,
+		mock.AnythingOfType("*domain.MotorcycleEvidence"),
 	).Return(createdEvidence, nil)
 
-	// Act
-	ctx := context.Background()
-	result, err := mockEvidence.CreateEvidence(ctx, "moto-456", "owner-789", inputEvidence)
-
-	// Assert
+	reqBody := map[string]interface{}{
+		"image_url": "  https://firebasestorage.googleapis.com/v0/b/test/evidence.jpg  ",
+		"angle":     "FRONTAL",
+	}
+	bodyJSON, err := json.Marshal(reqBody)
 	assert.NoError(t, err)
-	assert.NotNil(t, result)
-	assert.Equal(t, "evidence-123", result.ID)
-	assert.Equal(t, "moto-456", result.MotorcycleID)
-	assert.NotNil(t, result.Angle)
-	assert.Equal(t, "FRONT", *result.Angle)
-	mockEvidence.AssertExpectations(t)
-}
 
-func TestMockEvidenceInteractor_CreateEvidence_MotorcycleNotFound(t *testing.T) {
-	// Arrange
-	mockEvidence := new(mocks.MockEvidenceInteractor)
+	router := gin.New()
+	router.Use(func(c *gin.Context) {
+		c.Set("authenticated_user", &domain.Person{
+			ID:   ownerID,
+			Role: "USUARIO",
+		})
+		c.Next()
+	})
+	router.POST("/motorcycles/:id/evidence", h.CreateEvidence())
 
-	inputEvidence := &domain.MotorcycleEvidence{
-		ImageURL: "https://firebasestorage.googleapis.com/v0/b/test/image.jpg",
-	}
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/motorcycles/"+encodedMotorcycleID+"/evidence", bytes.NewBuffer(bodyJSON))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
 
-	mockEvidence.On("CreateEvidence",
-		mock.Anything,
-		"moto-not-found",
-		"owner-789",
-		inputEvidence,
-	).Return(nil, domain.ErrMotorcycleNotFound)
+	assert.Equal(t, http.StatusCreated, w.Code)
 
-	// Act
-	ctx := context.Background()
-	result, err := mockEvidence.CreateEvidence(ctx, "moto-not-found", "owner-789", inputEvidence)
-
-	// Assert
-	assert.Error(t, err)
-	assert.Nil(t, result)
-	assert.Equal(t, domain.ErrMotorcycleNotFound, err)
-	mockEvidence.AssertExpectations(t)
-}
-
-func TestMockEvidenceInteractor_CreateEvidence_InvalidURL(t *testing.T) {
-	// Arrange
-	mockEvidence := new(mocks.MockEvidenceInteractor)
-
-	inputEvidence := &domain.MotorcycleEvidence{
-		ImageURL: "https://invalid-url.com/image.jpg",
-	}
-
-	mockEvidence.On("CreateEvidence",
-		mock.Anything,
-		"moto-456",
-		"owner-789",
-		inputEvidence,
-	).Return(nil, domain.ErrInvalidEvidenceURL)
-
-	// Act
-	ctx := context.Background()
-	result, err := mockEvidence.CreateEvidence(ctx, "moto-456", "owner-789", inputEvidence)
-
-	// Assert
-	assert.Error(t, err)
-	assert.Nil(t, result)
-	assert.Equal(t, domain.ErrInvalidEvidenceURL, err)
-	mockEvidence.AssertExpectations(t)
-}
-
-func TestMockEvidenceInteractor_CreateEvidence_LimitExceeded(t *testing.T) {
-	// Arrange
-	mockEvidence := new(mocks.MockEvidenceInteractor)
-
-	inputEvidence := &domain.MotorcycleEvidence{
-		ImageURL: "https://firebasestorage.googleapis.com/v0/b/test/image.jpg",
-	}
-
-	mockEvidence.On("CreateEvidence",
-		mock.Anything,
-		"moto-full",
-		"owner-789",
-		inputEvidence,
-	).Return(nil, domain.ErrEvidenceLimitExceeded)
-
-	// Act
-	ctx := context.Background()
-	result, err := mockEvidence.CreateEvidence(ctx, "moto-full", "owner-789", inputEvidence)
-
-	// Assert
-	assert.Error(t, err)
-	assert.Nil(t, result)
-	assert.Equal(t, domain.ErrEvidenceLimitExceeded, err)
-	mockEvidence.AssertExpectations(t)
-}
-
-// ============================================
-// GetEvidenceByID Tests
-// ============================================
-
-func TestMockEvidenceInteractor_GetEvidenceByID_Success(t *testing.T) {
-	// Arrange
-	mockEvidence := new(mocks.MockEvidenceInteractor)
-
-	angle := "SIDE"
-	evidence := &domain.MotorcycleEvidence{
-		ID:           "evidence-123",
-		MotorcycleID: "moto-456",
-		Angle:        &angle,
-		ImageURL:     "https://storage/image.jpg",
-		CreatedAt:    time.Now(),
-	}
-
-	mockEvidence.On("GetEvidenceByID",
-		mock.Anything,
-		"evidence-123",
-		"owner-789",
-	).Return(evidence, nil)
-
-	// Act
-	ctx := context.Background()
-	result, err := mockEvidence.GetEvidenceByID(ctx, "evidence-123", "owner-789")
-
-	// Assert
+	var response map[string]interface{}
+	err = json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
-	assert.NotNil(t, result)
-	assert.Equal(t, "evidence-123", result.ID)
-	assert.Equal(t, "SIDE", *result.Angle)
-	mockEvidence.AssertExpectations(t)
-}
+	assert.True(t, response["success"].(bool))
 
-func TestMockEvidenceInteractor_GetEvidenceByID_NotFound(t *testing.T) {
-	// Arrange
-	mockEvidence := new(mocks.MockEvidenceInteractor)
+	data, ok := response["data"].(map[string]interface{})
+	assert.True(t, ok)
 
-	mockEvidence.On("GetEvidenceByID",
-		mock.Anything,
-		"evidence-not-found",
-		"owner-789",
-	).Return(nil, domain.ErrEvidenceNotFound)
+	assert.NotEmpty(t, data["id"])
+	assert.Equal(t, encodedMotorcycleID, data["motorcycle_id"])
+	assert.Equal(t, "FRONTAL", data["angle"])
+	assert.NotEmpty(t, data["image_url"])
+	assert.NotEmpty(t, data["created_at"])
 
-	// Act
-	ctx := context.Background()
-	result, err := mockEvidence.GetEvidenceByID(ctx, "evidence-not-found", "owner-789")
+	links, ok := data["_links"].([]interface{})
+	assert.True(t, ok)
+	assert.NotEmpty(t, links)
 
-	// Assert
-	assert.Error(t, err)
-	assert.Nil(t, result)
-	assert.Equal(t, domain.ErrEvidenceNotFound, err)
-	mockEvidence.AssertExpectations(t)
-}
-
-// ============================================
-// ListEvidenceByMotorcycle Tests
-// ============================================
-
-func TestMockEvidenceInteractor_ListEvidenceByMotorcycle_Success(t *testing.T) {
-	// Arrange
-	mockEvidence := new(mocks.MockEvidenceInteractor)
-
-	angle1 := "FRONT"
-	angle2 := "BACK"
-	evidences := []domain.MotorcycleEvidence{
-		{
-			ID:           "evidence-1",
-			MotorcycleID: "moto-456",
-			Angle:        &angle1,
-			ImageURL:     "https://storage/img1.jpg",
-			CreatedAt:    time.Now(),
-		},
-		{
-			ID:           "evidence-2",
-			MotorcycleID: "moto-456",
-			Angle:        &angle2,
-			ImageURL:     "https://storage/img2.jpg",
-			CreatedAt:    time.Now(),
-		},
-	}
-
-	mockEvidence.On("ListEvidenceByMotorcycle",
-		mock.Anything,
-		"moto-456",
-		"owner-789",
-	).Return(evidences, nil)
-
-	// Act
-	ctx := context.Background()
-	result, err := mockEvidence.ListEvidenceByMotorcycle(ctx, "moto-456", "owner-789")
-
-	// Assert
-	assert.NoError(t, err)
-	assert.Len(t, result, 2)
-	assert.Equal(t, "evidence-1", result[0].ID)
-	assert.Equal(t, "evidence-2", result[1].ID)
-	mockEvidence.AssertExpectations(t)
-}
-
-func TestMockEvidenceInteractor_ListEvidenceByMotorcycle_Empty(t *testing.T) {
-	// Arrange
-	mockEvidence := new(mocks.MockEvidenceInteractor)
-
-	mockEvidence.On("ListEvidenceByMotorcycle",
-		mock.Anything,
-		"moto-empty",
-		"owner-789",
-	).Return([]domain.MotorcycleEvidence{}, nil)
-
-	// Act
-	ctx := context.Background()
-	result, err := mockEvidence.ListEvidenceByMotorcycle(ctx, "moto-empty", "owner-789")
-
-	// Assert
-	assert.NoError(t, err)
-	assert.Empty(t, result)
-	mockEvidence.AssertExpectations(t)
-}
-
-func TestMockEvidenceInteractor_ListEvidenceByMotorcycle_MotorcycleNotFound(t *testing.T) {
-	// Arrange
-	mockEvidence := new(mocks.MockEvidenceInteractor)
-
-	mockEvidence.On("ListEvidenceByMotorcycle",
-		mock.Anything,
-		"moto-not-found",
-		"owner-789",
-	).Return(nil, domain.ErrMotorcycleNotFound)
-
-	// Act
-	ctx := context.Background()
-	result, err := mockEvidence.ListEvidenceByMotorcycle(ctx, "moto-not-found", "owner-789")
-
-	// Assert
-	assert.Error(t, err)
-	assert.Nil(t, result)
-	assert.Equal(t, domain.ErrMotorcycleNotFound, err)
-	mockEvidence.AssertExpectations(t)
-}
-
-// ============================================
-// DeleteEvidence Tests
-// ============================================
-
-func TestMockEvidenceInteractor_DeleteEvidence_Success(t *testing.T) {
-	// Arrange
-	mockEvidence := new(mocks.MockEvidenceInteractor)
-
-	mockEvidence.On("DeleteEvidence",
-		mock.Anything,
-		"evidence-123",
-		"owner-789",
-	).Return(nil)
-
-	// Act
-	ctx := context.Background()
-	err := mockEvidence.DeleteEvidence(ctx, "evidence-123", "owner-789")
-
-	// Assert
-	assert.NoError(t, err)
-	mockEvidence.AssertExpectations(t)
-}
-
-func TestMockEvidenceInteractor_DeleteEvidence_NotFound(t *testing.T) {
-	// Arrange
-	mockEvidence := new(mocks.MockEvidenceInteractor)
-
-	mockEvidence.On("DeleteEvidence",
-		mock.Anything,
-		"evidence-not-found",
-		"owner-789",
-	).Return(domain.ErrEvidenceNotFound)
-
-	// Act
-	ctx := context.Background()
-	err := mockEvidence.DeleteEvidence(ctx, "evidence-not-found", "owner-789")
-
-	// Assert
-	assert.Error(t, err)
-	assert.Equal(t, domain.ErrEvidenceNotFound, err)
-	mockEvidence.AssertExpectations(t)
-}
-
-func TestMockEvidenceInteractor_DeleteEvidence_NotOwner(t *testing.T) {
-	// Arrange
-	mockEvidence := new(mocks.MockEvidenceInteractor)
-
-	mockEvidence.On("DeleteEvidence",
-		mock.Anything,
-		"evidence-123",
-		"not-owner",
-	).Return(domain.ErrEvidenceNotFound) // Security: returns NotFound for non-owners
-
-	// Act
-	ctx := context.Background()
-	err := mockEvidence.DeleteEvidence(ctx, "evidence-123", "not-owner")
-
-	// Assert
-	assert.Error(t, err)
-	assert.Equal(t, domain.ErrEvidenceNotFound, err)
-	mockEvidence.AssertExpectations(t)
-}
-
-// ============================================
-// Interface Verification
-// ============================================
-
-func TestMockEvidenceInteractor_VerifyInterfaceImplementation(t *testing.T) {
-	// Verify MockEvidenceInteractor implements input.EvidenceInteractorInterface
-	mockEvidence := new(mocks.MockEvidenceInteractor)
-	assert.NotNil(t, mockEvidence)
-}
-
-func TestMockEvidenceInteractor_MultipleCalls(t *testing.T) {
-	// Arrange
-	mockEvidence := new(mocks.MockEvidenceInteractor)
-
-	angle := "FRONT"
-	evidences := []domain.MotorcycleEvidence{
-		{ID: "evidence-1", Angle: &angle, ImageURL: "https://storage/img.jpg"},
-	}
-
-	mockEvidence.On("ListEvidenceByMotorcycle",
-		mock.Anything,
-		"moto-456",
-		"owner-789",
-	).Return(evidences, nil).Times(2)
-
-	ctx := context.Background()
-
-	// First call
-	result1, err1 := mockEvidence.ListEvidenceByMotorcycle(ctx, "moto-456", "owner-789")
-	assert.NoError(t, err1)
-	assert.Len(t, result1, 1)
-
-	// Second call
-	result2, err2 := mockEvidence.ListEvidenceByMotorcycle(ctx, "moto-456", "owner-789")
-	assert.NoError(t, err2)
-	assert.Len(t, result2, 1)
-
-	mockEvidence.AssertExpectations(t)
+	mockEvidenceInteractor.AssertExpectations(t)
 }

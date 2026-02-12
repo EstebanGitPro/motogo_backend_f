@@ -121,12 +121,12 @@ func TestCreateMessage_ValidationError(t *testing.T) {
 	messageInteractor := interactor.NewMessageInteractor(mockService)
 
 	message := domain.Message{
-		// Missing required Code
+		Code:    "DUPLICATE_CODE",
 		Title:   "Test",
 		Content: "Test content",
 	}
 
-	validationError := domain.ErrMessageCodeRequired
+	validationError := domain.ErrMessageCodeDuplicate
 
 	// Mock expectations
 

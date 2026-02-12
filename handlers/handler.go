@@ -4,9 +4,9 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/core/interactor"
 	domain "github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/input"
+	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
 	"github.com/EstebanGitPro/motogo-backend/middleware"
 	messagingCache "github.com/EstebanGitPro/motogo-backend/platform/cache/messaging"
-	"github.com/EstebanGitPro/motogo-backend/platform/firebase"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 	"github.com/EstebanGitPro/motogo-backend/tools/idencoder"
 	"github.com/gin-gonic/gin"
@@ -22,7 +22,8 @@ type handler struct {
 	FranchiseInteractor  *interactor.FranchiseInteractor     // Franchise CRUD (HU26-29)
 	MotorcycleInteractor input.MotorcycleInteractorInterface // Motorcycle CRUD (interface for testing)
 	EvidenceInteractor   input.EvidenceInteractorInterface   // Evidence CRUD (HU16-19)
-	FirebaseClient       *firebase.Client                    // Firebase Auth
+	DiagnosticInteractor *interactor.DiagnosticInteractor    // Diagnostic CRUD (HU11-14)
+	FirebaseClient       output.CustomTokenProvider          // Firebase Auth
 	MessagingCache       *messagingCache.MessageCache
 	IDEncoder            *idencoder.HashidsEncoder
 	Response             *middleware.ResponseHandler
@@ -38,7 +39,8 @@ func New(
 	franchiseInteractor *interactor.FranchiseInteractor,
 	motorcycleInteractor *interactor.MotorcycleInteractor,
 	evidenceInteractor *interactor.EvidenceInteractor, // HU16-19
-	firebaseClient *firebase.Client,
+	diagnosticInteractor *interactor.DiagnosticInteractor, // HU11-14
+	firebaseClient output.CustomTokenProvider,
 	messageCache *messagingCache.MessageCache,
 	encoder *idencoder.HashidsEncoder,
 	responseHandler *middleware.ResponseHandler,
@@ -52,7 +54,8 @@ func New(
 		ServiceInteractor:    serviceInteractor,
 		FranchiseInteractor:  franchiseInteractor,
 		MotorcycleInteractor: motorcycleInteractor,
-		EvidenceInteractor:   evidenceInteractor, // HU16-19
+		EvidenceInteractor:   evidenceInteractor,   // HU16-19
+		DiagnosticInteractor: diagnosticInteractor, // HU11-14
 		FirebaseClient:       firebaseClient,
 		MessagingCache:       messageCache,
 		IDEncoder:            encoder,

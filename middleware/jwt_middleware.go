@@ -6,12 +6,13 @@ import (
 
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/input"
+	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
 	"github.com/EstebanGitPro/motogo-backend/platform/cache/messaging"
 	"github.com/EstebanGitPro/motogo-backend/platform/jwt"
 	"github.com/gin-gonic/gin"
 )
 
-func RequireAuth(personService input.Service, msgCache *messaging.MessageCache, jwtValidator *jwt.JWKSValidator) gin.HandlerFunc {
+func RequireAuth(personService input.Service, msgCache *messaging.MessageCache, jwtValidator output.JWTValidator) gin.HandlerFunc {
 	tokenParser := jwt.NewTokenParser()
 	_ = tokenParser
 

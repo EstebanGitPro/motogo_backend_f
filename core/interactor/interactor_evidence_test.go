@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"testing"
-	"time"
 
 	"github.com/EstebanGitPro/motogo-backend/core/interactor"
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
@@ -22,13 +21,17 @@ var (
 	testAngleFront   = domain.EvidenceAngleFrontal
 )
 
+// helper to create EvidenceInteractor with fresh mock service
+func setupEvidenceInteractor() (*interactor.EvidenceInteractor, *mocks.MockEvidenceService) {
+	svc := new(mocks.MockEvidenceService)
+	ei := interactor.NewEvidenceInteractor(svc)
+	return ei, svc
+}
+
 func TestNewEvidenceInteractor(t *testing.T) {
-	mockEvidenceRepo := new(mocks.MockEvidenceRepository)
-	mockMotorcycleRepo := new(mocks.MockMotorcycleRepository)
-
-	interactorInstance := interactor.NewEvidenceInteractor(mockEvidenceRepo, mockMotorcycleRepo)
-
-	assert.NotNil(t, interactorInstance)
+	svc := new(mocks.MockEvidenceService)
+	ei := interactor.NewEvidenceInteractor(svc)
+	assert.NotNil(t, ei)
 }
 
 // ============================================
@@ -36,245 +39,149 @@ func TestNewEvidenceInteractor(t *testing.T) {
 // ============================================
 
 func TestCreateEvidence_Success(t *testing.T) {
-	// Arrange
-	mockEvidenceRepo := new(mocks.MockEvidenceRepository)
-	mockMotorcycleRepo := new(mocks.MockMotorcycleRepository)
-
+	ctx := context.Background()
+	ei, svc := setupEvidenceInteractor()
 	mockTx := new(mocks.MockTx)
-
-	interactorInstance := interactor.NewEvidenceInteractor(mockEvidenceRepo, mockMotorcycleRepo)
-
-	motorcycle := &domain.Motorcycle{
-		ID:      testMotorcycleID,
-		OwnerID: testOwnerID,
-	}
 
 	evidence := &domain.MotorcycleEvidence{
 		ImageURL: testImageURL,
 		Angle:    &testAngleFront,
 	}
 
-	mockMotorcycleRepo.On("GetByID", mock.Anything, testMotorcycleID).Return(motorcycle, nil)
-	mockEvidenceRepo.On("CountByMotorcycleID", mock.Anything, testMotorcycleID).Return(2, nil)
-	mockEvidenceRepo.On("BeginTx", mock.Anything).Return(mockTx, nil)
-	mockEvidenceRepo.On("Save", mock.Anything, mockTx, mock.AnythingOfType("*domain.MotorcycleEvidence")).Return(nil)
+	created := &domain.MotorcycleEvidence{
+		ID:           "new-ev-id",
+		MotorcycleID: testMotorcycleID,
+		ImageURL:     testImageURL,
+		Angle:        &testAngleFront,
+	}
+
+	svc.On("ValidateMotorcycleOwnership", ctx, testMotorcycleID, testOwnerID).Return(&domain.Motorcycle{ID: testMotorcycleID, OwnerID: testOwnerID}, nil)
+	svc.On("CheckEvidenceLimit", ctx, testMotorcycleID).Return(nil)
+	svc.On("BeginTx", ctx).Return(mockTx, nil)
+	svc.On("CreateEvidence", ctx, mockTx, testMotorcycleID, evidence).Return(created, nil)
 	mockTx.On("Commit").Return(nil)
 
-	// Act
-	result, err := interactorInstance.CreateEvidence(context.Background(), testMotorcycleID, testOwnerID, evidence)
+	result, err := ei.CreateEvidence(ctx, testMotorcycleID, testOwnerID, evidence)
 
-	// Assert
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
-	assert.NotEmpty(t, result.ID)
+	assert.Equal(t, "new-ev-id", result.ID)
 	assert.Equal(t, testMotorcycleID, result.MotorcycleID)
-	assert.Equal(t, testImageURL, result.ImageURL)
-	mockMotorcycleRepo.AssertExpectations(t)
-	mockEvidenceRepo.AssertExpectations(t)
+	svc.AssertExpectations(t)
 	mockTx.AssertExpectations(t)
 }
 
 func TestCreateEvidence_MotorcycleNotFound(t *testing.T) {
-	// Arrange
-	mockEvidenceRepo := new(mocks.MockEvidenceRepository)
-	mockMotorcycleRepo := new(mocks.MockMotorcycleRepository)
+	ctx := context.Background()
+	ei, svc := setupEvidenceInteractor()
 
-	interactorInstance := interactor.NewEvidenceInteractor(mockEvidenceRepo, mockMotorcycleRepo)
+	svc.On("ValidateMotorcycleOwnership", ctx, testMotorcycleID, testOwnerID).Return(nil, domain.ErrMotorcycleNotFound)
 
-	evidence := &domain.MotorcycleEvidence{
-		ImageURL: testImageURL,
-	}
+	result, err := ei.CreateEvidence(ctx, testMotorcycleID, testOwnerID, &domain.MotorcycleEvidence{ImageURL: testImageURL})
 
-	mockMotorcycleRepo.On("GetByID", mock.Anything, testMotorcycleID).Return(nil, domain.ErrMotorcycleNotFound)
-
-	// Act
-	result, err := interactorInstance.CreateEvidence(context.Background(), testMotorcycleID, testOwnerID, evidence)
-
-	// Assert
 	assert.Error(t, err)
 	assert.Nil(t, result)
 	assert.Equal(t, domain.ErrMotorcycleNotFound, err)
 }
 
 func TestCreateEvidence_NotOwner(t *testing.T) {
-	// Arrange
-	mockEvidenceRepo := new(mocks.MockEvidenceRepository)
-	mockMotorcycleRepo := new(mocks.MockMotorcycleRepository)
+	ctx := context.Background()
+	ei, svc := setupEvidenceInteractor()
 
-	interactorInstance := interactor.NewEvidenceInteractor(mockEvidenceRepo, mockMotorcycleRepo)
+	svc.On("ValidateMotorcycleOwnership", ctx, testMotorcycleID, testOwnerID).Return(nil, domain.ErrMotorcycleNotFound)
 
-	motorcycle := &domain.Motorcycle{
-		ID:      testMotorcycleID,
-		OwnerID: "different-owner",
-	}
+	result, err := ei.CreateEvidence(ctx, testMotorcycleID, testOwnerID, &domain.MotorcycleEvidence{ImageURL: testImageURL})
 
-	evidence := &domain.MotorcycleEvidence{
-		ImageURL: testImageURL,
-	}
-
-	mockMotorcycleRepo.On("GetByID", mock.Anything, testMotorcycleID).Return(motorcycle, nil)
-
-	// Act
-	result, err := interactorInstance.CreateEvidence(context.Background(), testMotorcycleID, testOwnerID, evidence)
-
-	// Assert
 	assert.Error(t, err)
 	assert.Nil(t, result)
-	assert.Equal(t, domain.ErrMotorcycleNotFound, err) // Security by obscurity
+	assert.Equal(t, domain.ErrMotorcycleNotFound, err)
 }
 
-// NOTE: TestCreateEvidence_InvalidURL and TestCreateEvidence_InvalidAngle removed
-// These validations are now handled by JSON Schema middleware (create_evidence_schema.json)
-
 func TestCreateEvidence_LimitExceeded(t *testing.T) {
-	// Arrange
-	mockEvidenceRepo := new(mocks.MockEvidenceRepository)
-	mockMotorcycleRepo := new(mocks.MockMotorcycleRepository)
+	ctx := context.Background()
+	ei, svc := setupEvidenceInteractor()
 
-	interactorInstance := interactor.NewEvidenceInteractor(mockEvidenceRepo, mockMotorcycleRepo)
+	svc.On("ValidateMotorcycleOwnership", ctx, testMotorcycleID, testOwnerID).Return(&domain.Motorcycle{ID: testMotorcycleID, OwnerID: testOwnerID}, nil)
+	svc.On("CheckEvidenceLimit", ctx, testMotorcycleID).Return(domain.ErrEvidenceLimitExceeded)
 
-	motorcycle := &domain.Motorcycle{
-		ID:      testMotorcycleID,
-		OwnerID: testOwnerID,
-	}
+	result, err := ei.CreateEvidence(ctx, testMotorcycleID, testOwnerID, &domain.MotorcycleEvidence{ImageURL: testImageURL})
 
-	evidence := &domain.MotorcycleEvidence{
-		ImageURL: testImageURL,
-	}
-
-	mockMotorcycleRepo.On("GetByID", mock.Anything, testMotorcycleID).Return(motorcycle, nil)
-	mockEvidenceRepo.On("CountByMotorcycleID", mock.Anything, testMotorcycleID).Return(5, nil) // Already at limit
-
-	// Act
-	result, err := interactorInstance.CreateEvidence(context.Background(), testMotorcycleID, testOwnerID, evidence)
-
-	// Assert
 	assert.Error(t, err)
 	assert.Nil(t, result)
 	assert.Equal(t, domain.ErrEvidenceLimitExceeded, err)
 }
 
 func TestCreateEvidence_CountError(t *testing.T) {
-	// Arrange
-	mockEvidenceRepo := new(mocks.MockEvidenceRepository)
-	mockMotorcycleRepo := new(mocks.MockMotorcycleRepository)
+	ctx := context.Background()
+	ei, svc := setupEvidenceInteractor()
 
-	interactorInstance := interactor.NewEvidenceInteractor(mockEvidenceRepo, mockMotorcycleRepo)
+	svc.On("ValidateMotorcycleOwnership", ctx, testMotorcycleID, testOwnerID).Return(&domain.Motorcycle{ID: testMotorcycleID, OwnerID: testOwnerID}, nil)
+	svc.On("CheckEvidenceLimit", ctx, testMotorcycleID).Return(domain.ErrEvidenceCannotSave)
 
-	motorcycle := &domain.Motorcycle{
-		ID:      testMotorcycleID,
-		OwnerID: testOwnerID,
-	}
+	result, err := ei.CreateEvidence(ctx, testMotorcycleID, testOwnerID, &domain.MotorcycleEvidence{ImageURL: testImageURL})
 
-	evidence := &domain.MotorcycleEvidence{
-		ImageURL: testImageURL,
-	}
-
-	mockMotorcycleRepo.On("GetByID", mock.Anything, testMotorcycleID).Return(motorcycle, nil)
-	mockEvidenceRepo.On("CountByMotorcycleID", mock.Anything, testMotorcycleID).Return(0, errors.New("db error"))
-
-	// Act
-	result, err := interactorInstance.CreateEvidence(context.Background(), testMotorcycleID, testOwnerID, evidence)
-
-	// Assert
 	assert.Error(t, err)
 	assert.Nil(t, result)
 	assert.Equal(t, domain.ErrEvidenceCannotSave, err)
 }
 
 func TestCreateEvidence_BeginTxError(t *testing.T) {
-	// Arrange
-	mockEvidenceRepo := new(mocks.MockEvidenceRepository)
-	mockMotorcycleRepo := new(mocks.MockMotorcycleRepository)
+	ctx := context.Background()
+	ei, svc := setupEvidenceInteractor()
 
-	interactorInstance := interactor.NewEvidenceInteractor(mockEvidenceRepo, mockMotorcycleRepo)
+	svc.On("ValidateMotorcycleOwnership", ctx, testMotorcycleID, testOwnerID).Return(&domain.Motorcycle{ID: testMotorcycleID, OwnerID: testOwnerID}, nil)
+	svc.On("CheckEvidenceLimit", ctx, testMotorcycleID).Return(nil)
+	svc.On("BeginTx", ctx).Return(nil, errors.New("tx error"))
 
-	motorcycle := &domain.Motorcycle{
-		ID:      testMotorcycleID,
-		OwnerID: testOwnerID,
-	}
+	result, err := ei.CreateEvidence(ctx, testMotorcycleID, testOwnerID, &domain.MotorcycleEvidence{ImageURL: testImageURL})
 
-	evidence := &domain.MotorcycleEvidence{
-		ImageURL: testImageURL,
-	}
-
-	mockMotorcycleRepo.On("GetByID", mock.Anything, testMotorcycleID).Return(motorcycle, nil)
-	mockEvidenceRepo.On("CountByMotorcycleID", mock.Anything, testMotorcycleID).Return(2, nil)
-	mockEvidenceRepo.On("BeginTx", mock.Anything).Return(nil, errors.New("tx error"))
-
-	// Act
-	result, err := interactorInstance.CreateEvidence(context.Background(), testMotorcycleID, testOwnerID, evidence)
-
-	// Assert
 	assert.Error(t, err)
 	assert.Nil(t, result)
 	assert.Equal(t, domain.ErrEvidenceCannotSave, err)
 }
 
 func TestCreateEvidence_SaveError(t *testing.T) {
-	// Arrange
-	mockEvidenceRepo := new(mocks.MockEvidenceRepository)
-	mockMotorcycleRepo := new(mocks.MockMotorcycleRepository)
-
+	ctx := context.Background()
+	ei, svc := setupEvidenceInteractor()
 	mockTx := new(mocks.MockTx)
 
-	interactorInstance := interactor.NewEvidenceInteractor(mockEvidenceRepo, mockMotorcycleRepo)
+	evidence := &domain.MotorcycleEvidence{ImageURL: testImageURL}
 
-	motorcycle := &domain.Motorcycle{
-		ID:      testMotorcycleID,
-		OwnerID: testOwnerID,
-	}
-
-	evidence := &domain.MotorcycleEvidence{
-		ImageURL: testImageURL,
-	}
-
-	mockMotorcycleRepo.On("GetByID", mock.Anything, testMotorcycleID).Return(motorcycle, nil)
-	mockEvidenceRepo.On("CountByMotorcycleID", mock.Anything, testMotorcycleID).Return(2, nil)
-	mockEvidenceRepo.On("BeginTx", mock.Anything).Return(mockTx, nil)
-	mockEvidenceRepo.On("Save", mock.Anything, mockTx, mock.AnythingOfType("*domain.MotorcycleEvidence")).Return(errors.New("save error"))
+	svc.On("ValidateMotorcycleOwnership", ctx, testMotorcycleID, testOwnerID).Return(&domain.Motorcycle{ID: testMotorcycleID, OwnerID: testOwnerID}, nil)
+	svc.On("CheckEvidenceLimit", ctx, testMotorcycleID).Return(nil)
+	svc.On("BeginTx", ctx).Return(mockTx, nil)
+	svc.On("CreateEvidence", ctx, mockTx, testMotorcycleID, evidence).Return(nil, domain.ErrEvidenceCannotSave)
 	mockTx.On("Rollback").Return(nil)
 
-	// Act
-	result, err := interactorInstance.CreateEvidence(context.Background(), testMotorcycleID, testOwnerID, evidence)
+	result, err := ei.CreateEvidence(ctx, testMotorcycleID, testOwnerID, evidence)
 
-	// Assert
 	assert.Error(t, err)
 	assert.Nil(t, result)
 	assert.Equal(t, domain.ErrEvidenceCannotSave, err)
+	mockTx.AssertCalled(t, "Rollback")
 }
 
 func TestCreateEvidence_CommitError(t *testing.T) {
-	// Arrange
-	mockEvidenceRepo := new(mocks.MockEvidenceRepository)
-	mockMotorcycleRepo := new(mocks.MockMotorcycleRepository)
-
+	ctx := context.Background()
+	ei, svc := setupEvidenceInteractor()
 	mockTx := new(mocks.MockTx)
 
-	interactorInstance := interactor.NewEvidenceInteractor(mockEvidenceRepo, mockMotorcycleRepo)
+	evidence := &domain.MotorcycleEvidence{ImageURL: testImageURL}
+	created := &domain.MotorcycleEvidence{ID: "ev-1", MotorcycleID: testMotorcycleID}
 
-	motorcycle := &domain.Motorcycle{
-		ID:      testMotorcycleID,
-		OwnerID: testOwnerID,
-	}
-
-	evidence := &domain.MotorcycleEvidence{
-		ImageURL: testImageURL,
-	}
-
-	mockMotorcycleRepo.On("GetByID", mock.Anything, testMotorcycleID).Return(motorcycle, nil)
-	mockEvidenceRepo.On("CountByMotorcycleID", mock.Anything, testMotorcycleID).Return(2, nil)
-	mockEvidenceRepo.On("BeginTx", mock.Anything).Return(mockTx, nil)
-	mockEvidenceRepo.On("Save", mock.Anything, mockTx, mock.AnythingOfType("*domain.MotorcycleEvidence")).Return(nil)
+	svc.On("ValidateMotorcycleOwnership", ctx, testMotorcycleID, testOwnerID).Return(&domain.Motorcycle{ID: testMotorcycleID, OwnerID: testOwnerID}, nil)
+	svc.On("CheckEvidenceLimit", ctx, testMotorcycleID).Return(nil)
+	svc.On("BeginTx", ctx).Return(mockTx, nil)
+	svc.On("CreateEvidence", ctx, mockTx, testMotorcycleID, evidence).Return(created, nil)
 	mockTx.On("Commit").Return(errors.New("commit error"))
+	mockTx.On("Rollback").Return(nil)
 
-	// Act
-	result, err := interactorInstance.CreateEvidence(context.Background(), testMotorcycleID, testOwnerID, evidence)
+	result, err := ei.CreateEvidence(ctx, testMotorcycleID, testOwnerID, evidence)
 
-	// Assert
 	assert.Error(t, err)
 	assert.Nil(t, result)
 	assert.Equal(t, domain.ErrEvidenceCannotSave, err)
+	mockTx.AssertCalled(t, "Rollback")
 }
 
 // ============================================
@@ -282,79 +189,53 @@ func TestCreateEvidence_CommitError(t *testing.T) {
 // ============================================
 
 func TestGetEvidenceByID_Success(t *testing.T) {
-	// Arrange
-	mockEvidenceRepo := new(mocks.MockEvidenceRepository)
-	mockMotorcycleRepo := new(mocks.MockMotorcycleRepository)
-
-	interactorInstance := interactor.NewEvidenceInteractor(mockEvidenceRepo, mockMotorcycleRepo)
+	ctx := context.Background()
+	ei, svc := setupEvidenceInteractor()
 
 	evidence := &domain.MotorcycleEvidence{
 		ID:           testEvidenceID,
 		MotorcycleID: testMotorcycleID,
 		ImageURL:     testImageURL,
-		CreatedAt:    time.Now(),
 	}
 
-	motorcycle := &domain.Motorcycle{
-		ID:      testMotorcycleID,
-		OwnerID: testOwnerID,
-	}
+	svc.On("GetByID", ctx, testEvidenceID).Return(evidence, nil)
+	svc.On("ValidateMotorcycleOwnership", ctx, testMotorcycleID, testOwnerID).Return(&domain.Motorcycle{ID: testMotorcycleID, OwnerID: testOwnerID}, nil)
 
-	mockEvidenceRepo.On("GetByID", mock.Anything, testEvidenceID).Return(evidence, nil)
-	mockMotorcycleRepo.On("GetByID", mock.Anything, testMotorcycleID).Return(motorcycle, nil)
+	result, err := ei.GetEvidenceByID(ctx, testEvidenceID, testOwnerID)
 
-	// Act
-	result, err := interactorInstance.GetEvidenceByID(context.Background(), testEvidenceID, testOwnerID)
-
-	// Assert
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, testEvidenceID, result.ID)
+	svc.AssertExpectations(t)
 }
 
 func TestGetEvidenceByID_NotFound(t *testing.T) {
-	// Arrange
-	mockEvidenceRepo := new(mocks.MockEvidenceRepository)
-	mockMotorcycleRepo := new(mocks.MockMotorcycleRepository)
+	ctx := context.Background()
+	ei, svc := setupEvidenceInteractor()
 
-	interactorInstance := interactor.NewEvidenceInteractor(mockEvidenceRepo, mockMotorcycleRepo)
+	svc.On("GetByID", ctx, testEvidenceID).Return(nil, domain.ErrEvidenceNotFound)
 
-	mockEvidenceRepo.On("GetByID", mock.Anything, testEvidenceID).Return(nil, domain.ErrEvidenceNotFound)
+	result, err := ei.GetEvidenceByID(ctx, testEvidenceID, testOwnerID)
 
-	// Act
-	result, err := interactorInstance.GetEvidenceByID(context.Background(), testEvidenceID, testOwnerID)
-
-	// Assert
 	assert.Error(t, err)
 	assert.Nil(t, result)
 	assert.Equal(t, domain.ErrEvidenceNotFound, err)
 }
 
 func TestGetEvidenceByID_NotOwner(t *testing.T) {
-	// Arrange
-	mockEvidenceRepo := new(mocks.MockEvidenceRepository)
-	mockMotorcycleRepo := new(mocks.MockMotorcycleRepository)
-
-	interactorInstance := interactor.NewEvidenceInteractor(mockEvidenceRepo, mockMotorcycleRepo)
+	ctx := context.Background()
+	ei, svc := setupEvidenceInteractor()
 
 	evidence := &domain.MotorcycleEvidence{
 		ID:           testEvidenceID,
 		MotorcycleID: testMotorcycleID,
-		ImageURL:     testImageURL,
 	}
 
-	motorcycle := &domain.Motorcycle{
-		ID:      testMotorcycleID,
-		OwnerID: "different-owner",
-	}
+	svc.On("GetByID", ctx, testEvidenceID).Return(evidence, nil)
+	svc.On("ValidateMotorcycleOwnership", ctx, testMotorcycleID, testOwnerID).Return(nil, domain.ErrMotorcycleNotFound)
 
-	mockEvidenceRepo.On("GetByID", mock.Anything, testEvidenceID).Return(evidence, nil)
-	mockMotorcycleRepo.On("GetByID", mock.Anything, testMotorcycleID).Return(motorcycle, nil)
+	result, err := ei.GetEvidenceByID(ctx, testEvidenceID, testOwnerID)
 
-	// Act
-	result, err := interactorInstance.GetEvidenceByID(context.Background(), testEvidenceID, testOwnerID)
-
-	// Assert
 	assert.Error(t, err)
 	assert.Nil(t, result)
 	assert.Equal(t, domain.ErrEvidenceNotFound, err) // Security by obscurity
@@ -365,93 +246,59 @@ func TestGetEvidenceByID_NotOwner(t *testing.T) {
 // ============================================
 
 func TestListEvidenceByMotorcycle_Success(t *testing.T) {
-	// Arrange
-	mockEvidenceRepo := new(mocks.MockEvidenceRepository)
-	mockMotorcycleRepo := new(mocks.MockMotorcycleRepository)
-
-	interactorInstance := interactor.NewEvidenceInteractor(mockEvidenceRepo, mockMotorcycleRepo)
-
-	motorcycle := &domain.Motorcycle{
-		ID:      testMotorcycleID,
-		OwnerID: testOwnerID,
-	}
+	ctx := context.Background()
+	ei, svc := setupEvidenceInteractor()
 
 	evidences := []domain.MotorcycleEvidence{
 		{ID: testEvidenceID, MotorcycleID: testMotorcycleID, ImageURL: testImageURL},
 		{ID: "evidence-2", MotorcycleID: testMotorcycleID, ImageURL: testImageURL},
 	}
 
-	mockMotorcycleRepo.On("GetByID", mock.Anything, testMotorcycleID).Return(motorcycle, nil)
-	mockEvidenceRepo.On("GetByMotorcycleID", mock.Anything, testMotorcycleID).Return(evidences, nil)
+	svc.On("ValidateMotorcycleOwnership", ctx, testMotorcycleID, testOwnerID).Return(&domain.Motorcycle{ID: testMotorcycleID, OwnerID: testOwnerID}, nil)
+	svc.On("GetByMotorcycleID", ctx, testMotorcycleID).Return(evidences, nil)
 
-	// Act
-	result, err := interactorInstance.ListEvidenceByMotorcycle(context.Background(), testMotorcycleID, testOwnerID)
+	result, err := ei.ListEvidenceByMotorcycle(ctx, testMotorcycleID, testOwnerID)
 
-	// Assert
 	assert.NoError(t, err)
 	assert.Len(t, result, 2)
+	svc.AssertExpectations(t)
 }
 
 func TestListEvidenceByMotorcycle_MotorcycleNotFound(t *testing.T) {
-	// Arrange
-	mockEvidenceRepo := new(mocks.MockEvidenceRepository)
-	mockMotorcycleRepo := new(mocks.MockMotorcycleRepository)
+	ctx := context.Background()
+	ei, svc := setupEvidenceInteractor()
 
-	interactorInstance := interactor.NewEvidenceInteractor(mockEvidenceRepo, mockMotorcycleRepo)
+	svc.On("ValidateMotorcycleOwnership", ctx, testMotorcycleID, testOwnerID).Return(nil, domain.ErrMotorcycleNotFound)
 
-	mockMotorcycleRepo.On("GetByID", mock.Anything, testMotorcycleID).Return(nil, domain.ErrMotorcycleNotFound)
+	result, err := ei.ListEvidenceByMotorcycle(ctx, testMotorcycleID, testOwnerID)
 
-	// Act
-	result, err := interactorInstance.ListEvidenceByMotorcycle(context.Background(), testMotorcycleID, testOwnerID)
-
-	// Assert
 	assert.Error(t, err)
 	assert.Nil(t, result)
 	assert.Equal(t, domain.ErrMotorcycleNotFound, err)
 }
 
 func TestListEvidenceByMotorcycle_NotOwner(t *testing.T) {
-	// Arrange
-	mockEvidenceRepo := new(mocks.MockEvidenceRepository)
-	mockMotorcycleRepo := new(mocks.MockMotorcycleRepository)
+	ctx := context.Background()
+	ei, svc := setupEvidenceInteractor()
 
-	interactorInstance := interactor.NewEvidenceInteractor(mockEvidenceRepo, mockMotorcycleRepo)
+	svc.On("ValidateMotorcycleOwnership", ctx, testMotorcycleID, testOwnerID).Return(nil, domain.ErrMotorcycleNotFound)
 
-	motorcycle := &domain.Motorcycle{
-		ID:      testMotorcycleID,
-		OwnerID: "different-owner",
-	}
+	result, err := ei.ListEvidenceByMotorcycle(ctx, testMotorcycleID, testOwnerID)
 
-	mockMotorcycleRepo.On("GetByID", mock.Anything, testMotorcycleID).Return(motorcycle, nil)
-
-	// Act
-	result, err := interactorInstance.ListEvidenceByMotorcycle(context.Background(), testMotorcycleID, testOwnerID)
-
-	// Assert
 	assert.Error(t, err)
 	assert.Nil(t, result)
 	assert.Equal(t, domain.ErrMotorcycleNotFound, err)
 }
 
 func TestListEvidenceByMotorcycle_EmptyList(t *testing.T) {
-	// Arrange
-	mockEvidenceRepo := new(mocks.MockEvidenceRepository)
-	mockMotorcycleRepo := new(mocks.MockMotorcycleRepository)
+	ctx := context.Background()
+	ei, svc := setupEvidenceInteractor()
 
-	interactorInstance := interactor.NewEvidenceInteractor(mockEvidenceRepo, mockMotorcycleRepo)
+	svc.On("ValidateMotorcycleOwnership", ctx, testMotorcycleID, testOwnerID).Return(&domain.Motorcycle{ID: testMotorcycleID, OwnerID: testOwnerID}, nil)
+	svc.On("GetByMotorcycleID", ctx, testMotorcycleID).Return([]domain.MotorcycleEvidence{}, nil)
 
-	motorcycle := &domain.Motorcycle{
-		ID:      testMotorcycleID,
-		OwnerID: testOwnerID,
-	}
+	result, err := ei.ListEvidenceByMotorcycle(ctx, testMotorcycleID, testOwnerID)
 
-	mockMotorcycleRepo.On("GetByID", mock.Anything, testMotorcycleID).Return(motorcycle, nil)
-	mockEvidenceRepo.On("GetByMotorcycleID", mock.Anything, testMotorcycleID).Return([]domain.MotorcycleEvidence{}, nil)
-
-	// Act
-	result, err := interactorInstance.ListEvidenceByMotorcycle(context.Background(), testMotorcycleID, testOwnerID)
-
-	// Assert
 	assert.NoError(t, err)
 	assert.Empty(t, result)
 }
@@ -461,13 +308,9 @@ func TestListEvidenceByMotorcycle_EmptyList(t *testing.T) {
 // ============================================
 
 func TestDeleteEvidence_Success(t *testing.T) {
-	// Arrange
-	mockEvidenceRepo := new(mocks.MockEvidenceRepository)
-	mockMotorcycleRepo := new(mocks.MockMotorcycleRepository)
-
+	ctx := context.Background()
+	ei, svc := setupEvidenceInteractor()
 	mockTx := new(mocks.MockTx)
-
-	interactorInstance := interactor.NewEvidenceInteractor(mockEvidenceRepo, mockMotorcycleRepo)
 
 	evidence := &domain.MotorcycleEvidence{
 		ID:           testEvidenceID,
@@ -475,164 +318,120 @@ func TestDeleteEvidence_Success(t *testing.T) {
 		ImageURL:     testImageURL,
 	}
 
-	motorcycle := &domain.Motorcycle{
-		ID:      testMotorcycleID,
-		OwnerID: testOwnerID,
-	}
-
-	mockEvidenceRepo.On("GetByID", mock.Anything, testEvidenceID).Return(evidence, nil)
-	mockMotorcycleRepo.On("GetByID", mock.Anything, testMotorcycleID).Return(motorcycle, nil)
-	mockEvidenceRepo.On("BeginTx", mock.Anything).Return(mockTx, nil)
-	mockEvidenceRepo.On("Delete", mock.Anything, mockTx, testEvidenceID).Return(nil)
+	svc.On("GetByID", ctx, testEvidenceID).Return(evidence, nil)
+	svc.On("ValidateMotorcycleOwnership", ctx, testMotorcycleID, testOwnerID).Return(&domain.Motorcycle{ID: testMotorcycleID, OwnerID: testOwnerID}, nil)
+	svc.On("DeleteStorageFile", ctx, testImageURL).Return()
+	svc.On("BeginTx", ctx).Return(mockTx, nil)
+	svc.On("DeleteEvidence", ctx, mockTx, testEvidenceID).Return(nil)
 	mockTx.On("Commit").Return(nil)
 
-	// Act
-	err := interactorInstance.DeleteEvidence(context.Background(), testEvidenceID, testOwnerID)
+	err := ei.DeleteEvidence(ctx, testEvidenceID, testOwnerID)
 
-	// Assert
 	assert.NoError(t, err)
-	mockEvidenceRepo.AssertExpectations(t)
+	svc.AssertExpectations(t)
 	mockTx.AssertExpectations(t)
 }
 
 func TestDeleteEvidence_NotFound(t *testing.T) {
-	// Arrange
-	mockEvidenceRepo := new(mocks.MockEvidenceRepository)
-	mockMotorcycleRepo := new(mocks.MockMotorcycleRepository)
+	ctx := context.Background()
+	ei, svc := setupEvidenceInteractor()
 
-	interactorInstance := interactor.NewEvidenceInteractor(mockEvidenceRepo, mockMotorcycleRepo)
+	svc.On("GetByID", ctx, testEvidenceID).Return(nil, domain.ErrEvidenceNotFound)
 
-	mockEvidenceRepo.On("GetByID", mock.Anything, testEvidenceID).Return(nil, domain.ErrEvidenceNotFound)
+	err := ei.DeleteEvidence(ctx, testEvidenceID, testOwnerID)
 
-	// Act
-	err := interactorInstance.DeleteEvidence(context.Background(), testEvidenceID, testOwnerID)
-
-	// Assert
 	assert.Error(t, err)
 	assert.Equal(t, domain.ErrEvidenceNotFound, err)
 }
 
 func TestDeleteEvidence_NotOwner(t *testing.T) {
-	// Arrange
-	mockEvidenceRepo := new(mocks.MockEvidenceRepository)
-	mockMotorcycleRepo := new(mocks.MockMotorcycleRepository)
-
-	interactorInstance := interactor.NewEvidenceInteractor(mockEvidenceRepo, mockMotorcycleRepo)
+	ctx := context.Background()
+	ei, svc := setupEvidenceInteractor()
 
 	evidence := &domain.MotorcycleEvidence{
 		ID:           testEvidenceID,
 		MotorcycleID: testMotorcycleID,
 	}
 
-	motorcycle := &domain.Motorcycle{
-		ID:      testMotorcycleID,
-		OwnerID: "different-owner",
-	}
+	svc.On("GetByID", ctx, testEvidenceID).Return(evidence, nil)
+	svc.On("ValidateMotorcycleOwnership", ctx, testMotorcycleID, testOwnerID).Return(nil, domain.ErrMotorcycleNotFound)
 
-	mockEvidenceRepo.On("GetByID", mock.Anything, testEvidenceID).Return(evidence, nil)
-	mockMotorcycleRepo.On("GetByID", mock.Anything, testMotorcycleID).Return(motorcycle, nil)
+	err := ei.DeleteEvidence(ctx, testEvidenceID, testOwnerID)
 
-	// Act
-	err := interactorInstance.DeleteEvidence(context.Background(), testEvidenceID, testOwnerID)
-
-	// Assert
 	assert.Error(t, err)
 	assert.Equal(t, domain.ErrEvidenceNotFound, err)
 }
 
 func TestDeleteEvidence_BeginTxError(t *testing.T) {
-	// Arrange
-	mockEvidenceRepo := new(mocks.MockEvidenceRepository)
-	mockMotorcycleRepo := new(mocks.MockMotorcycleRepository)
-
-	interactorInstance := interactor.NewEvidenceInteractor(mockEvidenceRepo, mockMotorcycleRepo)
+	ctx := context.Background()
+	ei, svc := setupEvidenceInteractor()
 
 	evidence := &domain.MotorcycleEvidence{
 		ID:           testEvidenceID,
 		MotorcycleID: testMotorcycleID,
+		ImageURL:     testImageURL,
 	}
 
-	motorcycle := &domain.Motorcycle{
-		ID:      testMotorcycleID,
-		OwnerID: testOwnerID,
-	}
+	svc.On("GetByID", ctx, testEvidenceID).Return(evidence, nil)
+	svc.On("ValidateMotorcycleOwnership", ctx, testMotorcycleID, testOwnerID).Return(&domain.Motorcycle{ID: testMotorcycleID, OwnerID: testOwnerID}, nil)
+	svc.On("DeleteStorageFile", ctx, testImageURL).Return()
+	svc.On("BeginTx", ctx).Return(nil, errors.New("tx error"))
 
-	mockEvidenceRepo.On("GetByID", mock.Anything, testEvidenceID).Return(evidence, nil)
-	mockMotorcycleRepo.On("GetByID", mock.Anything, testMotorcycleID).Return(motorcycle, nil)
-	mockEvidenceRepo.On("BeginTx", mock.Anything).Return(nil, errors.New("tx error"))
+	err := ei.DeleteEvidence(ctx, testEvidenceID, testOwnerID)
 
-	// Act
-	err := interactorInstance.DeleteEvidence(context.Background(), testEvidenceID, testOwnerID)
-
-	// Assert
 	assert.Error(t, err)
 	assert.Equal(t, domain.ErrEvidenceCannotDelete, err)
 }
 
 func TestDeleteEvidence_DeleteError(t *testing.T) {
-	// Arrange
-	mockEvidenceRepo := new(mocks.MockEvidenceRepository)
-	mockMotorcycleRepo := new(mocks.MockMotorcycleRepository)
-
+	ctx := context.Background()
+	ei, svc := setupEvidenceInteractor()
 	mockTx := new(mocks.MockTx)
-
-	interactorInstance := interactor.NewEvidenceInteractor(mockEvidenceRepo, mockMotorcycleRepo)
 
 	evidence := &domain.MotorcycleEvidence{
 		ID:           testEvidenceID,
 		MotorcycleID: testMotorcycleID,
+		ImageURL:     testImageURL,
 	}
 
-	motorcycle := &domain.Motorcycle{
-		ID:      testMotorcycleID,
-		OwnerID: testOwnerID,
-	}
-
-	mockEvidenceRepo.On("GetByID", mock.Anything, testEvidenceID).Return(evidence, nil)
-	mockMotorcycleRepo.On("GetByID", mock.Anything, testMotorcycleID).Return(motorcycle, nil)
-	mockEvidenceRepo.On("BeginTx", mock.Anything).Return(mockTx, nil)
-	mockEvidenceRepo.On("Delete", mock.Anything, mockTx, testEvidenceID).Return(errors.New("delete error"))
+	svc.On("GetByID", ctx, testEvidenceID).Return(evidence, nil)
+	svc.On("ValidateMotorcycleOwnership", ctx, testMotorcycleID, testOwnerID).Return(&domain.Motorcycle{ID: testMotorcycleID, OwnerID: testOwnerID}, nil)
+	svc.On("DeleteStorageFile", ctx, testImageURL).Return()
+	svc.On("BeginTx", ctx).Return(mockTx, nil)
+	svc.On("DeleteEvidence", ctx, mockTx, testEvidenceID).Return(domain.ErrEvidenceCannotDelete)
 	mockTx.On("Rollback").Return(nil)
 
-	// Act
-	err := interactorInstance.DeleteEvidence(context.Background(), testEvidenceID, testOwnerID)
+	err := ei.DeleteEvidence(ctx, testEvidenceID, testOwnerID)
 
-	// Assert
 	assert.Error(t, err)
 	assert.Equal(t, domain.ErrEvidenceCannotDelete, err)
+	mockTx.AssertCalled(t, "Rollback")
 }
 
 func TestDeleteEvidence_CommitError(t *testing.T) {
-	// Arrange
-	mockEvidenceRepo := new(mocks.MockEvidenceRepository)
-	mockMotorcycleRepo := new(mocks.MockMotorcycleRepository)
-
+	ctx := context.Background()
+	ei, svc := setupEvidenceInteractor()
 	mockTx := new(mocks.MockTx)
-
-	interactorInstance := interactor.NewEvidenceInteractor(mockEvidenceRepo, mockMotorcycleRepo)
 
 	evidence := &domain.MotorcycleEvidence{
 		ID:           testEvidenceID,
 		MotorcycleID: testMotorcycleID,
+		ImageURL:     testImageURL,
 	}
 
-	motorcycle := &domain.Motorcycle{
-		ID:      testMotorcycleID,
-		OwnerID: testOwnerID,
-	}
-
-	mockEvidenceRepo.On("GetByID", mock.Anything, testEvidenceID).Return(evidence, nil)
-	mockMotorcycleRepo.On("GetByID", mock.Anything, testMotorcycleID).Return(motorcycle, nil)
-	mockEvidenceRepo.On("BeginTx", mock.Anything).Return(mockTx, nil)
-	mockEvidenceRepo.On("Delete", mock.Anything, mockTx, testEvidenceID).Return(nil)
+	svc.On("GetByID", ctx, testEvidenceID).Return(evidence, nil)
+	svc.On("ValidateMotorcycleOwnership", ctx, testMotorcycleID, testOwnerID).Return(&domain.Motorcycle{ID: testMotorcycleID, OwnerID: testOwnerID}, nil)
+	svc.On("DeleteStorageFile", ctx, testImageURL).Return()
+	svc.On("BeginTx", ctx).Return(mockTx, nil)
+	svc.On("DeleteEvidence", ctx, mockTx, testEvidenceID).Return(nil)
 	mockTx.On("Commit").Return(errors.New("commit error"))
+	mockTx.On("Rollback").Return(nil)
 
-	// Act
-	err := interactorInstance.DeleteEvidence(context.Background(), testEvidenceID, testOwnerID)
+	err := ei.DeleteEvidence(ctx, testEvidenceID, testOwnerID)
 
-	// Assert
 	assert.Error(t, err)
 	assert.Equal(t, domain.ErrEvidenceCannotDelete, err)
+	mockTx.AssertCalled(t, "Rollback")
 }
 
 // ============================================
@@ -640,218 +439,169 @@ func TestDeleteEvidence_CommitError(t *testing.T) {
 // ============================================
 
 func TestUpdateEvidence_Success(t *testing.T) {
-	// Arrange
-	mockEvidenceRepo := new(mocks.MockEvidenceRepository)
-	mockMotorcycleRepo := new(mocks.MockMotorcycleRepository)
+	ctx := context.Background()
+	ei, svc := setupEvidenceInteractor()
 	mockTx := new(mocks.MockTx)
 
-	interactorInstance := interactor.NewEvidenceInteractor(mockEvidenceRepo, mockMotorcycleRepo)
-
-	existingEvidence := &domain.MotorcycleEvidence{
+	existing := &domain.MotorcycleEvidence{
 		ID:           testEvidenceID,
 		MotorcycleID: testMotorcycleID,
 		ImageURL:     testImageURL,
 		Angle:        &testAngleFront,
 	}
 
-	motorcycle := &domain.Motorcycle{
-		ID:      testMotorcycleID,
-		OwnerID: testOwnerID,
-	}
-
 	newAngle := domain.EvidenceAngleLateral
-	updates := &domain.MotorcycleEvidence{
-		Angle: &newAngle,
-	}
+	updates := &domain.MotorcycleEvidence{Angle: &newAngle}
 
-	mockEvidenceRepo.On("GetByID", mock.Anything, testEvidenceID).Return(existingEvidence, nil)
-	mockMotorcycleRepo.On("GetByID", mock.Anything, testMotorcycleID).Return(motorcycle, nil)
-	mockEvidenceRepo.On("BeginTx", mock.Anything).Return(mockTx, nil)
-	mockEvidenceRepo.On("Update", mock.Anything, mockTx, mock.AnythingOfType("*domain.MotorcycleEvidence")).Return(nil)
+	svc.On("GetByID", ctx, testEvidenceID).Return(existing, nil)
+	svc.On("ValidateMotorcycleOwnership", ctx, testMotorcycleID, testOwnerID).Return(&domain.Motorcycle{ID: testMotorcycleID, OwnerID: testOwnerID}, nil)
+	svc.On("ApplyUpdatesAndCleanup", ctx, existing, updates).Return()
+	svc.On("BeginTx", ctx).Return(mockTx, nil)
+	svc.On("UpdateEvidence", ctx, mockTx, existing).Return(nil)
 	mockTx.On("Commit").Return(nil)
 
-	// Act
-	result, err := interactorInstance.UpdateEvidence(context.Background(), testEvidenceID, testOwnerID, updates)
+	result, err := ei.UpdateEvidence(ctx, testEvidenceID, testOwnerID, updates)
 
-	// Assert
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, testEvidenceID, result.ID)
-	mockEvidenceRepo.AssertExpectations(t)
+	svc.AssertExpectations(t)
 	mockTx.AssertExpectations(t)
 }
 
 func TestUpdateEvidence_NotFound(t *testing.T) {
-	// Arrange
-	mockEvidenceRepo := new(mocks.MockEvidenceRepository)
-	mockMotorcycleRepo := new(mocks.MockMotorcycleRepository)
+	ctx := context.Background()
+	ei, svc := setupEvidenceInteractor()
 
-	interactorInstance := interactor.NewEvidenceInteractor(mockEvidenceRepo, mockMotorcycleRepo)
+	svc.On("GetByID", ctx, testEvidenceID).Return(nil, domain.ErrEvidenceNotFound)
 
-	updates := &domain.MotorcycleEvidence{
-		ImageURL: "https://new-url.com/image.jpg",
-	}
+	result, err := ei.UpdateEvidence(ctx, testEvidenceID, testOwnerID, &domain.MotorcycleEvidence{})
 
-	mockEvidenceRepo.On("GetByID", mock.Anything, testEvidenceID).Return(nil, domain.ErrEvidenceNotFound)
-
-	// Act
-	result, err := interactorInstance.UpdateEvidence(context.Background(), testEvidenceID, testOwnerID, updates)
-
-	// Assert
 	assert.Error(t, err)
 	assert.Nil(t, result)
 	assert.Equal(t, domain.ErrEvidenceNotFound, err)
 }
 
 func TestUpdateEvidence_NotOwner(t *testing.T) {
-	// Arrange
-	mockEvidenceRepo := new(mocks.MockEvidenceRepository)
-	mockMotorcycleRepo := new(mocks.MockMotorcycleRepository)
+	ctx := context.Background()
+	ei, svc := setupEvidenceInteractor()
 
-	interactorInstance := interactor.NewEvidenceInteractor(mockEvidenceRepo, mockMotorcycleRepo)
-
-	evidence := &domain.MotorcycleEvidence{
+	existing := &domain.MotorcycleEvidence{
 		ID:           testEvidenceID,
 		MotorcycleID: testMotorcycleID,
 	}
 
-	motorcycle := &domain.Motorcycle{
-		ID:      testMotorcycleID,
-		OwnerID: "different-owner",
-	}
+	svc.On("GetByID", ctx, testEvidenceID).Return(existing, nil)
+	svc.On("ValidateMotorcycleOwnership", ctx, testMotorcycleID, testOwnerID).Return(nil, domain.ErrMotorcycleNotFound)
 
-	updates := &domain.MotorcycleEvidence{}
+	result, err := ei.UpdateEvidence(ctx, testEvidenceID, testOwnerID, &domain.MotorcycleEvidence{})
 
-	mockEvidenceRepo.On("GetByID", mock.Anything, testEvidenceID).Return(evidence, nil)
-	mockMotorcycleRepo.On("GetByID", mock.Anything, testMotorcycleID).Return(motorcycle, nil)
-
-	// Act
-	result, err := interactorInstance.UpdateEvidence(context.Background(), testEvidenceID, testOwnerID, updates)
-
-	// Assert
 	assert.Error(t, err)
 	assert.Nil(t, result)
 	assert.Equal(t, domain.ErrEvidenceNotFound, err) // Security by obscurity
 }
 
 func TestUpdateEvidence_BeginTxError(t *testing.T) {
-	// Arrange
-	mockEvidenceRepo := new(mocks.MockEvidenceRepository)
-	mockMotorcycleRepo := new(mocks.MockMotorcycleRepository)
+	ctx := context.Background()
+	ei, svc := setupEvidenceInteractor()
 
-	interactorInstance := interactor.NewEvidenceInteractor(mockEvidenceRepo, mockMotorcycleRepo)
-
-	evidence := &domain.MotorcycleEvidence{
+	existing := &domain.MotorcycleEvidence{
 		ID:           testEvidenceID,
 		MotorcycleID: testMotorcycleID,
 	}
 
-	motorcycle := &domain.Motorcycle{
-		ID:      testMotorcycleID,
-		OwnerID: testOwnerID,
-	}
+	svc.On("GetByID", ctx, testEvidenceID).Return(existing, nil)
+	svc.On("ValidateMotorcycleOwnership", ctx, testMotorcycleID, testOwnerID).Return(&domain.Motorcycle{ID: testMotorcycleID, OwnerID: testOwnerID}, nil)
+	svc.On("ApplyUpdatesAndCleanup", ctx, existing, mock.Anything).Return()
+	svc.On("BeginTx", ctx).Return(nil, errors.New("tx error"))
 
-	updates := &domain.MotorcycleEvidence{}
+	result, err := ei.UpdateEvidence(ctx, testEvidenceID, testOwnerID, &domain.MotorcycleEvidence{})
 
-	mockEvidenceRepo.On("GetByID", mock.Anything, testEvidenceID).Return(evidence, nil)
-	mockMotorcycleRepo.On("GetByID", mock.Anything, testMotorcycleID).Return(motorcycle, nil)
-	mockEvidenceRepo.On("BeginTx", mock.Anything).Return(nil, errors.New("tx error"))
-
-	// Act
-	result, err := interactorInstance.UpdateEvidence(context.Background(), testEvidenceID, testOwnerID, updates)
-
-	// Assert
 	assert.Error(t, err)
 	assert.Nil(t, result)
 	assert.Equal(t, domain.ErrEvidenceCannotUpdate, err)
 }
 
 func TestUpdateEvidence_UpdateError(t *testing.T) {
-	// Arrange
-	mockEvidenceRepo := new(mocks.MockEvidenceRepository)
-	mockMotorcycleRepo := new(mocks.MockMotorcycleRepository)
+	ctx := context.Background()
+	ei, svc := setupEvidenceInteractor()
 	mockTx := new(mocks.MockTx)
 
-	interactorInstance := interactor.NewEvidenceInteractor(mockEvidenceRepo, mockMotorcycleRepo)
-
-	evidence := &domain.MotorcycleEvidence{
+	existing := &domain.MotorcycleEvidence{
 		ID:           testEvidenceID,
 		MotorcycleID: testMotorcycleID,
 	}
 
-	motorcycle := &domain.Motorcycle{
-		ID:      testMotorcycleID,
-		OwnerID: testOwnerID,
-	}
-
-	updates := &domain.MotorcycleEvidence{}
-
-	mockEvidenceRepo.On("GetByID", mock.Anything, testEvidenceID).Return(evidence, nil)
-	mockMotorcycleRepo.On("GetByID", mock.Anything, testMotorcycleID).Return(motorcycle, nil)
-	mockEvidenceRepo.On("BeginTx", mock.Anything).Return(mockTx, nil)
-	mockEvidenceRepo.On("Update", mock.Anything, mockTx, mock.AnythingOfType("*domain.MotorcycleEvidence")).Return(errors.New("update error"))
+	svc.On("GetByID", ctx, testEvidenceID).Return(existing, nil)
+	svc.On("ValidateMotorcycleOwnership", ctx, testMotorcycleID, testOwnerID).Return(&domain.Motorcycle{ID: testMotorcycleID, OwnerID: testOwnerID}, nil)
+	svc.On("ApplyUpdatesAndCleanup", ctx, existing, mock.Anything).Return()
+	svc.On("BeginTx", ctx).Return(mockTx, nil)
+	svc.On("UpdateEvidence", ctx, mockTx, existing).Return(domain.ErrEvidenceCannotUpdate)
 	mockTx.On("Rollback").Return(nil)
 
-	// Act
-	result, err := interactorInstance.UpdateEvidence(context.Background(), testEvidenceID, testOwnerID, updates)
+	result, err := ei.UpdateEvidence(ctx, testEvidenceID, testOwnerID, &domain.MotorcycleEvidence{})
 
-	// Assert
 	assert.Error(t, err)
 	assert.Nil(t, result)
 	assert.Equal(t, domain.ErrEvidenceCannotUpdate, err)
+	mockTx.AssertCalled(t, "Rollback")
 }
 
 func TestUpdateEvidence_CommitError(t *testing.T) {
-	// Arrange
-	mockEvidenceRepo := new(mocks.MockEvidenceRepository)
-	mockMotorcycleRepo := new(mocks.MockMotorcycleRepository)
+	ctx := context.Background()
+	ei, svc := setupEvidenceInteractor()
 	mockTx := new(mocks.MockTx)
 
-	interactorInstance := interactor.NewEvidenceInteractor(mockEvidenceRepo, mockMotorcycleRepo)
-
-	evidence := &domain.MotorcycleEvidence{
+	existing := &domain.MotorcycleEvidence{
 		ID:           testEvidenceID,
 		MotorcycleID: testMotorcycleID,
 	}
 
-	motorcycle := &domain.Motorcycle{
-		ID:      testMotorcycleID,
-		OwnerID: testOwnerID,
-	}
-
-	updates := &domain.MotorcycleEvidence{}
-
-	mockEvidenceRepo.On("GetByID", mock.Anything, testEvidenceID).Return(evidence, nil)
-	mockMotorcycleRepo.On("GetByID", mock.Anything, testMotorcycleID).Return(motorcycle, nil)
-	mockEvidenceRepo.On("BeginTx", mock.Anything).Return(mockTx, nil)
-	mockEvidenceRepo.On("Update", mock.Anything, mockTx, mock.AnythingOfType("*domain.MotorcycleEvidence")).Return(nil)
+	svc.On("GetByID", ctx, testEvidenceID).Return(existing, nil)
+	svc.On("ValidateMotorcycleOwnership", ctx, testMotorcycleID, testOwnerID).Return(&domain.Motorcycle{ID: testMotorcycleID, OwnerID: testOwnerID}, nil)
+	svc.On("ApplyUpdatesAndCleanup", ctx, existing, mock.Anything).Return()
+	svc.On("BeginTx", ctx).Return(mockTx, nil)
+	svc.On("UpdateEvidence", ctx, mockTx, existing).Return(nil)
 	mockTx.On("Commit").Return(errors.New("commit error"))
+	mockTx.On("Rollback").Return(nil)
 
-	// Act
-	result, err := interactorInstance.UpdateEvidence(context.Background(), testEvidenceID, testOwnerID, updates)
+	result, err := ei.UpdateEvidence(ctx, testEvidenceID, testOwnerID, &domain.MotorcycleEvidence{})
 
-	// Assert
 	assert.Error(t, err)
 	assert.Nil(t, result)
 	assert.Equal(t, domain.ErrEvidenceCannotUpdate, err)
+	mockTx.AssertCalled(t, "Rollback")
 }
 
 // ============================================
-// WithStorageClient Tests
+// LookupEvidence Tests (workshop use — no ownership)
 // ============================================
 
-func TestWithStorageClient(t *testing.T) {
-	// Arrange
-	mockEvidenceRepo := new(mocks.MockEvidenceRepository)
-	mockMotorcycleRepo := new(mocks.MockMotorcycleRepository)
-	mockStorage := new(mocks.MockStorageClient)
+func TestLookupEvidence_Success(t *testing.T) {
+	ctx := context.Background()
+	ei, svc := setupEvidenceInteractor()
 
-	interactorInstance := interactor.NewEvidenceInteractor(mockEvidenceRepo, mockMotorcycleRepo)
+	evidences := []domain.MotorcycleEvidence{
+		{ID: "ev-1", MotorcycleID: testMotorcycleID},
+	}
 
-	// Act
-	result := interactorInstance.WithStorageClient(mockStorage)
+	svc.On("GetByMotorcycleID", ctx, testMotorcycleID).Return(evidences, nil)
 
-	// Assert
-	assert.NotNil(t, result)
-	assert.Equal(t, interactorInstance, result)
+	result, err := ei.LookupEvidence(ctx, testMotorcycleID)
+
+	assert.NoError(t, err)
+	assert.Len(t, result, 1)
+	svc.AssertExpectations(t)
+}
+
+func TestLookupEvidence_RepoError(t *testing.T) {
+	ctx := context.Background()
+	ei, svc := setupEvidenceInteractor()
+
+	svc.On("GetByMotorcycleID", ctx, testMotorcycleID).Return(nil, errors.New("db error"))
+
+	result, err := ei.LookupEvidence(ctx, testMotorcycleID)
+
+	assert.Error(t, err)
+	assert.Nil(t, result)
 }

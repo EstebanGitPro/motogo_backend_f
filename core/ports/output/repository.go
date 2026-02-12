@@ -244,3 +244,40 @@ type EvidenceRepository interface {
 	// Validation methods (HU16)
 	CountByMotorcycleID(ctx context.Context, motorcycleID string) (int, error)
 }
+
+// DiagnosticRepository interface for Diagnostic operations (HU11-14)
+type DiagnosticRepository interface {
+	BeginTx(ctx context.Context) (Tx, error)
+
+	// Diagnostic operations - write (HU11, HU12, HU13)
+	Save(ctx context.Context, tx Tx, diagnostic *domain.Diagnostic) error
+	Update(ctx context.Context, tx Tx, diagnostic *domain.Diagnostic) error
+	Delete(ctx context.Context, tx Tx, diagnosticID string) error
+
+	// Diagnostic Evidence operations - write (HU11)
+	SaveEvidence(ctx context.Context, tx Tx, evidence *domain.DiagnosticEvidence) error
+
+	// Diagnostic operations - read (HU14)
+	GetByID(ctx context.Context, diagnosticID string) (*domain.Diagnostic, error)
+	GetByMotorcycleID(ctx context.Context, motorcycleID string) ([]domain.Diagnostic, error)
+	GetByMotorcycleAndBranch(ctx context.Context, motorcycleID, branchID string) (*domain.Diagnostic, error)
+
+	// Diagnostic Evidence operations - read
+	GetEvidenceByDiagnosticID(ctx context.Context, diagnosticID string) ([]domain.DiagnosticEvidence, error)
+
+	// Diagnostic Evidence operations - write (cleanup for UPSERT)
+	DeleteEvidenceByDiagnosticID(ctx context.Context, tx Tx, diagnosticID string) error
+}
+
+// DiagnosticPermissionRepository interface for per-branch diagnostic permission operations
+type DiagnosticPermissionRepository interface {
+	BeginTx(ctx context.Context) (Tx, error)
+
+	// Permission operations - write
+	Save(ctx context.Context, tx Tx, permission *domain.DiagnosticPermission) error
+	Delete(ctx context.Context, tx Tx, motorcycleID, branchID string) error
+
+	// Permission operations - read
+	GetByMotorcycleAndBranch(ctx context.Context, motorcycleID, branchID string) (*domain.DiagnosticPermission, error)
+	GetByMotorcycleID(ctx context.Context, motorcycleID string) ([]domain.DiagnosticPermission, error)
+}

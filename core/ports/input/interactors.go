@@ -34,6 +34,11 @@ type MotorcycleInteractorInterface interface {
 	DeleteProfileImage(ctx context.Context, motorcycleID string, ownerID string) error // HU39
 	GetMotorcycleReferences(ctx context.Context) ([]domain.MotorcycleReference, error)
 	GetReferencesByBrandID(ctx context.Context, brandID string) ([]domain.MotorcycleReference, error)
+	// Diagnostic Permissions
+	GrantDiagnosticPermission(ctx context.Context, motorcycleID, branchID, ownerID string, active bool) (*domain.DiagnosticPermission, error)
+	RevokeDiagnosticPermission(ctx context.Context, motorcycleID, branchID, ownerID string) error
+	ListDiagnosticPermissions(ctx context.Context, motorcycleID, ownerID string) ([]domain.DiagnosticPermission, error)
+	LookupPermissions(ctx context.Context, motorcycleID string) ([]domain.DiagnosticPermission, error)
 }
 
 // EvidenceInteractorInterface defines the contract for motorcycle evidence operations (HU16-19)
@@ -43,4 +48,5 @@ type EvidenceInteractorInterface interface {
 	ListEvidenceByMotorcycle(ctx context.Context, motorcycleID, ownerID string) ([]domain.MotorcycleEvidence, error)
 	UpdateEvidence(ctx context.Context, evidenceID, ownerID string, updates *domain.MotorcycleEvidence) (*domain.MotorcycleEvidence, error) // HU17
 	DeleteEvidence(ctx context.Context, evidenceID, ownerID string) error
+	LookupEvidence(ctx context.Context, motorcycleID string) ([]domain.MotorcycleEvidence, error) // Workshop lookup (no ownership check)
 }

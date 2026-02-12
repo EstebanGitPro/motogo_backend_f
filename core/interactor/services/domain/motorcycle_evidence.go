@@ -1,6 +1,10 @@
 package domain
 
-import "time"
+import (
+	"time"
+
+	uuid "github.com/EstebanGitPro/motogo-backend/tools/utils"
+)
 
 // MotorcycleEvidence represents a photographic evidence of a motorcycle (HU16-19)
 type MotorcycleEvidence struct {
@@ -10,6 +14,10 @@ type MotorcycleEvidence struct {
 	ImageURL     string    // Firebase Storage URL
 	Description  *string   // Optional description
 	CreatedAt    time.Time // Upload timestamp
+}
+
+func (e *MotorcycleEvidence) SetID() {
+	e.ID = uuid.Generate()
 }
 
 // Evidence angle constants

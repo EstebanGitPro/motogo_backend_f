@@ -4,7 +4,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// MockJWKSValidator is a mock implementation of jwt.Validator
+// MockJWKSValidator is a mock implementation of output.JWTValidator
 type MockJWKSValidator struct {
 	mock.Mock
 }

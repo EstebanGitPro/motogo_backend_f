@@ -1,5 +1,9 @@
 package domain
 
+import (
+	uuid "github.com/EstebanGitPro/motogo-backend/tools/utils"
+)
+
 // Motorcycle represents a registered motorcycle in the system
 type Motorcycle struct {
 	ID              string               // UUID primary key
@@ -11,6 +15,10 @@ type Motorcycle struct {
 	OwnerNotes      *string              // Owner notes (optional)
 	ProfileImageURL *string              // Main profile photo URL (Firebase Storage) - HU36
 	Reference       *MotorcycleReference // Motorcycle reference with brand info (populated on read)
+}
+
+func (m *Motorcycle) SetID() {
+	m.ID = uuid.Generate()
 }
 
 // MotorcycleReference represents the motorcycle catalog reference

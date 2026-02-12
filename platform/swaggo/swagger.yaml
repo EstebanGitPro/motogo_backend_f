@@ -228,6 +228,19 @@ definitions:
       name:
         type: string
     type: object
+  handlers.CreateDiagnosticRequest:
+    properties:
+      branch_id:
+        type: string
+      evidence_urls:
+        items:
+          type: string
+        type: array
+      problem_description:
+        type: string
+    required:
+    - branch_id
+    type: object
   handlers.CreateEvidenceRequest:
     properties:
       angle:
@@ -286,6 +299,57 @@ definitions:
         type: string
       name:
         type: string
+    type: object
+  handlers.DiagnosticEvidenceResponse:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      image_url:
+        type: string
+    type: object
+  handlers.DiagnosticPermissionResponse:
+    properties:
+      _links:
+        items:
+          $ref: '#/definitions/handlers.Link'
+        type: array
+      active:
+        type: boolean
+      branch_id:
+        type: string
+      id:
+        type: string
+      motorcycle_id:
+        type: string
+    type: object
+  handlers.DiagnosticResponse:
+    properties:
+      _links:
+        items:
+          $ref: '#/definitions/handlers.Link'
+        type: array
+      branch_id:
+        type: string
+      date:
+        type: string
+      evidence:
+        items:
+          $ref: '#/definitions/handlers.DiagnosticEvidenceResponse'
+        type: array
+      id:
+        type: string
+      motorcycle_id:
+        type: string
+      possible_solution:
+        type: string
+      problem_description:
+        type: string
+      sent_via_whatsapp:
+        type: boolean
     type: object
   handlers.EvidenceResponse:
     properties:
@@ -356,6 +420,15 @@ definitions:
         type: number
       longitude:
         type: number
+    type: object
+  handlers.GrantPermissionRequest:
+    properties:
+      active:
+        type: boolean
+      branch_id:
+        type: string
+    required:
+    - branch_id
     type: object
   handlers.Link:
     properties:
@@ -483,6 +556,48 @@ definitions:
           $ref: '#/definitions/handlers.Link'
         type: array
     type: object
+  handlers.MotorcycleLookupReferenceDTO:
+    properties:
+      brand_name:
+        type: string
+      category:
+        type: string
+      engine_displacement_cc:
+        type: integer
+      model:
+        type: string
+    type: object
+  handlers.MotorcycleLookupResponse:
+    properties:
+      _links:
+        items:
+          $ref: '#/definitions/handlers.Link'
+        type: array
+      current_mileage:
+        type: integer
+      diagnostics:
+        items:
+          $ref: '#/definitions/handlers.DiagnosticResponse'
+        type: array
+      evidence:
+        items:
+          $ref: '#/definitions/handlers.EvidenceResponse'
+        type: array
+      id:
+        type: string
+      license_plate:
+        type: string
+      permitted_branches:
+        items:
+          $ref: '#/definitions/handlers.PermittedBranchInfo'
+        type: array
+      profile_image_url:
+        type: string
+      reference:
+        $ref: '#/definitions/handlers.MotorcycleLookupReferenceDTO'
+      year:
+        type: integer
+    type: object
   handlers.MotorcycleReferenceCatalogItem:
     properties:
       brand_id:
@@ -594,6 +709,13 @@ definitions:
         type: string
     required:
     - email
+    type: object
+  handlers.PermittedBranchInfo:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
     type: object
   handlers.PersonRequest:
     properties:
@@ -771,6 +893,13 @@ definitions:
           $ref: '#/definitions/handlers.ServiceTypeItemResponse'
         type: array
     type: object
+  handlers.SetSolutionRequest:
+    properties:
+      possible_solution:
+        type: string
+    required:
+    - possible_solution
+    type: object
   handlers.StandardResponse:
     description: Standard API response wrapper with success flag, message and optional
       data
@@ -789,6 +918,13 @@ definitions:
         description: Whether the operation was successful
         example: true
         type: boolean
+    type: object
+  handlers.UpdateDiagnosticRequest:
+    properties:
+      possible_solution:
+        type: string
+      problem_description:
+        type: string
     type: object
   handlers.UpdateFranchiseRequest:
     properties:
@@ -2234,6 +2370,49 @@ paths:
       summary: Get cities by department
       tags:
       - Catalogs
+  /diagnostics/{id}/solution:
+    patch:
+      consumes:
+      - application/json
+      description: Sets the possible solution for a diagnostic. Used by workshop representatives.
+      parameters:
+      - description: Diagnostic ID (obfuscated)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Solution data
+        in: body
+        name: solution
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.SetSolutionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Solution saved
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Diagnostic not found
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: Set diagnostic solution
   /franchises:
     get:
       produces:
@@ -2710,6 +2889,221 @@ paths:
       summary: Update motorcycle information
       tags:
       - Motorcycles
+  /motorcycles/{id}/diagnostics:
+    get:
+      description: Lists all diagnostics for a motorcycle owned by authenticated user
+      parameters:
+      - description: Motorcycle ID (obfuscated)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Diagnostics list
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/handlers.DiagnosticResponse'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Motorcycle not found or not owner
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: List motorcycle diagnostics
+    post:
+      consumes:
+      - application/json
+      description: Creates a diagnostic request for a motorcycle. Optionally includes
+        evidence photo URLs.
+      parameters:
+      - description: Motorcycle ID (obfuscated)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Diagnostic data
+        in: body
+        name: diagnostic
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CreateDiagnosticRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Diagnostic created successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.DiagnosticResponse'
+              type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Motorcycle or branch not found
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: Create motorcycle diagnostic
+  /motorcycles/{id}/diagnostics/{diagnosticId}:
+    delete:
+      description: Deletes a diagnostic and its evidence. Only the owner can delete.
+      parameters:
+      - description: Motorcycle ID (obfuscated)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Diagnostic ID (obfuscated)
+        in: path
+        name: diagnosticId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Diagnostic deleted
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Diagnostic not found or not owner
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete motorcycle diagnostic
+    get:
+      description: Gets a specific diagnostic with evidence for a motorcycle owned
+        by authenticated user
+      parameters:
+      - description: Motorcycle ID (obfuscated)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Diagnostic ID (obfuscated)
+        in: path
+        name: diagnosticId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Diagnostic found
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.DiagnosticResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Diagnostic not found or not owner
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: Get motorcycle diagnostic
+    put:
+      consumes:
+      - application/json
+      description: Updates a diagnostic. Only the owner can update.
+      parameters:
+      - description: Motorcycle ID (obfuscated)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Diagnostic ID (obfuscated)
+        in: path
+        name: diagnosticId
+        required: true
+        type: string
+      - description: Updated diagnostic data
+        in: body
+        name: diagnostic
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.UpdateDiagnosticRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Diagnostic updated
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.DiagnosticResponse'
+              type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Diagnostic not found or not owner
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: Update motorcycle diagnostic
   /motorcycles/{id}/evidence:
     get:
       consumes:
@@ -2901,6 +3295,136 @@ paths:
       security:
       - BearerAuth: []
       summary: Update motorcycle evidence
+  /motorcycles/{id}/permissions:
+    get:
+      description: Lists all active diagnostic permissions for a motorcycle. Only
+        the owner can view permissions.
+      parameters:
+      - description: Motorcycle ID (hashid encoded)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Permissions listed
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/handlers.DiagnosticPermissionResponse'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Motorcycle not found
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: List diagnostic permissions
+      tags:
+      - Diagnostic Permissions
+    post:
+      consumes:
+      - application/json
+      description: Allows a motorcycle owner to grant a specific branch permission
+        to view diagnostic details.
+      parameters:
+      - description: Motorcycle ID (hashid encoded)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Branch to grant permission
+        in: body
+        name: permission
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.GrantPermissionRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Permission granted
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.DiagnosticPermissionResponse'
+              type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Motorcycle not found
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: Grant diagnostic permission
+      tags:
+      - Diagnostic Permissions
+  /motorcycles/{id}/permissions/{branchId}:
+    delete:
+      description: Allows a motorcycle owner to revoke a branch's permission to view
+        diagnostic details.
+      parameters:
+      - description: Motorcycle ID (hashid encoded)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Branch ID (hashid encoded)
+        in: path
+        name: branchId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Permission revoked
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: Revoke diagnostic permission
+      tags:
+      - Diagnostic Permissions
   /motorcycles/{id}/profile-image:
     delete:
       consumes:
@@ -3028,8 +3552,10 @@ paths:
       summary: Update motorcycle profile image
   /motorcycles/lookup:
     get:
-      description: Retrieves motorcycle information by license plate. Accessible by
-        representatives (workshops). Returns motorcycle details for service purposes.
+      description: 'Retrieves motorcycle information by license plate. Accessible
+        by representatives (workshops). Returns motorcycle details for service purposes.
+        Enforces branch-specific permissions: only diagnostics from authorized branches
+        are returned.'
       parameters:
       - description: License plate to lookup (exact match)
         in: query
@@ -3046,7 +3572,7 @@ paths:
             - $ref: '#/definitions/handlers.StandardResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/handlers.MotorcycleResponse'
+                  $ref: '#/definitions/handlers.MotorcycleLookupResponse'
               type: object
         "400":
           description: Bad request - missing plate parameter
@@ -3057,7 +3583,7 @@ paths:
           schema:
             $ref: '#/definitions/handlers.StandardResponse'
         "403":
-          description: Forbidden - user is not a representative
+          description: Forbidden - no permission to view this motorcycle's diagnostics
           schema:
             $ref: '#/definitions/handlers.StandardResponse'
         "404":

@@ -78,7 +78,6 @@ var (
 // Message Management Errors (MOD_M_*)
 var (
 	ErrMessageNotFound         = errors.New("ERR_MESSAGE_NOT_FOUND")
-	ErrMessageCodeRequired     = errors.New("ERR_MESSAGE_CODE_REQUIRED")
 	ErrMessageTypeRequired     = errors.New("ERR_MESSAGE_TYPE_REQUIRED")
 	ErrMessageTitleRequired    = errors.New("ERR_MESSAGE_TITLE_REQUIRED")
 	ErrMessageContentRequired  = errors.New("ERR_MESSAGE_CONTENT_REQUIRED")
@@ -444,6 +443,7 @@ var (
 	ErrDuplicateLicensePlate  = errors.New("ERR_DUPLICATE_LICENSE_PLATE")
 	ErrReferenceNotFound      = errors.New("ERR_REFERENCE_NOT_FOUND")
 	ErrReferenceRequired      = errors.New("ERR_REFERENCE_REQUIRED")
+	ErrMotorcycleNoPermission = errors.New("ERR_MOTORCYCLE_NO_PERMISSION")
 )
 
 // Motorcycle Module (MOD_MOT_*) - HU43-47
@@ -471,6 +471,7 @@ const (
 	MsgMotorcycleReferenceNotFound = "MOD_MOT_REF_NOT_FOUND_ERR_00001"
 	MsgReferenceRequired           = "MOD_MOT_REF_REQ_ERR_00001"
 	MsgMissingPlateParam           = "MOD_MOT_PLATE_REQ_ERR_00001"
+	MsgMotorcycleNoPermission      = "MOD_MOT_NO_PERMISSION_ERR_00001"
 
 	// Profile Image Error Messages (HU36-39)
 	MsgProfileImageUpdateError = "MOD_MOT_IMG_UPDATE_ERR_00001"
@@ -506,4 +507,41 @@ const (
 	MsgEvidenceLimitExceeded = "MOD_EVD_LIMIT_ERR_00001"
 	MsgInvalidEvidenceURL    = "MOD_EVD_URL_ERR_00001"
 	MsgInvalidEvidenceAngle  = "MOD_EVD_ANGLE_ERR_00001"
+)
+
+// Diagnostic Errors (MOD_DGN_*) - HU11-14
+var (
+	ErrDiagnosticNotFound     = errors.New("ERR_DIAGNOSTIC_NOT_FOUND")
+	ErrDiagnosticCannotSave   = errors.New("ERR_DIAGNOSTIC_CANNOT_SAVE")
+	ErrDiagnosticCannotUpdate = errors.New("ERR_DIAGNOSTIC_CANNOT_UPDATE")
+	ErrDiagnosticCannotDelete = errors.New("ERR_DIAGNOSTIC_CANNOT_DELETE")
+)
+
+// Diagnostic Module (MOD_DGN_*) - HU11-14
+const (
+	// Success messages
+	MsgDiagnosticCreated   = "MOD_DGN_CREATE_EXI_00001"
+	MsgDiagnosticRetrieved = "MOD_DGN_GET_EXI_00001"
+	MsgDiagnosticUpdated   = "MOD_DGN_UPDATE_EXI_00001"
+	MsgDiagnosticDeleted   = "MOD_DGN_DELETE_EXI_00001"
+	MsgDiagnosticsListed   = "MOD_DGN_LIST_EXI_00001"
+
+	// Error messages
+	MsgDiagnosticNotFound     = "MOD_DGN_NOT_FOUND_ERR_00001"
+	MsgDiagnosticCannotSave   = "MOD_DGN_CREATE_ERR_00001"
+	MsgDiagnosticCannotUpdate = "MOD_DGN_UPDATE_ERR_00001"
+	MsgDiagnosticCannotDelete = "MOD_DGN_DELETE_ERR_00001"
+)
+
+// Diagnostic Permission Module (MOD_DGP_*)
+const (
+	// Success messages
+	MsgPermissionGranted = "MOD_DGP_GRANT_EXI_00001"
+	MsgPermissionRevoked = "MOD_DGP_REVOKE_EXI_00001"
+	MsgPermissionsListed = "MOD_DGP_LIST_EXI_00001"
+
+	// Error messages
+	MsgPermissionNotFound     = "MOD_DGP_NOT_FOUND_ERR_00001"
+	MsgPermissionCannotSave   = "MOD_DGP_SAVE_ERR_00001"
+	MsgPermissionCannotDelete = "MOD_DGP_DELETE_ERR_00001"
 )

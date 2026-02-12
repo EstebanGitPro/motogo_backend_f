@@ -66,7 +66,8 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		dependencies.ServiceInteractor,
 		dependencies.FranchiseInteractor,
 		dependencies.MotorcycleInteractor,
-		dependencies.EvidenceInteractor, // HU16-19
+		dependencies.EvidenceInteractor,   // HU16-19
+		dependencies.DiagnosticInteractor, // HU11-14
 		dependencies.FirebaseClient,
 		dependencies.MessagingCache,
 		dependencies.IDEncoder,
@@ -287,6 +288,66 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 			handler.DeleteEvidence(),
 		)
 
+		// === MOTORCYCLE DIAGNOSTIC ENDPOINTS (HU11-14) ===
+		// Diagnostic requests for motorcycles
+
+		// POST /motorcycles/:id/diagnostics - Create diagnostic (HU11)
+		protected.POST("/motorcycles/:id/diagnostics",
+			middleware.RequireRole(domain.RoleUser),
+			handler.CreateDiagnostic(),
+		)
+
+		// GET /motorcycles/:id/diagnostics - List diagnostics for a motorcycle (HU14)
+		protected.GET("/motorcycles/:id/diagnostics",
+			middleware.RequireRole(domain.RoleUser),
+			handler.ListDiagnostics(),
+		)
+
+		// GET /motorcycles/:id/diagnostics/:diagnosticId - Get diagnostic detail (HU14)
+		protected.GET("/motorcycles/:id/diagnostics/:diagnosticId",
+			middleware.RequireRole(domain.RoleUser),
+			handler.GetDiagnostic(),
+		)
+
+		// PUT /motorcycles/:id/diagnostics/:diagnosticId - Update diagnostic (HU12)
+		protected.PUT("/motorcycles/:id/diagnostics/:diagnosticId",
+			middleware.RequireRole(domain.RoleUser),
+			handler.UpdateDiagnostic(),
+		)
+
+		// DELETE /motorcycles/:id/diagnostics/:diagnosticId - Delete diagnostic (HU13)
+		protected.DELETE("/motorcycles/:id/diagnostics/:diagnosticId",
+			middleware.RequireRole(domain.RoleUser),
+			handler.DeleteDiagnostic(),
+		)
+
+		// PATCH /diagnostics/:id/solution - Set diagnostic solution (representative)
+		protected.PATCH("/diagnostics/:id/solution",
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.SetDiagnosticSolution(),
+		)
+
+		// === DIAGNOSTIC PERMISSION ENDPOINTS ===
+		// Per-branch diagnostic permissions (permisos_moto_sede)
+
+		// POST /motorcycles/:id/permissions - Grant permission to a branch
+		protected.POST("/motorcycles/:id/permissions",
+			middleware.RequireRole(domain.RoleUser),
+			handler.GrantDiagnosticPermission(),
+		)
+
+		// GET /motorcycles/:id/permissions - List permissions for a motorcycle
+		protected.GET("/motorcycles/:id/permissions",
+			middleware.RequireRole(domain.RoleUser),
+			handler.ListDiagnosticPermissions(),
+		)
+
+		// DELETE /motorcycles/:id/permissions/:branchId - Revoke permission from a branch
+		protected.DELETE("/motorcycles/:id/permissions/:branchId",
+			middleware.RequireRole(domain.RoleUser),
+			handler.RevokeDiagnosticPermission(),
+		)
+
 		// POST /branches/:id/services - Asociar servicios a una sede (solo REPRESENTANTE)
 		protected.POST("/branches/:id/services",
 			middleware.RequireRole(domain.RoleRepresentative),
@@ -393,8 +454,8 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		)
 
 		// GET /branches/:id/schedules/exceptions - Listar excepciones de horario (HU23)
+		// Accessible by all authenticated users (USER can view exceptions for isOpenNow, REPRESENTATIVE can manage)
 		protected.GET("/branches/:id/schedules/exceptions",
-			middleware.RequireRole(domain.RoleRepresentative),
 			handler.ListScheduleExceptions(dependencies.ScheduleExceptionInteractor, dependencies.ScheduleInteractor),
 		)
 
@@ -486,7 +547,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 
 		// === MESSAGES ENDPOINTS (system administration) ===
 		// POST /admin/messages - Crear nuevo mensaje del sistema
-		admin.POST("/messages", validator.WithValidateMessage(), handler.CreateMessage())
+		admin.POST("/messages", validator.WithValidateCreateMessage(), handler.CreateMessage())
 
 		// PUT /admin/messages/:id - Actualizar mensaje existente
 		admin.PUT("/messages/:id", validator.WithValidateMessage(), handler.UpdateMessage())

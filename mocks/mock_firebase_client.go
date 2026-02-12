@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// MockFirebaseClient is a mock implementation of firebase.FirebaseClient
+// MockFirebaseClient is a mock implementation of output.CustomTokenProvider
 type MockFirebaseClient struct {
 	mock.Mock
 }

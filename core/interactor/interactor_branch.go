@@ -202,6 +202,8 @@ func (i *BranchInteractor) UpdateBranch(ctx context.Context, branchID string, br
 		if err != nil {
 			if rbErr := tx.Rollback(); rbErr != nil {
 				log.Error(logger.LogBranchInteractorRollbackError, "rollback_error", rbErr, "original_error", err)
+			} else {
+				log.Warn(logger.LogBranchInteractorRollbackOK)
 			}
 		}
 	}()
@@ -280,20 +282,17 @@ func (i *BranchInteractor) DeleteBranch(ctx context.Context, branchID string, pe
 		if err != nil {
 			if rbErr := tx.Rollback(); rbErr != nil {
 				log.Error(logger.LogBranchInteractorRollbackError, "rollback_error", rbErr, "original_error", err)
+			} else {
+				log.Warn(logger.LogBranchInteractorRollbackOK)
 			}
 		}
 	}()
 
 	// 4. Delete branch via service
-	// NOTE: FK RESTRICT on diagnostics/completed_services will cause SQL error if has records
+	// NOTE: FK RESTRICT on diagnostics/completed_services is interpreted by service layer
 	// CASCADE handles branch_brands, locations, schedules, branch_services
 	if err = i.branchService.DeleteBranch(ctx, tx, branchID); err != nil {
 		log.Error(logger.LogBranchInteractorDeleteError, "error", err, "branch_id", branchID)
-		// Check if it's a FK violation (has associations)
-		if isForeignKeyError(err) {
-			log.Warn(logger.LogBranchInteractorHasAssocError, "branch_id", branchID)
-			return domain.ErrBranchCannotDelete
-		}
 		return err
 	}
 
@@ -316,31 +315,6 @@ func (i *BranchInteractor) DeleteBranch(ctx context.Context, branchID string, pe
 	log.Success(logger.LogBranchInteractorDeleteComplete, "branch_id", branchID)
 	err = nil
 	return nil
-}
-
-// isForeignKeyError checks if the error is a MySQL foreign key constraint violation
-func isForeignKeyError(err error) bool {
-	if err == nil {
-		return false
-	}
-	errStr := err.Error()
-	// MySQL error code 1451: Cannot delete or update a parent row: a foreign key constraint fails
-	return contains(errStr, "1451") || contains(errStr, "foreign key constraint")
-}
-
-// contains is a simple string contains check
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(substr) == 0 ||
-		(len(s) > 0 && len(substr) > 0 && findSubstring(s, substr)))
-}
-
-func findSubstring(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }
 
 // GetBranchesNearby retrieves branches within radius of given coordinates (HU89)
