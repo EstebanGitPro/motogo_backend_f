@@ -143,6 +143,10 @@ type FranchiseService interface {
 	DissociateSingleBranch(ctx context.Context, tx output.Tx, branchID string) error
 	CountBranches(ctx context.Context, franchiseID string) (int, error)
 	CanRemoveBranch(ctx context.Context, franchiseID string) error
+
+	// Branch validations
+	ValidateBranchOwnership(ctx context.Context, branchID, representativeID string) error
+	ValidateBranchesForFranchise(ctx context.Context, branchIDs []string, representativeID string) error
 }
 
 // ServiceCatalogService - Use Cases for Service catalog operations (HU63, HU68, HU75)
@@ -221,4 +225,84 @@ type ScheduleDetailService interface {
 	DeleteException(ctx context.Context, tx output.Tx, exceptionID string) error
 	SetExceptionActive(ctx context.Context, tx output.Tx, exceptionID string, active bool) error
 	CheckExceptionDateConflict(ctx context.Context, scheduleID, excludeExceptionID, startDate, endDate string) (bool, error)
+}
+
+// MotorcycleService - Use Cases for Motorcycle operations (HU43-47, HU50, HU40)
+type MotorcycleService interface {
+	// Transactions
+	BeginTx(ctx context.Context) (output.Tx, error)
+
+	// Validation
+	ValidateReferenceExists(ctx context.Context, referenceID string) error
+	CheckLicensePlateUnique(ctx context.Context, licensePlate string) error
+	ValidateOwnership(ctx context.Context, motorcycleID, ownerID string) (*domain.Motorcycle, error)
+
+	// Motorcycle CRUD (HU43, HU44, HU45, HU46, HU47)
+	RegisterMotorcycle(ctx context.Context, tx output.Tx, motorcycle *domain.Motorcycle) error
+	GetByID(ctx context.Context, motorcycleID string) (*domain.Motorcycle, error)
+	GetByOwnerID(ctx context.Context, ownerID string) ([]domain.Motorcycle, error)
+	GetByLicensePlate(ctx context.Context, licensePlate string) (*domain.Motorcycle, error)
+	ApplyUpdates(existing *domain.Motorcycle, updates *domain.Motorcycle) error
+	UpdateMotorcycle(ctx context.Context, tx output.Tx, motorcycle *domain.Motorcycle) error
+	DeleteMotorcycle(ctx context.Context, tx output.Tx, motorcycleID string) error
+	ClearProfileImageURL(ctx context.Context, tx output.Tx, motorcycleID string) error
+
+	// Hybrid delete strategy (HU45)
+	HasServiceHistory(ctx context.Context, motorcycleID string) (bool, error)
+
+	// Storage cleanup
+	DeleteStorageFile(ctx context.Context, url string)
+
+	// Reference catalog (HU50, HU40)
+	GetAllReferences(ctx context.Context) ([]domain.MotorcycleReference, error)
+	GetReferencesByBrandID(ctx context.Context, brandID string) ([]domain.MotorcycleReference, error)
+
+	// Diagnostic Permissions
+	GrantPermission(ctx context.Context, tx output.Tx, motorcycleID, branchID string, active bool) (*domain.DiagnosticPermission, error)
+	RevokePermission(ctx context.Context, tx output.Tx, motorcycleID, branchID string) error
+	ListPermissions(ctx context.Context, motorcycleID string) ([]domain.DiagnosticPermission, error)
+}
+
+// DiagnosticService - Use Cases for Diagnostic operations (HU11-14)
+type DiagnosticService interface {
+	// Transactions
+	BeginTx(ctx context.Context) (output.Tx, error)
+
+	// Validations
+	ValidateMotorcycleOwnership(ctx context.Context, motorcycleID, ownerID string) (*domain.Motorcycle, error)
+	ValidateBranchExists(ctx context.Context, branchID string) error
+
+	// Diagnostic CRUD
+	RegisterOrUpdateDiagnostic(ctx context.Context, tx output.Tx, motorcycleID, branchID string, problemDescription *string, evidenceURLs []string) (*domain.Diagnostic, error)
+	GetByID(ctx context.Context, diagnosticID string) (*domain.Diagnostic, error)
+	GetByMotorcycleID(ctx context.Context, motorcycleID string) ([]domain.Diagnostic, error)
+	ApplyDiagnosticUpdates(existing *domain.Diagnostic, updates *domain.Diagnostic)
+	UpdateDiagnostic(ctx context.Context, tx output.Tx, diagnostic *domain.Diagnostic) error
+	DeleteDiagnostic(ctx context.Context, tx output.Tx, diagnosticID string) error
+	SetSolution(ctx context.Context, tx output.Tx, diagnosticID string, solution string) error
+
+	// Evidence
+	LoadEvidence(ctx context.Context, diagnosticID string) ([]domain.DiagnosticEvidence, error)
+	LoadEvidenceForDiagnostics(ctx context.Context, diagnostics []domain.Diagnostic) error
+}
+
+// EvidenceService - Use Cases for Motorcycle Evidence operations (HU16-19)
+type EvidenceService interface {
+	// Transactions
+	BeginTx(ctx context.Context) (output.Tx, error)
+
+	// Validations
+	ValidateMotorcycleOwnership(ctx context.Context, motorcycleID, ownerID string) (*domain.Motorcycle, error)
+	CheckEvidenceLimit(ctx context.Context, motorcycleID string) error
+
+	// Evidence CRUD
+	CreateEvidence(ctx context.Context, tx output.Tx, motorcycleID string, evidence *domain.MotorcycleEvidence) (*domain.MotorcycleEvidence, error)
+	GetByID(ctx context.Context, evidenceID string) (*domain.MotorcycleEvidence, error)
+	GetByMotorcycleID(ctx context.Context, motorcycleID string) ([]domain.MotorcycleEvidence, error)
+	ApplyUpdatesAndCleanup(ctx context.Context, existing *domain.MotorcycleEvidence, updates *domain.MotorcycleEvidence)
+	UpdateEvidence(ctx context.Context, tx output.Tx, evidence *domain.MotorcycleEvidence) error
+	DeleteEvidence(ctx context.Context, tx output.Tx, evidenceID string) error
+
+	// Storage cleanup
+	DeleteStorageFile(ctx context.Context, imageURL string)
 }

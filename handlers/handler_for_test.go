@@ -3,9 +3,9 @@ package handlers
 import (
 	"github.com/EstebanGitPro/motogo-backend/core/interactor"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/input"
+	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
 	"github.com/EstebanGitPro/motogo-backend/middleware"
 	messagingCache "github.com/EstebanGitPro/motogo-backend/platform/cache/messaging"
-	"github.com/EstebanGitPro/motogo-backend/platform/firebase"
 	"github.com/EstebanGitPro/motogo-backend/tools/idencoder"
 )
 
@@ -51,10 +51,10 @@ func NewForTestWithConcrete(
 	}
 }
 
-// NewForTestWithFirebase creates a handler with a FirebaseClient for integration testing
+// NewForTestWithFirebase creates a handler with a CustomTokenProvider for integration testing
 // of controllers that require Firebase authentication (GetFirebaseToken).
 func NewForTestWithFirebase(
-	firebaseClient firebase.FirebaseClient,
+	firebaseClient output.CustomTokenProvider,
 	encoder *idencoder.HashidsEncoder,
 	responseHandler *middleware.ResponseHandler,
 ) *handler {

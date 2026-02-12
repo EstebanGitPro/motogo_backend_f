@@ -335,15 +335,15 @@ func (h *handler) ListMotorcycles() gin.HandlerFunc {
 
 // LookupMotorcycleByPlate handles GET /motorcycles/lookup - lookup motorcycle by plate (HU47)
 // @Summary Lookup motorcycle by license plate
-// @Description Retrieves motorcycle information by license plate. Accessible by representatives (workshops). Returns motorcycle details for service purposes.
+// @Description Retrieves motorcycle information by license plate. Accessible by representatives (workshops). Returns motorcycle details for service purposes. Enforces branch-specific permissions: only diagnostics from authorized branches are returned.
 // @Tags Motorcycles
 // @Produce json
 // @Security BearerAuth
 // @Param plate query string true "License plate to lookup (exact match)"
-// @Success 200 {object} StandardResponse{data=MotorcycleResponse} "Motorcycle found successfully"
+// @Success 200 {object} StandardResponse{data=MotorcycleLookupResponse} "Motorcycle found successfully"
 // @Failure 400 {object} StandardResponse "Bad request - missing plate parameter"
 // @Failure 401 {object} StandardResponse "Unauthorized - missing or invalid token"
-// @Failure 403 {object} StandardResponse "Forbidden - user is not a representative"
+// @Failure 403 {object} StandardResponse "Forbidden - no permission to view this motorcycle's diagnostics"
 // @Failure 404 {object} StandardResponse "Motorcycle not found"
 // @Failure 500 {object} StandardResponse "Internal server error"
 // @Router /motorcycles/lookup [get]
@@ -358,7 +358,15 @@ func (h *handler) LookupMotorcycleByPlate() gin.HandlerFunc {
 			"path", c.Request.URL.Path,
 			"client_ip", c.ClientIP())
 
-		// 1. Get plate from query parameter
+		// 1. Get authenticated representative from context
+		person, _ := middleware.GetAuthenticatedUser(c)
+		if person == nil {
+			log.Warn(logger.LogMotorcycleControllerNoAuthUser, "client_ip", c.ClientIP())
+			h.Response.Error(c, domain.MsgServerError)
+			return
+		}
+
+		// 2. Get plate from query parameter
 		plate := c.Query("plate")
 		if plate == "" {
 			log.Warn(logger.LogMotorcycleControllerMissingPlate, "client_ip", c.ClientIP())
@@ -368,7 +376,24 @@ func (h *handler) LookupMotorcycleByPlate() gin.HandlerFunc {
 
 		log.Debug(logger.LogMotorcycleControllerPlateDebug, "license_plate", plate)
 
-		// 2. Call interactor to get motorcycle by plate
+		// 3. Get representative's branches
+		repBranches, err := h.BranchInteractor.GetBranchesByRepresentative(c.Request.Context(), person.ID)
+		if err != nil {
+			log.Error("Error obteniendo sedes del representante",
+				"error", err,
+				"person_id", person.ID,
+				"client_ip", c.ClientIP())
+			h.Response.Error(c, domain.MsgServerError)
+			return
+		}
+
+		// Build a set of rep branch IDs for fast lookup
+		repBranchSet := make(map[string]domain.Branch, len(repBranches))
+		for _, b := range repBranches {
+			repBranchSet[b.ID] = b
+		}
+
+		// 4. Call interactor to get motorcycle by plate
 		motorcycle, err := h.MotorcycleInteractor.GetMotorcycleByLicensePlate(c.Request.Context(), plate)
 		if err != nil {
 			log.Error(logger.LogMotorcycleControllerPlateError,
@@ -383,7 +408,56 @@ func (h *handler) LookupMotorcycleByPlate() gin.HandlerFunc {
 			return
 		}
 
-		// 3. Build response DTO (workshop view - excludes private owner data)
+		// 5. Get active permissions for this motorcycle (no ownership check)
+		permissions, err := h.MotorcycleInteractor.LookupPermissions(c.Request.Context(), motorcycle.ID)
+		if err != nil {
+			log.Error("Error consultando permisos de la motocicleta",
+				"error", err,
+				"motorcycle_id", motorcycle.ID,
+				"client_ip", c.ClientIP())
+			h.Response.Error(c, domain.MsgServerError)
+			return
+		}
+
+		// 6. Intersect: find branches where rep has access AND motorcycle has active permission
+		var permittedBranches []PermittedBranchInfo
+		permittedBranchIDs := make(map[string]bool)
+
+		for _, perm := range permissions {
+			if !perm.Active {
+				continue
+			}
+			if branch, ok := repBranchSet[perm.BranchID]; ok {
+				encodedBranchID, encErr := h.EncodeID(branch.ID)
+				if encErr != nil {
+					log.Error(logger.LogMotorcycleControllerIDEncError,
+						"branch_id", branch.ID,
+						"error", encErr,
+						"client_ip", c.ClientIP())
+					continue
+				}
+				permittedBranches = append(permittedBranches, PermittedBranchInfo{
+					ID:   encodedBranchID,
+					Name: branch.Name,
+				})
+				permittedBranchIDs[perm.BranchID] = true
+			}
+		}
+
+		// 7. If no intersection → 403 Forbidden
+		if len(permittedBranches) == 0 {
+			log.Warn("Representante sin permisos para esta motocicleta",
+				"person_id", person.ID,
+				"motorcycle_id", motorcycle.ID,
+				"license_plate", plate,
+				"rep_branches_count", len(repBranches),
+				"permissions_count", len(permissions),
+				"client_ip", c.ClientIP())
+			h.Response.Error(c, domain.MsgMotorcycleNoPermission)
+			return
+		}
+
+		// 8. Build response DTO (workshop view - excludes private owner data)
 		response := ToMotorcycleLookupResponse(motorcycle)
 
 		// Encode motorcycle ID for response
@@ -398,7 +472,7 @@ func (h *handler) LookupMotorcycleByPlate() gin.HandlerFunc {
 		}
 		response.ID = encodedID
 
-		// 4. Fetch diagnostics for this motorcycle (workshop enrichment - HU11-14)
+		// 9. Fetch diagnostics and filter by permitted branches
 		if h.DiagnosticInteractor != nil {
 			diagnostics, err := h.DiagnosticInteractor.ListDiagnosticsByMotorcycleID(c.Request.Context(), motorcycle.ID)
 			if err != nil {
@@ -408,36 +482,73 @@ func (h *handler) LookupMotorcycleByPlate() gin.HandlerFunc {
 					"client_ip", c.ClientIP())
 				// Non-fatal: proceed without diagnostics
 			} else if len(diagnostics) > 0 {
-				diagnosticResponses := ToDiagnosticResponseList(diagnostics)
-
-				// Encode diagnostic and evidence IDs
-				for i := range diagnosticResponses {
-					if encDiagID, err := h.EncodeID(diagnostics[i].ID); err == nil {
-						diagnosticResponses[i].ID = encDiagID
-					}
-					if encBranchID, err := h.EncodeID(diagnostics[i].BranchID); err == nil {
-						diagnosticResponses[i].BranchID = encBranchID
-					}
-					diagnosticResponses[i].MotorcycleID = encodedID
-
-					for j := range diagnosticResponses[i].Evidence {
-						if encEvidID, err := h.EncodeID(diagnostics[i].Evidence[j].ID); err == nil {
-							diagnosticResponses[i].Evidence[j].ID = encEvidID
-						}
+				// Filter diagnostics to only include those from permitted branches
+				var filteredDiagnostics []domain.Diagnostic
+				for _, d := range diagnostics {
+					if permittedBranchIDs[d.BranchID] {
+						filteredDiagnostics = append(filteredDiagnostics, d)
 					}
 				}
 
-				response.Diagnostics = diagnosticResponses
+				if len(filteredDiagnostics) > 0 {
+					diagnosticResponses := ToDiagnosticResponseList(filteredDiagnostics)
+
+					// Encode diagnostic and evidence IDs
+					for i := range diagnosticResponses {
+						if encDiagID, err := h.EncodeID(filteredDiagnostics[i].ID); err == nil {
+							diagnosticResponses[i].ID = encDiagID
+						}
+						if encBranchID, err := h.EncodeID(filteredDiagnostics[i].BranchID); err == nil {
+							diagnosticResponses[i].BranchID = encBranchID
+						}
+						diagnosticResponses[i].MotorcycleID = encodedID
+
+						for j := range diagnosticResponses[i].Evidence {
+							if encEvidID, err := h.EncodeID(filteredDiagnostics[i].Evidence[j].ID); err == nil {
+								diagnosticResponses[i].Evidence[j].ID = encEvidID
+							}
+						}
+					}
+
+					response.Diagnostics = diagnosticResponses
+				}
 			}
 		}
+		// 10. Fetch motorcycle evidence (HU16-19)
+		if h.EvidenceInteractor != nil {
+			evidences, err := h.EvidenceInteractor.LookupEvidence(c.Request.Context(), motorcycle.ID)
+			if err != nil {
+				log.Warn(logger.LogEvidenceInteractorLookupError,
+					"error", err,
+					"motorcycle_id", motorcycle.ID,
+					"client_ip", c.ClientIP())
+				// Non-fatal: proceed without evidence
+			} else if len(evidences) > 0 {
+				evidenceResponses := ToEvidenceResponseList(evidences)
+
+				// Encode evidence IDs
+				for i := range evidenceResponses {
+					if encID, err := h.EncodeID(evidences[i].ID); err == nil {
+						evidenceResponses[i].ID = encID
+					}
+					evidenceResponses[i].MotorcycleID = encodedID
+				}
+
+				response.Evidence = evidenceResponses
+			}
+		}
+
+		// 11. Set permitted branches in response
+		response.PermittedBranches = permittedBranches
 
 		log.Success(logger.LogMotorcycleControllerPlateSuccess,
 			"motorcycle_id", motorcycle.ID,
 			"license_plate", plate,
 			"diagnostics_count", len(response.Diagnostics),
+			"permitted_branches_count", len(permittedBranches),
 			"client_ip", c.ClientIP())
 
-		// 5. Send success response (200 OK)
+		// 11. Send success response (200 OK)
 		h.Response.SuccessWithData(c, domain.MsgMotorcycleRetrieved, response)
 	}
 }

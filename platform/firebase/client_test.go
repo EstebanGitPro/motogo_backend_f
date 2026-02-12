@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -12,8 +13,8 @@ import (
 // ============================================
 
 func TestFirebaseClient_InterfaceCompliance(t *testing.T) {
-	// Verify Client implements FirebaseClient interface
-	var _ FirebaseClient = (*Client)(nil)
+	// Verify Client implements output.CustomTokenProvider interface
+	var _ output.CustomTokenProvider = (*Client)(nil)
 }
 
 // ============================================

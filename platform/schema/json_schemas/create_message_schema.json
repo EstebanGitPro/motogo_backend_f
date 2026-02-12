@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Update System Message",
-  "description": "Schema for updating a system message (partial updates allowed)",
+  "title": "Create System Message",
+  "description": "Schema for creating a new system message (all fields required)",
   "type": "object",
   "properties": {
     "code": {
@@ -46,5 +46,6 @@
       "default": true
     }
   },
+  "required": ["code", "type", "category", "module", "title", "content"],
   "additionalProperties": false
 }

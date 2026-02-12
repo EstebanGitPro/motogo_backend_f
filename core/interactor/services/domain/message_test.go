@@ -56,37 +56,6 @@ func TestMessageToLogger_ReturnsCorrectFormat(t *testing.T) {
 	assert.Contains(t, logFields, "module:TEST_MODULE")
 }
 
-func TestMessageValidate_Success(t *testing.T) {
-	// Arrange
-	message := domain.Message{
-		Code:    "TEST_CODE_001",
-		Title:   "Test",
-		Content: "Content",
-	}
-
-	// Act
-	err := message.Validate()
-
-	// Assert
-	assert.NoError(t, err)
-}
-
-func TestMessageValidate_CodeRequired(t *testing.T) {
-	// Arrange
-	message := domain.Message{
-		Title:   "Test",
-		Content: "Content",
-		// Code missing
-	}
-
-	// Act
-	err := message.Validate()
-
-	// Assert
-	assert.Error(t, err)
-	assert.Equal(t, domain.ErrMessageCodeRequired, err)
-}
-
 func TestMessageTypes_Constants(t *testing.T) {
 	// Test that message type constants are defined correctly
 	assert.Equal(t, domain.MessageType("ERROR"), domain.TypeError)

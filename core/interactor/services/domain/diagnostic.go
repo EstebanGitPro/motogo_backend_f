@@ -1,6 +1,10 @@
 package domain
 
-import "time"
+import (
+	"time"
+
+	uuid "github.com/EstebanGitPro/motogo-backend/tools/utils"
+)
 
 // Diagnostic represents a motorcycle diagnostic request (HU11-14)
 type Diagnostic struct {
@@ -10,11 +14,12 @@ type Diagnostic struct {
 	Date               time.Time            // Diagnostic date
 	ProblemDescription *string              // User description of the problem
 	PossibleSolution   *string              // Response from the branch
-	LaborQuote         *float64             // Labor cost quote
-	PartsQuote         *float64             // Parts cost quote
-	EstimatedTime      *string              // Estimated time (e.g., "2 horas", "1 día")
 	SentViaWhatsApp    bool                 // Whether sent via WhatsApp
 	Evidence           []DiagnosticEvidence // Associated photos (populated on read)
+}
+
+func (d *Diagnostic) SetID() {
+	d.ID = uuid.Generate()
 }
 
 // DiagnosticEvidence represents a photo attached to a diagnostic request (HU11)
@@ -24,4 +29,8 @@ type DiagnosticEvidence struct {
 	ImageURL     string    // Firebase Storage URL
 	Description  *string   // Optional description
 	CreatedAt    time.Time // Upload timestamp
+}
+
+func (e *DiagnosticEvidence) SetID() {
+	e.ID = uuid.Generate()
 }

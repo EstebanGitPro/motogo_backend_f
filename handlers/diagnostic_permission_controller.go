@@ -71,9 +71,15 @@ func (h *handler) GrantDiagnosticPermission() gin.HandlerFunc {
 			return
 		}
 
-		// 5. Call interactor
+		// 5. Resolve active value (default true for backward compat)
+		active := true
+		if req.Active != nil {
+			active = *req.Active
+		}
+
+		// 6. Call interactor
 		permission, err := h.MotorcycleInteractor.GrantDiagnosticPermission(
-			c.Request.Context(), motorcycleID, branchID, person.ID)
+			c.Request.Context(), motorcycleID, branchID, person.ID, active)
 		if err != nil {
 			log.Error(logger.LogDiagPermControllerGrantError,
 				"error", err,

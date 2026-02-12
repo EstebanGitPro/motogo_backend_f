@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -112,6 +113,6 @@ func TestErrTokenMalformed_HasCorrectMessage(t *testing.T) {
 // ============================================
 
 func TestValidator_InterfaceCompliance(t *testing.T) {
-	// Verify JWKSValidator implements Validator interface
-	var _ Validator = (*JWKSValidator)(nil)
+	// Verify JWKSValidator implements output.JWTValidator interface
+	var _ output.JWTValidator = (*JWKSValidator)(nil)
 }

@@ -54,8 +54,8 @@ type Dependencies struct {
 	MotorcycleInteractor        *interactor.MotorcycleInteractor        // HU43-47
 	EvidenceInteractor          *interactor.EvidenceInteractor          // HU16-19
 	DiagnosticInteractor        *interactor.DiagnosticInteractor        // HU11-14
-	FirebaseClient              *firebase.Client                        // Firebase Auth
-	JWTValidator                *jwt.JWKSValidator                      // JWT validation with JWKS
+	FirebaseClient              output.CustomTokenProvider              // Firebase Auth
+	JWTValidator                output.JWTValidator                     // JWT validation with JWKS
 	Config                      *config.Config
 	Logger                      logger.Logger
 	IDEncoder                   *idencoder.HashidsEncoder
@@ -243,8 +243,8 @@ func Init() (*Dependencies, error) {
 	}
 	log.Success(logger.LogDepFranchiseRepoInitOK)
 
-	franchiseService := services.NewFranchiseService(franchiseRepository)
-	franchiseInteractor := interactor.NewFranchiseInteractor(franchiseService, branchService)
+	franchiseService := services.NewFranchiseService(franchiseRepository, branchRepository)
+	franchiseInteractor := interactor.NewFranchiseInteractor(franchiseService)
 	log.Success(logger.LogDepFranchiseInteractorInitOK)
 
 	scheduleRepository, err := scheduleRepo.NewRepository(db)
@@ -287,7 +287,10 @@ func Init() (*Dependencies, error) {
 	}
 	log.Success(logger.LogDepDiagPermRepoInitOK)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(motorcycleRepository, diagnosticPermissionRepository)
+	motorcycleService := services.NewMotorcycleService(motorcycleRepository, diagnosticPermissionRepository)
+	log.Success(logger.LogDepMotorcycleServiceInitOK)
+
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(motorcycleService)
 	log.Success(logger.LogDepMotorcycleInteractorInitOK)
 
 	// Evidence feature (HU16-19)
@@ -298,7 +301,8 @@ func Init() (*Dependencies, error) {
 	}
 	log.Success(logger.LogDepEvidenceRepoInitOK)
 
-	evidenceInteractor := interactor.NewEvidenceInteractor(evidenceRepository, motorcycleRepository)
+	evidenceService := services.NewEvidenceService(evidenceRepository, motorcycleRepository)
+	evidenceInteractor := interactor.NewEvidenceInteractor(evidenceService)
 	log.Success(logger.LogDepEvidenceInteractorInitOK)
 
 	// Diagnostic feature (HU11-14)
@@ -309,7 +313,8 @@ func Init() (*Dependencies, error) {
 	}
 	log.Success(logger.LogDepDiagnosticRepoInitOK)
 
-	diagnosticInteractor := interactor.NewDiagnosticInteractor(diagnosticRepository, motorcycleRepository, branchRepository)
+	diagnosticService := services.NewDiagnosticService(diagnosticRepository, motorcycleRepository, branchRepository)
+	diagnosticInteractor := interactor.NewDiagnosticInteractor(diagnosticService)
 	log.Success(logger.LogDepDiagnosticInteractorInitOK)
 
 	var firebaseClient *firebase.Client
@@ -328,11 +333,11 @@ func Init() (*Dependencies, error) {
 			// Don't fail startup if Firebase is not configured
 		} else {
 			log.Success(logger.LogDepFirebaseClientInitOK)
-			// Connect Firebase Storage to MotorcycleInteractor for image deletion (HU45)
-			motorcycleInteractor.WithStorageClient(firebaseClient)
-			log.Success(logger.LogDepMotorcycleInteractorInitOK, "with_storage", true)
-			// Connect Firebase Storage to EvidenceInteractor for evidence deletion (HU19)
-			evidenceInteractor.WithStorageClient(firebaseClient)
+			// Connect Firebase Storage to MotorcycleService for image deletion (HU45)
+			motorcycleService.WithStorageClient(firebaseClient)
+			log.Success(logger.LogDepMotorcycleServiceInitOK, "with_storage", true)
+			// Connect Firebase Storage to EvidenceService for evidence deletion (HU19)
+			evidenceService.WithStorageClient(firebaseClient)
 			log.Success(logger.LogDepEvidenceInteractorInitOK, "with_storage", true)
 			// Connect Firebase Storage to BranchInteractor for profile image deletion (HU60-61)
 			branchInteractor.WithStorageClient(firebaseClient)
@@ -342,7 +347,7 @@ func Init() (*Dependencies, error) {
 		log.Warn(logger.LogDepFirebaseCredNotConfig)
 	}
 
-	var jwtValidator *jwt.JWKSValidator
+	var jwtValidator output.JWTValidator
 	jwtConfig := jwt.JWKSConfig{
 		JWKSURL:         cfg.GetKeycloakJWKSURL(),
 		Issuer:          cfg.GetKeycloakIssuerURL(),

@@ -58,7 +58,6 @@ var errorToMessageCode = map[error]string{
 
 	// Message errors
 	domain.ErrMessageNotFound:         domain.MsgMessageNotFound,
-	domain.ErrMessageCodeRequired:     domain.MsgMessageCodeRequired,
 	domain.ErrMessageTypeRequired:     domain.MsgMessageTypeRequired,
 	domain.ErrMessageTitleRequired:    domain.MsgMessageTitleRequired,
 	domain.ErrMessageContentRequired:  domain.MsgMessageContentReq,

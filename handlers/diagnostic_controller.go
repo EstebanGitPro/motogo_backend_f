@@ -385,3 +385,66 @@ func (h *handler) DeleteDiagnostic() gin.HandlerFunc {
 		h.Response.Success(c, domain.MsgDiagnosticDeleted)
 	}
 }
+
+// SetDiagnosticSolution handles PATCH /diagnostics/:id/solution - sets solution for a diagnostic (representative)
+// @Summary Set diagnostic solution
+// @Description Sets the possible solution for a diagnostic. Used by workshop representatives.
+// @Accept json
+// @Produce json
+// @Security     BearerAuth
+// @Param id path string true "Diagnostic ID (obfuscated)"
+// @Param solution body SetSolutionRequest true "Solution data"
+// @Success 200 {object} StandardResponse "Solution saved"
+// @Failure 400 {object} StandardResponse "Bad request"
+// @Failure 401 {object} StandardResponse "Unauthorized"
+// @Failure 404 {object} StandardResponse "Diagnostic not found"
+// @Failure 500 {object} StandardResponse "Internal server error"
+// @Router /diagnostics/{id}/solution [patch]
+func (h *handler) SetDiagnosticSolution() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		traceID := middleware.GetTraceIDFromContext(c)
+
+		Logger.Info(logger.LogDiagnosticControllerSetSolutionRequest, "trace_id", traceID)
+
+		// Step 1: Decode diagnostic ID
+		encodedDiagnosticID := c.Param("id")
+		diagnosticID, err := h.DecodeID(encodedDiagnosticID)
+		if err != nil {
+			Logger.Error(logger.LogDiagnosticControllerSetSolutionError, "error", err)
+			h.Response.Error(c, domain.MsgDiagnosticNotFound)
+			return
+		}
+
+		// Step 2: Parse request body
+		var request SetSolutionRequest
+		if err := c.ShouldBindJSON(&request); err != nil {
+			Logger.Error(logger.LogDiagnosticControllerSetSolutionError, "bind_error", err)
+			h.Response.Error(c, domain.MsgServerError)
+			return
+		}
+
+		// Sanitize input
+		request.Sanitize()
+
+		// Step 3: Set solution through interactor (no ownership check)
+		err = h.DiagnosticInteractor.SetSolution(
+			c.Request.Context(),
+			diagnosticID,
+			request.PossibleSolution,
+		)
+		if err != nil {
+			Logger.Error(logger.LogDiagnosticControllerSetSolutionError, "error", err)
+
+			if errors.Is(err, domain.ErrDiagnosticNotFound) {
+				h.Response.Error(c, domain.MsgDiagnosticNotFound)
+			} else {
+				h.Response.Error(c, domain.MsgDiagnosticCannotUpdate)
+			}
+			return
+		}
+
+		Logger.Info(logger.LogDiagnosticControllerSetSolutionSuccess, "id", diagnosticID, "trace_id", traceID)
+
+		h.Response.Success(c, domain.MsgDiagnosticUpdated)
+	}
+}

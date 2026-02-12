@@ -9,7 +9,6 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/core/ports/input"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
-	"github.com/google/uuid"
 )
 
 var scheduleDetailLog logger.Logger = logger.NewSlogLogger()
@@ -124,7 +123,7 @@ func (s *scheduleDetailService) CreateDetail(
 	}
 
 	// 5. Generate ID and set defaults
-	detail.ID = uuid.New().String()
+	detail.SetID()
 	detail.EntryType = domain.EntryTypeRegular
 	detail.Active = true
 	detail.CreatedAt = time.Now()
@@ -434,7 +433,7 @@ func (s *scheduleDetailService) CreateException(
 	}
 
 	// 7. Generate ID and set defaults
-	exception.ID = uuid.New().String()
+	exception.SetID()
 	exception.EntryType = domain.EntryTypeException
 	exception.DayOfWeek = nil // Exceptions don't use day_of_week
 	exception.Active = true

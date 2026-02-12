@@ -114,10 +114,9 @@ func TestRegisterFranchise_Integration_Success(t *testing.T) {
 
 	// Mock dependencies for FranchiseInteractor
 	mockFranchiseService := new(mocks.MockFranchiseService)
-	mockBranchService := new(mocks.MockBranchService)
 	mockTx := new(mocks.MockTx)
 
-	franchiseInteractor := interactor.NewFranchiseInteractor(mockFranchiseService, mockBranchService)
+	franchiseInteractor := interactor.NewFranchiseInteractor(mockFranchiseService)
 
 	// Handler only needs IDEncoder + Response (interactor passed as method param)
 	h := handlers.NewForTestWithConcrete(nil, nil, nil, nil, encoder, responseHandler)
@@ -130,12 +129,8 @@ func TestRegisterFranchise_Integration_Success(t *testing.T) {
 
 	encodedBranchID, _ := encoder.Encode(branchID)
 
-	// Mock: branch lookup (ownership validation)
-	mockBranchService.On("GetBranchByID", mock.Anything, branchID).Return(&domain.Branch{
-		ID:               branchID,
-		RepresentativeID: ownerID,
-		FranchiseID:      nil,
-	}, nil)
+	// Mock: branch validation (ownership) via franchise service
+	mockFranchiseService.On("ValidateBranchesForFranchise", mock.Anything, []string{branchID}, ownerID).Return(nil)
 
 	// Mock: transaction lifecycle
 	mockFranchiseService.On("BeginTx", mock.Anything).Return(mockTx, nil)
@@ -182,6 +177,5 @@ func TestRegisterFranchise_Integration_Success(t *testing.T) {
 	assert.NotEmpty(t, data["_links"])
 
 	mockFranchiseService.AssertExpectations(t)
-	mockBranchService.AssertExpectations(t)
 	mockTx.AssertExpectations(t)
 }

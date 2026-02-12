@@ -45,12 +45,3 @@ func (m *Message) ToLogger() []string {
 		"module:" + m.Module,
 	}
 }
-
-// TODO: quitar estas validaciones de aqui
-// IsValid validates the message fields
-func (m *Message) Validate() error {
-	if m.Code == "" {
-		return ErrMessageCodeRequired
-	}
-	return nil
-}

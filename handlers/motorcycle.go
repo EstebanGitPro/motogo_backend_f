@@ -29,14 +29,22 @@ type MotorcycleReferenceDTO struct {
 // MotorcycleLookupResponse represents the API response for motorcycle lookup by workshops (HU47)
 // This DTO excludes private owner data (notes) and unnecessary IDs (brand_id)
 type MotorcycleLookupResponse struct {
-	ID              string                        `json:"id"`
-	LicensePlate    string                        `json:"license_plate"`
-	Year            *int                          `json:"year,omitempty"`
-	CurrentMileage  *int                          `json:"current_mileage,omitempty"`
-	ProfileImageURL *string                       `json:"profile_image_url,omitempty"`
-	Reference       *MotorcycleLookupReferenceDTO `json:"reference,omitempty"`
-	Diagnostics     []DiagnosticResponse          `json:"diagnostics,omitempty"`
-	Links           []Link                        `json:"_links,omitempty"`
+	ID                string                        `json:"id"`
+	LicensePlate      string                        `json:"license_plate"`
+	Year              *int                          `json:"year,omitempty"`
+	CurrentMileage    *int                          `json:"current_mileage,omitempty"`
+	ProfileImageURL   *string                       `json:"profile_image_url,omitempty"`
+	Reference         *MotorcycleLookupReferenceDTO `json:"reference,omitempty"`
+	Diagnostics       []DiagnosticResponse          `json:"diagnostics,omitempty"`
+	Evidence          []EvidenceResponse            `json:"evidence,omitempty"`
+	PermittedBranches []PermittedBranchInfo         `json:"permitted_branches,omitempty"`
+	Links             []Link                        `json:"_links,omitempty"`
+}
+
+// PermittedBranchInfo represents a branch that has active permission to view motorcycle diagnostics
+type PermittedBranchInfo struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }
 
 // MotorcycleLookupReferenceDTO represents motorcycle reference for workshop lookup (no brand_id)

@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
-	"github.com/EstebanGitPro/motogo-backend/tools/utils"
 )
 
 const (
@@ -18,14 +17,15 @@ const (
 // NewEvidence creates a new MotorcycleEvidence with generated ID and timestamp
 // This is a factory function that encapsulates ID generation and timestamp assignment
 func NewEvidence(motorcycleID, imageURL string, angle, description *string) *domain.MotorcycleEvidence {
-	return &domain.MotorcycleEvidence{
-		ID:           utils.Generate(),
+	e := &domain.MotorcycleEvidence{
 		MotorcycleID: motorcycleID,
 		Angle:        angle,
 		ImageURL:     imageURL,
 		Description:  description,
 		CreatedAt:    time.Now(),
 	}
+	e.SetID()
+	return e
 }
 
 // IsValidAngle checks if the angle is valid (FRONTAL, LATERAL, REAR)

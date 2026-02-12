@@ -12,13 +12,13 @@ import (
 
 const (
 	queryInsert = `
-		INSERT INTO diagnostics (id, motorcycle_id, branch_id, date, problem_description, possible_solution, labor_quote, parts_quote, estimated_time, sent_via_whatsapp)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO diagnostics (id, motorcycle_id, branch_id, date, problem_description, possible_solution, sent_via_whatsapp)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
 	`
 
 	queryUpdate = `
 		UPDATE diagnostics
-		SET problem_description = ?, possible_solution = ?, labor_quote = ?, parts_quote = ?, estimated_time = ?, sent_via_whatsapp = ?
+		SET problem_description = ?, possible_solution = ?, sent_via_whatsapp = ?
 		WHERE id = ?
 	`
 
@@ -27,13 +27,13 @@ const (
 	`
 
 	queryGetByID = `
-		SELECT id, motorcycle_id, branch_id, date, problem_description, possible_solution, labor_quote, parts_quote, estimated_time, sent_via_whatsapp
+		SELECT id, motorcycle_id, branch_id, date, problem_description, possible_solution, sent_via_whatsapp
 		FROM diagnostics
 		WHERE id = ?
 	`
 
 	queryGetByMotorcycleID = `
-		SELECT id, motorcycle_id, branch_id, date, problem_description, possible_solution, labor_quote, parts_quote, estimated_time, sent_via_whatsapp
+		SELECT id, motorcycle_id, branch_id, date, problem_description, possible_solution, sent_via_whatsapp
 		FROM diagnostics
 		WHERE motorcycle_id = ?
 		ORDER BY date DESC
@@ -52,7 +52,7 @@ const (
 	`
 
 	queryGetByMotorcycleAndBranch = `
-		SELECT id, motorcycle_id, branch_id, date, problem_description, possible_solution, labor_quote, parts_quote, estimated_time, sent_via_whatsapp
+		SELECT id, motorcycle_id, branch_id, date, problem_description, possible_solution, sent_via_whatsapp
 		FROM diagnostics
 		WHERE motorcycle_id = ? AND branch_id = ?
 		ORDER BY date DESC

@@ -26,9 +26,6 @@ func (r *repository) GetByMotorcycleID(ctx context.Context, motorcycleID string)
 			&diag.Date,
 			&diag.ProblemDescription,
 			&diag.PossibleSolution,
-			&diag.LaborQuote,
-			&diag.PartsQuote,
-			&diag.EstimatedTime,
 			&diag.SentViaWhatsApp,
 		); err != nil {
 			log.Error(logger.LogDiagnosticRepoScanError, err)

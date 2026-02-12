@@ -4,95 +4,77 @@ import (
 	"context"
 
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
-	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
+	"github.com/EstebanGitPro/motogo-backend/core/ports/input"
 	"github.com/EstebanGitPro/motogo-backend/middleware"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
-	"github.com/EstebanGitPro/motogo-backend/tools/utils"
-	"github.com/google/uuid"
 )
 
 // MotorcycleInteractor handles motorcycle-related use cases (HU43-47)
+// Orchestrates ownership checks and transaction management, delegating business logic to MotorcycleService
 type MotorcycleInteractor struct {
-	motorcycleRepo output.MotorcycleRepository
-	diagPermRepo   output.DiagnosticPermissionRepository // Diagnostic permissions pivot
-	storageClient  output.StorageClient                  // Optional: Firebase Storage for image deletion
+	motorcycleSvc input.MotorcycleService
 }
 
 // NewMotorcycleInteractor creates a new MotorcycleInteractor instance
-func NewMotorcycleInteractor(motorcycleRepo output.MotorcycleRepository, diagPermRepo output.DiagnosticPermissionRepository) *MotorcycleInteractor {
+func NewMotorcycleInteractor(motorcycleSvc input.MotorcycleService) *MotorcycleInteractor {
 	return &MotorcycleInteractor{
-		motorcycleRepo: motorcycleRepo,
-		diagPermRepo:   diagPermRepo,
+		motorcycleSvc: motorcycleSvc,
 	}
 }
 
-// WithStorageClient sets the storage client for image deletion (optional)
-func (i *MotorcycleInteractor) WithStorageClient(client output.StorageClient) *MotorcycleInteractor {
-	i.storageClient = client
-	return i
-}
-
 // RegisterMotorcycle registers a new motorcycle for the authenticated user (HU43)
-func (i *MotorcycleInteractor) RegisterMotorcycle(ctx context.Context, motorcycle *domain.Motorcycle) (*domain.Motorcycle, error) {
+func (i *MotorcycleInteractor) RegisterMotorcycle(ctx context.Context, motorcycle *domain.Motorcycle) (result *domain.Motorcycle, err error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
 	log := log.WithTraceID(traceID)
 
 	log.Info(logger.LogMotorcycleInteractorRegStart, "license_plate", motorcycle.LicensePlate, "owner_id", motorcycle.OwnerID)
 
-	// Step 1: Validate reference_id is provided (required field)
-	if motorcycle.ReferenceID == "" {
-		log.Warn(logger.LogMotorcycleInteractorRefRequired)
-		return nil, domain.ErrReferenceRequired
-	}
-
-	// Step 2: Validate reference exists in catalog
-	refExists, err := i.motorcycleRepo.ValidateReferenceExists(ctx, motorcycle.ReferenceID)
-	if err != nil {
-		log.Error(logger.LogMotorcycleInteractorRefError, "error", err, "reference_id", motorcycle.ReferenceID)
-		return nil, domain.ErrMotorcycleCannotSave
-	}
-	if !refExists {
-		log.Warn(logger.LogMotorcycleInteractorRefNotFound, "reference_id", motorcycle.ReferenceID)
-		return nil, domain.ErrReferenceNotFound
+	// Step 1: Validate reference exists
+	if err = i.motorcycleSvc.ValidateReferenceExists(ctx, motorcycle.ReferenceID); err != nil {
+		log.Warn(logger.LogMotorcycleInteractorRefError, "error", err, "reference_id", motorcycle.ReferenceID)
+		return nil, err
 	}
 
 	// Step 2: Validate license plate is unique
-	plateExists, err := i.motorcycleRepo.CheckLicensePlateExists(ctx, motorcycle.LicensePlate)
-	if err != nil {
-		log.Error(logger.LogMotorcycleInteractorCheckPlateErr, "error", err, "license_plate", motorcycle.LicensePlate)
-		return nil, domain.ErrMotorcycleCannotSave
-	}
-	if plateExists {
-		log.Warn(logger.LogMotorcycleInteractorDupPlate, "license_plate", motorcycle.LicensePlate)
-		return nil, domain.ErrDuplicateLicensePlate
+	if err = i.motorcycleSvc.CheckLicensePlateUnique(ctx, motorcycle.LicensePlate); err != nil {
+		log.Warn(logger.LogMotorcycleInteractorCheckPlateErr, "error", err, "license_plate", motorcycle.LicensePlate)
+		return nil, err
 	}
 
-	// Step 3: Generate UUID
-	motorcycle.ID = uuid.New().String()
-	log.Debug(logger.LogMotorcycleInteractorIDGenerated, "id", motorcycle.ID)
-
-	// Step 4: Begin transaction
-	tx, err := i.motorcycleRepo.BeginTx(ctx)
-	if err != nil {
-		log.Error(logger.LogMotorcycleInteractorBeginTxError, "error", err)
+	// Step 3: Begin transaction
+	tx, txErr := i.motorcycleSvc.BeginTx(ctx)
+	if txErr != nil {
+		log.Error(logger.LogMotorcycleInteractorBeginTxError, "error", txErr)
 		return nil, domain.ErrMotorcycleCannotSave
 	}
 
-	// Step 5: Save motorcycle
-	err = i.motorcycleRepo.Save(ctx, tx, motorcycle)
-	if err != nil {
+	defer func() {
+		if err != nil {
+			if rbErr := tx.Rollback(); rbErr != nil {
+				log.Error(logger.LogMotorcycleInteractorRollbackError,
+					"rollback_error", rbErr,
+					"original_error", err)
+			} else {
+				log.Warn(logger.LogMotorcycleInteractorRollbackOK)
+			}
+		}
+	}()
+
+	// Step 4: Register motorcycle (SetID + Save)
+	if err = i.motorcycleSvc.RegisterMotorcycle(ctx, tx, motorcycle); err != nil {
 		log.Error(logger.LogMotorcycleInteractorSaveError, "error", err)
-		tx.Rollback()
-		return nil, domain.ErrMotorcycleCannotSave
+		return nil, err
 	}
 
-	// Step 6: Commit transaction
-	if err := tx.Commit(); err != nil {
+	// Step 5: Commit transaction
+	if err = tx.Commit(); err != nil {
 		log.Error(logger.LogMotorcycleInteractorCommitError, "error", err)
 		return nil, domain.ErrMotorcycleCannotSave
 	}
 
 	log.Success(logger.LogMotorcycleInteractorRegSuccess, "id", motorcycle.ID, "license_plate", motorcycle.LicensePlate)
+
+	err = nil // ensure defer does NOT execute rollback
 	return motorcycle, nil
 }
 
@@ -103,7 +85,7 @@ func (i *MotorcycleInteractor) GetMotorcycleByID(ctx context.Context, motorcycle
 
 	log.Info(logger.LogMotorcycleInteractorGetStart, "motorcycle_id", motorcycleID)
 
-	motorcycle, err := i.motorcycleRepo.GetByID(ctx, motorcycleID)
+	motorcycle, err := i.motorcycleSvc.GetByID(ctx, motorcycleID)
 	if err != nil {
 		log.Error(logger.LogMotorcycleInteractorGetError, "error", err, "motorcycle_id", motorcycleID)
 		return nil, err
@@ -120,7 +102,7 @@ func (i *MotorcycleInteractor) GetMotorcyclesByOwner(ctx context.Context, ownerI
 
 	log.Info(logger.LogMotorcycleInteractorGetOwnerStart, "owner_id", ownerID)
 
-	motorcycles, err := i.motorcycleRepo.GetByOwnerID(ctx, ownerID)
+	motorcycles, err := i.motorcycleSvc.GetByOwnerID(ctx, ownerID)
 	if err != nil {
 		log.Error(logger.LogMotorcycleInteractorGetOwnerError, "error", err, "owner_id", ownerID)
 		return nil, err
@@ -138,7 +120,7 @@ func (i *MotorcycleInteractor) GetMotorcycleByLicensePlate(ctx context.Context, 
 
 	log.Info(logger.LogMotorcycleInteractorGetPlateStart, "license_plate", licensePlate)
 
-	motorcycle, err := i.motorcycleRepo.GetByLicensePlate(ctx, licensePlate)
+	motorcycle, err := i.motorcycleSvc.GetByLicensePlate(ctx, licensePlate)
 	if err != nil {
 		log.Error(logger.LogMotorcycleInteractorGetPlateError, "error", err, "license_plate", licensePlate)
 		return nil, err
@@ -149,79 +131,70 @@ func (i *MotorcycleInteractor) GetMotorcycleByLicensePlate(ctx context.Context, 
 }
 
 // UpdateMotorcycle updates motorcycle information (HU44)
-// Only owner can update their motorcycle - caller must validate ownership
-func (i *MotorcycleInteractor) UpdateMotorcycle(ctx context.Context, motorcycleID string, ownerID string, updates *domain.Motorcycle) (*domain.Motorcycle, error) {
+// Only owner can update their motorcycle
+func (i *MotorcycleInteractor) UpdateMotorcycle(ctx context.Context, motorcycleID string, ownerID string, updates *domain.Motorcycle) (result *domain.Motorcycle, err error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
 	log := log.WithTraceID(traceID)
 
 	log.Info(logger.LogMotorcycleInteractorUpdateStart, "motorcycle_id", motorcycleID, "owner_id", ownerID)
 
-	// Step 1: Get existing motorcycle
-	motorcycle, err := i.motorcycleRepo.GetByID(ctx, motorcycleID)
+	// Step 1: Validate ownership
+	motorcycle, err := i.motorcycleSvc.ValidateOwnership(ctx, motorcycleID, ownerID)
 	if err != nil {
+		log.Warn(logger.LogMotorcycleInteractorUpdateError, "error", err, "motorcycle_id", motorcycleID, "owner_id", ownerID)
+		return nil, err
+	}
+
+	// Step 2: Apply field updates (includes reference validation if changed)
+	if err = i.motorcycleSvc.ApplyUpdates(motorcycle, updates); err != nil {
+		log.Warn(logger.LogMotorcycleInteractorUpdateError, "error", err, "motorcycle_id", motorcycleID)
+		return nil, err
+	}
+
+	// Step 3: Begin transaction
+	tx, txErr := i.motorcycleSvc.BeginTx(ctx)
+	if txErr != nil {
+		log.Error(logger.LogMotorcycleInteractorBeginTxError, "error", txErr)
+		return nil, domain.ErrMotorcycleCannotUpdate
+	}
+
+	defer func() {
+		if err != nil {
+			if rbErr := tx.Rollback(); rbErr != nil {
+				log.Error(logger.LogMotorcycleInteractorRollbackError,
+					"rollback_error", rbErr,
+					"original_error", err)
+			} else {
+				log.Warn(logger.LogMotorcycleInteractorRollbackOK)
+			}
+		}
+	}()
+
+	// Step 4: Persist update
+	if err = i.motorcycleSvc.UpdateMotorcycle(ctx, tx, motorcycle); err != nil {
 		log.Error(logger.LogMotorcycleInteractorUpdateError, "error", err, "motorcycle_id", motorcycleID)
 		return nil, err
 	}
 
-	// Step 2: Validate ownership
-	if motorcycle.OwnerID != ownerID {
-		log.Warn(logger.LogMotorcycleInteractorUpdateError, "reason", "not owner", "motorcycle_id", motorcycleID, "owner_id", ownerID)
-		return nil, domain.ErrMotorcycleNotFound
-	}
-
-	// Step 3: Validate new reference_id if changed
-	if updates.ReferenceID != "" && updates.ReferenceID != motorcycle.ReferenceID {
-		refExists, err := i.motorcycleRepo.ValidateReferenceExists(ctx, updates.ReferenceID)
-		if err != nil {
-			log.Error(logger.LogMotorcycleInteractorRefError, "error", err, "reference_id", updates.ReferenceID)
-			return nil, domain.ErrMotorcycleCannotUpdate
-		}
-		if !refExists {
-			log.Warn(logger.LogMotorcycleInteractorRefNotFound, "reference_id", updates.ReferenceID)
-			return nil, domain.ErrReferenceNotFound
-		}
-		motorcycle.ReferenceID = updates.ReferenceID
-	}
-
-	// Step 4: Apply updates (only if provided)
-	if updates.Year != nil {
-		motorcycle.Year = updates.Year
-	}
-	if updates.CurrentMileage != nil {
-		motorcycle.CurrentMileage = updates.CurrentMileage
-	}
-	if updates.OwnerNotes != nil {
-		motorcycle.OwnerNotes = updates.OwnerNotes
-	}
-	if updates.ProfileImageURL != nil {
-		motorcycle.ProfileImageURL = updates.ProfileImageURL
-	}
-
-	// Step 5: Begin transaction
-	tx, err := i.motorcycleRepo.BeginTx(ctx)
-	if err != nil {
-		log.Error(logger.LogMotorcycleInteractorBeginTxError, "error", err)
-		return nil, domain.ErrMotorcycleCannotUpdate
-	}
-
-	// Step 6: Update motorcycle
-	err = i.motorcycleRepo.Update(ctx, tx, motorcycle)
-	if err != nil {
-		log.Error(logger.LogMotorcycleInteractorUpdateError, "error", err, "motorcycle_id", motorcycleID)
-		tx.Rollback()
-		return nil, domain.ErrMotorcycleCannotUpdate
-	}
-
-	// Step 7: Commit transaction
-	if err := tx.Commit(); err != nil {
+	// Step 5: Commit transaction
+	if err = tx.Commit(); err != nil {
 		log.Error(logger.LogMotorcycleInteractorCommitError, "error", err)
 		return nil, domain.ErrMotorcycleCannotUpdate
 	}
 
 	log.Success(logger.LogMotorcycleInteractorUpdateSuccess, "motorcycle_id", motorcycleID)
 
-	// Step 8: Return updated motorcycle with reference info
-	return i.motorcycleRepo.GetByID(ctx, motorcycleID)
+	// Step 6: Return updated motorcycle with reference info
+	result, err = i.motorcycleSvc.GetByID(ctx, motorcycleID)
+	if err != nil {
+		// Refetch failed but update was successful, return original
+		log.Warn(logger.LogMotorcycleInteractorGetError, "error", err, "motorcycle_id", motorcycleID)
+		err = nil
+		return motorcycle, nil
+	}
+
+	err = nil // ensure defer does NOT execute rollback
+	return result, nil
 }
 
 // DeleteMotorcycle implements hybrid delete strategy (HU45):
@@ -229,134 +202,119 @@ func (i *MotorcycleInteractor) UpdateMotorcycle(ctx context.Context, motorcycleI
 // - Soft delete: If motorcycle HAS service history (preserves historical data)
 // In both cases, profile image is removed from Firebase Storage
 // Only owner can delete their motorcycle - returns 404 for non-owners
-func (i *MotorcycleInteractor) DeleteMotorcycle(ctx context.Context, motorcycleID string, ownerID string) error {
+func (i *MotorcycleInteractor) DeleteMotorcycle(ctx context.Context, motorcycleID string, ownerID string) (err error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
 	log := log.WithTraceID(traceID)
 
 	log.Info(logger.LogMotorcycleInteractorDeleteStart, "motorcycle_id", motorcycleID, "owner_id", ownerID)
 
-	// Step 1: Get existing motorcycle to validate ownership
-	motorcycle, err := i.motorcycleRepo.GetByID(ctx, motorcycleID)
+	// Step 1: Validate ownership
+	motorcycle, err := i.motorcycleSvc.ValidateOwnership(ctx, motorcycleID, ownerID)
 	if err != nil {
+		log.Warn(logger.LogMotorcycleInteractorDeleteError, "error", err, "motorcycle_id", motorcycleID, "owner_id", ownerID)
+		return err
+	}
+
+	// Step 2: Delete profile image from Firebase Storage (best-effort)
+	if motorcycle.ProfileImageURL != nil && *motorcycle.ProfileImageURL != "" {
+		i.motorcycleSvc.DeleteStorageFile(ctx, *motorcycle.ProfileImageURL)
+	}
+
+	// Step 3: Begin transaction
+	tx, txErr := i.motorcycleSvc.BeginTx(ctx)
+	if txErr != nil {
+		log.Error(logger.LogMotorcycleInteractorBeginTxError, "error", txErr)
+		return domain.ErrMotorcycleCannotDelete
+	}
+
+	defer func() {
+		if err != nil {
+			if rbErr := tx.Rollback(); rbErr != nil {
+				log.Error(logger.LogMotorcycleInteractorRollbackError,
+					"rollback_error", rbErr,
+					"original_error", err)
+			} else {
+				log.Warn(logger.LogMotorcycleInteractorRollbackOK)
+			}
+		}
+	}()
+
+	// Step 4: Execute hybrid delete (service determines soft vs hard)
+	if err = i.motorcycleSvc.DeleteMotorcycle(ctx, tx, motorcycleID); err != nil {
 		log.Error(logger.LogMotorcycleInteractorDeleteError, "error", err, "motorcycle_id", motorcycleID)
 		return err
 	}
 
-	// Step 2: Validate ownership (security by obscurity - 404 for non-owners)
-	if motorcycle.OwnerID != ownerID {
-		log.Warn(logger.LogMotorcycleInteractorDeleteError, "reason", "not owner", "motorcycle_id", motorcycleID, "owner_id", ownerID)
-		return domain.ErrMotorcycleNotFound
-	}
-
-	// Step 3: Check if motorcycle has service history
-	hasHistory, err := i.motorcycleRepo.HasServiceHistory(ctx, motorcycleID)
-	if err != nil {
-		log.Error(logger.LogMotorcycleInteractorDeleteError, "error checking history", err, "motorcycle_id", motorcycleID)
-		return domain.ErrMotorcycleCannotDelete
-	}
-
-	// Step 4: Delete profile image from Firebase Storage (if exists and client configured)
-	if motorcycle.ProfileImageURL != nil && *motorcycle.ProfileImageURL != "" && i.storageClient != nil {
-		if err := i.storageClient.DeleteStorageFile(ctx, *motorcycle.ProfileImageURL); err != nil {
-			// Log warning but don't fail the delete - image cleanup is best effort
-			log.Warn(logger.LogMotorcycleInteractorDeleteError, "storage delete failed (continuing)", err)
-		}
-	}
-
-	// Step 5: Begin transaction
-	tx, err := i.motorcycleRepo.BeginTx(ctx)
-	if err != nil {
-		log.Error(logger.LogMotorcycleInteractorBeginTxError, "error", err)
-		return domain.ErrMotorcycleCannotDelete
-	}
-
-	// Step 6: Choose delete strategy based on history
-	if hasHistory {
-		// Soft delete - preserves historical data integrity
-		log.Info(logger.LogMotorcycleInteractorDeleteStart, "strategy", "soft_delete", "motorcycle_id", motorcycleID)
-		if err = i.motorcycleRepo.Delete(ctx, tx, motorcycleID); err != nil {
-			log.Error(logger.LogMotorcycleInteractorDeleteError, "error", err, "motorcycle_id", motorcycleID)
-			tx.Rollback()
-			return domain.ErrMotorcycleCannotDelete
-		}
-	} else {
-		// Hard delete - no history to preserve, clean removal
-		log.Info(logger.LogMotorcycleInteractorDeleteStart, "strategy", "hard_delete", "motorcycle_id", motorcycleID)
-		if err = i.motorcycleRepo.HardDelete(ctx, tx, motorcycleID); err != nil {
-			log.Error(logger.LogMotorcycleInteractorDeleteError, "error", err, "motorcycle_id", motorcycleID)
-			tx.Rollback()
-			return domain.ErrMotorcycleCannotDelete
-		}
-	}
-
-	// Step 7: Commit transaction
-	if err := tx.Commit(); err != nil {
+	// Step 5: Commit transaction
+	if err = tx.Commit(); err != nil {
 		log.Error(logger.LogMotorcycleInteractorCommitError, "error", err)
 		return domain.ErrMotorcycleCannotDelete
 	}
 
-	log.Success(logger.LogMotorcycleInteractorDeleteSuccess, "motorcycle_id", motorcycleID, "strategy", map[bool]string{true: "soft_delete", false: "hard_delete"}[hasHistory])
+	log.Success(logger.LogMotorcycleInteractorDeleteSuccess, "motorcycle_id", motorcycleID)
+
+	err = nil // ensure defer does NOT execute rollback
 	return nil
 }
 
 // DeleteProfileImage removes profile image from both Firebase Storage and database (HU39)
 // Only owner can delete their motorcycle's image - returns 404 for non-owners
-func (i *MotorcycleInteractor) DeleteProfileImage(ctx context.Context, motorcycleID string, ownerID string) error {
+func (i *MotorcycleInteractor) DeleteProfileImage(ctx context.Context, motorcycleID string, ownerID string) (err error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
 	log := log.WithTraceID(traceID)
 
 	log.Info(logger.LogMotorcycleInteractorUpdateStart, "action", "delete_profile_image", "motorcycle_id", motorcycleID, "owner_id", ownerID)
 
-	// Step 1: Get existing motorcycle
-	motorcycle, err := i.motorcycleRepo.GetByID(ctx, motorcycleID)
-	if err != nil {
-		log.Error(logger.LogMotorcycleInteractorGetError, "error", err, "motorcycle_id", motorcycleID)
-		return err
+	// Step 1: Validate ownership
+	motorcycle, ownerErr := i.motorcycleSvc.ValidateOwnership(ctx, motorcycleID, ownerID)
+	if ownerErr != nil {
+		log.Warn(logger.LogMotorcycleInteractorUpdateError, "error", ownerErr, "motorcycle_id", motorcycleID, "owner_id", ownerID)
+		return ownerErr
 	}
 
-	// Step 2: Validate ownership (security by obscurity - 404 for non-owners)
-	if motorcycle.OwnerID != ownerID {
-		log.Warn(logger.LogMotorcycleInteractorUpdateError, "reason", "not owner", "motorcycle_id", motorcycleID, "owner_id", ownerID)
-		return domain.ErrMotorcycleNotFound
-	}
-
-	// Step 3: Check if there's an image to delete
+	// Step 2: Check if there's an image to delete
 	if motorcycle.ProfileImageURL == nil || *motorcycle.ProfileImageURL == "" {
 		log.Info(logger.LogMotorcycleInteractorUpdateSuccess, "action", "delete_profile_image", "result", "no_image_to_delete")
 		return nil // Nothing to delete
 	}
 
-	// Step 4: Delete from Firebase Storage (if client configured)
-	if i.storageClient != nil {
-		if err := i.storageClient.DeleteStorageFile(ctx, *motorcycle.ProfileImageURL); err != nil {
-			// Log warning but continue - storage cleanup is best effort
-			log.Warn(logger.LogMotorcycleInteractorUpdateError, "storage delete failed (continuing)", err, "url", *motorcycle.ProfileImageURL)
-		} else {
-			log.Info(logger.LogMotorcycleInteractorUpdateSuccess, "action", "storage_file_deleted", "url", *motorcycle.ProfileImageURL)
+	// Step 3: Delete from Firebase Storage (best-effort)
+	i.motorcycleSvc.DeleteStorageFile(ctx, *motorcycle.ProfileImageURL)
+
+	// Step 4: Begin transaction
+	tx, txErr := i.motorcycleSvc.BeginTx(ctx)
+	if txErr != nil {
+		log.Error(logger.LogMotorcycleInteractorBeginTxError, "error", txErr)
+		return domain.ErrMotorcycleCannotUpdate
+	}
+
+	defer func() {
+		if err != nil {
+			if rbErr := tx.Rollback(); rbErr != nil {
+				log.Error(logger.LogMotorcycleInteractorRollbackError,
+					"rollback_error", rbErr,
+					"original_error", err)
+			} else {
+				log.Warn(logger.LogMotorcycleInteractorRollbackOK)
+			}
 		}
-	}
+	}()
 
-	// Step 5: Begin transaction
-	tx, err := i.motorcycleRepo.BeginTx(ctx)
-	if err != nil {
-		log.Error(logger.LogMotorcycleInteractorBeginTxError, "error", err)
-		return domain.ErrMotorcycleCannotUpdate
-	}
-
-	// Step 6: Clear profile image URL in database
-	if err := i.motorcycleRepo.ClearProfileImageURL(ctx, tx, motorcycleID); err != nil {
+	// Step 5: Clear profile image URL in database
+	if err = i.motorcycleSvc.ClearProfileImageURL(ctx, tx, motorcycleID); err != nil {
 		log.Error(logger.LogMotorcycleInteractorUpdateError, "error", err, "motorcycle_id", motorcycleID)
-		tx.Rollback()
-		return domain.ErrMotorcycleCannotUpdate
+		return err
 	}
 
-	// Step 7: Commit transaction
-	if err := tx.Commit(); err != nil {
+	// Step 6: Commit transaction
+	if err = tx.Commit(); err != nil {
 		log.Error(logger.LogMotorcycleInteractorCommitError, "error", err)
 		return domain.ErrMotorcycleCannotUpdate
 	}
 
 	log.Success(logger.LogMotorcycleInteractorUpdateSuccess, "action", "delete_profile_image", "motorcycle_id", motorcycleID)
+
+	err = nil // ensure defer does NOT execute rollback
 	return nil
 }
 
@@ -367,7 +325,7 @@ func (i *MotorcycleInteractor) GetMotorcycleReferences(ctx context.Context) ([]d
 
 	log.Info(logger.LogMotorcycleInteractorGetRefsStart)
 
-	references, err := i.motorcycleRepo.GetAllReferences(ctx)
+	references, err := i.motorcycleSvc.GetAllReferences(ctx)
 	if err != nil {
 		log.Error(logger.LogMotorcycleInteractorGetRefsError, "error", err)
 		return nil, err
@@ -383,7 +341,7 @@ func (i *MotorcycleInteractor) GetReferencesByBrandID(ctx context.Context, brand
 
 	log.Info(logger.LogMotorcycleInteractorBrandLinesStart, "brand_id", brandID)
 
-	references, err := i.motorcycleRepo.GetReferencesByBrandID(ctx, brandID)
+	references, err := i.motorcycleSvc.GetReferencesByBrandID(ctx, brandID)
 	if err != nil {
 		log.Error(logger.LogMotorcycleInteractorBrandLinesError, "error", err, "brand_id", brandID)
 		return nil, err
@@ -395,95 +353,104 @@ func (i *MotorcycleInteractor) GetReferencesByBrandID(ctx context.Context, brand
 
 // GrantDiagnosticPermission grants a branch permission to view motorcycle diagnostic details
 // Only the motorcycle owner can grant permissions
-func (i *MotorcycleInteractor) GrantDiagnosticPermission(ctx context.Context, motorcycleID, branchID, ownerID string) (*domain.DiagnosticPermission, error) {
+func (i *MotorcycleInteractor) GrantDiagnosticPermission(ctx context.Context, motorcycleID, branchID, ownerID string, active bool) (result *domain.DiagnosticPermission, err error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
 	log := log.WithTraceID(traceID)
 
 	log.Info(logger.LogDiagPermInteractorGrantStart, "motorcycle_id", motorcycleID, "branch_id", branchID, "owner_id", ownerID)
 
-	// Step 1: Validate motorcycle exists and belongs to owner
-	motorcycle, err := i.motorcycleRepo.GetByID(ctx, motorcycleID)
-	if err != nil {
-		log.Error(logger.LogDiagPermInteractorMotoError, "error", err, "motorcycle_id", motorcycleID)
+	// Step 1: Validate motorcycle ownership
+	if _, err = i.motorcycleSvc.ValidateOwnership(ctx, motorcycleID, ownerID); err != nil {
+		log.Warn(logger.LogDiagPermInteractorOwnerError, "motorcycle_id", motorcycleID, "owner_id", ownerID)
 		return nil, err
 	}
-	if motorcycle.OwnerID != ownerID {
-		log.Warn(logger.LogDiagPermInteractorOwnerError, "motorcycle_id", motorcycleID, "owner_id", ownerID)
-		return nil, domain.ErrMotorcycleNotFound
+
+	// Step 2: Begin transaction
+	tx, txErr := i.motorcycleSvc.BeginTx(ctx)
+	if txErr != nil {
+		log.Error(logger.LogDiagPermInteractorBeginTxError, "error", txErr)
+		return nil, domain.ErrPermissionCannotSave
 	}
 
-	// Step 2: Create permission entity
-	permission := &domain.DiagnosticPermission{
-		ID:           utils.Generate(),
-		MotorcycleID: motorcycleID,
-		BranchID:     branchID,
-		Active:       true,
-	}
+	defer func() {
+		if err != nil {
+			if rbErr := tx.Rollback(); rbErr != nil {
+				log.Error(logger.LogDiagPermInteractorRollbackError,
+					"rollback_error", rbErr,
+					"original_error", err)
+			} else {
+				log.Warn(logger.LogDiagPermInteractorRollbackOK)
+			}
+		}
+	}()
 
-	// Step 3: Begin transaction
-	tx, err := i.diagPermRepo.BeginTx(ctx)
+	// Step 3: Grant permission (entity creation + save)
+	result, err = i.motorcycleSvc.GrantPermission(ctx, tx, motorcycleID, branchID, active)
 	if err != nil {
-		log.Error(logger.LogDiagPermInteractorBeginTxError, "error", err)
-		return nil, domain.ErrPermissionCannotSave
-	}
-
-	// Step 4: Save permission (upsert)
-	if err := i.diagPermRepo.Save(ctx, tx, permission); err != nil {
 		log.Error(logger.LogDiagPermInteractorSaveError, "error", err)
-		tx.Rollback()
-		return nil, domain.ErrPermissionCannotSave
+		return nil, err
 	}
 
-	// Step 5: Commit
-	if err := tx.Commit(); err != nil {
+	// Step 4: Commit
+	if err = tx.Commit(); err != nil {
 		log.Error(logger.LogDiagPermInteractorCommitError, "error", err)
 		return nil, domain.ErrPermissionCannotSave
 	}
 
 	log.Success(logger.LogDiagPermInteractorGrantSuccess, "motorcycle_id", motorcycleID, "branch_id", branchID)
-	return permission, nil
+
+	err = nil // ensure defer does NOT execute rollback
+	return result, nil
 }
 
 // RevokeDiagnosticPermission revokes a branch's permission to view motorcycle diagnostic details
 // Only the motorcycle owner can revoke permissions
-func (i *MotorcycleInteractor) RevokeDiagnosticPermission(ctx context.Context, motorcycleID, branchID, ownerID string) error {
+func (i *MotorcycleInteractor) RevokeDiagnosticPermission(ctx context.Context, motorcycleID, branchID, ownerID string) (err error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
 	log := log.WithTraceID(traceID)
 
 	log.Info(logger.LogDiagPermInteractorRevokeStart, "motorcycle_id", motorcycleID, "branch_id", branchID, "owner_id", ownerID)
 
-	// Step 1: Validate motorcycle exists and belongs to owner
-	motorcycle, err := i.motorcycleRepo.GetByID(ctx, motorcycleID)
-	if err != nil {
-		log.Error(logger.LogDiagPermInteractorMotoError, "error", err, "motorcycle_id", motorcycleID)
-		return err
-	}
-	if motorcycle.OwnerID != ownerID {
+	// Step 1: Validate motorcycle ownership
+	if _, err = i.motorcycleSvc.ValidateOwnership(ctx, motorcycleID, ownerID); err != nil {
 		log.Warn(logger.LogDiagPermInteractorOwnerError, "motorcycle_id", motorcycleID, "owner_id", ownerID)
-		return domain.ErrMotorcycleNotFound
+		return err
 	}
 
 	// Step 2: Begin transaction
-	tx, err := i.diagPermRepo.BeginTx(ctx)
-	if err != nil {
-		log.Error(logger.LogDiagPermInteractorBeginTxError, "error", err)
+	tx, txErr := i.motorcycleSvc.BeginTx(ctx)
+	if txErr != nil {
+		log.Error(logger.LogDiagPermInteractorBeginTxError, "error", txErr)
 		return domain.ErrPermissionCannotDelete
 	}
 
-	// Step 3: Delete permission
-	if err := i.diagPermRepo.Delete(ctx, tx, motorcycleID, branchID); err != nil {
+	defer func() {
+		if err != nil {
+			if rbErr := tx.Rollback(); rbErr != nil {
+				log.Error(logger.LogDiagPermInteractorRollbackError,
+					"rollback_error", rbErr,
+					"original_error", err)
+			} else {
+				log.Warn(logger.LogDiagPermInteractorRollbackOK)
+			}
+		}
+	}()
+
+	// Step 3: Revoke permission
+	if err = i.motorcycleSvc.RevokePermission(ctx, tx, motorcycleID, branchID); err != nil {
 		log.Error(logger.LogDiagPermInteractorDeleteError, "error", err)
-		tx.Rollback()
-		return err // Return the specific error (could be ErrPermissionNotFound)
+		return err
 	}
 
 	// Step 4: Commit
-	if err := tx.Commit(); err != nil {
+	if err = tx.Commit(); err != nil {
 		log.Error(logger.LogDiagPermInteractorCommitError, "error", err)
 		return domain.ErrPermissionCannotDelete
 	}
 
 	log.Success(logger.LogDiagPermInteractorRevokeSuccess, "motorcycle_id", motorcycleID, "branch_id", branchID)
+
+	err = nil // ensure defer does NOT execute rollback
 	return nil
 }
 
@@ -495,24 +462,37 @@ func (i *MotorcycleInteractor) ListDiagnosticPermissions(ctx context.Context, mo
 
 	log.Info(logger.LogDiagPermInteractorListStart, "motorcycle_id", motorcycleID, "owner_id", ownerID)
 
-	// Step 1: Validate motorcycle exists and belongs to owner
-	motorcycle, err := i.motorcycleRepo.GetByID(ctx, motorcycleID)
-	if err != nil {
-		log.Error(logger.LogDiagPermInteractorMotoError, "error", err, "motorcycle_id", motorcycleID)
-		return nil, err
-	}
-	if motorcycle.OwnerID != ownerID {
+	// Step 1: Validate motorcycle ownership
+	if _, err := i.motorcycleSvc.ValidateOwnership(ctx, motorcycleID, ownerID); err != nil {
 		log.Warn(logger.LogDiagPermInteractorOwnerError, "motorcycle_id", motorcycleID, "owner_id", ownerID)
-		return nil, domain.ErrMotorcycleNotFound
+		return nil, err
 	}
 
 	// Step 2: Retrieve permissions
-	permissions, err := i.diagPermRepo.GetByMotorcycleID(ctx, motorcycleID)
+	permissions, err := i.motorcycleSvc.ListPermissions(ctx, motorcycleID)
 	if err != nil {
 		log.Error(logger.LogDiagPermInteractorListError, "error", err, "motorcycle_id", motorcycleID)
 		return nil, err
 	}
 
 	log.Success(logger.LogDiagPermInteractorListSuccess, "motorcycle_id", motorcycleID, "count", len(permissions))
+	return permissions, nil
+}
+
+// LookupPermissions retrieves active diagnostic permissions for a motorcycle (no ownership check)
+// Used by representatives to verify access during plate lookup
+func (i *MotorcycleInteractor) LookupPermissions(ctx context.Context, motorcycleID string) ([]domain.DiagnosticPermission, error) {
+	traceID := middleware.GetTraceIDFromContext(ctx)
+	log := log.WithTraceID(traceID)
+
+	log.Info(logger.LogDiagPermInteractorLookupStart, "motorcycle_id", motorcycleID)
+
+	permissions, err := i.motorcycleSvc.ListPermissions(ctx, motorcycleID)
+	if err != nil {
+		log.Error(logger.LogDiagPermInteractorLookupError, "error", err, "motorcycle_id", motorcycleID)
+		return nil, err
+	}
+
+	log.Success(logger.LogDiagPermInteractorLookupSuccess, "motorcycle_id", motorcycleID, "count", len(permissions))
 	return permissions, nil
 }

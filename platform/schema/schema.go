@@ -13,6 +13,7 @@ type Validators struct {
 	FileReader                       FileReaderInterface
 	RegisterValidator                *jsonschema.Schema
 	MessageValidator                 *jsonschema.Schema
+	CreateMessageValidator           *jsonschema.Schema
 	ResendVerificationValidator      *jsonschema.Schema
 	PasswordResetValidator           *jsonschema.Schema
 	UpdateProfileValidator           *jsonschema.Schema
@@ -61,6 +62,11 @@ func NewValidator(fileReader FileReaderInterface) (*Validators, error) {
 	}
 
 	message, err := validator.createSchema("message_schema.json")
+	if err != nil {
+		return nil, err
+	}
+
+	createMessage, err := validator.createSchema("create_message_schema.json")
 	if err != nil {
 		return nil, err
 	}
@@ -132,6 +138,7 @@ func NewValidator(fileReader FileReaderInterface) (*Validators, error) {
 
 	validator.RegisterValidator = register
 	validator.MessageValidator = message
+	validator.CreateMessageValidator = createMessage
 	validator.ResendVerificationValidator = resendVerification
 	validator.PasswordResetValidator = passwordReset
 	validator.UpdateProfileValidator = updateProfile

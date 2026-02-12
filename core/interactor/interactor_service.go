@@ -124,31 +124,44 @@ func (i *ServiceInteractor) GetServiceByID(ctx context.Context, serviceID string
 }
 
 // UpdateService updates a service in the catalog (HU68 - Admin only)
-func (i *ServiceInteractor) UpdateService(ctx context.Context, service domain.Service) error {
+func (i *ServiceInteractor) UpdateService(ctx context.Context, service domain.Service) (err error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
 	log := log.WithTraceID(traceID)
 
 	log.Info(logger.LogServiceInteractorUpdate, "service_id", service.ID)
 
 	// Begin transaction
-	tx, err := i.serviceCatalogService.BeginTx(ctx)
-	if err != nil {
-		log.Error(logger.LogServiceInteractorUpdateError, "error", err)
+	tx, txErr := i.serviceCatalogService.BeginTx(ctx)
+	if txErr != nil {
+		log.Error(logger.LogServiceInteractorUpdateError, "error", txErr)
 		return domain.ErrInternalServer
 	}
-	defer tx.Rollback()
+
+	defer func() {
+		if err != nil {
+			if rbErr := tx.Rollback(); rbErr != nil {
+				log.Error(logger.LogServiceInteractorRollbackError,
+					"rollback_error", rbErr,
+					"original_error", err)
+			} else {
+				log.Warn(logger.LogServiceInteractorRollbackOK)
+			}
+		}
+	}()
 
 	// Update service
-	if err := i.serviceCatalogService.UpdateService(ctx, tx, service); err != nil {
+	if err = i.serviceCatalogService.UpdateService(ctx, tx, service); err != nil {
 		log.Error(logger.LogServiceInteractorUpdateError, "error", err, "service_id", service.ID)
 		return err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err = tx.Commit(); err != nil {
 		log.Error(logger.LogServiceInteractorUpdateError, "error", err)
 		return domain.ErrInternalServer
 	}
 
 	log.Success(logger.LogServiceInteractorUpdateOK, "service_id", service.ID)
+
+	err = nil
 	return nil
 }

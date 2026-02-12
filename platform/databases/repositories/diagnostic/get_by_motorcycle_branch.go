@@ -23,9 +23,6 @@ func (r *repository) GetByMotorcycleAndBranch(ctx context.Context, motorcycleID,
 		&diag.Date,
 		&diag.ProblemDescription,
 		&diag.PossibleSolution,
-		&diag.LaborQuote,
-		&diag.PartsQuote,
-		&diag.EstimatedTime,
 		&diag.SentViaWhatsApp,
 	)
 	if err != nil {
