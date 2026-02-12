@@ -3,35 +3,22 @@ package interactor
 import (
 	"context"
 
-	"github.com/EstebanGitPro/motogo-backend/core/interactor/services"
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
-	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
+	"github.com/EstebanGitPro/motogo-backend/core/ports/input"
 	"github.com/EstebanGitPro/motogo-backend/middleware"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
 // EvidenceInteractor handles motorcycle evidence-related use cases (HU16-19)
 type EvidenceInteractor struct {
-	evidenceRepo   output.EvidenceRepository
-	motorcycleRepo output.MotorcycleRepository
-	storageClient  output.StorageClient // Optional: Firebase Storage for image deletion
+	evidenceSvc input.EvidenceService
 }
 
 // NewEvidenceInteractor creates a new EvidenceInteractor instance
-func NewEvidenceInteractor(
-	evidenceRepo output.EvidenceRepository,
-	motorcycleRepo output.MotorcycleRepository,
-) *EvidenceInteractor {
+func NewEvidenceInteractor(evidenceSvc input.EvidenceService) *EvidenceInteractor {
 	return &EvidenceInteractor{
-		evidenceRepo:   evidenceRepo,
-		motorcycleRepo: motorcycleRepo,
+		evidenceSvc: evidenceSvc,
 	}
-}
-
-// WithStorageClient sets the storage client for image deletion (optional)
-func (i *EvidenceInteractor) WithStorageClient(client output.StorageClient) *EvidenceInteractor {
-	i.storageClient = client
-	return i
 }
 
 // CreateEvidence creates a new photographic evidence for a motorcycle (HU16)
@@ -42,37 +29,17 @@ func (i *EvidenceInteractor) CreateEvidence(ctx context.Context, motorcycleID, o
 	log.Info(logger.LogEvidenceInteractorCreateStart, "motorcycle_id", motorcycleID, "owner_id", ownerID)
 
 	// Step 1: Validate motorcycle exists and ownership
-	motorcycle, motoErr := i.motorcycleRepo.GetByID(ctx, motorcycleID)
-	if motoErr != nil {
-		log.Error(logger.LogEvidenceInteractorMotorcycleError, "error", motoErr, "motorcycle_id", motorcycleID)
-		return nil, domain.ErrMotorcycleNotFound
+	if _, err = i.evidenceSvc.ValidateMotorcycleOwnership(ctx, motorcycleID, ownerID); err != nil {
+		return nil, err
 	}
 
-	// Step 2: Validate ownership (security by obscurity - 404 for non-owners)
-	if motorcycle.OwnerID != ownerID {
-		log.Warn(logger.LogEvidenceInteractorOwnerError, "motorcycle_id", motorcycleID, "owner_id", ownerID)
-		return nil, domain.ErrMotorcycleNotFound
+	// Step 2: Check evidence limit
+	if err = i.evidenceSvc.CheckEvidenceLimit(ctx, motorcycleID); err != nil {
+		return nil, err
 	}
 
-	// Note: Firebase URL and Angle validations are handled by JSON Schema middleware
-
-	// Step 3: Check evidence limit (business rule - requires DB query)
-	count, countErr := i.evidenceRepo.CountByMotorcycleID(ctx, motorcycleID)
-	if countErr != nil {
-		log.Error(logger.LogEvidenceInteractorCountError, "error", countErr, "motorcycle_id", motorcycleID)
-		return nil, domain.ErrEvidenceCannotSave
-	}
-	if services.IsEvidenceLimitReached(count) {
-		log.Warn(logger.LogEvidenceInteractorLimitExceeded, "motorcycle_id", motorcycleID, "count", count)
-		return nil, domain.ErrEvidenceLimitExceeded
-	}
-
-	// Step 4: Create evidence with ID and timestamp (delegated to service factory)
-	newEvidence := services.NewEvidence(motorcycleID, evidence.ImageURL, evidence.Angle, evidence.Description)
-	log.Debug(logger.LogEvidenceInteractorIDGenerated, "id", newEvidence.ID)
-
-	// Step 5: Begin transaction
-	tx, txErr := i.evidenceRepo.BeginTx(ctx)
+	// Step 3: Begin transaction
+	tx, txErr := i.evidenceSvc.BeginTx(ctx)
 	if txErr != nil {
 		log.Error(logger.LogEvidenceInteractorBeginTxError, "error", txErr)
 		return nil, domain.ErrEvidenceCannotSave
@@ -90,22 +57,22 @@ func (i *EvidenceInteractor) CreateEvidence(ctx context.Context, motorcycleID, o
 		}
 	}()
 
-	// Step 6: Save evidence
-	if err = i.evidenceRepo.Save(ctx, tx, newEvidence); err != nil {
-		log.Error(logger.LogEvidenceInteractorSaveError, "error", err)
-		return nil, domain.ErrEvidenceCannotSave
+	// Step 4: Create evidence (factory + save)
+	result, err = i.evidenceSvc.CreateEvidence(ctx, tx, motorcycleID, evidence)
+	if err != nil {
+		return nil, err
 	}
 
-	// Step 7: Commit transaction
+	// Step 5: Commit transaction
 	if err = tx.Commit(); err != nil {
 		log.Error(logger.LogEvidenceInteractorCommitError, "error", err)
 		return nil, domain.ErrEvidenceCannotSave
 	}
 
-	log.Success(logger.LogEvidenceInteractorCreateSuccess, "id", newEvidence.ID, "motorcycle_id", motorcycleID)
+	log.Success(logger.LogEvidenceInteractorCreateSuccess, "id", result.ID, "motorcycle_id", motorcycleID)
 
 	err = nil
-	return newEvidence, nil
+	return result, nil
 }
 
 // GetEvidenceByID retrieves an evidence by its ID (HU18)
@@ -116,15 +83,14 @@ func (i *EvidenceInteractor) GetEvidenceByID(ctx context.Context, evidenceID, ow
 	log.Info(logger.LogEvidenceInteractorGetStart, "evidence_id", evidenceID)
 
 	// Step 1: Get evidence
-	evidence, err := i.evidenceRepo.GetByID(ctx, evidenceID)
+	evidence, err := i.evidenceSvc.GetByID(ctx, evidenceID)
 	if err != nil {
 		log.Error(logger.LogEvidenceInteractorGetError, "error", err, "evidence_id", evidenceID)
 		return nil, err
 	}
 
 	// Step 2: Validate ownership through motorcycle
-	motorcycle, err := i.motorcycleRepo.GetByID(ctx, evidence.MotorcycleID)
-	if err != nil || motorcycle.OwnerID != ownerID {
+	if _, err = i.evidenceSvc.ValidateMotorcycleOwnership(ctx, evidence.MotorcycleID, ownerID); err != nil {
 		log.Warn(logger.LogEvidenceInteractorOwnerError, "evidence_id", evidenceID, "owner_id", ownerID)
 		return nil, domain.ErrEvidenceNotFound
 	}
@@ -141,20 +107,12 @@ func (i *EvidenceInteractor) ListEvidenceByMotorcycle(ctx context.Context, motor
 	log.Info(logger.LogEvidenceInteractorListStart, "motorcycle_id", motorcycleID)
 
 	// Step 1: Validate motorcycle exists and ownership
-	motorcycle, err := i.motorcycleRepo.GetByID(ctx, motorcycleID)
-	if err != nil {
-		log.Error(logger.LogEvidenceInteractorMotorcycleError, "error", err, "motorcycle_id", motorcycleID)
-		return nil, domain.ErrMotorcycleNotFound
+	if _, err := i.evidenceSvc.ValidateMotorcycleOwnership(ctx, motorcycleID, ownerID); err != nil {
+		return nil, err
 	}
 
-	// Step 2: Validate ownership
-	if motorcycle.OwnerID != ownerID {
-		log.Warn(logger.LogEvidenceInteractorOwnerError, "motorcycle_id", motorcycleID, "owner_id", ownerID)
-		return nil, domain.ErrMotorcycleNotFound
-	}
-
-	// Step 3: Get all evidence
-	evidences, err := i.evidenceRepo.GetByMotorcycleID(ctx, motorcycleID)
+	// Step 2: Get all evidence
+	evidences, err := i.evidenceSvc.GetByMotorcycleID(ctx, motorcycleID)
 	if err != nil {
 		log.Error(logger.LogEvidenceInteractorListError, "error", err, "motorcycle_id", motorcycleID)
 		return nil, err
@@ -172,31 +130,23 @@ func (i *EvidenceInteractor) DeleteEvidence(ctx context.Context, evidenceID, own
 	log.Info(logger.LogEvidenceInteractorDeleteStart, "evidence_id", evidenceID)
 
 	// Step 1: Get evidence
-	evidence, getErr := i.evidenceRepo.GetByID(ctx, evidenceID)
+	evidence, getErr := i.evidenceSvc.GetByID(ctx, evidenceID)
 	if getErr != nil {
 		log.Error(logger.LogEvidenceInteractorGetError, "error", getErr, "evidence_id", evidenceID)
 		return getErr
 	}
 
 	// Step 2: Validate ownership through motorcycle
-	motorcycle, motoErr := i.motorcycleRepo.GetByID(ctx, evidence.MotorcycleID)
-	if motoErr != nil || motorcycle.OwnerID != ownerID {
+	if _, err = i.evidenceSvc.ValidateMotorcycleOwnership(ctx, evidence.MotorcycleID, ownerID); err != nil {
 		log.Warn(logger.LogEvidenceInteractorOwnerError, "evidence_id", evidenceID, "owner_id", ownerID)
 		return domain.ErrEvidenceNotFound
 	}
 
-	// Step 3: Delete image from Firebase Storage (if client configured)
-	if evidence.ImageURL != "" && i.storageClient != nil {
-		if storageErr := i.storageClient.DeleteStorageFile(ctx, evidence.ImageURL); storageErr != nil {
-			// Log warning but don't fail the delete - storage cleanup is best effort
-			log.Warn(logger.LogEvidenceInteractorDeleteError, "storage delete failed (continuing)", storageErr, "url", evidence.ImageURL)
-		} else {
-			log.Info(logger.LogEvidenceInteractorDeleteSuccess, "action", "storage_file_deleted", "url", evidence.ImageURL)
-		}
-	}
+	// Step 3: Delete image from Firebase Storage (best-effort)
+	i.evidenceSvc.DeleteStorageFile(ctx, evidence.ImageURL)
 
 	// Step 4: Begin transaction
-	tx, txErr := i.evidenceRepo.BeginTx(ctx)
+	tx, txErr := i.evidenceSvc.BeginTx(ctx)
 	if txErr != nil {
 		log.Error(logger.LogEvidenceInteractorBeginTxError, "error", txErr)
 		return domain.ErrEvidenceCannotDelete
@@ -215,9 +165,8 @@ func (i *EvidenceInteractor) DeleteEvidence(ctx context.Context, evidenceID, own
 	}()
 
 	// Step 5: Delete evidence from DB
-	if err = i.evidenceRepo.Delete(ctx, tx, evidenceID); err != nil {
-		log.Error(logger.LogEvidenceInteractorDeleteError, "error", err, "evidence_id", evidenceID)
-		return domain.ErrEvidenceCannotDelete
+	if err = i.evidenceSvc.DeleteEvidence(ctx, tx, evidenceID); err != nil {
+		return err
 	}
 
 	// Step 6: Commit transaction
@@ -240,41 +189,23 @@ func (i *EvidenceInteractor) UpdateEvidence(ctx context.Context, evidenceID, own
 	log.Info(logger.LogEvidenceInteractorUpdateStart, "evidence_id", evidenceID)
 
 	// Step 1: Get existing evidence
-	evidence, getErr := i.evidenceRepo.GetByID(ctx, evidenceID)
+	evidence, getErr := i.evidenceSvc.GetByID(ctx, evidenceID)
 	if getErr != nil {
 		log.Error(logger.LogEvidenceInteractorGetError, "error", getErr, "evidence_id", evidenceID)
 		return nil, domain.ErrEvidenceNotFound
 	}
 
 	// Step 2: Validate ownership through motorcycle
-	motorcycle, motoErr := i.motorcycleRepo.GetByID(ctx, evidence.MotorcycleID)
-	if motoErr != nil || motorcycle.OwnerID != ownerID {
+	if _, err = i.evidenceSvc.ValidateMotorcycleOwnership(ctx, evidence.MotorcycleID, ownerID); err != nil {
 		log.Warn(logger.LogEvidenceInteractorOwnerError, "evidence_id", evidenceID, "owner_id", ownerID)
 		return nil, domain.ErrEvidenceNotFound
 	}
 
-	// Step 3: Apply updates (only updatable fields)
-	// Note: Angle and ImageURL validations are handled by JSON Schema middleware
-	if updates.ImageURL != "" && updates.ImageURL != evidence.ImageURL {
-		// Delete old image from Firebase Storage when URL changes
-		if evidence.ImageURL != "" && i.storageClient != nil {
-			if storageErr := i.storageClient.DeleteStorageFile(ctx, evidence.ImageURL); storageErr != nil {
-				log.Warn(logger.LogEvidenceInteractorDeleteError, "old image delete failed", storageErr, "url", evidence.ImageURL)
-			} else {
-				log.Info(logger.LogEvidenceInteractorDeleteSuccess, "action", "old_image_deleted", "url", evidence.ImageURL)
-			}
-		}
-		evidence.ImageURL = updates.ImageURL
-	}
-	if updates.Angle != nil {
-		evidence.Angle = updates.Angle
-	}
-	if updates.Description != nil {
-		evidence.Description = updates.Description
-	}
+	// Step 3: Apply updates (merges fields + cleans up old storage if URL changed)
+	i.evidenceSvc.ApplyUpdatesAndCleanup(ctx, evidence, updates)
 
 	// Step 4: Begin transaction
-	tx, txErr := i.evidenceRepo.BeginTx(ctx)
+	tx, txErr := i.evidenceSvc.BeginTx(ctx)
 	if txErr != nil {
 		log.Error(logger.LogEvidenceInteractorBeginTxError, "error", txErr)
 		return nil, domain.ErrEvidenceCannotUpdate
@@ -293,9 +224,8 @@ func (i *EvidenceInteractor) UpdateEvidence(ctx context.Context, evidenceID, own
 	}()
 
 	// Step 5: Update evidence
-	if err = i.evidenceRepo.Update(ctx, tx, evidence); err != nil {
-		log.Error(logger.LogEvidenceInteractorUpdateError, "error", err, "evidence_id", evidenceID)
-		return nil, domain.ErrEvidenceCannotUpdate
+	if err = i.evidenceSvc.UpdateEvidence(ctx, tx, evidence); err != nil {
+		return nil, err
 	}
 
 	// Step 6: Commit transaction
@@ -308,4 +238,22 @@ func (i *EvidenceInteractor) UpdateEvidence(ctx context.Context, evidenceID, own
 
 	err = nil
 	return evidence, nil
+}
+
+// LookupEvidence retrieves all evidence for a motorcycle without ownership check.
+// Used by workshop representatives during plate lookup to display the evidence gallery.
+func (i *EvidenceInteractor) LookupEvidence(ctx context.Context, motorcycleID string) ([]domain.MotorcycleEvidence, error) {
+	traceID := middleware.GetTraceIDFromContext(ctx)
+	log := log.WithTraceID(traceID)
+
+	log.Info(logger.LogEvidenceInteractorLookupStart, "motorcycle_id", motorcycleID)
+
+	evidences, err := i.evidenceSvc.GetByMotorcycleID(ctx, motorcycleID)
+	if err != nil {
+		log.Error(logger.LogEvidenceInteractorLookupError, "error", err, "motorcycle_id", motorcycleID)
+		return nil, err
+	}
+
+	log.Success(logger.LogEvidenceInteractorLookupSuccess, "motorcycle_id", motorcycleID, "count", len(evidences))
+	return evidences, nil
 }
