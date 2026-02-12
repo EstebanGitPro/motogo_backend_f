@@ -109,6 +109,10 @@ func (b *Builder) WithValidateMessage() gin.HandlerFunc {
 	return b.jsonValidator(b.Validators.MessageValidator)
 }
 
+func (b *Builder) WithValidateCreateMessage() gin.HandlerFunc {
+	return b.jsonValidator(b.Validators.CreateMessageValidator)
+}
+
 func (b *Builder) WithValidateResendVerification() gin.HandlerFunc {
 	return b.jsonValidator(b.Validators.ResendVerificationValidator)
 }
