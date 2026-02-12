@@ -48,12 +48,12 @@ func TestGetMotorcycle_Integration_Success(t *testing.T) {
 	msgCache := createTestMessageCache()
 	responseHandler := middleware.NewResponseHandler(msgCache)
 
-	mockRepo := new(mocks.MockMotorcycleRepository)
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
+	mockSvc := new(mocks.MockMotorcycleService)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockSvc)
 	h := handlers.NewForTest(nil, nil, motorcycleInteractor, nil, msgCache, encoder, responseHandler)
 
 	encodedID, _ := encoder.Encode(testMotorcycle.ID)
-	mockRepo.On("GetByID", mock.Anything, testMotorcycle.ID).Return(testMotorcycle, nil)
+	mockSvc.On("GetByID", mock.Anything, testMotorcycle.ID).Return(testMotorcycle, nil)
 
 	router := gin.New()
 	router.GET("/motorcycles/:id", func(c *gin.Context) {
@@ -73,7 +73,7 @@ func TestGetMotorcycle_Integration_Success(t *testing.T) {
 	assert.Equal(t, "ABC123", data["license_plate"])
 	assert.NotNil(t, data["reference"])
 	assert.NotEmpty(t, data["_links"])
-	mockRepo.AssertExpectations(t)
+	mockSvc.AssertExpectations(t)
 }
 
 // TestListMotorcycles_Integration_Success validates GET /motorcycles
@@ -83,8 +83,8 @@ func TestListMotorcycles_Integration_Success(t *testing.T) {
 	msgCache := createTestMessageCache()
 	responseHandler := middleware.NewResponseHandler(msgCache)
 
-	mockRepo := new(mocks.MockMotorcycleRepository)
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
+	mockSvc := new(mocks.MockMotorcycleService)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockSvc)
 	h := handlers.NewForTest(nil, nil, motorcycleInteractor, nil, msgCache, encoder, responseHandler)
 
 	motorcycles := []domain.Motorcycle{
@@ -100,7 +100,7 @@ func TestListMotorcycles_Integration_Success(t *testing.T) {
 			OwnerID: testPersonMoto.ID,
 		},
 	}
-	mockRepo.On("GetByOwnerID", mock.Anything, testPersonMoto.ID).Return(motorcycles, nil)
+	mockSvc.On("GetByOwnerID", mock.Anything, testPersonMoto.ID).Return(motorcycles, nil)
 
 	router := gin.New()
 	router.GET("/motorcycles", func(c *gin.Context) {
@@ -118,7 +118,7 @@ func TestListMotorcycles_Integration_Success(t *testing.T) {
 	assert.Equal(t, "MOD_MOT_LIST_EXI_00001", resp["code"])
 	data := resp["data"].([]interface{})
 	assert.Len(t, data, 2)
-	mockRepo.AssertExpectations(t)
+	mockSvc.AssertExpectations(t)
 }
 
 // TestUpdateMotorcycle_Integration_Success validates PUT /motorcycles/:id
@@ -128,8 +128,8 @@ func TestUpdateMotorcycle_Integration_Success(t *testing.T) {
 	msgCache := createTestMessageCache()
 	responseHandler := middleware.NewResponseHandler(msgCache)
 
-	mockRepo := new(mocks.MockMotorcycleRepository)
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
+	mockSvc := new(mocks.MockMotorcycleService)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockSvc)
 	h := handlers.NewForTest(nil, nil, motorcycleInteractor, nil, msgCache, encoder, responseHandler)
 
 	encodedID, _ := encoder.Encode(testMotorcycle.ID)
@@ -142,11 +142,12 @@ func TestUpdateMotorcycle_Integration_Success(t *testing.T) {
 		Reference: testMotorcycle.Reference,
 	}
 
-	mockRepo.On("GetByID", mock.Anything, testMotorcycle.ID).Return(testMotorcycle, nil).Once()
-	mockRepo.On("BeginTx", mock.Anything).Return(mockTx, nil)
-	mockRepo.On("Update", mock.Anything, mockTx, mock.AnythingOfType("*domain.Motorcycle")).Return(nil)
+	mockSvc.On("ValidateOwnership", mock.Anything, testMotorcycle.ID, testPersonMoto.ID).Return(testMotorcycle, nil)
+	mockSvc.On("ApplyUpdates", testMotorcycle, mock.AnythingOfType("*domain.Motorcycle")).Return(nil)
+	mockSvc.On("BeginTx", mock.Anything).Return(mockTx, nil)
+	mockSvc.On("UpdateMotorcycle", mock.Anything, mockTx, testMotorcycle).Return(nil)
 	mockTx.On("Commit").Return(nil)
-	mockRepo.On("GetByID", mock.Anything, testMotorcycle.ID).Return(updatedMoto, nil).Once()
+	mockSvc.On("GetByID", mock.Anything, testMotorcycle.ID).Return(updatedMoto, nil)
 
 	reqBody := map[string]interface{}{"year": 2024}
 	body, _ := json.Marshal(reqBody)
@@ -166,7 +167,7 @@ func TestUpdateMotorcycle_Integration_Success(t *testing.T) {
 	json.Unmarshal(w.Body.Bytes(), &resp)
 	assert.Equal(t, true, resp["success"])
 	assert.Equal(t, "MOD_MOT_UPDATE_EXI_00001", resp["code"])
-	mockRepo.AssertExpectations(t)
+	mockSvc.AssertExpectations(t)
 	mockTx.AssertExpectations(t)
 }
 
@@ -177,17 +178,16 @@ func TestDeleteMotorcycle_Integration_Success(t *testing.T) {
 	msgCache := createTestMessageCache()
 	responseHandler := middleware.NewResponseHandler(msgCache)
 
-	mockRepo := new(mocks.MockMotorcycleRepository)
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
+	mockSvc := new(mocks.MockMotorcycleService)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockSvc)
 	h := handlers.NewForTest(nil, nil, motorcycleInteractor, nil, msgCache, encoder, responseHandler)
 
 	encodedID, _ := encoder.Encode(testMotorcycle.ID)
 	mockTx := new(mocks.MockTx)
 
-	mockRepo.On("GetByID", mock.Anything, testMotorcycle.ID).Return(testMotorcycle, nil)
-	mockRepo.On("HasServiceHistory", mock.Anything, testMotorcycle.ID).Return(false, nil)
-	mockRepo.On("BeginTx", mock.Anything).Return(mockTx, nil)
-	mockRepo.On("HardDelete", mock.Anything, mockTx, testMotorcycle.ID).Return(nil)
+	mockSvc.On("ValidateOwnership", mock.Anything, testMotorcycle.ID, testPersonMoto.ID).Return(testMotorcycle, nil)
+	mockSvc.On("BeginTx", mock.Anything).Return(mockTx, nil)
+	mockSvc.On("DeleteMotorcycle", mock.Anything, mockTx, testMotorcycle.ID).Return(nil)
 	mockTx.On("Commit").Return(nil)
 
 	router := gin.New()
@@ -204,7 +204,7 @@ func TestDeleteMotorcycle_Integration_Success(t *testing.T) {
 	json.Unmarshal(w.Body.Bytes(), &resp)
 	assert.Equal(t, true, resp["success"])
 	assert.Equal(t, "MOD_MOT_DELETE_EXI_00001", resp["code"])
-	mockRepo.AssertExpectations(t)
+	mockSvc.AssertExpectations(t)
 	mockTx.AssertExpectations(t)
 }
 
@@ -215,15 +215,15 @@ func TestGetMotorcycleReferences_Integration_Success(t *testing.T) {
 	msgCache := createTestMessageCache()
 	responseHandler := middleware.NewResponseHandler(msgCache)
 
-	mockRepo := new(mocks.MockMotorcycleRepository)
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
+	mockSvc := new(mocks.MockMotorcycleService)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockSvc)
 	h := handlers.NewForTest(nil, nil, motorcycleInteractor, nil, msgCache, encoder, responseHandler)
 
 	refs := []domain.MotorcycleReference{
 		{ID: "d4444444-4444-4000-8000-444444444444", BrandID: "e5555555-5555-4000-8000-555555555555", BrandName: "Honda", Model: "CB 190R", Category: "Sport", EngineDisplacement: 190},
 		{ID: "f6666666-6666-4000-8000-666666666666", BrandID: "d7777777-7777-4000-8000-777777777777", BrandName: "Yamaha", Model: "MT-07", Category: "Naked", EngineDisplacement: 689},
 	}
-	mockRepo.On("GetAllReferences", mock.Anything).Return(refs, nil)
+	mockSvc.On("GetAllReferences", mock.Anything).Return(refs, nil)
 
 	router := gin.New()
 	router.GET("/motorcycle-references", h.GetMotorcycleReferences())
@@ -240,7 +240,7 @@ func TestGetMotorcycleReferences_Integration_Success(t *testing.T) {
 	data := resp["data"].(map[string]interface{})
 	references := data["references"].([]interface{})
 	assert.Len(t, references, 2)
-	mockRepo.AssertExpectations(t)
+	mockSvc.AssertExpectations(t)
 }
 
 // TestGetBrandLines_Integration_Success validates GET /admin/brands/:brandId/lines
@@ -250,8 +250,8 @@ func TestGetBrandLines_Integration_Success(t *testing.T) {
 	msgCache := createTestMessageCache()
 	responseHandler := middleware.NewResponseHandler(msgCache)
 
-	mockRepo := new(mocks.MockMotorcycleRepository)
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockRepo, &mocks.MockDiagnosticPermissionRepository{})
+	mockSvc := new(mocks.MockMotorcycleService)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockSvc)
 	h := handlers.NewForTest(nil, nil, motorcycleInteractor, nil, msgCache, encoder, responseHandler)
 
 	brandID := "e5555555-5555-4000-8000-555555555555"
@@ -261,7 +261,7 @@ func TestGetBrandLines_Integration_Success(t *testing.T) {
 		{ID: "d4444444-4444-4000-8000-444444444444", BrandID: brandID, BrandName: "Honda", Model: "CB 190R"},
 		{ID: "f6666666-6666-4000-8000-666666666666", BrandID: brandID, BrandName: "Honda", Model: "CB 300F"},
 	}
-	mockRepo.On("GetReferencesByBrandID", mock.Anything, brandID).Return(refs, nil)
+	mockSvc.On("GetReferencesByBrandID", mock.Anything, brandID).Return(refs, nil)
 
 	router := gin.New()
 	router.GET("/admin/brands/:brandId/lines", h.GetBrandLines())
@@ -281,5 +281,5 @@ func TestGetBrandLines_Integration_Success(t *testing.T) {
 	firstLine := lines[0].(map[string]interface{})
 	assert.Equal(t, "Honda", firstLine["brand_name"])
 	assert.Equal(t, "CB 190R", firstLine["model"])
-	mockRepo.AssertExpectations(t)
+	mockSvc.AssertExpectations(t)
 }
