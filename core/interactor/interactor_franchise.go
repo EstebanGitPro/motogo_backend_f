@@ -13,44 +13,24 @@ var log logger.Logger = logger.NewSlogLogger()
 // FranchiseInteractor orchestrates franchise operations (HU26-29)
 type FranchiseInteractor struct {
 	franchiseService input.FranchiseService
-	branchService    input.BranchService
 }
 
 // NewFranchiseInteractor creates a new FranchiseInteractor
-func NewFranchiseInteractor(franchiseService input.FranchiseService, branchService input.BranchService) *FranchiseInteractor {
+func NewFranchiseInteractor(franchiseService input.FranchiseService) *FranchiseInteractor {
 	return &FranchiseInteractor{
 		franchiseService: franchiseService,
-		branchService:    branchService,
 	}
 }
 
 // CreateFranchiseWithBranches creates a franchise and associates existing branches (HU26)
 // Business rule: A franchise must have at least 1 branch
 func (i *FranchiseInteractor) CreateFranchiseWithBranches(ctx context.Context, franchise domain.Franchise, branchIDs []string, representativeID string) (result *domain.Franchise, err error) {
-	// 1. Validate at least 1 branch
-	if len(branchIDs) == 0 {
-		log.Warn(logger.LogFranchiseInteractorNoBranches)
-		return nil, domain.ErrFranchiseNoBranches
+	// 1. Validate branches (ownership + not already associated + at least 1)
+	if valErr := i.franchiseService.ValidateBranchesForFranchise(ctx, branchIDs, representativeID); valErr != nil {
+		return nil, valErr
 	}
 
-	// 2. Validate branches belong to representative
-	for _, branchID := range branchIDs {
-		branch, branchErr := i.branchService.GetBranchByID(ctx, branchID)
-		if branchErr != nil {
-			return nil, domain.ErrBranchNotFound
-		}
-		if branch.RepresentativeID != representativeID {
-			log.Warn(logger.LogFranchiseInteractorBranchNotOwned, "branch_id", branchID, "representative_id", representativeID)
-			return nil, domain.ErrFranchiseBranchNotOwned
-		}
-		// Check if branch is already associated with another franchise
-		if branch.FranchiseID != nil && *branch.FranchiseID != "" {
-			log.Warn(logger.LogFranchiseInteractorBranchNotOwned, "branch_id", branchID, "franchise_id", *branch.FranchiseID)
-			return nil, domain.ErrFranchiseBranchNotOwned
-		}
-	}
-
-	// 3. Begin transaction
+	// 2. Begin transaction
 	tx, txErr := i.franchiseService.BeginTx(ctx)
 	if txErr != nil {
 		log.Error(logger.LogFranchiseInteractorTxError, "error", txErr)
@@ -69,18 +49,18 @@ func (i *FranchiseInteractor) CreateFranchiseWithBranches(ctx context.Context, f
 		}
 	}()
 
-	// 4. Create franchise
+	// 3. Create franchise
 	result, err = i.franchiseService.CreateFranchise(ctx, tx, franchise)
 	if err != nil {
 		return nil, err
 	}
 
-	// 5. Associate branches to franchise
+	// 4. Associate branches to franchise
 	if err = i.franchiseService.AssociateBranches(ctx, tx, result.ID, branchIDs); err != nil {
 		return nil, err
 	}
 
-	// 6. Commit transaction
+	// 5. Commit transaction
 	if err = tx.Commit(); err != nil {
 		log.Error(logger.LogFranchiseInteractorCommitError, "error", err)
 		return nil, err
@@ -193,13 +173,9 @@ func (i *FranchiseInteractor) DeleteFranchise(ctx context.Context, franchiseID, 
 
 // AddBranchToFranchise associates an additional branch to an existing franchise
 func (i *FranchiseInteractor) AddBranchToFranchise(ctx context.Context, franchiseID, branchID, representativeID string) (err error) {
-	// 1. Validate branch ownership
-	branch, branchErr := i.branchService.GetBranchByID(ctx, branchID)
-	if branchErr != nil {
-		return domain.ErrBranchNotFound
-	}
-	if branch.RepresentativeID != representativeID {
-		return domain.ErrFranchiseBranchNotOwned
+	// 1. Validate branch ownership via service
+	if valErr := i.franchiseService.ValidateBranchOwnership(ctx, branchID, representativeID); valErr != nil {
+		return valErr
 	}
 
 	// 2. Begin transaction

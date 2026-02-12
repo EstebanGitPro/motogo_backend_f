@@ -243,8 +243,8 @@ func Init() (*Dependencies, error) {
 	}
 	log.Success(logger.LogDepFranchiseRepoInitOK)
 
-	franchiseService := services.NewFranchiseService(franchiseRepository)
-	franchiseInteractor := interactor.NewFranchiseInteractor(franchiseService, branchService)
+	franchiseService := services.NewFranchiseService(franchiseRepository, branchRepository)
+	franchiseInteractor := interactor.NewFranchiseInteractor(franchiseService)
 	log.Success(logger.LogDepFranchiseInteractorInitOK)
 
 	scheduleRepository, err := scheduleRepo.NewRepository(db)
@@ -301,7 +301,8 @@ func Init() (*Dependencies, error) {
 	}
 	log.Success(logger.LogDepEvidenceRepoInitOK)
 
-	evidenceInteractor := interactor.NewEvidenceInteractor(evidenceRepository, motorcycleRepository)
+	evidenceService := services.NewEvidenceService(evidenceRepository, motorcycleRepository)
+	evidenceInteractor := interactor.NewEvidenceInteractor(evidenceService)
 	log.Success(logger.LogDepEvidenceInteractorInitOK)
 
 	// Diagnostic feature (HU11-14)
@@ -312,7 +313,8 @@ func Init() (*Dependencies, error) {
 	}
 	log.Success(logger.LogDepDiagnosticRepoInitOK)
 
-	diagnosticInteractor := interactor.NewDiagnosticInteractor(diagnosticRepository, motorcycleRepository, branchRepository)
+	diagnosticService := services.NewDiagnosticService(diagnosticRepository, motorcycleRepository, branchRepository)
+	diagnosticInteractor := interactor.NewDiagnosticInteractor(diagnosticService)
 	log.Success(logger.LogDepDiagnosticInteractorInitOK)
 
 	var firebaseClient *firebase.Client
@@ -334,8 +336,8 @@ func Init() (*Dependencies, error) {
 			// Connect Firebase Storage to MotorcycleService for image deletion (HU45)
 			motorcycleService.WithStorageClient(firebaseClient)
 			log.Success(logger.LogDepMotorcycleServiceInitOK, "with_storage", true)
-			// Connect Firebase Storage to EvidenceInteractor for evidence deletion (HU19)
-			evidenceInteractor.WithStorageClient(firebaseClient)
+			// Connect Firebase Storage to EvidenceService for evidence deletion (HU19)
+			evidenceService.WithStorageClient(firebaseClient)
 			log.Success(logger.LogDepEvidenceInteractorInitOK, "with_storage", true)
 			// Connect Firebase Storage to BranchInteractor for profile image deletion (HU60-61)
 			branchInteractor.WithStorageClient(firebaseClient)

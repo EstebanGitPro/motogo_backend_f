@@ -79,3 +79,13 @@ func (m *MockFranchiseService) CanRemoveBranch(ctx context.Context, franchiseID 
 	args := m.Called(ctx, franchiseID)
 	return args.Error(0)
 }
+
+func (m *MockFranchiseService) ValidateBranchOwnership(ctx context.Context, branchID, representativeID string) error {
+	args := m.Called(ctx, branchID, representativeID)
+	return args.Error(0)
+}
+
+func (m *MockFranchiseService) ValidateBranchesForFranchise(ctx context.Context, branchIDs []string, representativeID string) error {
+	args := m.Called(ctx, branchIDs, representativeID)
+	return args.Error(0)
+}

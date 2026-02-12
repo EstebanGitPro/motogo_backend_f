@@ -23,7 +23,7 @@ func TestCreateFranchise_Success(t *testing.T) {
 
 	mockTx := new(mocks.MockTx)
 
-	service := services.NewFranchiseService(mockRepo)
+	service := services.NewFranchiseService(mockRepo, nil)
 
 	franchise := domain.Franchise{
 		Name:        "Motozona Colombia",
@@ -53,7 +53,7 @@ func TestCreateFranchise_DuplicateName(t *testing.T) {
 
 	mockTx := new(mocks.MockTx)
 
-	service := services.NewFranchiseService(mockRepo)
+	service := services.NewFranchiseService(mockRepo, nil)
 
 	franchise := domain.Franchise{
 		Name: "Motozona Colombia",
@@ -85,7 +85,7 @@ func TestCreateFranchise_SaveError(t *testing.T) {
 
 	mockTx := new(mocks.MockTx)
 
-	service := services.NewFranchiseService(mockRepo)
+	service := services.NewFranchiseService(mockRepo, nil)
 
 	franchise := domain.Franchise{
 		Name: "Motozona Colombia",
@@ -117,7 +117,7 @@ func TestGetFranchiseByID_Success(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockFranchiseRepository)
 
-	service := services.NewFranchiseService(mockRepo)
+	service := services.NewFranchiseService(mockRepo, nil)
 
 	expectedFranchise := &domain.Franchise{
 		ID:   "franchise-123",
@@ -144,7 +144,7 @@ func TestGetFranchiseByID_NotFound(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockFranchiseRepository)
 
-	service := services.NewFranchiseService(mockRepo)
+	service := services.NewFranchiseService(mockRepo, nil)
 
 	// Mock expectations - not found
 	mockRepo.On("GetFranchiseByID", ctx, "not-found-id").Return(nil, domain.ErrFranchiseNotFound)
@@ -169,7 +169,7 @@ func TestGetFranchisesByRepresentative_Success(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockFranchiseRepository)
 
-	service := services.NewFranchiseService(mockRepo)
+	service := services.NewFranchiseService(mockRepo, nil)
 
 	expectedFranchises := []domain.Franchise{
 		{ID: "f1", Name: "Motozona Norte"},
@@ -195,7 +195,7 @@ func TestGetFranchisesByRepresentative_Empty(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockFranchiseRepository)
 
-	service := services.NewFranchiseService(mockRepo)
+	service := services.NewFranchiseService(mockRepo, nil)
 
 	// Mock expectations - no franchises
 	mockRepo.On("GetFranchisesByRepresentative", ctx, "rep-no-franchises").Return([]domain.Franchise{}, nil)
@@ -221,7 +221,7 @@ func TestUpdateFranchise_Success(t *testing.T) {
 
 	mockTx := new(mocks.MockTx)
 
-	service := services.NewFranchiseService(mockRepo)
+	service := services.NewFranchiseService(mockRepo, nil)
 
 	existingFranchise := &domain.Franchise{
 		ID:   "franchise-123",
@@ -254,7 +254,7 @@ func TestUpdateFranchise_NotFound(t *testing.T) {
 
 	mockTx := new(mocks.MockTx)
 
-	service := services.NewFranchiseService(mockRepo)
+	service := services.NewFranchiseService(mockRepo, nil)
 
 	franchise := domain.Franchise{
 		ID:   "not-found-id",
@@ -281,7 +281,7 @@ func TestUpdateFranchise_DuplicateName(t *testing.T) {
 
 	mockTx := new(mocks.MockTx)
 
-	service := services.NewFranchiseService(mockRepo)
+	service := services.NewFranchiseService(mockRepo, nil)
 
 	existingFranchise := &domain.Franchise{
 		ID:   "franchise-123",
@@ -319,7 +319,7 @@ func TestUpdateFranchise_SameName(t *testing.T) {
 
 	mockTx := new(mocks.MockTx)
 
-	service := services.NewFranchiseService(mockRepo)
+	service := services.NewFranchiseService(mockRepo, nil)
 
 	existingFranchise := &domain.Franchise{
 		ID:   "franchise-123",
@@ -356,7 +356,7 @@ func TestDeleteFranchise_Success(t *testing.T) {
 
 	mockTx := new(mocks.MockTx)
 
-	service := services.NewFranchiseService(mockRepo)
+	service := services.NewFranchiseService(mockRepo, nil)
 
 	existingFranchise := &domain.Franchise{
 		ID:   "franchise-123",
@@ -383,7 +383,7 @@ func TestDeleteFranchise_NotFound(t *testing.T) {
 
 	mockTx := new(mocks.MockTx)
 
-	service := services.NewFranchiseService(mockRepo)
+	service := services.NewFranchiseService(mockRepo, nil)
 
 	// Mock expectations - not found
 	mockRepo.On("GetFranchiseByID", ctx, "not-found-id").Return(nil, domain.ErrFranchiseNotFound)
@@ -405,7 +405,7 @@ func TestDeleteFranchise_DeleteError(t *testing.T) {
 
 	mockTx := new(mocks.MockTx)
 
-	service := services.NewFranchiseService(mockRepo)
+	service := services.NewFranchiseService(mockRepo, nil)
 
 	existingFranchise := &domain.Franchise{
 		ID:   "franchise-123",
@@ -439,7 +439,7 @@ func TestAssociateBranches_Success(t *testing.T) {
 
 	mockTx := new(mocks.MockTx)
 
-	service := services.NewFranchiseService(mockRepo)
+	service := services.NewFranchiseService(mockRepo, nil)
 
 	branchIDs := []string{"branch-1", "branch-2"}
 
@@ -462,7 +462,7 @@ func TestAssociateBranches_NoBranches(t *testing.T) {
 
 	mockTx := new(mocks.MockTx)
 
-	service := services.NewFranchiseService(mockRepo)
+	service := services.NewFranchiseService(mockRepo, nil)
 
 	branchIDs := []string{} // Empty
 
@@ -485,7 +485,7 @@ func TestDissociateBranches_Success(t *testing.T) {
 
 	mockTx := new(mocks.MockTx)
 
-	service := services.NewFranchiseService(mockRepo)
+	service := services.NewFranchiseService(mockRepo, nil)
 
 	// Mock expectations
 	mockRepo.On("DissociateBranchesFromFranchise", ctx, mockTx, "franchise-123").Return(nil)
@@ -508,7 +508,7 @@ func TestCountBranches_Success(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(mocks.MockFranchiseRepository)
 
-	service := services.NewFranchiseService(mockRepo)
+	service := services.NewFranchiseService(mockRepo, nil)
 
 	// Mock expectations
 	mockRepo.On("CountBranchesByFranchise", ctx, "franchise-123").Return(5, nil)
