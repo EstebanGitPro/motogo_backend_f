@@ -222,3 +222,39 @@ type ScheduleDetailService interface {
 	SetExceptionActive(ctx context.Context, tx output.Tx, exceptionID string, active bool) error
 	CheckExceptionDateConflict(ctx context.Context, scheduleID, excludeExceptionID, startDate, endDate string) (bool, error)
 }
+
+// MotorcycleService - Use Cases for Motorcycle operations (HU43-47, HU50, HU40)
+type MotorcycleService interface {
+	// Transactions
+	BeginTx(ctx context.Context) (output.Tx, error)
+
+	// Validation
+	ValidateReferenceExists(ctx context.Context, referenceID string) error
+	CheckLicensePlateUnique(ctx context.Context, licensePlate string) error
+	ValidateOwnership(ctx context.Context, motorcycleID, ownerID string) (*domain.Motorcycle, error)
+
+	// Motorcycle CRUD (HU43, HU44, HU45, HU46, HU47)
+	RegisterMotorcycle(ctx context.Context, tx output.Tx, motorcycle *domain.Motorcycle) error
+	GetByID(ctx context.Context, motorcycleID string) (*domain.Motorcycle, error)
+	GetByOwnerID(ctx context.Context, ownerID string) ([]domain.Motorcycle, error)
+	GetByLicensePlate(ctx context.Context, licensePlate string) (*domain.Motorcycle, error)
+	ApplyUpdates(existing *domain.Motorcycle, updates *domain.Motorcycle) error
+	UpdateMotorcycle(ctx context.Context, tx output.Tx, motorcycle *domain.Motorcycle) error
+	DeleteMotorcycle(ctx context.Context, tx output.Tx, motorcycleID string) error
+	ClearProfileImageURL(ctx context.Context, tx output.Tx, motorcycleID string) error
+
+	// Hybrid delete strategy (HU45)
+	HasServiceHistory(ctx context.Context, motorcycleID string) (bool, error)
+
+	// Storage cleanup
+	DeleteStorageFile(ctx context.Context, url string)
+
+	// Reference catalog (HU50, HU40)
+	GetAllReferences(ctx context.Context) ([]domain.MotorcycleReference, error)
+	GetReferencesByBrandID(ctx context.Context, brandID string) ([]domain.MotorcycleReference, error)
+
+	// Diagnostic Permissions
+	GrantPermission(ctx context.Context, tx output.Tx, motorcycleID, branchID string) (*domain.DiagnosticPermission, error)
+	RevokePermission(ctx context.Context, tx output.Tx, motorcycleID, branchID string) error
+	ListPermissions(ctx context.Context, motorcycleID string) ([]domain.DiagnosticPermission, error)
+}
