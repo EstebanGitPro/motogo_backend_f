@@ -9,7 +9,6 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/core/ports/input"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
-	"github.com/google/uuid"
 )
 
 var scheduleLog logger.Logger = logger.NewSlogLogger()
@@ -61,12 +60,12 @@ func (s *scheduleService) CreateSchedule(ctx context.Context, tx output.Tx, bran
 
 	// 3. Create new schedule
 	schedule := domain.BranchSchedule{
-		ID:        uuid.New().String(),
 		BranchID:  branchID,
 		Active:    true,                                // Default to active
 		StartDate: time.Now().Truncate(24 * time.Hour), // Default to today
 		EndDate:   nil,                                 // Indefinite by default
 	}
+	schedule.SetID()
 
 	// 4. Save schedule
 	if err := s.scheduleRepo.SaveSchedule(ctx, tx, schedule); err != nil {
