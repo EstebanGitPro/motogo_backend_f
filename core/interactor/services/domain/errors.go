@@ -78,7 +78,6 @@ var (
 // Message Management Errors (MOD_M_*)
 var (
 	ErrMessageNotFound         = errors.New("ERR_MESSAGE_NOT_FOUND")
-	ErrMessageCodeRequired     = errors.New("ERR_MESSAGE_CODE_REQUIRED")
 	ErrMessageTypeRequired     = errors.New("ERR_MESSAGE_TYPE_REQUIRED")
 	ErrMessageTitleRequired    = errors.New("ERR_MESSAGE_TITLE_REQUIRED")
 	ErrMessageContentRequired  = errors.New("ERR_MESSAGE_CONTENT_REQUIRED")

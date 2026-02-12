@@ -1,6 +1,10 @@
 package domain
 
-import "errors"
+import (
+	"errors"
+
+	uuid "github.com/EstebanGitPro/motogo-backend/tools/utils"
+)
 
 // DiagnosticPermission represents a per-branch diagnostic viewing permission
 type DiagnosticPermission struct {
@@ -8,6 +12,10 @@ type DiagnosticPermission struct {
 	MotorcycleID string // FK to motorcycle
 	BranchID     string // FK to authorized branch
 	Active       bool   // Whether the permission is currently active
+}
+
+func (p *DiagnosticPermission) SetID() {
+	p.ID = uuid.Generate()
 }
 
 // Diagnostic Permission business errors

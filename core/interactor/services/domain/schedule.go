@@ -1,6 +1,10 @@
 package domain
 
-import "time"
+import (
+	"time"
+
+	uuid "github.com/EstebanGitPro/motogo-backend/tools/utils"
+)
 
 // DayOfWeek represents a day of the week (1=Monday to 7=Sunday)
 type DayOfWeek int
@@ -77,6 +81,10 @@ type BranchSchedule struct {
 	UpdatedAt time.Time  `json:"updated_at"`
 }
 
+func (s *BranchSchedule) SetID() {
+	s.ID = uuid.Generate()
+}
+
 // ScheduleDetail represents a specific time slot (HU6-9, HU20-25)
 type ScheduleDetail struct {
 	ID                 string     `json:"id"`
@@ -91,4 +99,8 @@ type ScheduleDetail struct {
 	Active             bool       `json:"active"`
 	CreatedAt          time.Time  `json:"created_at"`
 	UpdatedAt          time.Time  `json:"updated_at"`
+}
+
+func (d *ScheduleDetail) SetID() {
+	d.ID = uuid.Generate()
 }
