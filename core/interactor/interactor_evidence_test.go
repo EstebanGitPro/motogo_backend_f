@@ -267,6 +267,7 @@ func TestCreateEvidence_CommitError(t *testing.T) {
 	mockEvidenceRepo.On("BeginTx", mock.Anything).Return(mockTx, nil)
 	mockEvidenceRepo.On("Save", mock.Anything, mockTx, mock.AnythingOfType("*domain.MotorcycleEvidence")).Return(nil)
 	mockTx.On("Commit").Return(errors.New("commit error"))
+	mockTx.On("Rollback").Return(nil)
 
 	// Act
 	result, err := interactorInstance.CreateEvidence(context.Background(), testMotorcycleID, testOwnerID, evidence)
@@ -626,6 +627,7 @@ func TestDeleteEvidence_CommitError(t *testing.T) {
 	mockEvidenceRepo.On("BeginTx", mock.Anything).Return(mockTx, nil)
 	mockEvidenceRepo.On("Delete", mock.Anything, mockTx, testEvidenceID).Return(nil)
 	mockTx.On("Commit").Return(errors.New("commit error"))
+	mockTx.On("Rollback").Return(nil)
 
 	// Act
 	err := interactorInstance.DeleteEvidence(context.Background(), testEvidenceID, testOwnerID)
@@ -826,6 +828,7 @@ func TestUpdateEvidence_CommitError(t *testing.T) {
 	mockEvidenceRepo.On("BeginTx", mock.Anything).Return(mockTx, nil)
 	mockEvidenceRepo.On("Update", mock.Anything, mockTx, mock.AnythingOfType("*domain.MotorcycleEvidence")).Return(nil)
 	mockTx.On("Commit").Return(errors.New("commit error"))
+	mockTx.On("Rollback").Return(nil)
 
 	// Act
 	result, err := interactorInstance.UpdateEvidence(context.Background(), testEvidenceID, testOwnerID, updates)
