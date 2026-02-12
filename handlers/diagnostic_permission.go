@@ -7,6 +7,7 @@ import (
 // GrantPermissionRequest represents the request body for granting diagnostic permission
 type GrantPermissionRequest struct {
 	BranchID string `json:"branch_id" binding:"required"`
+	Active   *bool  `json:"active"`
 }
 
 // Sanitize trims whitespace from all string fields

@@ -443,6 +443,7 @@ var (
 	ErrDuplicateLicensePlate  = errors.New("ERR_DUPLICATE_LICENSE_PLATE")
 	ErrReferenceNotFound      = errors.New("ERR_REFERENCE_NOT_FOUND")
 	ErrReferenceRequired      = errors.New("ERR_REFERENCE_REQUIRED")
+	ErrMotorcycleNoPermission = errors.New("ERR_MOTORCYCLE_NO_PERMISSION")
 )
 
 // Motorcycle Module (MOD_MOT_*) - HU43-47
@@ -470,6 +471,7 @@ const (
 	MsgMotorcycleReferenceNotFound = "MOD_MOT_REF_NOT_FOUND_ERR_00001"
 	MsgReferenceRequired           = "MOD_MOT_REF_REQ_ERR_00001"
 	MsgMissingPlateParam           = "MOD_MOT_PLATE_REQ_ERR_00001"
+	MsgMotorcycleNoPermission      = "MOD_MOT_NO_PERMISSION_ERR_00001"
 
 	// Profile Image Error Messages (HU36-39)
 	MsgProfileImageUpdateError = "MOD_MOT_IMG_UPDATE_ERR_00001"

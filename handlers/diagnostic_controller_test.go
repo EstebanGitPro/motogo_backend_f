@@ -29,16 +29,11 @@ func TestCreateDiagnostic_Integration_Success(t *testing.T) {
 	msgCache := createTestMessageCache()
 	responseHandler := middleware.NewResponseHandler(msgCache)
 
-	// Create mocked repo layer for DiagnosticInteractor
-	mockDiagnosticRepo := new(mocks.MockDiagnosticRepository)
-	mockMotorcycleRepo := new(mocks.MockMotorcycleRepository)
-	mockBranchRepo := new(mocks.MockBranchRepository)
+	// Create mocked service layer for DiagnosticInteractor
+	mockDiagnosticSvc := new(mocks.MockDiagnosticService)
+	mockTx := new(mocks.MockTx)
 
-	diagnosticInteractor := interactor.NewDiagnosticInteractor(
-		mockDiagnosticRepo,
-		mockMotorcycleRepo,
-		mockBranchRepo,
-	)
+	diagnosticInteractor := interactor.NewDiagnosticInteractor(mockDiagnosticSvc)
 
 	h := handlers.NewForTestWithConcrete(
 		nil, nil,
@@ -61,26 +56,26 @@ func TestCreateDiagnostic_Integration_Success(t *testing.T) {
 
 	problemDesc := "La moto no enciende"
 
-	// Mock: motorcycle exists and belongs to owner
-	mockMotorcycleRepo.On("GetByID", mock.Anything, motorcycleUUID).Return(&domain.Motorcycle{
+	// Mock: ownership validation
+	mockDiagnosticSvc.On("ValidateMotorcycleOwnership", mock.Anything, motorcycleUUID, ownerID).Return(&domain.Motorcycle{
 		ID:           motorcycleUUID,
 		LicensePlate: "ABC123",
 		OwnerID:      ownerID,
 	}, nil)
 
 	// Mock: branch exists
-	mockBranchRepo.On("GetBranchByID", mock.Anything, branchUUID).Return(&domain.Branch{
-		ID:   branchUUID,
-		Name: "Taller Norte",
-	}, nil)
-
-	// Mock: no existing diagnostic for this moto+branch (UPSERT → CREATE path)
-	mockDiagnosticRepo.On("GetByMotorcycleAndBranch", mock.Anything, motorcycleUUID, branchUUID).Return(nil, nil)
+	mockDiagnosticSvc.On("ValidateBranchExists", mock.Anything, branchUUID).Return(nil)
 
 	// Mock: tx
-	mockTx := new(mocks.MockTx)
-	mockDiagnosticRepo.On("BeginTx", mock.Anything).Return(mockTx, nil)
-	mockDiagnosticRepo.On("Save", mock.Anything, mockTx, mock.AnythingOfType("*domain.Diagnostic")).Return(nil)
+	mockDiagnosticSvc.On("BeginTx", mock.Anything).Return(mockTx, nil)
+
+	// Mock: RegisterOrUpdateDiagnostic returns created diagnostic
+	createdDiag := &domain.Diagnostic{
+		ID:           "a4444444-4444-4000-8000-444444444444",
+		MotorcycleID: motorcycleUUID,
+		BranchID:     branchUUID,
+	}
+	mockDiagnosticSvc.On("RegisterOrUpdateDiagnostic", mock.Anything, mockTx, motorcycleUUID, branchUUID, &problemDesc, []string(nil)).Return(createdDiag, nil)
 	mockTx.On("Commit").Return(nil)
 
 	// Request body
@@ -120,8 +115,6 @@ func TestCreateDiagnostic_Integration_Success(t *testing.T) {
 	assert.Equal(t, encodedMotorcycleID, data["motorcycle_id"])
 	assert.Equal(t, encodedBranchID, data["branch_id"])
 
-	mockMotorcycleRepo.AssertExpectations(t)
-	mockBranchRepo.AssertExpectations(t)
-	mockDiagnosticRepo.AssertExpectations(t)
+	mockDiagnosticSvc.AssertExpectations(t)
 	mockTx.AssertExpectations(t)
 }

@@ -12,13 +12,11 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// helper to create DiagnosticInteractor with fresh mocks
-func setupDiagnosticInteractor() (*interactor.DiagnosticInteractor, *mocks.MockDiagnosticRepository, *mocks.MockMotorcycleRepository, *mocks.MockBranchRepository) {
-	diagRepo := new(mocks.MockDiagnosticRepository)
-	motoRepo := new(mocks.MockMotorcycleRepository)
-	branchRepo := new(mocks.MockBranchRepository)
-	di := interactor.NewDiagnosticInteractor(diagRepo, motoRepo, branchRepo)
-	return di, diagRepo, motoRepo, branchRepo
+// helper to create DiagnosticInteractor with fresh mock service
+func setupDiagnosticInteractor() (*interactor.DiagnosticInteractor, *mocks.MockDiagnosticService) {
+	svc := new(mocks.MockDiagnosticService)
+	di := interactor.NewDiagnosticInteractor(svc)
+	return di, svc
 }
 
 // ============================================
@@ -27,38 +25,34 @@ func setupDiagnosticInteractor() (*interactor.DiagnosticInteractor, *mocks.MockD
 
 func TestRegisterDiagnostic_CreateNew_Success(t *testing.T) {
 	ctx := context.Background()
-	di, diagRepo, motoRepo, branchRepo := setupDiagnosticInteractor()
+	di, svc := setupDiagnosticInteractor()
 	mockTx := new(mocks.MockTx)
 
 	desc := "Frenos hacen ruido"
+	createdDiag := &domain.Diagnostic{ID: "diag-1", MotorcycleID: "moto-1", BranchID: "branch-1"}
+	createdDiag.Evidence = []domain.DiagnosticEvidence{{ID: "ev-1"}}
 
-	motoRepo.On("GetByID", ctx, "moto-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}, nil)
-	branchRepo.On("GetBranchByID", ctx, "branch-1").Return(&domain.Branch{ID: "branch-1"}, nil)
-	diagRepo.On("GetByMotorcycleAndBranch", ctx, "moto-1", "branch-1").Return(nil, nil)
-	diagRepo.On("BeginTx", ctx).Return(mockTx, nil)
-	diagRepo.On("Save", ctx, mockTx, mock.AnythingOfType("*domain.Diagnostic")).Return(nil)
-	diagRepo.On("SaveEvidence", ctx, mockTx, mock.AnythingOfType("*domain.DiagnosticEvidence")).Return(nil)
+	svc.On("ValidateMotorcycleOwnership", ctx, "moto-1", "owner-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}, nil)
+	svc.On("ValidateBranchExists", ctx, "branch-1").Return(nil)
+	svc.On("BeginTx", ctx).Return(mockTx, nil)
+	svc.On("RegisterOrUpdateDiagnostic", ctx, mockTx, "moto-1", "branch-1", &desc, []string{"http://img1.jpg"}).Return(createdDiag, nil)
 	mockTx.On("Commit").Return(nil)
 
 	result, err := di.RegisterDiagnostic(ctx, "moto-1", "branch-1", "owner-1", &desc, []string{"http://img1.jpg"})
 
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
-	assert.NotEmpty(t, result.ID)
-	assert.Equal(t, "moto-1", result.MotorcycleID)
-	assert.Equal(t, "branch-1", result.BranchID)
+	assert.Equal(t, "diag-1", result.ID)
 	assert.Len(t, result.Evidence, 1)
-	motoRepo.AssertExpectations(t)
-	branchRepo.AssertExpectations(t)
-	diagRepo.AssertExpectations(t)
+	svc.AssertExpectations(t)
 	mockTx.AssertExpectations(t)
 }
 
 func TestRegisterDiagnostic_MotorcycleNotFound(t *testing.T) {
 	ctx := context.Background()
-	di, _, motoRepo, _ := setupDiagnosticInteractor()
+	di, svc := setupDiagnosticInteractor()
 
-	motoRepo.On("GetByID", ctx, "moto-bad").Return(nil, errors.New("not found"))
+	svc.On("ValidateMotorcycleOwnership", ctx, "moto-bad", "owner-1").Return(nil, domain.ErrMotorcycleNotFound)
 
 	result, err := di.RegisterDiagnostic(ctx, "moto-bad", "branch-1", "owner-1", nil, nil)
 
@@ -69,9 +63,9 @@ func TestRegisterDiagnostic_MotorcycleNotFound(t *testing.T) {
 
 func TestRegisterDiagnostic_OwnershipError(t *testing.T) {
 	ctx := context.Background()
-	di, _, motoRepo, _ := setupDiagnosticInteractor()
+	di, svc := setupDiagnosticInteractor()
 
-	motoRepo.On("GetByID", ctx, "moto-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "real-owner"}, nil)
+	svc.On("ValidateMotorcycleOwnership", ctx, "moto-1", "impostor").Return(nil, domain.ErrMotorcycleNotFound)
 
 	result, err := di.RegisterDiagnostic(ctx, "moto-1", "branch-1", "impostor", nil, nil)
 
@@ -82,10 +76,10 @@ func TestRegisterDiagnostic_OwnershipError(t *testing.T) {
 
 func TestRegisterDiagnostic_BranchNotFound(t *testing.T) {
 	ctx := context.Background()
-	di, _, motoRepo, branchRepo := setupDiagnosticInteractor()
+	di, svc := setupDiagnosticInteractor()
 
-	motoRepo.On("GetByID", ctx, "moto-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}, nil)
-	branchRepo.On("GetBranchByID", ctx, "branch-bad").Return(nil, errors.New("not found"))
+	svc.On("ValidateMotorcycleOwnership", ctx, "moto-1", "owner-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}, nil)
+	svc.On("ValidateBranchExists", ctx, "branch-bad").Return(domain.ErrBranchNotFound)
 
 	result, err := di.RegisterDiagnostic(ctx, "moto-1", "branch-bad", "owner-1", nil, nil)
 
@@ -96,12 +90,11 @@ func TestRegisterDiagnostic_BranchNotFound(t *testing.T) {
 
 func TestRegisterDiagnostic_BeginTxError(t *testing.T) {
 	ctx := context.Background()
-	di, diagRepo, motoRepo, branchRepo := setupDiagnosticInteractor()
+	di, svc := setupDiagnosticInteractor()
 
-	motoRepo.On("GetByID", ctx, "moto-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}, nil)
-	branchRepo.On("GetBranchByID", ctx, "branch-1").Return(&domain.Branch{ID: "branch-1"}, nil)
-	diagRepo.On("GetByMotorcycleAndBranch", ctx, "moto-1", "branch-1").Return(nil, nil)
-	diagRepo.On("BeginTx", ctx).Return(nil, errors.New("tx error"))
+	svc.On("ValidateMotorcycleOwnership", ctx, "moto-1", "owner-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}, nil)
+	svc.On("ValidateBranchExists", ctx, "branch-1").Return(nil)
+	svc.On("BeginTx", ctx).Return(nil, errors.New("tx error"))
 
 	result, err := di.RegisterDiagnostic(ctx, "moto-1", "branch-1", "owner-1", nil, nil)
 
@@ -110,16 +103,15 @@ func TestRegisterDiagnostic_BeginTxError(t *testing.T) {
 	assert.Equal(t, domain.ErrDiagnosticCannotSave, err)
 }
 
-func TestRegisterDiagnostic_SaveError_RollsBack(t *testing.T) {
+func TestRegisterDiagnostic_ServiceError_RollsBack(t *testing.T) {
 	ctx := context.Background()
-	di, diagRepo, motoRepo, branchRepo := setupDiagnosticInteractor()
+	di, svc := setupDiagnosticInteractor()
 	mockTx := new(mocks.MockTx)
 
-	motoRepo.On("GetByID", ctx, "moto-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}, nil)
-	branchRepo.On("GetBranchByID", ctx, "branch-1").Return(&domain.Branch{ID: "branch-1"}, nil)
-	diagRepo.On("GetByMotorcycleAndBranch", ctx, "moto-1", "branch-1").Return(nil, nil)
-	diagRepo.On("BeginTx", ctx).Return(mockTx, nil)
-	diagRepo.On("Save", ctx, mockTx, mock.AnythingOfType("*domain.Diagnostic")).Return(errors.New("save failed"))
+	svc.On("ValidateMotorcycleOwnership", ctx, "moto-1", "owner-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}, nil)
+	svc.On("ValidateBranchExists", ctx, "branch-1").Return(nil)
+	svc.On("BeginTx", ctx).Return(mockTx, nil)
+	svc.On("RegisterOrUpdateDiagnostic", ctx, mockTx, "moto-1", "branch-1", (*string)(nil), []string(nil)).Return(nil, domain.ErrDiagnosticCannotSave)
 	mockTx.On("Rollback").Return(nil)
 
 	result, err := di.RegisterDiagnostic(ctx, "moto-1", "branch-1", "owner-1", nil, nil)
@@ -132,14 +124,13 @@ func TestRegisterDiagnostic_SaveError_RollsBack(t *testing.T) {
 
 func TestRegisterDiagnostic_CommitError_RollsBack(t *testing.T) {
 	ctx := context.Background()
-	di, diagRepo, motoRepo, branchRepo := setupDiagnosticInteractor()
+	di, svc := setupDiagnosticInteractor()
 	mockTx := new(mocks.MockTx)
 
-	motoRepo.On("GetByID", ctx, "moto-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}, nil)
-	branchRepo.On("GetBranchByID", ctx, "branch-1").Return(&domain.Branch{ID: "branch-1"}, nil)
-	diagRepo.On("GetByMotorcycleAndBranch", ctx, "moto-1", "branch-1").Return(nil, nil)
-	diagRepo.On("BeginTx", ctx).Return(mockTx, nil)
-	diagRepo.On("Save", ctx, mockTx, mock.AnythingOfType("*domain.Diagnostic")).Return(nil)
+	svc.On("ValidateMotorcycleOwnership", ctx, "moto-1", "owner-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}, nil)
+	svc.On("ValidateBranchExists", ctx, "branch-1").Return(nil)
+	svc.On("BeginTx", ctx).Return(mockTx, nil)
+	svc.On("RegisterOrUpdateDiagnostic", ctx, mockTx, "moto-1", "branch-1", (*string)(nil), []string(nil)).Return(&domain.Diagnostic{ID: "diag-1"}, nil)
 	mockTx.On("Commit").Return(errors.New("commit failed"))
 	mockTx.On("Rollback").Return(nil)
 
@@ -152,50 +143,19 @@ func TestRegisterDiagnostic_CommitError_RollsBack(t *testing.T) {
 }
 
 // ============================================
-// RegisterDiagnostic — UPSERT path
-// ============================================
-
-func TestRegisterDiagnostic_Upsert_Success(t *testing.T) {
-	ctx := context.Background()
-	di, diagRepo, motoRepo, branchRepo := setupDiagnosticInteractor()
-	mockTx := new(mocks.MockTx)
-
-	desc := "Problema actualizado"
-	existing := &domain.Diagnostic{ID: "diag-existing", MotorcycleID: "moto-1", BranchID: "branch-1"}
-
-	motoRepo.On("GetByID", ctx, "moto-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}, nil)
-	branchRepo.On("GetBranchByID", ctx, "branch-1").Return(&domain.Branch{ID: "branch-1"}, nil)
-	diagRepo.On("GetByMotorcycleAndBranch", ctx, "moto-1", "branch-1").Return(existing, nil)
-	diagRepo.On("BeginTx", ctx).Return(mockTx, nil)
-	diagRepo.On("Update", ctx, mockTx, existing).Return(nil)
-	diagRepo.On("DeleteEvidenceByDiagnosticID", ctx, mockTx, "diag-existing").Return(nil)
-	diagRepo.On("SaveEvidence", ctx, mockTx, mock.AnythingOfType("*domain.DiagnosticEvidence")).Return(nil)
-	mockTx.On("Commit").Return(nil)
-
-	result, err := di.RegisterDiagnostic(ctx, "moto-1", "branch-1", "owner-1", &desc, []string{"http://new-img.jpg"})
-
-	assert.NoError(t, err)
-	assert.NotNil(t, result)
-	assert.Equal(t, "diag-existing", result.ID)
-	assert.Len(t, result.Evidence, 1)
-	diagRepo.AssertExpectations(t)
-	mockTx.AssertExpectations(t)
-}
-
-// ============================================
 // GetDiagnosticByID
 // ============================================
 
 func TestGetDiagnosticByID_Success(t *testing.T) {
 	ctx := context.Background()
-	di, diagRepo, motoRepo, _ := setupDiagnosticInteractor()
+	di, svc := setupDiagnosticInteractor()
 
 	diag := &domain.Diagnostic{ID: "diag-1", MotorcycleID: "moto-1"}
 	evidence := []domain.DiagnosticEvidence{{ID: "ev-1", DiagnosticID: "diag-1"}}
 
-	diagRepo.On("GetByID", ctx, "diag-1").Return(diag, nil)
-	motoRepo.On("GetByID", ctx, "moto-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}, nil)
-	diagRepo.On("GetEvidenceByDiagnosticID", ctx, "diag-1").Return(evidence, nil)
+	svc.On("GetByID", ctx, "diag-1").Return(diag, nil)
+	svc.On("ValidateMotorcycleOwnership", ctx, "moto-1", "owner-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}, nil)
+	svc.On("LoadEvidence", ctx, "diag-1").Return(evidence, nil)
 
 	result, err := di.GetDiagnosticByID(ctx, "diag-1", "owner-1")
 
@@ -203,15 +163,14 @@ func TestGetDiagnosticByID_Success(t *testing.T) {
 	assert.NotNil(t, result)
 	assert.Equal(t, "diag-1", result.ID)
 	assert.Len(t, result.Evidence, 1)
-	diagRepo.AssertExpectations(t)
-	motoRepo.AssertExpectations(t)
+	svc.AssertExpectations(t)
 }
 
 func TestGetDiagnosticByID_NotFound(t *testing.T) {
 	ctx := context.Background()
-	di, diagRepo, _, _ := setupDiagnosticInteractor()
+	di, svc := setupDiagnosticInteractor()
 
-	diagRepo.On("GetByID", ctx, "diag-bad").Return(nil, errors.New("not found"))
+	svc.On("GetByID", ctx, "diag-bad").Return(nil, errors.New("not found"))
 
 	result, err := di.GetDiagnosticByID(ctx, "diag-bad", "owner-1")
 
@@ -221,12 +180,12 @@ func TestGetDiagnosticByID_NotFound(t *testing.T) {
 
 func TestGetDiagnosticByID_OwnershipError(t *testing.T) {
 	ctx := context.Background()
-	di, diagRepo, motoRepo, _ := setupDiagnosticInteractor()
+	di, svc := setupDiagnosticInteractor()
 
 	diag := &domain.Diagnostic{ID: "diag-1", MotorcycleID: "moto-1"}
 
-	diagRepo.On("GetByID", ctx, "diag-1").Return(diag, nil)
-	motoRepo.On("GetByID", ctx, "moto-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "real-owner"}, nil)
+	svc.On("GetByID", ctx, "diag-1").Return(diag, nil)
+	svc.On("ValidateMotorcycleOwnership", ctx, "moto-1", "impostor").Return(nil, domain.ErrMotorcycleNotFound)
 
 	result, err := di.GetDiagnosticByID(ctx, "diag-1", "impostor")
 
@@ -241,31 +200,29 @@ func TestGetDiagnosticByID_OwnershipError(t *testing.T) {
 
 func TestListDiagnosticsByMotorcycle_Success(t *testing.T) {
 	ctx := context.Background()
-	di, diagRepo, motoRepo, _ := setupDiagnosticInteractor()
+	di, svc := setupDiagnosticInteractor()
 
 	diagnostics := []domain.Diagnostic{
 		{ID: "diag-1", MotorcycleID: "moto-1"},
 		{ID: "diag-2", MotorcycleID: "moto-1"},
 	}
 
-	motoRepo.On("GetByID", ctx, "moto-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}, nil)
-	diagRepo.On("GetByMotorcycleID", ctx, "moto-1").Return(diagnostics, nil)
-	diagRepo.On("GetEvidenceByDiagnosticID", ctx, "diag-1").Return([]domain.DiagnosticEvidence{}, nil)
-	diagRepo.On("GetEvidenceByDiagnosticID", ctx, "diag-2").Return([]domain.DiagnosticEvidence{}, nil)
+	svc.On("ValidateMotorcycleOwnership", ctx, "moto-1", "owner-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}, nil)
+	svc.On("GetByMotorcycleID", ctx, "moto-1").Return(diagnostics, nil)
+	svc.On("LoadEvidenceForDiagnostics", ctx, diagnostics).Return(nil)
 
 	result, err := di.ListDiagnosticsByMotorcycle(ctx, "moto-1", "owner-1")
 
 	assert.NoError(t, err)
 	assert.Len(t, result, 2)
-	diagRepo.AssertExpectations(t)
-	motoRepo.AssertExpectations(t)
+	svc.AssertExpectations(t)
 }
 
 func TestListDiagnosticsByMotorcycle_MotorcycleNotFound(t *testing.T) {
 	ctx := context.Background()
-	di, _, motoRepo, _ := setupDiagnosticInteractor()
+	di, svc := setupDiagnosticInteractor()
 
-	motoRepo.On("GetByID", ctx, "moto-bad").Return(nil, errors.New("not found"))
+	svc.On("ValidateMotorcycleOwnership", ctx, "moto-bad", "owner-1").Return(nil, domain.ErrMotorcycleNotFound)
 
 	result, err := di.ListDiagnosticsByMotorcycle(ctx, "moto-bad", "owner-1")
 
@@ -276,9 +233,9 @@ func TestListDiagnosticsByMotorcycle_MotorcycleNotFound(t *testing.T) {
 
 func TestListDiagnosticsByMotorcycle_OwnershipError(t *testing.T) {
 	ctx := context.Background()
-	di, _, motoRepo, _ := setupDiagnosticInteractor()
+	di, svc := setupDiagnosticInteractor()
 
-	motoRepo.On("GetByID", ctx, "moto-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "real-owner"}, nil)
+	svc.On("ValidateMotorcycleOwnership", ctx, "moto-1", "impostor").Return(nil, domain.ErrMotorcycleNotFound)
 
 	result, err := di.ListDiagnosticsByMotorcycle(ctx, "moto-1", "impostor")
 
@@ -293,33 +250,33 @@ func TestListDiagnosticsByMotorcycle_OwnershipError(t *testing.T) {
 
 func TestUpdateDiagnostic_Success(t *testing.T) {
 	ctx := context.Background()
-	di, diagRepo, motoRepo, _ := setupDiagnosticInteractor()
+	di, svc := setupDiagnosticInteractor()
 	mockTx := new(mocks.MockTx)
 
 	existing := &domain.Diagnostic{ID: "diag-1", MotorcycleID: "moto-1"}
 	newDescription := "Problema actualizado"
 	updates := &domain.Diagnostic{ProblemDescription: &newDescription}
 
-	diagRepo.On("GetByID", ctx, "diag-1").Return(existing, nil)
-	motoRepo.On("GetByID", ctx, "moto-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}, nil)
-	diagRepo.On("BeginTx", ctx).Return(mockTx, nil)
-	diagRepo.On("Update", ctx, mockTx, existing).Return(nil)
+	svc.On("GetByID", ctx, "diag-1").Return(existing, nil)
+	svc.On("ValidateMotorcycleOwnership", ctx, "moto-1", "owner-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}, nil)
+	svc.On("ApplyDiagnosticUpdates", existing, updates).Return()
+	svc.On("BeginTx", ctx).Return(mockTx, nil)
+	svc.On("UpdateDiagnostic", ctx, mockTx, existing).Return(nil)
 	mockTx.On("Commit").Return(nil)
 
 	result, err := di.UpdateDiagnostic(ctx, "diag-1", "owner-1", updates)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
-	assert.Equal(t, &newDescription, result.ProblemDescription)
-	diagRepo.AssertExpectations(t)
+	svc.AssertExpectations(t)
 	mockTx.AssertExpectations(t)
 }
 
 func TestUpdateDiagnostic_NotFound(t *testing.T) {
 	ctx := context.Background()
-	di, diagRepo, _, _ := setupDiagnosticInteractor()
+	di, svc := setupDiagnosticInteractor()
 
-	diagRepo.On("GetByID", ctx, "diag-bad").Return(nil, errors.New("not found"))
+	svc.On("GetByID", ctx, "diag-bad").Return(nil, errors.New("not found"))
 
 	result, err := di.UpdateDiagnostic(ctx, "diag-bad", "owner-1", &domain.Diagnostic{})
 
@@ -330,12 +287,12 @@ func TestUpdateDiagnostic_NotFound(t *testing.T) {
 
 func TestUpdateDiagnostic_OwnershipError(t *testing.T) {
 	ctx := context.Background()
-	di, diagRepo, motoRepo, _ := setupDiagnosticInteractor()
+	di, svc := setupDiagnosticInteractor()
 
 	existing := &domain.Diagnostic{ID: "diag-1", MotorcycleID: "moto-1"}
 
-	diagRepo.On("GetByID", ctx, "diag-1").Return(existing, nil)
-	motoRepo.On("GetByID", ctx, "moto-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "real-owner"}, nil)
+	svc.On("GetByID", ctx, "diag-1").Return(existing, nil)
+	svc.On("ValidateMotorcycleOwnership", ctx, "moto-1", "impostor").Return(nil, domain.ErrMotorcycleNotFound)
 
 	result, err := di.UpdateDiagnostic(ctx, "diag-1", "impostor", &domain.Diagnostic{})
 
@@ -346,13 +303,14 @@ func TestUpdateDiagnostic_OwnershipError(t *testing.T) {
 
 func TestUpdateDiagnostic_BeginTxError(t *testing.T) {
 	ctx := context.Background()
-	di, diagRepo, motoRepo, _ := setupDiagnosticInteractor()
+	di, svc := setupDiagnosticInteractor()
 
 	existing := &domain.Diagnostic{ID: "diag-1", MotorcycleID: "moto-1"}
 
-	diagRepo.On("GetByID", ctx, "diag-1").Return(existing, nil)
-	motoRepo.On("GetByID", ctx, "moto-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}, nil)
-	diagRepo.On("BeginTx", ctx).Return(nil, errors.New("tx error"))
+	svc.On("GetByID", ctx, "diag-1").Return(existing, nil)
+	svc.On("ValidateMotorcycleOwnership", ctx, "moto-1", "owner-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}, nil)
+	svc.On("ApplyDiagnosticUpdates", existing, mock.Anything).Return()
+	svc.On("BeginTx", ctx).Return(nil, errors.New("tx error"))
 
 	result, err := di.UpdateDiagnostic(ctx, "diag-1", "owner-1", &domain.Diagnostic{})
 
@@ -363,15 +321,16 @@ func TestUpdateDiagnostic_BeginTxError(t *testing.T) {
 
 func TestUpdateDiagnostic_UpdateError_RollsBack(t *testing.T) {
 	ctx := context.Background()
-	di, diagRepo, motoRepo, _ := setupDiagnosticInteractor()
+	di, svc := setupDiagnosticInteractor()
 	mockTx := new(mocks.MockTx)
 
 	existing := &domain.Diagnostic{ID: "diag-1", MotorcycleID: "moto-1"}
 
-	diagRepo.On("GetByID", ctx, "diag-1").Return(existing, nil)
-	motoRepo.On("GetByID", ctx, "moto-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}, nil)
-	diagRepo.On("BeginTx", ctx).Return(mockTx, nil)
-	diagRepo.On("Update", ctx, mockTx, existing).Return(errors.New("update failed"))
+	svc.On("GetByID", ctx, "diag-1").Return(existing, nil)
+	svc.On("ValidateMotorcycleOwnership", ctx, "moto-1", "owner-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}, nil)
+	svc.On("ApplyDiagnosticUpdates", existing, mock.Anything).Return()
+	svc.On("BeginTx", ctx).Return(mockTx, nil)
+	svc.On("UpdateDiagnostic", ctx, mockTx, existing).Return(domain.ErrDiagnosticCannotUpdate)
 	mockTx.On("Rollback").Return(nil)
 
 	result, err := di.UpdateDiagnostic(ctx, "diag-1", "owner-1", &domain.Diagnostic{})
@@ -384,15 +343,16 @@ func TestUpdateDiagnostic_UpdateError_RollsBack(t *testing.T) {
 
 func TestUpdateDiagnostic_CommitError_RollsBack(t *testing.T) {
 	ctx := context.Background()
-	di, diagRepo, motoRepo, _ := setupDiagnosticInteractor()
+	di, svc := setupDiagnosticInteractor()
 	mockTx := new(mocks.MockTx)
 
 	existing := &domain.Diagnostic{ID: "diag-1", MotorcycleID: "moto-1"}
 
-	diagRepo.On("GetByID", ctx, "diag-1").Return(existing, nil)
-	motoRepo.On("GetByID", ctx, "moto-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}, nil)
-	diagRepo.On("BeginTx", ctx).Return(mockTx, nil)
-	diagRepo.On("Update", ctx, mockTx, existing).Return(nil)
+	svc.On("GetByID", ctx, "diag-1").Return(existing, nil)
+	svc.On("ValidateMotorcycleOwnership", ctx, "moto-1", "owner-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}, nil)
+	svc.On("ApplyDiagnosticUpdates", existing, mock.Anything).Return()
+	svc.On("BeginTx", ctx).Return(mockTx, nil)
+	svc.On("UpdateDiagnostic", ctx, mockTx, existing).Return(nil)
 	mockTx.On("Commit").Return(errors.New("commit failed"))
 	mockTx.On("Rollback").Return(nil)
 
@@ -410,29 +370,29 @@ func TestUpdateDiagnostic_CommitError_RollsBack(t *testing.T) {
 
 func TestDeleteDiagnostic_Success(t *testing.T) {
 	ctx := context.Background()
-	di, diagRepo, motoRepo, _ := setupDiagnosticInteractor()
+	di, svc := setupDiagnosticInteractor()
 	mockTx := new(mocks.MockTx)
 
 	existing := &domain.Diagnostic{ID: "diag-1", MotorcycleID: "moto-1"}
 
-	diagRepo.On("GetByID", ctx, "diag-1").Return(existing, nil)
-	motoRepo.On("GetByID", ctx, "moto-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}, nil)
-	diagRepo.On("BeginTx", ctx).Return(mockTx, nil)
-	diagRepo.On("Delete", ctx, mockTx, "diag-1").Return(nil)
+	svc.On("GetByID", ctx, "diag-1").Return(existing, nil)
+	svc.On("ValidateMotorcycleOwnership", ctx, "moto-1", "owner-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}, nil)
+	svc.On("BeginTx", ctx).Return(mockTx, nil)
+	svc.On("DeleteDiagnostic", ctx, mockTx, "diag-1").Return(nil)
 	mockTx.On("Commit").Return(nil)
 
 	err := di.DeleteDiagnostic(ctx, "diag-1", "owner-1")
 
 	assert.NoError(t, err)
-	diagRepo.AssertExpectations(t)
+	svc.AssertExpectations(t)
 	mockTx.AssertExpectations(t)
 }
 
 func TestDeleteDiagnostic_NotFound(t *testing.T) {
 	ctx := context.Background()
-	di, diagRepo, _, _ := setupDiagnosticInteractor()
+	di, svc := setupDiagnosticInteractor()
 
-	diagRepo.On("GetByID", ctx, "diag-bad").Return(nil, errors.New("not found"))
+	svc.On("GetByID", ctx, "diag-bad").Return(nil, errors.New("not found"))
 
 	err := di.DeleteDiagnostic(ctx, "diag-bad", "owner-1")
 
@@ -441,12 +401,12 @@ func TestDeleteDiagnostic_NotFound(t *testing.T) {
 
 func TestDeleteDiagnostic_OwnershipError(t *testing.T) {
 	ctx := context.Background()
-	di, diagRepo, motoRepo, _ := setupDiagnosticInteractor()
+	di, svc := setupDiagnosticInteractor()
 
 	existing := &domain.Diagnostic{ID: "diag-1", MotorcycleID: "moto-1"}
 
-	diagRepo.On("GetByID", ctx, "diag-1").Return(existing, nil)
-	motoRepo.On("GetByID", ctx, "moto-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "real-owner"}, nil)
+	svc.On("GetByID", ctx, "diag-1").Return(existing, nil)
+	svc.On("ValidateMotorcycleOwnership", ctx, "moto-1", "impostor").Return(nil, domain.ErrMotorcycleNotFound)
 
 	err := di.DeleteDiagnostic(ctx, "diag-1", "impostor")
 
@@ -456,13 +416,13 @@ func TestDeleteDiagnostic_OwnershipError(t *testing.T) {
 
 func TestDeleteDiagnostic_BeginTxError(t *testing.T) {
 	ctx := context.Background()
-	di, diagRepo, motoRepo, _ := setupDiagnosticInteractor()
+	di, svc := setupDiagnosticInteractor()
 
 	existing := &domain.Diagnostic{ID: "diag-1", MotorcycleID: "moto-1"}
 
-	diagRepo.On("GetByID", ctx, "diag-1").Return(existing, nil)
-	motoRepo.On("GetByID", ctx, "moto-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}, nil)
-	diagRepo.On("BeginTx", ctx).Return(nil, errors.New("tx error"))
+	svc.On("GetByID", ctx, "diag-1").Return(existing, nil)
+	svc.On("ValidateMotorcycleOwnership", ctx, "moto-1", "owner-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}, nil)
+	svc.On("BeginTx", ctx).Return(nil, errors.New("tx error"))
 
 	err := di.DeleteDiagnostic(ctx, "diag-1", "owner-1")
 
@@ -472,15 +432,15 @@ func TestDeleteDiagnostic_BeginTxError(t *testing.T) {
 
 func TestDeleteDiagnostic_DeleteError_RollsBack(t *testing.T) {
 	ctx := context.Background()
-	di, diagRepo, motoRepo, _ := setupDiagnosticInteractor()
+	di, svc := setupDiagnosticInteractor()
 	mockTx := new(mocks.MockTx)
 
 	existing := &domain.Diagnostic{ID: "diag-1", MotorcycleID: "moto-1"}
 
-	diagRepo.On("GetByID", ctx, "diag-1").Return(existing, nil)
-	motoRepo.On("GetByID", ctx, "moto-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}, nil)
-	diagRepo.On("BeginTx", ctx).Return(mockTx, nil)
-	diagRepo.On("Delete", ctx, mockTx, "diag-1").Return(errors.New("delete failed"))
+	svc.On("GetByID", ctx, "diag-1").Return(existing, nil)
+	svc.On("ValidateMotorcycleOwnership", ctx, "moto-1", "owner-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}, nil)
+	svc.On("BeginTx", ctx).Return(mockTx, nil)
+	svc.On("DeleteDiagnostic", ctx, mockTx, "diag-1").Return(domain.ErrDiagnosticCannotDelete)
 	mockTx.On("Rollback").Return(nil)
 
 	err := di.DeleteDiagnostic(ctx, "diag-1", "owner-1")
@@ -492,15 +452,15 @@ func TestDeleteDiagnostic_DeleteError_RollsBack(t *testing.T) {
 
 func TestDeleteDiagnostic_CommitError_RollsBack(t *testing.T) {
 	ctx := context.Background()
-	di, diagRepo, motoRepo, _ := setupDiagnosticInteractor()
+	di, svc := setupDiagnosticInteractor()
 	mockTx := new(mocks.MockTx)
 
 	existing := &domain.Diagnostic{ID: "diag-1", MotorcycleID: "moto-1"}
 
-	diagRepo.On("GetByID", ctx, "diag-1").Return(existing, nil)
-	motoRepo.On("GetByID", ctx, "moto-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}, nil)
-	diagRepo.On("BeginTx", ctx).Return(mockTx, nil)
-	diagRepo.On("Delete", ctx, mockTx, "diag-1").Return(nil)
+	svc.On("GetByID", ctx, "diag-1").Return(existing, nil)
+	svc.On("ValidateMotorcycleOwnership", ctx, "moto-1", "owner-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}, nil)
+	svc.On("BeginTx", ctx).Return(mockTx, nil)
+	svc.On("DeleteDiagnostic", ctx, mockTx, "diag-1").Return(nil)
 	mockTx.On("Commit").Return(errors.New("commit failed"))
 	mockTx.On("Rollback").Return(nil)
 
@@ -517,27 +477,27 @@ func TestDeleteDiagnostic_CommitError_RollsBack(t *testing.T) {
 
 func TestListDiagnosticsByMotorcycleID_Success(t *testing.T) {
 	ctx := context.Background()
-	di, diagRepo, _, _ := setupDiagnosticInteractor()
+	di, svc := setupDiagnosticInteractor()
 
 	diagnostics := []domain.Diagnostic{
 		{ID: "diag-1", MotorcycleID: "moto-1"},
 	}
 
-	diagRepo.On("GetByMotorcycleID", ctx, "moto-1").Return(diagnostics, nil)
-	diagRepo.On("GetEvidenceByDiagnosticID", ctx, "diag-1").Return([]domain.DiagnosticEvidence{}, nil)
+	svc.On("GetByMotorcycleID", ctx, "moto-1").Return(diagnostics, nil)
+	svc.On("LoadEvidenceForDiagnostics", ctx, diagnostics).Return(nil)
 
 	result, err := di.ListDiagnosticsByMotorcycleID(ctx, "moto-1")
 
 	assert.NoError(t, err)
 	assert.Len(t, result, 1)
-	diagRepo.AssertExpectations(t)
+	svc.AssertExpectations(t)
 }
 
 func TestListDiagnosticsByMotorcycleID_RepoError(t *testing.T) {
 	ctx := context.Background()
-	di, diagRepo, _, _ := setupDiagnosticInteractor()
+	di, svc := setupDiagnosticInteractor()
 
-	diagRepo.On("GetByMotorcycleID", ctx, "moto-1").Return(nil, errors.New("db error"))
+	svc.On("GetByMotorcycleID", ctx, "moto-1").Return(nil, errors.New("db error"))
 
 	result, err := di.ListDiagnosticsByMotorcycleID(ctx, "moto-1")
 
@@ -547,17 +507,65 @@ func TestListDiagnosticsByMotorcycleID_RepoError(t *testing.T) {
 
 func TestListDiagnosticsByMotorcycleID_EvidenceError(t *testing.T) {
 	ctx := context.Background()
-	di, diagRepo, _, _ := setupDiagnosticInteractor()
+	di, svc := setupDiagnosticInteractor()
 
 	diagnostics := []domain.Diagnostic{
 		{ID: "diag-1", MotorcycleID: "moto-1"},
 	}
 
-	diagRepo.On("GetByMotorcycleID", ctx, "moto-1").Return(diagnostics, nil)
-	diagRepo.On("GetEvidenceByDiagnosticID", ctx, "diag-1").Return(nil, errors.New("evidence error"))
+	svc.On("GetByMotorcycleID", ctx, "moto-1").Return(diagnostics, nil)
+	svc.On("LoadEvidenceForDiagnostics", ctx, diagnostics).Return(errors.New("evidence error"))
 
 	result, err := di.ListDiagnosticsByMotorcycleID(ctx, "moto-1")
 
 	assert.Error(t, err)
 	assert.Nil(t, result)
+}
+
+// ============================================
+// SetSolution
+// ============================================
+
+func TestSetSolution_Success(t *testing.T) {
+	ctx := context.Background()
+	di, svc := setupDiagnosticInteractor()
+	mockTx := new(mocks.MockTx)
+
+	svc.On("BeginTx", ctx).Return(mockTx, nil)
+	svc.On("SetSolution", ctx, mockTx, "diag-1", "Cambiar pastillas de freno").Return(nil)
+	mockTx.On("Commit").Return(nil)
+
+	err := di.SetSolution(ctx, "diag-1", "Cambiar pastillas de freno")
+
+	assert.NoError(t, err)
+	svc.AssertExpectations(t)
+	mockTx.AssertExpectations(t)
+}
+
+func TestSetSolution_BeginTxError(t *testing.T) {
+	ctx := context.Background()
+	di, svc := setupDiagnosticInteractor()
+
+	svc.On("BeginTx", ctx).Return(nil, errors.New("tx error"))
+
+	err := di.SetSolution(ctx, "diag-1", "Solución")
+
+	assert.Error(t, err)
+	assert.Equal(t, domain.ErrDiagnosticCannotUpdate, err)
+}
+
+func TestSetSolution_ServiceError_RollsBack(t *testing.T) {
+	ctx := context.Background()
+	di, svc := setupDiagnosticInteractor()
+	mockTx := new(mocks.MockTx)
+
+	svc.On("BeginTx", ctx).Return(mockTx, nil)
+	svc.On("SetSolution", ctx, mockTx, "diag-1", "Solución").Return(domain.ErrDiagnosticNotFound)
+	mockTx.On("Rollback").Return(nil)
+
+	err := di.SetSolution(ctx, "diag-1", "Solución")
+
+	assert.Error(t, err)
+	assert.Equal(t, domain.ErrDiagnosticNotFound, err)
+	mockTx.AssertCalled(t, "Rollback")
 }

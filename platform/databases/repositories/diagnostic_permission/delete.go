@@ -16,7 +16,7 @@ func (r *repository) Delete(ctx context.Context, tx output.Tx, motorcycleID, bra
 		return domain.ErrInvalidTransaction
 	}
 
-	result, err := sqlTx.ExecContext(ctx, queryDelete, motorcycleID, branchID)
+	result, err := sqlTx.ExecContext(ctx, queryRevoke, motorcycleID, branchID)
 	if err != nil {
 		log.Error(logger.LogDiagPermRepoDeleteError, err)
 		return domain.ErrPermissionCannotDelete

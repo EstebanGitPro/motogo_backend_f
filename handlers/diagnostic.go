@@ -25,18 +25,14 @@ func (r *CreateDiagnosticRequest) Sanitize() {
 
 // UpdateDiagnosticRequest represents the request body for diagnostic update (HU12)
 type UpdateDiagnosticRequest struct {
-	ProblemDescription *string  `json:"problem_description,omitempty"`
-	PossibleSolution   *string  `json:"possible_solution,omitempty"`
-	LaborQuote         *float64 `json:"labor_quote,omitempty"`
-	PartsQuote         *float64 `json:"parts_quote,omitempty"`
-	EstimatedTime      *string  `json:"estimated_time,omitempty"`
+	ProblemDescription *string `json:"problem_description,omitempty"`
+	PossibleSolution   *string `json:"possible_solution,omitempty"`
 }
 
 // Sanitize trims whitespace from all string fields
 func (r *UpdateDiagnosticRequest) Sanitize() {
 	r.ProblemDescription = TrimStringPtr(r.ProblemDescription)
 	r.PossibleSolution = TrimStringPtr(r.PossibleSolution)
-	r.EstimatedTime = TrimStringPtr(r.EstimatedTime)
 }
 
 // ToDomain converts UpdateDiagnosticRequest to domain.Diagnostic
@@ -44,10 +40,17 @@ func (r *UpdateDiagnosticRequest) ToDomain() *domain.Diagnostic {
 	return &domain.Diagnostic{
 		ProblemDescription: r.ProblemDescription,
 		PossibleSolution:   r.PossibleSolution,
-		LaborQuote:         r.LaborQuote,
-		PartsQuote:         r.PartsQuote,
-		EstimatedTime:      r.EstimatedTime,
 	}
+}
+
+// SetSolutionRequest represents the request body for setting a diagnostic solution (representative)
+type SetSolutionRequest struct {
+	PossibleSolution string `json:"possible_solution" binding:"required"`
+}
+
+// Sanitize trims whitespace from all string fields
+func (r *SetSolutionRequest) Sanitize() {
+	r.PossibleSolution = TrimString(r.PossibleSolution)
 }
 
 // DiagnosticResponse represents the API response for a diagnostic (HU11-14)
@@ -58,9 +61,6 @@ type DiagnosticResponse struct {
 	Date               string                       `json:"date"`
 	ProblemDescription *string                      `json:"problem_description,omitempty"`
 	PossibleSolution   *string                      `json:"possible_solution,omitempty"`
-	LaborQuote         *float64                     `json:"labor_quote,omitempty"`
-	PartsQuote         *float64                     `json:"parts_quote,omitempty"`
-	EstimatedTime      *string                      `json:"estimated_time,omitempty"`
 	SentViaWhatsApp    bool                         `json:"sent_via_whatsapp"`
 	Evidence           []DiagnosticEvidenceResponse `json:"evidence,omitempty"`
 	Links              []Link                       `json:"_links,omitempty"`
@@ -83,9 +83,6 @@ func ToDiagnosticResponse(d *domain.Diagnostic) DiagnosticResponse {
 		Date:               d.Date.Format(time.RFC3339),
 		ProblemDescription: d.ProblemDescription,
 		PossibleSolution:   d.PossibleSolution,
-		LaborQuote:         d.LaborQuote,
-		PartsQuote:         d.PartsQuote,
-		EstimatedTime:      d.EstimatedTime,
 		SentViaWhatsApp:    d.SentViaWhatsApp,
 	}
 

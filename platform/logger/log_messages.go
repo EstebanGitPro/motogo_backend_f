@@ -1353,6 +1353,11 @@ const (
 	LogEvidenceInteractorDeleteStart   = "Eliminación de evidencia iniciada"
 	LogEvidenceInteractorDeleteError   = "Error eliminando evidencia"
 	LogEvidenceInteractorDeleteSuccess = "Evidencia eliminada exitosamente"
+
+	// LookupEvidence (representative plate lookup - no ownership check)
+	LogEvidenceInteractorLookupStart   = "Consulta de evidencias para búsqueda por placa iniciada"
+	LogEvidenceInteractorLookupError   = "Error consultando evidencias para búsqueda por placa"
+	LogEvidenceInteractorLookupSuccess = "Evidencias para búsqueda por placa obtenidas exitosamente"
 )
 
 // ============================================
@@ -1562,6 +1567,11 @@ const (
 	LogDiagnosticInteractorDeleteStart   = "Eliminación de diagnóstico iniciada"
 	LogDiagnosticInteractorDeleteError   = "Error eliminando diagnóstico"
 	LogDiagnosticInteractorDeleteSuccess = "Diagnóstico eliminado exitosamente"
+
+	// Set Solution (representative)
+	LogDiagnosticInteractorSetSolutionStart   = "Asignación de solución a diagnóstico iniciada"
+	LogDiagnosticInteractorSetSolutionError   = "Error asignando solución a diagnóstico"
+	LogDiagnosticInteractorSetSolutionSuccess = "Solución asignada a diagnóstico exitosamente"
 )
 
 // ============================================
@@ -1583,6 +1593,11 @@ const (
 	LogDiagnosticControllerDeleteRequest = "Solicitud de eliminación de diagnóstico recibida"
 	LogDiagnosticControllerDeleteError   = "Error eliminando diagnóstico"
 	LogDiagnosticControllerDeleteSuccess = "Diagnóstico eliminado exitosamente"
+
+	// Set Solution (representative)
+	LogDiagnosticControllerSetSolutionRequest = "Solicitud de asignación de solución recibida"
+	LogDiagnosticControllerSetSolutionError   = "Error asignando solución a diagnóstico"
+	LogDiagnosticControllerSetSolutionSuccess = "Solución asignada a diagnóstico exitosamente"
 
 	// Dependency initialization
 	LogDepDiagnosticRepoInitOK       = "Repositorio de diagnósticos inicializado"
@@ -1625,6 +1640,11 @@ const (
 	LogDiagPermInteractorListStart     = "Listado de permisos de diagnóstico iniciado"
 	LogDiagPermInteractorListError     = "Error listando permisos de diagnóstico"
 	LogDiagPermInteractorListSuccess   = "Permisos de diagnóstico listados exitosamente"
+
+	// LookupPermissions (representative plate lookup - no ownership check)
+	LogDiagPermInteractorLookupStart   = "Consulta de permisos para búsqueda por placa iniciada"
+	LogDiagPermInteractorLookupError   = "Error consultando permisos para búsqueda por placa"
+	LogDiagPermInteractorLookupSuccess = "Permisos para búsqueda por placa obtenidos exitosamente"
 )
 
 // ============================================
