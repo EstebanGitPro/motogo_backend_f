@@ -4,9 +4,9 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/core/interactor"
 	domain "github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/input"
+	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
 	"github.com/EstebanGitPro/motogo-backend/middleware"
 	messagingCache "github.com/EstebanGitPro/motogo-backend/platform/cache/messaging"
-	"github.com/EstebanGitPro/motogo-backend/platform/firebase"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 	"github.com/EstebanGitPro/motogo-backend/tools/idencoder"
 	"github.com/gin-gonic/gin"
@@ -23,7 +23,7 @@ type handler struct {
 	MotorcycleInteractor input.MotorcycleInteractorInterface // Motorcycle CRUD (interface for testing)
 	EvidenceInteractor   input.EvidenceInteractorInterface   // Evidence CRUD (HU16-19)
 	DiagnosticInteractor *interactor.DiagnosticInteractor    // Diagnostic CRUD (HU11-14)
-	FirebaseClient       firebase.FirebaseClient             // Firebase Auth
+	FirebaseClient       output.CustomTokenProvider          // Firebase Auth
 	MessagingCache       *messagingCache.MessageCache
 	IDEncoder            *idencoder.HashidsEncoder
 	Response             *middleware.ResponseHandler
@@ -40,7 +40,7 @@ func New(
 	motorcycleInteractor *interactor.MotorcycleInteractor,
 	evidenceInteractor *interactor.EvidenceInteractor, // HU16-19
 	diagnosticInteractor *interactor.DiagnosticInteractor, // HU11-14
-	firebaseClient firebase.FirebaseClient,
+	firebaseClient output.CustomTokenProvider,
 	messageCache *messagingCache.MessageCache,
 	encoder *idencoder.HashidsEncoder,
 	responseHandler *middleware.ResponseHandler,

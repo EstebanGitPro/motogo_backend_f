@@ -54,8 +54,8 @@ type Dependencies struct {
 	MotorcycleInteractor        *interactor.MotorcycleInteractor        // HU43-47
 	EvidenceInteractor          *interactor.EvidenceInteractor          // HU16-19
 	DiagnosticInteractor        *interactor.DiagnosticInteractor        // HU11-14
-	FirebaseClient              *firebase.Client                        // Firebase Auth
-	JWTValidator                *jwt.JWKSValidator                      // JWT validation with JWKS
+	FirebaseClient              output.CustomTokenProvider              // Firebase Auth
+	JWTValidator                output.JWTValidator                     // JWT validation with JWKS
 	Config                      *config.Config
 	Logger                      logger.Logger
 	IDEncoder                   *idencoder.HashidsEncoder
@@ -287,7 +287,10 @@ func Init() (*Dependencies, error) {
 	}
 	log.Success(logger.LogDepDiagPermRepoInitOK)
 
-	motorcycleInteractor := interactor.NewMotorcycleInteractor(motorcycleRepository, diagnosticPermissionRepository)
+	motorcycleService := services.NewMotorcycleService(motorcycleRepository, diagnosticPermissionRepository)
+	log.Success(logger.LogDepMotorcycleServiceInitOK)
+
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(motorcycleService)
 	log.Success(logger.LogDepMotorcycleInteractorInitOK)
 
 	// Evidence feature (HU16-19)
@@ -328,9 +331,9 @@ func Init() (*Dependencies, error) {
 			// Don't fail startup if Firebase is not configured
 		} else {
 			log.Success(logger.LogDepFirebaseClientInitOK)
-			// Connect Firebase Storage to MotorcycleInteractor for image deletion (HU45)
-			motorcycleInteractor.WithStorageClient(firebaseClient)
-			log.Success(logger.LogDepMotorcycleInteractorInitOK, "with_storage", true)
+			// Connect Firebase Storage to MotorcycleService for image deletion (HU45)
+			motorcycleService.WithStorageClient(firebaseClient)
+			log.Success(logger.LogDepMotorcycleServiceInitOK, "with_storage", true)
 			// Connect Firebase Storage to EvidenceInteractor for evidence deletion (HU19)
 			evidenceInteractor.WithStorageClient(firebaseClient)
 			log.Success(logger.LogDepEvidenceInteractorInitOK, "with_storage", true)
@@ -342,7 +345,7 @@ func Init() (*Dependencies, error) {
 		log.Warn(logger.LogDepFirebaseCredNotConfig)
 	}
 
-	var jwtValidator *jwt.JWKSValidator
+	var jwtValidator output.JWTValidator
 	jwtConfig := jwt.JWKSConfig{
 		JWKSURL:         cfg.GetKeycloakJWKSURL(),
 		Issuer:          cfg.GetKeycloakIssuerURL(),

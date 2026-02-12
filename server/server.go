@@ -541,7 +541,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 
 		// === MESSAGES ENDPOINTS (system administration) ===
 		// POST /admin/messages - Crear nuevo mensaje del sistema
-		admin.POST("/messages", validator.WithValidateMessage(), handler.CreateMessage())
+		admin.POST("/messages", validator.WithValidateCreateMessage(), handler.CreateMessage())
 
 		// PUT /admin/messages/:id - Actualizar mensaje existente
 		admin.PUT("/messages/:id", validator.WithValidateMessage(), handler.UpdateMessage())
