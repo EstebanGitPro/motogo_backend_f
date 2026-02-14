@@ -582,3 +582,81 @@ func TestBuildEvidenceDeletedLinks(t *testing.T) {
 	listLink := findLinkByRel(links, "list")
 	assert.NotNil(t, listLink)
 }
+
+// ============================================
+// New Catalog HATEOAS Builder Tests (PR #52)
+// ============================================
+
+func TestBuildMotorcycleCategoryListLinks(t *testing.T) {
+	links := handlers.BuildMotorcycleCategoryListLinks("http://localhost:8080")
+
+	assert.GreaterOrEqual(t, len(links), 2)
+
+	selfLink := findLinkByRel(links, "self")
+	assert.NotNil(t, selfLink)
+	assert.Contains(t, selfLink.Href, "/motorcycle-categories")
+
+	refsLink := findLinkByRel(links, "references")
+	assert.NotNil(t, refsLink)
+	assert.Contains(t, refsLink.Href, "/motorcycle-references")
+}
+
+func TestBuildMotorcycleCategoryItemLinks(t *testing.T) {
+	links := handlers.BuildMotorcycleCategoryItemLinks("http://localhost:8080", "Sport")
+
+	assert.GreaterOrEqual(t, len(links), 1)
+
+	linesLink := findLinkByRel(links, "lines")
+	assert.NotNil(t, linesLink)
+	assert.Contains(t, linesLink.Href, "/motorcycle-categories/Sport/lines")
+}
+
+func TestBuildCategoryLinesLinks(t *testing.T) {
+	links := handlers.BuildCategoryLinesLinks("http://localhost:8080", "Sport")
+
+	assert.GreaterOrEqual(t, len(links), 2)
+
+	selfLink := findLinkByRel(links, "self")
+	assert.NotNil(t, selfLink)
+	assert.Contains(t, selfLink.Href, "/motorcycle-categories/Sport/lines")
+
+	catLink := findLinkByRel(links, "categories")
+	assert.NotNil(t, catLink)
+	assert.Contains(t, catLink.Href, "/motorcycle-categories")
+}
+
+func TestBuildEngineDisplacementLinks(t *testing.T) {
+	links := handlers.BuildEngineDisplacementLinks("http://localhost:8080")
+
+	assert.GreaterOrEqual(t, len(links), 2)
+
+	selfLink := findLinkByRel(links, "self")
+	assert.NotNil(t, selfLink)
+	assert.Contains(t, selfLink.Href, "/engine-displacements")
+
+	catLink := findLinkByRel(links, "categories")
+	assert.NotNil(t, catLink)
+}
+
+func TestBuildRatingRangeLinks(t *testing.T) {
+	links := handlers.BuildRatingRangeLinks("http://localhost:8080")
+
+	assert.GreaterOrEqual(t, len(links), 2)
+
+	selfLink := findLinkByRel(links, "self")
+	assert.NotNil(t, selfLink)
+	assert.Contains(t, selfLink.Href, "/rating-ranges")
+
+	dispLink := findLinkByRel(links, "displacements")
+	assert.NotNil(t, dispLink)
+}
+
+func TestBuildPermissionLinks(t *testing.T) {
+	links := handlers.BuildPermissionLinks("http://localhost:8080", "moto-123")
+
+	assert.GreaterOrEqual(t, len(links), 1)
+
+	selfLink := findLinkByRel(links, "self")
+	assert.NotNil(t, selfLink)
+	assert.Contains(t, selfLink.Href, "motorcycles/moto-123")
+}

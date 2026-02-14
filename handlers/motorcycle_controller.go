@@ -897,24 +897,29 @@ func (h *handler) fetchAndEncodeDiagnostics(
 
 	diagnosticResponses := ToDiagnosticResponseList(filteredDiagnostics)
 
-	// Encode diagnostic, branch, and evidence IDs
-	for i := range diagnosticResponses {
-		if encDiagID, err := h.EncodeID(filteredDiagnostics[i].ID); err == nil {
-			diagnosticResponses[i].ID = encDiagID
-		}
-		if encBranchID, err := h.EncodeID(filteredDiagnostics[i].BranchID); err == nil {
-			diagnosticResponses[i].BranchID = encBranchID
-		}
-		diagnosticResponses[i].MotorcycleID = encodedMotorcycleID
+	// Encode IDs (extracted to reduce cognitive complexity)
+	h.encodeDiagnosticIDs(diagnosticResponses, filteredDiagnostics, encodedMotorcycleID)
 
-		for j := range diagnosticResponses[i].Evidence {
-			if encEvidID, err := h.EncodeID(filteredDiagnostics[i].Evidence[j].ID); err == nil {
-				diagnosticResponses[i].Evidence[j].ID = encEvidID
+	return diagnosticResponses
+}
+
+// encodeDiagnosticIDs encodes all IDs (diagnostic, branch, motorcycle, evidence) in a diagnostic response list.
+func (h *handler) encodeDiagnosticIDs(responses []DiagnosticResponse, diagnostics []domain.Diagnostic, encodedMotorcycleID string) {
+	for i := range responses {
+		if encDiagID, err := h.EncodeID(diagnostics[i].ID); err == nil {
+			responses[i].ID = encDiagID
+		}
+		if encBranchID, err := h.EncodeID(diagnostics[i].BranchID); err == nil {
+			responses[i].BranchID = encBranchID
+		}
+		responses[i].MotorcycleID = encodedMotorcycleID
+
+		for j := range responses[i].Evidence {
+			if encEvidID, err := h.EncodeID(diagnostics[i].Evidence[j].ID); err == nil {
+				responses[i].Evidence[j].ID = encEvidID
 			}
 		}
 	}
-
-	return diagnosticResponses
 }
 
 // fetchAndEncodeEvidence fetches motorcycle evidence and encodes all IDs.

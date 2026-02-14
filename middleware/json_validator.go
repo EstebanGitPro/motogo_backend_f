@@ -244,24 +244,26 @@ func extractFieldNames(errors map[string]*jsonschema.EvaluationError) []string {
 		}
 		// Try "properties" (plural) first - for multiple fields
 		if properties, exists := validationError.Params["properties"]; exists {
-			propertiesStr := fmt.Sprintf("%v", properties)
-			fields := strings.Split(propertiesStr, ",")
-			for _, field := range fields {
-				field = strings.TrimSpace(field)
-				field = strings.Trim(field, "'\"")
-				if field != "" {
-					fieldNames = append(fieldNames, field)
-				}
-			}
+			fieldNames = append(fieldNames, parsePropertiesParam(properties)...)
 		} else if property, exists := validationError.Params["property"]; exists {
-			propertyName := fmt.Sprintf("%v", property)
-			propertyName = strings.Trim(propertyName, "'\"")
-			if propertyName != "" {
-				fieldNames = append(fieldNames, propertyName)
-			}
+			fieldNames = append(fieldNames, parsePropertiesParam(property)...)
 		}
 	}
 	return fieldNames
+}
+
+// parsePropertiesParam splits a comma-separated property value into trimmed field names.
+func parsePropertiesParam(value interface{}) []string {
+	str := fmt.Sprintf("%v", value)
+	var result []string
+	for _, field := range strings.Split(str, ",") {
+		field = strings.TrimSpace(field)
+		field = strings.Trim(field, "'\"")
+		if field != "" {
+			result = append(result, field)
+		}
+	}
+	return result
 }
 
 // classifyValidationError determines the specific validation error type

@@ -869,17 +869,8 @@ func (h *handler) parseNearbyFilters(c *gin.Context, log logger.Logger) (*nearby
 		}
 	}
 
-	// Parse optional brand filter
-	brandID := c.Query("brand")
-	if brandID != "" {
-		decodedBrandID, err := h.DecodeID(brandID)
-		if err != nil {
-			log.Warn(logger.LogBranchControllerIDDecodeError, "brand_filter", brandID, "error", err)
-			brandID = "" // Invalid brand ID, ignore filter
-		} else {
-			brandID = decodedBrandID
-		}
-	}
+	// Parse optional brand filter (extracted to reduce cognitive complexity)
+	brandID := h.parseOptionalBrandFilter(c.Query("brand"), log)
 
 	return &nearbyFilters{
 		lat:               lat,
@@ -889,4 +880,18 @@ func (h *handler) parseNearbyFilters(c *gin.Context, log logger.Logger) (*nearby
 		brandID:           brandID,
 		displacementRange: c.Query("displacement_range"),
 	}, nil
+}
+
+// parseOptionalBrandFilter decodes an optional brand filter parameter.
+// Returns the decoded brand ID, or empty string if not provided or invalid.
+func (h *handler) parseOptionalBrandFilter(brandEncoded string, log logger.Logger) string {
+	if brandEncoded == "" {
+		return ""
+	}
+	decoded, err := h.DecodeID(brandEncoded)
+	if err != nil {
+		log.Warn(logger.LogBranchControllerIDDecodeError, "brand_filter", brandEncoded, "error", err)
+		return "" // Invalid brand ID, ignore filter
+	}
+	return decoded
 }
