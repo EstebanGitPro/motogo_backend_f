@@ -971,3 +971,94 @@ func TestCreateException_ClosedSuccess(t *testing.T) {
 	assert.True(t, result.IsClosed)
 	detailRepo.AssertExpectations(t)
 }
+
+// ============================================
+// SetExceptionActive Tests (HU24/HU25)
+// ============================================
+
+func TestSetExceptionActive_Success_Activate(t *testing.T) {
+	detailRepo, scheduleRepo := setupScheduleDetailMocks()
+	mockTx := new(mocks.MockTx)
+
+	existing := &domain.ScheduleDetail{
+		ID:         "exc-123",
+		ScheduleID: "schedule-456",
+		EntryType:  domain.EntryTypeException,
+		Active:     false,
+	}
+
+	detailRepo.On("GetExceptionByID", mock.Anything, "exc-123").Return(existing, nil)
+	detailRepo.On("UpdateScheduleDetail", mock.Anything, mockTx, mock.AnythingOfType("domain.ScheduleDetail")).Return(nil)
+
+	service := services.NewScheduleDetailService(detailRepo, scheduleRepo)
+
+	err := service.SetExceptionActive(context.Background(), mockTx, "exc-123", true)
+	assert.NoError(t, err)
+	detailRepo.AssertExpectations(t)
+}
+
+func TestSetExceptionActive_Success_Deactivate(t *testing.T) {
+	detailRepo, scheduleRepo := setupScheduleDetailMocks()
+	mockTx := new(mocks.MockTx)
+
+	existing := &domain.ScheduleDetail{
+		ID:         "exc-123",
+		ScheduleID: "schedule-456",
+		EntryType:  domain.EntryTypeException,
+		Active:     true,
+	}
+
+	detailRepo.On("GetExceptionByID", mock.Anything, "exc-123").Return(existing, nil)
+	detailRepo.On("UpdateScheduleDetail", mock.Anything, mockTx, mock.AnythingOfType("domain.ScheduleDetail")).Return(nil)
+
+	service := services.NewScheduleDetailService(detailRepo, scheduleRepo)
+
+	err := service.SetExceptionActive(context.Background(), mockTx, "exc-123", false)
+	assert.NoError(t, err)
+	detailRepo.AssertExpectations(t)
+}
+
+func TestSetExceptionActive_NotFound(t *testing.T) {
+	detailRepo, scheduleRepo := setupScheduleDetailMocks()
+	mockTx := new(mocks.MockTx)
+
+	detailRepo.On("GetExceptionByID", mock.Anything, "non-existent").Return(nil, nil)
+
+	service := services.NewScheduleDetailService(detailRepo, scheduleRepo)
+
+	err := service.SetExceptionActive(context.Background(), mockTx, "non-existent", true)
+	assert.Error(t, err)
+	assert.Equal(t, domain.ErrScheduleExceptionNotFound, err)
+}
+
+func TestSetExceptionActive_GetError(t *testing.T) {
+	detailRepo, scheduleRepo := setupScheduleDetailMocks()
+	mockTx := new(mocks.MockTx)
+
+	detailRepo.On("GetExceptionByID", mock.Anything, "exc-123").Return(nil, errors.New("database error"))
+
+	service := services.NewScheduleDetailService(detailRepo, scheduleRepo)
+
+	err := service.SetExceptionActive(context.Background(), mockTx, "exc-123", true)
+	assert.Error(t, err)
+}
+
+func TestSetExceptionActive_UpdateError(t *testing.T) {
+	detailRepo, scheduleRepo := setupScheduleDetailMocks()
+	mockTx := new(mocks.MockTx)
+
+	existing := &domain.ScheduleDetail{
+		ID:         "exc-123",
+		ScheduleID: "schedule-456",
+		EntryType:  domain.EntryTypeException,
+		Active:     false,
+	}
+
+	detailRepo.On("GetExceptionByID", mock.Anything, "exc-123").Return(existing, nil)
+	detailRepo.On("UpdateScheduleDetail", mock.Anything, mockTx, mock.AnythingOfType("domain.ScheduleDetail")).Return(errors.New("update failed"))
+
+	service := services.NewScheduleDetailService(detailRepo, scheduleRepo)
+
+	err := service.SetExceptionActive(context.Background(), mockTx, "exc-123", true)
+	assert.Error(t, err)
+}

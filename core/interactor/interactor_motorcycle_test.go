@@ -1250,3 +1250,170 @@ func TestListDiagnosticPermissions_NotOwner(t *testing.T) {
 
 // Ignore unused import for mock
 var _ = mock.Anything
+
+// ============================================
+// GetDistinctCategories Interactor Tests (HU41)
+// ============================================
+
+func TestGetDistinctCategories_Interactor_Success(t *testing.T) {
+	ctx := context.Background()
+	mockSvc := new(mocks.MockMotorcycleService)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockSvc)
+
+	expected := []domain.MotorcycleCategory{{Name: "Sport", LineCount: 5}}
+	mockSvc.On("GetDistinctCategories", ctx).Return(expected, nil)
+
+	result, err := motorcycleInteractor.GetDistinctCategories(ctx)
+	assert.NoError(t, err)
+	assert.Len(t, result, 1)
+	assert.Equal(t, "Sport", result[0].Name)
+	mockSvc.AssertExpectations(t)
+}
+
+func TestGetDistinctCategories_Interactor_Error(t *testing.T) {
+	ctx := context.Background()
+	mockSvc := new(mocks.MockMotorcycleService)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockSvc)
+
+	mockSvc.On("GetDistinctCategories", ctx).Return(nil, errors.New("database error"))
+
+	result, err := motorcycleInteractor.GetDistinctCategories(ctx)
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	mockSvc.AssertExpectations(t)
+}
+
+// ============================================
+// GetLinesByCategory Interactor Tests (HU41)
+// ============================================
+
+func TestGetLinesByCategory_Interactor_Success(t *testing.T) {
+	ctx := context.Background()
+	mockSvc := new(mocks.MockMotorcycleService)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockSvc)
+
+	expected := []domain.CategoryLine{{Model: "Ninja"}}
+	mockSvc.On("GetLinesByCategory", ctx, "Sport").Return(expected, nil)
+
+	result, err := motorcycleInteractor.GetLinesByCategory(ctx, "Sport")
+	assert.NoError(t, err)
+	assert.Len(t, result, 1)
+	assert.Equal(t, "Ninja", result[0].Model)
+	mockSvc.AssertExpectations(t)
+}
+
+func TestGetLinesByCategory_Interactor_Error(t *testing.T) {
+	ctx := context.Background()
+	mockSvc := new(mocks.MockMotorcycleService)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockSvc)
+
+	mockSvc.On("GetLinesByCategory", ctx, "Sport").Return(nil, errors.New("database error"))
+
+	result, err := motorcycleInteractor.GetLinesByCategory(ctx, "Sport")
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	mockSvc.AssertExpectations(t)
+}
+
+// ============================================
+// GetDistinctDisplacements Interactor Tests (HU49)
+// ============================================
+
+func TestGetDistinctDisplacements_Interactor_Success(t *testing.T) {
+	ctx := context.Background()
+	mockSvc := new(mocks.MockMotorcycleService)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockSvc)
+
+	expected := []domain.EngineDisplacementRange{
+		{Range: domain.DisplacementRangeLow},
+		{Range: domain.DisplacementRangeMedium},
+		{Range: domain.DisplacementRangeHigh},
+	}
+	mockSvc.On("GetDistinctDisplacements", ctx).Return(expected, nil)
+
+	result, err := motorcycleInteractor.GetDistinctDisplacements(ctx)
+	assert.NoError(t, err)
+	assert.Len(t, result, 3)
+	mockSvc.AssertExpectations(t)
+}
+
+func TestGetDistinctDisplacements_Interactor_Error(t *testing.T) {
+	ctx := context.Background()
+	mockSvc := new(mocks.MockMotorcycleService)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockSvc)
+
+	mockSvc.On("GetDistinctDisplacements", ctx).Return(nil, errors.New("database error"))
+
+	result, err := motorcycleInteractor.GetDistinctDisplacements(ctx)
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	mockSvc.AssertExpectations(t)
+}
+
+// ============================================
+// GetRatingRanges Interactor Tests (HU48)
+// ============================================
+
+func TestGetRatingRanges_Interactor_Success(t *testing.T) {
+	ctx := context.Background()
+	mockSvc := new(mocks.MockMotorcycleService)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockSvc)
+
+	expected := []domain.RatingRange{
+		{Value: 1, Label: "Very bad"},
+		{Value: 5, Label: "Excellent"},
+	}
+	mockSvc.On("GetRatingRanges", ctx).Return(expected, nil)
+
+	result, err := motorcycleInteractor.GetRatingRanges(ctx)
+	assert.NoError(t, err)
+	assert.Len(t, result, 2)
+	mockSvc.AssertExpectations(t)
+}
+
+func TestGetRatingRanges_Interactor_Error(t *testing.T) {
+	ctx := context.Background()
+	mockSvc := new(mocks.MockMotorcycleService)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockSvc)
+
+	mockSvc.On("GetRatingRanges", ctx).Return(nil, errors.New("database error"))
+
+	result, err := motorcycleInteractor.GetRatingRanges(ctx)
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	mockSvc.AssertExpectations(t)
+}
+
+// ============================================
+// LookupPermissions Interactor Tests
+// ============================================
+
+func TestLookupPermissions_Interactor_Success(t *testing.T) {
+	ctx := context.Background()
+	mockSvc := new(mocks.MockMotorcycleService)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockSvc)
+
+	expected := []domain.DiagnosticPermission{
+		{MotorcycleID: "m-1", BranchID: "b-1", Active: true},
+		{MotorcycleID: "m-1", BranchID: "b-2", Active: true},
+	}
+	mockSvc.On("ListPermissions", ctx, "m-1").Return(expected, nil)
+
+	result, err := motorcycleInteractor.LookupPermissions(ctx, "m-1")
+	assert.NoError(t, err)
+	assert.Len(t, result, 2)
+	mockSvc.AssertExpectations(t)
+}
+
+func TestLookupPermissions_Interactor_Error(t *testing.T) {
+	ctx := context.Background()
+	mockSvc := new(mocks.MockMotorcycleService)
+	motorcycleInteractor := interactor.NewMotorcycleInteractor(mockSvc)
+
+	mockSvc.On("ListPermissions", ctx, "m-1").Return(nil, errors.New("database error"))
+
+	result, err := motorcycleInteractor.LookupPermissions(ctx, "m-1")
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	mockSvc.AssertExpectations(t)
+}

@@ -752,3 +752,127 @@ func TestSaveBranchBrands_Error(t *testing.T) {
 	// Assert
 	assert.Error(t, err)
 }
+
+// ============================================
+// ValidateDisplacementRanges Tests
+// ============================================
+
+func TestValidateDisplacementRanges_AllValid(t *testing.T) {
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
+
+	err := service.ValidateDisplacementRanges([]string{"BAJO", "MEDIO", "ALTO"})
+	assert.NoError(t, err)
+}
+
+func TestValidateDisplacementRanges_OneValid(t *testing.T) {
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
+
+	err := service.ValidateDisplacementRanges([]string{"BAJO"})
+	assert.NoError(t, err)
+}
+
+func TestValidateDisplacementRanges_Invalid(t *testing.T) {
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
+
+	err := service.ValidateDisplacementRanges([]string{"BAJO", "INVALID"})
+	assert.Error(t, err)
+}
+
+func TestValidateDisplacementRanges_Empty(t *testing.T) {
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
+
+	err := service.ValidateDisplacementRanges([]string{})
+	assert.NoError(t, err)
+}
+
+// ============================================
+// SaveBranchDisplacementRanges Tests
+// ============================================
+
+func TestSaveBranchDisplacementRanges_Success(t *testing.T) {
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
+	mockTx := new(mocks.MockTx)
+
+	branchRepo.On("SaveBranchDisplacementRanges", mock.Anything, mockTx, "branch-123", []string{"BAJO", "MEDIO"}).Return(nil)
+
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
+
+	err := service.SaveBranchDisplacementRanges(context.Background(), mockTx, "branch-123", []string{"BAJO", "MEDIO"})
+	assert.NoError(t, err)
+	branchRepo.AssertExpectations(t)
+}
+
+func TestSaveBranchDisplacementRanges_Error(t *testing.T) {
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
+	mockTx := new(mocks.MockTx)
+
+	branchRepo.On("SaveBranchDisplacementRanges", mock.Anything, mockTx, "branch-123", []string{"BAJO"}).Return(errors.New("db error"))
+
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
+
+	err := service.SaveBranchDisplacementRanges(context.Background(), mockTx, "branch-123", []string{"BAJO"})
+	assert.Error(t, err)
+}
+
+// ============================================
+// RegisterBranch with DisplacementRanges Tests
+// (also exercises displacementRangesToStrings)
+// ============================================
+
+func TestRegisterBranch_WithDisplacementRanges(t *testing.T) {
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
+	mockTx := new(mocks.MockTx)
+
+	branch := domain.Branch{
+		Name:               "Taller con Rangos",
+		EstablishmentType:  "WORKSHOP",
+		RepresentativeID:   "rep-123",
+		DisplacementRanges: []domain.DisplacementRange{domain.DisplacementRangeLow, domain.DisplacementRangeMedium},
+	}
+
+	branchRepo.On("SaveBranch", mock.Anything, mockTx, mock.AnythingOfType("domain.Branch")).Return(nil)
+	branchRepo.On("SaveBranchDisplacementRanges", mock.Anything, mockTx, mock.AnythingOfType("string"), []string{"BAJO", "MEDIO"}).Return(nil)
+
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
+
+	result, err := service.RegisterBranch(context.Background(), mockTx, branch)
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	branchRepo.AssertExpectations(t)
+}
+
+// ============================================
+// DeleteBranch ForeignKey Tests
+// ============================================
+
+func TestDeleteBranch_ForeignKeyError1451(t *testing.T) {
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
+	mockTx := new(mocks.MockTx)
+
+	branchRepo.On("DeleteBranch", mock.Anything, mockTx, "branch-fk").
+		Return(errors.New("Error 1451: Cannot delete or update a parent row"))
+
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
+
+	err := service.DeleteBranch(context.Background(), mockTx, "branch-fk")
+	assert.Error(t, err)
+	assert.Equal(t, domain.ErrBranchCannotDelete, err)
+}
+
+func TestDeleteBranch_ForeignKeyConstraintText(t *testing.T) {
+	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
+	mockTx := new(mocks.MockTx)
+
+	branchRepo.On("DeleteBranch", mock.Anything, mockTx, "branch-fk2").
+		Return(errors.New("a foreign key constraint fails"))
+
+	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
+
+	err := service.DeleteBranch(context.Background(), mockTx, "branch-fk2")
+	assert.Error(t, err)
+	assert.Equal(t, domain.ErrBranchCannotDelete, err)
+}
