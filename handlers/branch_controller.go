@@ -301,50 +301,10 @@ func (h *handler) ListBranches() gin.HandlerFunc {
 		baseURL := GetBaseURL(c)
 		items := make([]BranchListItemResponse, 0, len(branches))
 		for _, branch := range branches {
-			encodedID, err := h.EncodeID(branch.ID)
-			if err != nil {
-				log.Warn(logger.LogIDEncodeError, "branch_id", branch.ID, "error", err)
-				continue // Skip branches with encoding errors
+			item, ok := h.buildBranchListItem(branch, baseURL, log)
+			if !ok {
+				continue
 			}
-
-			// Encode franchise_id if present
-			var encodedFranchiseID *string
-			if branch.FranchiseID != nil && *branch.FranchiseID != "" {
-				encoded, err := h.EncodeID(*branch.FranchiseID)
-				if err != nil {
-					log.Warn(logger.LogIDEncodeError, "franchise_id", *branch.FranchiseID, "error", err)
-					// Continue without franchise_id - don't skip the whole branch
-				} else {
-					encodedFranchiseID = &encoded
-				}
-			}
-
-			// Encode brand IDs for response
-			encodedBrands := make([]string, 0, len(branch.Brands))
-			for _, brandID := range branch.Brands {
-				encodedBrand, err := h.EncodeID(brandID)
-				if err != nil {
-					log.Warn(logger.LogIDEncodeError, "brand_id", brandID, "error", err)
-					continue
-				}
-				encodedBrands = append(encodedBrands, encodedBrand)
-			}
-
-			// Owner always sees full links since this is "my branches"
-			itemLinks := BuildBranchDetailLinks(baseURL, encodedID, true)
-			item := NewBranchListItemResponse(branch, encodedID, encodedFranchiseID, itemLinks)
-			item.Brands = encodedBrands // Override with encoded brand IDs
-
-			// Encode location IDs if present
-			if item.Location != nil && branch.Location != nil {
-				if encodedDeptID, err := h.EncodeID(branch.Location.DepartmentID); err == nil {
-					item.Location.DepartmentID = encodedDeptID
-				}
-				if encodedCityID, err := h.EncodeID(branch.Location.CityID); err == nil {
-					item.Location.CityID = encodedCityID
-				}
-			}
-
 			items = append(items, item)
 		}
 
@@ -723,6 +683,55 @@ func parseFloat(s string) (float64, error) {
 // ============================================
 // Branch controller helpers (extracted to reduce cognitive complexity)
 // ============================================
+
+// buildBranchListItem encodes all IDs for a single branch and builds its list response item.
+// Returns the response item and false if the branch should be skipped (encoding error on branch ID).
+func (h *handler) buildBranchListItem(branch domain.Branch, baseURL string, log logger.Logger) (BranchListItemResponse, bool) {
+	encodedID, err := h.EncodeID(branch.ID)
+	if err != nil {
+		log.Warn(logger.LogIDEncodeError, "branch_id", branch.ID, "error", err)
+		return BranchListItemResponse{}, false
+	}
+
+	// Encode franchise_id if present
+	var encodedFranchiseID *string
+	if branch.FranchiseID != nil && *branch.FranchiseID != "" {
+		encoded, err := h.EncodeID(*branch.FranchiseID)
+		if err != nil {
+			log.Warn(logger.LogIDEncodeError, "franchise_id", *branch.FranchiseID, "error", err)
+		} else {
+			encodedFranchiseID = &encoded
+		}
+	}
+
+	// Encode brand IDs for response
+	encodedBrands := make([]string, 0, len(branch.Brands))
+	for _, brandID := range branch.Brands {
+		encodedBrand, err := h.EncodeID(brandID)
+		if err != nil {
+			log.Warn(logger.LogIDEncodeError, "brand_id", brandID, "error", err)
+			continue
+		}
+		encodedBrands = append(encodedBrands, encodedBrand)
+	}
+
+	// Owner always sees full links since this is "my branches"
+	itemLinks := BuildBranchDetailLinks(baseURL, encodedID, true)
+	item := NewBranchListItemResponse(branch, encodedID, encodedFranchiseID, itemLinks)
+	item.Brands = encodedBrands // Override with encoded brand IDs
+
+	// Encode location IDs if present
+	if item.Location != nil && branch.Location != nil {
+		if encodedDeptID, err := h.EncodeID(branch.Location.DepartmentID); err == nil {
+			item.Location.DepartmentID = encodedDeptID
+		}
+		if encodedCityID, err := h.EncodeID(branch.Location.CityID); err == nil {
+			item.Location.CityID = encodedCityID
+		}
+	}
+
+	return item, true
+}
 
 // branchDecodeError wraps a message code for decode/parse errors.
 type branchDecodeError struct {
