@@ -45,9 +45,9 @@ func TestGetDistinctDisplacements_CorrectOrder(t *testing.T) {
 	displacements, _ := svc.GetDistinctDisplacements(context.Background())
 
 	// Order should be BAJO, MEDIO, ALTO (ascending)
-	assert.Equal(t, "BAJO", displacements[0].Range)
-	assert.Equal(t, "MEDIO", displacements[1].Range)
-	assert.Equal(t, "ALTO", displacements[2].Range)
+	assert.Equal(t, domain.DisplacementRange("BAJO"), displacements[0].Range)
+	assert.Equal(t, domain.DisplacementRange("MEDIO"), displacements[1].Range)
+	assert.Equal(t, domain.DisplacementRange("ALTO"), displacements[2].Range)
 }
 
 // ============================================

@@ -18,7 +18,6 @@ func (r *repository) GetBranchesNearby(
 	latMin, latMax, lngMin, lngMax float64,
 	brandID, displacementRange string,
 ) ([]domain.NearbyBranch, error) {
-
 	// Build dynamic query with optional filters
 	var query strings.Builder
 	args := make([]interface{}, 0, 12)
@@ -60,14 +59,15 @@ func (r *repository) GetBranchesNearby(
 	hasBrand := brandID != ""
 	hasDisplacement := displacementRange != ""
 
-	if hasBrand && hasDisplacement {
+	switch {
+	case hasBrand && hasDisplacement:
 		query.WriteString("  AND (EXISTS (SELECT 1 FROM branch_brands bb WHERE bb.branch_id = b.id AND bb.brand_id = ?)")
 		query.WriteString("    OR EXISTS (SELECT 1 FROM branch_displacement_ranges bdr WHERE bdr.branch_id = b.id AND bdr.displacement_range = ? AND bdr.active = TRUE))\n")
 		args = append(args, brandID, displacementRange)
-	} else if hasBrand {
+	case hasBrand:
 		query.WriteString("  AND EXISTS (SELECT 1 FROM branch_brands bb WHERE bb.branch_id = b.id AND bb.brand_id = ?)\n")
 		args = append(args, brandID)
-	} else if hasDisplacement {
+	case hasDisplacement:
 		query.WriteString("  AND EXISTS (SELECT 1 FROM branch_displacement_ranges bdr WHERE bdr.branch_id = b.id AND bdr.displacement_range = ? AND bdr.active = TRUE)\n")
 		args = append(args, displacementRange)
 	}

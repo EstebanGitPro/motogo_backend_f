@@ -1330,9 +1330,9 @@ func TestGetDistinctDisplacements_Success(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Len(t, disps, 3)
-	assert.Equal(t, "BAJO", disps[0].Range)
-	assert.Equal(t, "MEDIO", disps[1].Range)
-	assert.Equal(t, "ALTO", disps[2].Range)
+	assert.Equal(t, domain.DisplacementRange("BAJO"), disps[0].Range)
+	assert.Equal(t, domain.DisplacementRange("MEDIO"), disps[1].Range)
+	assert.Equal(t, domain.DisplacementRange("ALTO"), disps[2].Range)
 }
 
 func TestGetDistinctDisplacements_Empty(t *testing.T) {

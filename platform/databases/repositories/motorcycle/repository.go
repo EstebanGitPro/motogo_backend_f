@@ -170,7 +170,7 @@ func NewRepository(db *sql.DB) (output.MotorcycleRepository, error) {
 		log.Error(logger.LogDatabaseUnavailable, "error preparing stmtHasServiceHistory (completed_services/diagnostics tables missing?)", err)
 		return nil, fmt.Errorf("error preparing stmtHasServiceHistory: %w", err)
 	}
-	stmtHasServiceHistory.Close() // Close immediately - only used for schema validation
+	_ = stmtHasServiceHistory.Close() // Close immediately - only used for schema validation
 
 	stmtGetDistinctCategories, err := db.Prepare(queryGetDistinctCategories)
 	if err != nil {

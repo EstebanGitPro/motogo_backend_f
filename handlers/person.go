@@ -85,7 +85,7 @@ func (p PersonRequest) ToDomain() domain.Person {
 		Email:          p.Email,
 		PhoneNumber:    p.PhoneNumber,
 		Password:       p.Password,
-		Role:           p.Role,
+		Role:           domain.Role(p.Role),
 	}
 }
 

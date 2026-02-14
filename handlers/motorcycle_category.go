@@ -86,7 +86,7 @@ func NewDisplacementListResponse(displacements []domain.EngineDisplacementRange,
 	items := make([]DisplacementItemResponse, len(displacements))
 	for i, d := range displacements {
 		items[i] = DisplacementItemResponse{
-			Range: d.Range,
+			Range: string(d.Range),
 		}
 	}
 	return DisplacementListResponse{

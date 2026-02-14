@@ -25,7 +25,7 @@ func (p Person) ToDomain() domain.Person {
 		SecondLastName: p.SecondLastName,
 		Email:          p.Email,
 		PhoneNumber:    p.PhoneNumber,
-		Role:           p.Role,
+		Role:           domain.Role(p.Role),
 		KeycloakUserID: p.KeycloakUserID,
 	}
 }
@@ -39,7 +39,7 @@ func FromDomain(domainPerson domain.Person) Person {
 		SecondLastName: domainPerson.SecondLastName,
 		Email:          domainPerson.Email,
 		PhoneNumber:    domainPerson.PhoneNumber,
-		Role:           domainPerson.Role,
+		Role:           string(domainPerson.Role),
 		KeycloakUserID: domainPerson.KeycloakUserID,
 	}
 }

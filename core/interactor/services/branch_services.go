@@ -12,6 +12,15 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
+// displacementRangesToStrings converts []DisplacementRange to []string for port interface compatibility
+func displacementRangesToStrings(ranges []domain.DisplacementRange) []string {
+	result := make([]string, len(ranges))
+	for i, r := range ranges {
+		result[i] = string(r)
+	}
+	return result
+}
+
 // branchService implements input.BranchService
 type branchService struct {
 	repository      output.BranchRepository
@@ -164,7 +173,7 @@ func (s *branchService) RegisterBranch(ctx context.Context, tx output.Tx, branch
 
 	// 8. Save displacement ranges if provided
 	if len(branch.DisplacementRanges) > 0 {
-		if err := s.repository.SaveBranchDisplacementRanges(ctx, tx, branch.ID, branch.DisplacementRanges); err != nil {
+		if err := s.repository.SaveBranchDisplacementRanges(ctx, tx, branch.ID, displacementRangesToStrings(branch.DisplacementRanges)); err != nil {
 			log.Error(logger.LogBranchRepoDisplRangeSaveError, "error", err, "branch_id", branch.ID)
 			return nil, err
 		}
@@ -204,7 +213,11 @@ func (s *branchService) SaveBranchBrands(ctx context.Context, tx output.Tx, bran
 
 // ValidateDisplacementRanges validates that all displacement ranges are valid ENUM values
 func (s *branchService) ValidateDisplacementRanges(ranges []string) error {
-	return domain.ValidateDisplacementRanges(ranges)
+	dr := make([]domain.DisplacementRange, len(ranges))
+	for i, r := range ranges {
+		dr[i] = domain.DisplacementRange(r)
+	}
+	return domain.ValidateDisplacementRanges(dr)
 }
 
 // SaveBranchDisplacementRanges saves displacement ranges for a branch
@@ -260,7 +273,7 @@ func (s *branchService) UpdateBranch(ctx context.Context, tx output.Tx, branch d
 	}
 
 	if len(branch.DisplacementRanges) > 0 {
-		if err := s.repository.SaveBranchDisplacementRanges(ctx, tx, branch.ID, branch.DisplacementRanges); err != nil {
+		if err := s.repository.SaveBranchDisplacementRanges(ctx, tx, branch.ID, displacementRangesToStrings(branch.DisplacementRanges)); err != nil {
 			log.Error(logger.LogBranchRepoDisplRangeSaveError, "error", err, "branch_id", branch.ID)
 			return err
 		}

@@ -514,9 +514,9 @@ func TestGetBranchesNearby_Success(t *testing.T) {
 	assert.Nil(t, branches[1].ProfileImageURL)
 	// Verify hydrated data
 	assert.Equal(t, []string{"brand-A", "brand-B"}, branches[0].Brands)
-	assert.Equal(t, []string{"BAJO", "MEDIO"}, branches[0].DisplacementRanges)
+	assert.Equal(t, []domain.DisplacementRange{"BAJO", "MEDIO"}, branches[0].DisplacementRanges)
 	assert.Empty(t, branches[1].Brands)
-	assert.Equal(t, []string{"ALTO"}, branches[1].DisplacementRanges)
+	assert.Equal(t, []domain.DisplacementRange{"ALTO"}, branches[1].DisplacementRanges)
 }
 
 func TestGetBranchesNearby_Empty(t *testing.T) {

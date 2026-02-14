@@ -35,11 +35,11 @@ func (r *RegisterBranchRequest) ToDomain(representativeID string) domain.Branch 
 	branch := domain.Branch{
 		RepresentativeID:   representativeID,
 		Name:               r.Name,
-		EstablishmentType:  r.EstablishmentType,
+		EstablishmentType:  domain.EstablishmentType(r.EstablishmentType),
 		FranchiseID:        r.FranchiseID,
 		ProfileImageURL:    r.ProfileImageURL,
 		Brands:             r.Brands,
-		DisplacementRanges: r.DisplacementRanges,
+		DisplacementRanges: toDisplacementRanges(r.DisplacementRanges),
 	}
 
 	// Location is now required, always map it
@@ -108,14 +108,14 @@ func NewBranchResponse(branch *domain.Branch, encodedID string, geocodingStatus 
 	response := BranchResponse{
 		ID:                     encodedID,
 		Name:                   branch.Name,
-		EstablishmentType:      branch.EstablishmentType,
+		EstablishmentType:      string(branch.EstablishmentType),
 		EstablishmentTypeLabel: domain.GetEstablishmentTypeLabel(branch.EstablishmentType),
-		Status:                 branch.Status,
+		Status:                 string(branch.Status),
 		ContactPhone:           branch.RepresentativePhone,
 		FranchiseID:            branch.FranchiseID,
 		ProfileImageURL:        branch.ProfileImageURL,
 		Brands:                 branch.Brands,
-		DisplacementRanges:     branch.DisplacementRanges,
+		DisplacementRanges:     fromDisplacementRanges(branch.DisplacementRanges),
 		GeocodingStatus:        geocodingStatus,
 		Links:                  links,
 	}
@@ -155,13 +155,13 @@ func NewBranchListItemResponse(branch domain.Branch, encodedID string, encodedFr
 	item := BranchListItemResponse{
 		ID:                     encodedID,
 		Name:                   branch.Name,
-		EstablishmentType:      branch.EstablishmentType,
+		EstablishmentType:      string(branch.EstablishmentType),
 		EstablishmentTypeLabel: domain.GetEstablishmentTypeLabel(branch.EstablishmentType),
-		Status:                 branch.Status,
+		Status:                 string(branch.Status),
 		FranchiseID:            encodedFranchiseID,
 		ProfileImageURL:        branch.ProfileImageURL,
 		Brands:                 branch.Brands,
-		DisplacementRanges:     branch.DisplacementRanges,
+		DisplacementRanges:     fromDisplacementRanges(branch.DisplacementRanges),
 		Links:                  links,
 	}
 
@@ -202,12 +202,12 @@ func NewNearbyBranchResponse(branch domain.NearbyBranch, encodedID string, baseU
 	resp := NearbyBranchResponse{
 		ID:                     encodedID,
 		Name:                   branch.Name,
-		EstablishmentType:      branch.EstablishmentType,
+		EstablishmentType:      string(branch.EstablishmentType),
 		EstablishmentTypeLabel: domain.GetEstablishmentTypeLabel(branch.EstablishmentType),
 		ProfileImageURL:        branch.ProfileImageURL,
 		ContactPhone:           branch.ContactPhone,
 		DistanceKm:             branch.DistanceKm,
-		DisplacementRanges:     branch.DisplacementRanges,
+		DisplacementRanges:     fromDisplacementRanges(branch.DisplacementRanges),
 		Links:                  BuildBranchDetailLinks(baseURL, encodedID, false),
 	}
 

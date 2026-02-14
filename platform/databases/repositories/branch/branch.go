@@ -21,8 +21,8 @@ func (b *Branch) ToDomain() domain.Branch {
 		ID:                b.ID,
 		RepresentativeID:  b.RepresentativeID,
 		Name:              b.Name,
-		EstablishmentType: b.EstablishmentType,
-		Status:            b.Status,
+		EstablishmentType: domain.EstablishmentType(b.EstablishmentType),
+		Status:            domain.BranchStatus(b.Status),
 	}
 	if b.FranchiseID.Valid {
 		franchiseID := b.FranchiseID.String
@@ -40,8 +40,8 @@ func FromDomain(domainBranch domain.Branch) Branch {
 		ID:                domainBranch.ID,
 		RepresentativeID:  domainBranch.RepresentativeID,
 		Name:              domainBranch.Name,
-		EstablishmentType: domainBranch.EstablishmentType,
-		Status:            domainBranch.Status,
+		EstablishmentType: string(domainBranch.EstablishmentType),
+		Status:            string(domainBranch.Status),
 	}
 	if domainBranch.FranchiseID != nil {
 		b.FranchiseID = sql.NullString{String: *domainBranch.FranchiseID, Valid: true}

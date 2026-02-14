@@ -22,11 +22,15 @@ func (r *CreateEvidenceRequest) Sanitize() {
 
 // ToDomain converts CreateEvidenceRequest to domain.MotorcycleEvidence
 func (r *CreateEvidenceRequest) ToDomain() *domain.MotorcycleEvidence {
-	return &domain.MotorcycleEvidence{
+	e := &domain.MotorcycleEvidence{
 		ImageURL:    r.ImageURL,
-		Angle:       r.Angle,
 		Description: r.Description,
 	}
+	if r.Angle != nil {
+		angle := domain.EvidenceAngle(*r.Angle)
+		e.Angle = &angle
+	}
+	return e
 }
 
 // EvidenceResponse represents the API response for motorcycle evidence (HU16-19)
@@ -42,14 +46,18 @@ type EvidenceResponse struct {
 
 // ToEvidenceResponse converts domain.MotorcycleEvidence to EvidenceResponse
 func ToEvidenceResponse(e *domain.MotorcycleEvidence) EvidenceResponse {
-	return EvidenceResponse{
+	resp := EvidenceResponse{
 		ID:           e.ID,
 		MotorcycleID: e.MotorcycleID,
-		Angle:        e.Angle,
 		ImageURL:     e.ImageURL,
 		Description:  e.Description,
 		CreatedAt:    e.CreatedAt.Format(time.RFC3339),
 	}
+	if e.Angle != nil {
+		angle := string(*e.Angle)
+		resp.Angle = &angle
+	}
+	return resp
 }
 
 // ToEvidenceResponseList converts a slice of domain.MotorcycleEvidence to []EvidenceResponse

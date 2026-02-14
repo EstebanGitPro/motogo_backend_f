@@ -55,7 +55,11 @@ func (i *BranchInteractor) RegisterBranch(ctx context.Context, branch domain.Bra
 
 	// STEP 1.5: Validate displacement ranges if provided (in-memory validation)
 	if len(branch.DisplacementRanges) > 0 {
-		if err := i.branchService.ValidateDisplacementRanges(branch.DisplacementRanges); err != nil {
+		rangeStrs := make([]string, len(branch.DisplacementRanges))
+		for j, r := range branch.DisplacementRanges {
+			rangeStrs[j] = string(r)
+		}
+		if err := i.branchService.ValidateDisplacementRanges(rangeStrs); err != nil {
 			log.Warn(logger.LogBranchInteractorValidationError, "error", err, "displacement_ranges", branch.DisplacementRanges)
 			return nil, false, err
 		}
@@ -182,20 +186,9 @@ func (i *BranchInteractor) UpdateBranch(ctx context.Context, branchID string, br
 		return nil, false, domain.ErrForbidden
 	}
 
-	// 3. Validate brands if provided
-	if len(branch.Brands) > 0 {
-		if err := i.branchService.ValidateBrands(ctx, branch.Brands); err != nil {
-			log.Warn(logger.LogBranchInteractorValidationError, "error", err, "brands", branch.Brands)
-			return nil, false, err
-		}
-	}
-
-	// 3.5. Validate displacement ranges if provided
-	if len(branch.DisplacementRanges) > 0 {
-		if err := i.branchService.ValidateDisplacementRanges(branch.DisplacementRanges); err != nil {
-			log.Warn(logger.LogBranchInteractorValidationError, "error", err, "displacement_ranges", branch.DisplacementRanges)
-			return nil, false, err
-		}
+	// 3. Validate input constraints (brands and displacement ranges)
+	if err := i.validateBranchInputs(ctx, branch, log); err != nil {
+		return nil, false, err
 	}
 
 	// 4. Geocode location if address changed and no coordinates provided
@@ -241,17 +234,8 @@ func (i *BranchInteractor) UpdateBranch(ctx context.Context, branchID string, br
 		return nil, false, err
 	}
 
-	// 9. Delete old profile image from Firebase Storage if it was replaced
-	if branch.ProfileImageURL != nil && *branch.ProfileImageURL != "" &&
-		existingBranch.ProfileImageURL != nil && *existingBranch.ProfileImageURL != "" &&
-		*branch.ProfileImageURL != *existingBranch.ProfileImageURL &&
-		i.storageClient != nil {
-		if storageErr := i.storageClient.DeleteStorageFile(ctx, *existingBranch.ProfileImageURL); storageErr != nil {
-			log.Warn(logger.LogBranchInteractorUpdateError, "old image delete failed (continuing)", storageErr)
-		} else {
-			log.Info(logger.LogBranchInteractorUpdateComplete, "action", "old_storage_file_deleted", "url", *existingBranch.ProfileImageURL)
-		}
-	}
+	// 9. Delete old profile image from Firebase Storage if replaced
+	i.cleanupOldProfileImage(ctx, branch, existingBranch, log)
 
 	// 10. Fetch updated branch for response
 	updatedBranch, err := i.branchService.GetBranchByID(ctx, branchID)
@@ -355,4 +339,47 @@ func (i *BranchInteractor) GetBranchesNearby(ctx context.Context, lat, lng, radi
 
 	log.Success(logger.LogBranchInteractorNearbyComplete, "count", len(branches))
 	return branches, nil
+}
+
+// validateBranchInputs validates brands and displacement ranges if provided.
+func (i *BranchInteractor) validateBranchInputs(ctx context.Context, branch domain.Branch, log logger.Logger) error {
+	if len(branch.Brands) > 0 {
+		if err := i.branchService.ValidateBrands(ctx, branch.Brands); err != nil {
+			log.Warn(logger.LogBranchInteractorValidationError, "error", err, "brands", branch.Brands)
+			return err
+		}
+	}
+	if len(branch.DisplacementRanges) > 0 {
+		rangeStrs := make([]string, len(branch.DisplacementRanges))
+		for j, r := range branch.DisplacementRanges {
+			rangeStrs[j] = string(r)
+		}
+		if err := i.branchService.ValidateDisplacementRanges(rangeStrs); err != nil {
+			log.Warn(logger.LogBranchInteractorValidationError, "error", err, "displacement_ranges", branch.DisplacementRanges)
+			return err
+		}
+	}
+	return nil
+}
+
+// cleanupOldProfileImage deletes the old profile image from Firebase Storage if it was replaced.
+func (i *BranchInteractor) cleanupOldProfileImage(ctx context.Context, branch domain.Branch, existingBranch *domain.Branch, log logger.Logger) {
+	if branch.ProfileImageURL == nil || *branch.ProfileImageURL == "" {
+		return
+	}
+	if existingBranch.ProfileImageURL == nil || *existingBranch.ProfileImageURL == "" {
+		return
+	}
+	if *branch.ProfileImageURL == *existingBranch.ProfileImageURL {
+		return
+	}
+	if i.storageClient == nil {
+		return
+	}
+
+	if storageErr := i.storageClient.DeleteStorageFile(ctx, *existingBranch.ProfileImageURL); storageErr != nil {
+		log.Warn(logger.LogBranchInteractorUpdateError, "old image delete failed (continuing)", storageErr)
+	} else {
+		log.Info(logger.LogBranchInteractorUpdateComplete, "action", "old_storage_file_deleted", "url", *existingBranch.ProfileImageURL)
+	}
 }

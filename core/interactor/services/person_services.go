@@ -448,7 +448,7 @@ func (s service) Login(ctx context.Context, email, password string) (*gocloak.JW
 			log.Success(logger.LogKeycloakResendVerificationEmailOK, "email", email, "user_id", *user.ID)
 		}
 
-		return nil, domain.ErrorEmailNotVerified
+		return nil, domain.ErrEmailNotVerified
 	}
 
 	// Email is verified, proceed with login
