@@ -80,10 +80,20 @@ func (m *MockBranchRepository) ValidateBrands(ctx context.Context, brands []stri
 	return args.Error(0)
 }
 
-func (m *MockBranchRepository) GetBranchesNearby(ctx context.Context, lat, lng, radiusKm float64, establishmentType string, latMin, latMax, lngMin, lngMax float64) ([]domain.NearbyBranch, error) {
-	args := m.Called(ctx, lat, lng, radiusKm, establishmentType, latMin, latMax, lngMin, lngMax)
+func (m *MockBranchRepository) GetBranchesNearby(ctx context.Context, lat, lng, radiusKm float64, establishmentType string, latMin, latMax, lngMin, lngMax float64, brandID, displacementRange string) ([]domain.NearbyBranch, error) {
+	args := m.Called(ctx, lat, lng, radiusKm, establishmentType, latMin, latMax, lngMin, lngMax, brandID, displacementRange)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
 	return args.Get(0).([]domain.NearbyBranch), args.Error(1)
+}
+
+func (m *MockBranchRepository) SaveBranchDisplacementRanges(ctx context.Context, tx output.Tx, branchID string, ranges []string) error {
+	args := m.Called(ctx, tx, branchID, ranges)
+	return args.Error(0)
+}
+
+func (m *MockBranchRepository) DeleteBranchDisplacementRanges(ctx context.Context, tx output.Tx, branchID string) error {
+	args := m.Called(ctx, tx, branchID)
+	return args.Error(0)
 }

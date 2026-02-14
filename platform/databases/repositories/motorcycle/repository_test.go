@@ -36,6 +36,9 @@ func TestNewRepository_Success(t *testing.T) {
 	mock.ExpectPrepare("SELECT r.id, r.brand_id.*FROM motorcycle_references r.*WHERE r.brand_id")
 	// Schema validation statement (prepared and immediately closed)
 	mock.ExpectPrepare("SELECT EXISTS.*completed_services.*diagnostics")
+	mock.ExpectPrepare("SELECT r.category.*FROM motorcycle_references")
+	mock.ExpectPrepare("SELECT r.model.*FROM motorcycle_references r.*WHERE r.category")
+	mock.ExpectPrepare("SELECT DISTINCT r.displacement_range")
 
 	repo, err := NewRepository(db)
 
@@ -842,6 +845,9 @@ func TestSave_Success(t *testing.T) {
 	mock.ExpectPrepare("SELECT r.id, r.brand_id")
 	mock.ExpectPrepare("SELECT r.id, r.brand_id")
 	mock.ExpectPrepare("SELECT EXISTS")
+	mock.ExpectPrepare("SELECT r.category")
+	mock.ExpectPrepare("SELECT r.model")
+	mock.ExpectPrepare("SELECT DISTINCT r.displacement_range")
 
 	repo, err := NewRepository(db)
 	assert.NoError(t, err)
@@ -886,6 +892,9 @@ func TestSave_InvalidTx(t *testing.T) {
 	mock.ExpectPrepare("SELECT r.id, r.brand_id")
 	mock.ExpectPrepare("SELECT r.id, r.brand_id")
 	mock.ExpectPrepare("SELECT EXISTS")
+	mock.ExpectPrepare("SELECT r.category")
+	mock.ExpectPrepare("SELECT r.model")
+	mock.ExpectPrepare("SELECT DISTINCT r.displacement_range")
 
 	repo, err := NewRepository(db)
 	assert.NoError(t, err)
@@ -909,6 +918,9 @@ func TestSave_DBError(t *testing.T) {
 	mock.ExpectPrepare("SELECT r.id, r.brand_id")
 	mock.ExpectPrepare("SELECT r.id, r.brand_id")
 	mock.ExpectPrepare("SELECT EXISTS")
+	mock.ExpectPrepare("SELECT r.category")
+	mock.ExpectPrepare("SELECT r.model")
+	mock.ExpectPrepare("SELECT DISTINCT r.displacement_range")
 
 	repo, err := NewRepository(db)
 	assert.NoError(t, err)
@@ -946,6 +958,9 @@ func TestUpdate_Success(t *testing.T) {
 	mock.ExpectPrepare("SELECT r.id, r.brand_id")
 	mock.ExpectPrepare("SELECT r.id, r.brand_id")
 	mock.ExpectPrepare("SELECT EXISTS")
+	mock.ExpectPrepare("SELECT r.category")
+	mock.ExpectPrepare("SELECT r.model")
+	mock.ExpectPrepare("SELECT DISTINCT r.displacement_range")
 
 	repo, err := NewRepository(db)
 	assert.NoError(t, err)
@@ -988,6 +1003,9 @@ func TestUpdate_InvalidTx(t *testing.T) {
 	mock.ExpectPrepare("SELECT r.id, r.brand_id")
 	mock.ExpectPrepare("SELECT r.id, r.brand_id")
 	mock.ExpectPrepare("SELECT EXISTS")
+	mock.ExpectPrepare("SELECT r.category")
+	mock.ExpectPrepare("SELECT r.model")
+	mock.ExpectPrepare("SELECT DISTINCT r.displacement_range")
 
 	repo, err := NewRepository(db)
 	assert.NoError(t, err)
@@ -1010,6 +1028,9 @@ func TestUpdate_DBError(t *testing.T) {
 	mock.ExpectPrepare("SELECT r.id, r.brand_id")
 	mock.ExpectPrepare("SELECT r.id, r.brand_id")
 	mock.ExpectPrepare("SELECT EXISTS")
+	mock.ExpectPrepare("SELECT r.category")
+	mock.ExpectPrepare("SELECT r.model")
+	mock.ExpectPrepare("SELECT DISTINCT r.displacement_range")
 
 	repo, err := NewRepository(db)
 	assert.NoError(t, err)
@@ -1042,6 +1063,9 @@ func TestDelete_Success(t *testing.T) {
 	mock.ExpectPrepare("SELECT r.id, r.brand_id")
 	mock.ExpectPrepare("SELECT r.id, r.brand_id")
 	mock.ExpectPrepare("SELECT EXISTS")
+	mock.ExpectPrepare("SELECT r.category")
+	mock.ExpectPrepare("SELECT r.model")
+	mock.ExpectPrepare("SELECT DISTINCT r.displacement_range")
 
 	repo, err := NewRepository(db)
 	assert.NoError(t, err)
@@ -1071,6 +1095,9 @@ func TestDelete_InvalidTx(t *testing.T) {
 	mock.ExpectPrepare("SELECT r.id, r.brand_id")
 	mock.ExpectPrepare("SELECT r.id, r.brand_id")
 	mock.ExpectPrepare("SELECT EXISTS")
+	mock.ExpectPrepare("SELECT r.category")
+	mock.ExpectPrepare("SELECT r.model")
+	mock.ExpectPrepare("SELECT DISTINCT r.displacement_range")
 
 	repo, err := NewRepository(db)
 	assert.NoError(t, err)
@@ -1093,6 +1120,9 @@ func TestDelete_NotFound(t *testing.T) {
 	mock.ExpectPrepare("SELECT r.id, r.brand_id")
 	mock.ExpectPrepare("SELECT r.id, r.brand_id")
 	mock.ExpectPrepare("SELECT EXISTS")
+	mock.ExpectPrepare("SELECT r.category")
+	mock.ExpectPrepare("SELECT r.model")
+	mock.ExpectPrepare("SELECT DISTINCT r.displacement_range")
 
 	repo, err := NewRepository(db)
 	assert.NoError(t, err)
@@ -1123,6 +1153,9 @@ func TestDelete_DBError(t *testing.T) {
 	mock.ExpectPrepare("SELECT r.id, r.brand_id")
 	mock.ExpectPrepare("SELECT r.id, r.brand_id")
 	mock.ExpectPrepare("SELECT EXISTS")
+	mock.ExpectPrepare("SELECT r.category")
+	mock.ExpectPrepare("SELECT r.model")
+	mock.ExpectPrepare("SELECT DISTINCT r.displacement_range")
 
 	repo, err := NewRepository(db)
 	assert.NoError(t, err)

@@ -102,6 +102,32 @@ func (m *MockMotorcycleRepository) GetReferencesByBrandID(ctx context.Context, b
 	return args.Get(0).([]domain.MotorcycleReference), args.Error(1)
 }
 
+// Category catalog (HU41)
+
+func (m *MockMotorcycleRepository) GetDistinctCategories(ctx context.Context) ([]domain.MotorcycleCategory, error) {
+	args := m.Called(ctx)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]domain.MotorcycleCategory), args.Error(1)
+}
+
+func (m *MockMotorcycleRepository) GetLinesByCategory(ctx context.Context, categoryName string) ([]domain.CategoryLine, error) {
+	args := m.Called(ctx, categoryName)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]domain.CategoryLine), args.Error(1)
+}
+
+func (m *MockMotorcycleRepository) GetDistinctDisplacements(ctx context.Context) ([]domain.EngineDisplacementRange, error) {
+	args := m.Called(ctx)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]domain.EngineDisplacementRange), args.Error(1)
+}
+
 // Validation methods (HU43, HU44)
 
 func (m *MockMotorcycleRepository) ValidateReferenceExists(ctx context.Context, referenceID string) (bool, error) {

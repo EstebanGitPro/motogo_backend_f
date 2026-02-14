@@ -529,6 +529,7 @@ func TestUpdateBranch_Success(t *testing.T) {
 	branchRepo.On("UpdateBranch", mock.Anything, mockTx, mock.AnythingOfType("domain.Branch")).Return(nil)
 	branchRepo.On("DeleteBranchBrands", mock.Anything, mockTx, "branch-123").Return(nil)
 	branchRepo.On("SaveBranchBrands", mock.Anything, mockTx, "branch-123", []string{"Suzuki"}).Return(nil)
+	branchRepo.On("DeleteBranchDisplacementRanges", mock.Anything, mockTx, "branch-123").Return(nil)
 
 	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
 
@@ -557,6 +558,7 @@ func TestUpdateBranch_WithLocation(t *testing.T) {
 	branchRepo.On("UpdateBranch", mock.Anything, mockTx, mock.AnythingOfType("domain.Branch")).Return(nil)
 	locationRepo.On("UpdateLocation", mock.Anything, mockTx, mock.AnythingOfType("domain.Location")).Return(nil)
 	branchRepo.On("DeleteBranchBrands", mock.Anything, mockTx, "branch-123").Return(nil)
+	branchRepo.On("DeleteBranchDisplacementRanges", mock.Anything, mockTx, "branch-123").Return(nil)
 
 	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
 
@@ -623,13 +625,14 @@ func TestGetBranchesNearby_Success(t *testing.T) {
 	branchRepo.On("GetBranchesNearby", mock.Anything,
 		6.2518, -75.5636, 5.0, "WORKSHOP",
 		mock.AnythingOfType("float64"), mock.AnythingOfType("float64"),
-		mock.AnythingOfType("float64"), mock.AnythingOfType("float64")).
+		mock.AnythingOfType("float64"), mock.AnythingOfType("float64"),
+		"", "").
 		Return(expectedBranches, nil)
 
 	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
 
 	// Act
-	result, err := service.GetBranchesNearby(context.Background(), 6.2518, -75.5636, 5.0, "WORKSHOP")
+	result, err := service.GetBranchesNearby(context.Background(), 6.2518, -75.5636, 5.0, "WORKSHOP", "", "")
 
 	// Assert
 	assert.NoError(t, err)
@@ -646,13 +649,14 @@ func TestGetBranchesNearby_Empty(t *testing.T) {
 		mock.AnythingOfType("float64"), mock.AnythingOfType("float64"),
 		mock.AnythingOfType("float64"), mock.AnythingOfType("string"),
 		mock.AnythingOfType("float64"), mock.AnythingOfType("float64"),
-		mock.AnythingOfType("float64"), mock.AnythingOfType("float64")).
+		mock.AnythingOfType("float64"), mock.AnythingOfType("float64"),
+		mock.AnythingOfType("string"), mock.AnythingOfType("string")).
 		Return([]domain.NearbyBranch{}, nil)
 
 	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
 
 	// Act
-	result, err := service.GetBranchesNearby(context.Background(), 0.0, 0.0, 1.0, "")
+	result, err := service.GetBranchesNearby(context.Background(), 0.0, 0.0, 1.0, "", "", "")
 
 	// Assert
 	assert.NoError(t, err)
