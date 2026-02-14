@@ -97,7 +97,7 @@ func (h *handler) HandleIDEncodingError(c *gin.Context, uuid string, err error) 
 		"uuid", uuid,
 		"error", err,
 		"client_ip", c.ClientIP())
-	c.Error(domain.ErrInternalServer)
+	_ = c.Error(domain.ErrInternalServer)
 }
 
 // HandleIDDecodingError maneja errores de desofuscamiento y envía respuesta apropiada
@@ -106,5 +106,5 @@ func (h *handler) HandleIDDecodingError(c *gin.Context, encodedID string, err er
 		"encoded_id", encodedID,
 		"error", err,
 		"client_ip", c.ClientIP())
-	c.Error(domain.ErrInvalidID)
+	_ = c.Error(domain.ErrInvalidID)
 }
