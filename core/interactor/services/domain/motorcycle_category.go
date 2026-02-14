@@ -15,7 +15,7 @@ type CategoryLine struct {
 
 // EngineDisplacementRange represents a displacement range category (HU49)
 type EngineDisplacementRange struct {
-	Range string `json:"range"`
+	Range DisplacementRange `json:"range"`
 }
 
 // RatingRange represents a valid rating value with its label (HU48)

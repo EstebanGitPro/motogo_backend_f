@@ -4,11 +4,13 @@ import (
 	uuid "github.com/EstebanGitPro/motogo-backend/tools/utils"
 )
 
-// Role constants - matches database CHECK constraint
+// Role represents a user role - matches database CHECK constraint
+type Role string
+
 const (
-	RoleUser           = "user"
-	RoleRepresentative = "representative"
-	RoleAdmin          = "admin"
+	RoleUser           Role = "user"
+	RoleRepresentative Role = "representative"
+	RoleAdmin          Role = "admin"
 )
 
 type Person struct {
@@ -20,7 +22,7 @@ type Person struct {
 	Email          string `json:"email"`
 	PhoneNumber    string `json:"phone_number"`
 	Password       string `json:"-"`
-	Role           string `json:"role"`
+	Role           Role   `json:"role"`
 	KeycloakUserID string `json:"keycloak_user_id"`
 }
 
@@ -32,6 +34,6 @@ func (p *Person) ToLogger() []string {
 	return []string{
 		"id:" + p.ID,
 		"email:" + p.Email,
-		"role:" + p.Role,
+		"role:" + string(p.Role),
 	}
 }

@@ -52,7 +52,7 @@ func TestCategoryLine_ZeroDisplacement(t *testing.T) {
 
 func TestEngineDisplacementRange_Structure(t *testing.T) {
 	r := EngineDisplacementRange{Range: DisplacementRangeLow}
-	assert.Equal(t, "BAJO", r.Range)
+	assert.Equal(t, DisplacementRangeLow, r.Range)
 }
 
 func TestEngineDisplacementRange_AllValues(t *testing.T) {
@@ -62,9 +62,9 @@ func TestEngineDisplacementRange_AllValues(t *testing.T) {
 		{Range: DisplacementRangeHigh},
 	}
 
-	assert.Equal(t, "BAJO", ranges[0].Range)
-	assert.Equal(t, "MEDIO", ranges[1].Range)
-	assert.Equal(t, "ALTO", ranges[2].Range)
+	assert.Equal(t, DisplacementRangeLow, ranges[0].Range)
+	assert.Equal(t, DisplacementRangeMedium, ranges[1].Range)
+	assert.Equal(t, DisplacementRangeHigh, ranges[2].Range)
 }
 
 // ============================================
@@ -97,35 +97,35 @@ func TestRatingRange_AllValues(t *testing.T) {
 // ============================================
 
 func TestDisplacementRangeConstants(t *testing.T) {
-	assert.Equal(t, "BAJO", DisplacementRangeLow)
-	assert.Equal(t, "MEDIO", DisplacementRangeMedium)
-	assert.Equal(t, "ALTO", DisplacementRangeHigh)
+	assert.Equal(t, DisplacementRange("BAJO"), DisplacementRangeLow)
+	assert.Equal(t, DisplacementRange("MEDIO"), DisplacementRangeMedium)
+	assert.Equal(t, DisplacementRange("ALTO"), DisplacementRangeHigh)
 }
 
 func TestIsValidDisplacementRange_Valid(t *testing.T) {
-	assert.True(t, IsValidDisplacementRange("BAJO"))
-	assert.True(t, IsValidDisplacementRange("MEDIO"))
-	assert.True(t, IsValidDisplacementRange("ALTO"))
+	assert.True(t, IsValidDisplacementRange(DisplacementRange("BAJO")))
+	assert.True(t, IsValidDisplacementRange(DisplacementRange("MEDIO")))
+	assert.True(t, IsValidDisplacementRange(DisplacementRange("ALTO")))
 }
 
 func TestIsValidDisplacementRange_Invalid(t *testing.T) {
-	assert.False(t, IsValidDisplacementRange("INVALID"))
-	assert.False(t, IsValidDisplacementRange(""))
-	assert.False(t, IsValidDisplacementRange("bajo"))
+	assert.False(t, IsValidDisplacementRange(DisplacementRange("INVALID")))
+	assert.False(t, IsValidDisplacementRange(DisplacementRange("")))
+	assert.False(t, IsValidDisplacementRange(DisplacementRange("bajo")))
 }
 
 func TestValidateDisplacementRanges_AllValid(t *testing.T) {
-	err := ValidateDisplacementRanges([]string{"BAJO", "MEDIO", "ALTO"})
+	err := ValidateDisplacementRanges([]DisplacementRange{DisplacementRangeLow, DisplacementRangeMedium, DisplacementRangeHigh})
 	assert.NoError(t, err)
 }
 
 func TestValidateDisplacementRanges_OneInvalid(t *testing.T) {
-	err := ValidateDisplacementRanges([]string{"BAJO", "INVALID"})
+	err := ValidateDisplacementRanges([]DisplacementRange{DisplacementRangeLow, DisplacementRange("INVALID")})
 	assert.Error(t, err)
 	assert.Equal(t, ErrInvalidDisplacementRange, err)
 }
 
 func TestValidateDisplacementRanges_Empty(t *testing.T) {
-	err := ValidateDisplacementRanges([]string{})
+	err := ValidateDisplacementRanges([]DisplacementRange{})
 	assert.NoError(t, err)
 }

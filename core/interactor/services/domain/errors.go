@@ -18,7 +18,7 @@ var (
 	ErrNotFoundUserByEmail       = errors.New("ERR_NOT_FOUND_USER_BY_EMAIL")
 	ErrUserCannotFound           = errors.New("ERR_USER_CANNOT_FOUND")
 	ErrUserCannotGet             = errors.New("ERR_USER_CANNOT_GET")
-	ErrorEmailNotVerified        = errors.New("ERR_EMAIL_NOT_VERIFIED")
+	ErrEmailNotVerified          = errors.New("ERR_EMAIL_NOT_VERIFIED")
 	ErrVerificationTokenNotFound = errors.New("ERR_VERIFICATION_TOKEN_NOT_FOUND")
 	ErrTokenExpired              = errors.New("ERR_TOKEN_EXPIRED")
 	ErrTokenAlreadyUsed          = errors.New("ERR_TOKEN_ALREADY_USED")
