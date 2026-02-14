@@ -797,14 +797,29 @@ func (h *handler) GetNearbyBranches() gin.HandlerFunc {
 			}
 		}
 
+		// 5. Parse optional filters
+		brandID := c.Query("brand")
+		if brandID != "" {
+			decodedBrandID, err := h.DecodeID(brandID)
+			if err != nil {
+				log.Warn(logger.LogBranchControllerIDDecodeError, "brand_filter", brandID, "error", err)
+				brandID = "" // Invalid brand ID, ignore filter
+			} else {
+				brandID = decodedBrandID
+			}
+		}
+		displacementRange := c.Query("displacement_range")
+
 		log.Info(logger.LogBranchNearbySearch,
 			"lat", lat,
 			"lng", lng,
 			"radius_km", radiusKm,
-			"type", establishmentType)
+			"type", establishmentType,
+			"brand", brandID,
+			"displacement_range", displacementRange)
 
-		// 5. Call interactor
-		branches, err := h.BranchInteractor.GetBranchesNearby(c.Request.Context(), lat, lng, radiusKm, establishmentType)
+		// 6. Call interactor
+		branches, err := h.BranchInteractor.GetBranchesNearby(c.Request.Context(), lat, lng, radiusKm, establishmentType, brandID, displacementRange)
 		if err != nil {
 			log.Error(logger.LogBranchNearbyError, "error", err)
 			h.Response.Error(c, domain.MsgServerError)
@@ -820,7 +835,23 @@ func (h *handler) GetNearbyBranches() gin.HandlerFunc {
 				log.Warn(logger.LogIDEncodeError, "branch_id", branch.ID, "error", err)
 				continue
 			}
-			items = append(items, NewNearbyBranchResponse(branch, encodedID, baseURL))
+			resp := NewNearbyBranchResponse(branch, encodedID, baseURL)
+
+			// Encode brand IDs
+			if len(branch.Brands) > 0 {
+				encodedBrands := make([]string, 0, len(branch.Brands))
+				for _, brandID := range branch.Brands {
+					encodedBrand, err := h.EncodeID(brandID)
+					if err != nil {
+						log.Warn(logger.LogIDEncodeError, "brand_id", brandID, "error", err)
+						continue
+					}
+					encodedBrands = append(encodedBrands, encodedBrand)
+				}
+				resp.Brands = encodedBrands
+			}
+
+			items = append(items, resp)
 		}
 
 		// 7. Build collection response
