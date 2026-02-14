@@ -203,66 +203,11 @@ func (b *Builder) jsonValidator(schema *jsonschema.Schema) gin.HandlerFunc {
 
 		result := schema.Validate(data)
 		if !result.IsValid() {
-			// Collect all field names with errors for logging
-			var fieldNames []string
+			// Extract field names from validation errors
+			fieldNames := extractFieldNames(result.Errors)
 
-			// Process all errors to extract field names
-			for _, validationError := range result.Errors {
-				if validationError.Params != nil {
-					// Try "properties" (plural) first - for multiple fields
-					if properties, exists := validationError.Params["properties"]; exists {
-						propertiesStr := fmt.Sprintf("%v", properties)
-						// Parse multiple properties: "'email', 'role'" -> ["email", "role"]
-						fields := strings.Split(propertiesStr, ",")
-						for _, field := range fields {
-							field = strings.TrimSpace(field)
-							// Remove quotes
-							field = strings.Trim(field, "'\"")
-							if field != "" {
-								fieldNames = append(fieldNames, field)
-							}
-						}
-					} else if property, exists := validationError.Params["property"]; exists {
-						// Single property
-						propertyName := fmt.Sprintf("%v", property)
-						// Remove quotes if present
-						propertyName = strings.Trim(propertyName, "'\"")
-						if propertyName != "" {
-							fieldNames = append(fieldNames, propertyName)
-						}
-					}
-				}
-			}
-
-			// Determine which validation error to use based on validation type
-			var validationError error
-
-			// If multiple fields failed, use specific multiple fields error
-			if len(fieldNames) > 1 {
-				validationError = json_schema.ErrMultipleFields
-			} else {
-				// Single field error - determine specific error type
-				var firstError *jsonschema.EvaluationError
-				for _, err := range result.Errors {
-					firstError = err
-					break
-				}
-
-				if firstError != nil {
-					switch firstError.Code {
-					case "property_mismatch":
-						validationError = json_schema.ErrFieldPropertyMismatch
-					case "required":
-						validationError = json_schema.ErrFieldRequired
-					case "type":
-						validationError = json_schema.ErrFieldTypeInvalid
-					default:
-						validationError = json_schema.ErrValidationFailed
-					}
-				} else {
-					validationError = json_schema.ErrValidationFailed
-				}
-			}
+			// Classify the validation error
+			validationError := classifyValidationError(fieldNames, result.Errors)
 
 			// Store field names in context for error_handler to use in message parameters
 			// Translate technical names to Spanish labels
@@ -282,5 +227,69 @@ func (b *Builder) jsonValidator(schema *jsonschema.Schema) gin.HandlerFunc {
 			log.Debug(logger.LogMiddlewareValidationOK, "path", c.Request.URL.Path)
 		}
 		c.Next()
+	}
+}
+
+// ============================================
+// jsonValidator helpers (extracted to reduce cognitive complexity)
+// ============================================
+
+// extractFieldNames parses validation error params to collect field names.
+// Handles both "properties" (plural, multiple fields) and "property" (singular).
+func extractFieldNames(errors map[string]*jsonschema.EvaluationError) []string {
+	var fieldNames []string
+	for _, validationError := range errors {
+		if validationError.Params == nil {
+			continue
+		}
+		// Try "properties" (plural) first - for multiple fields
+		if properties, exists := validationError.Params["properties"]; exists {
+			propertiesStr := fmt.Sprintf("%v", properties)
+			fields := strings.Split(propertiesStr, ",")
+			for _, field := range fields {
+				field = strings.TrimSpace(field)
+				field = strings.Trim(field, "'\"")
+				if field != "" {
+					fieldNames = append(fieldNames, field)
+				}
+			}
+		} else if property, exists := validationError.Params["property"]; exists {
+			propertyName := fmt.Sprintf("%v", property)
+			propertyName = strings.Trim(propertyName, "'\"")
+			if propertyName != "" {
+				fieldNames = append(fieldNames, propertyName)
+			}
+		}
+	}
+	return fieldNames
+}
+
+// classifyValidationError determines the specific validation error type
+// based on field count and the first error code.
+func classifyValidationError(fieldNames []string, errors map[string]*jsonschema.EvaluationError) error {
+	if len(fieldNames) > 1 {
+		return json_schema.ErrMultipleFields
+	}
+
+	// Single field error - determine specific error type
+	var firstError *jsonschema.EvaluationError
+	for _, err := range errors {
+		firstError = err
+		break
+	}
+
+	if firstError == nil {
+		return json_schema.ErrValidationFailed
+	}
+
+	switch firstError.Code {
+	case "property_mismatch":
+		return json_schema.ErrFieldPropertyMismatch
+	case "required":
+		return json_schema.ErrFieldRequired
+	case "type":
+		return json_schema.ErrFieldTypeInvalid
+	default:
+		return json_schema.ErrValidationFailed
 	}
 }

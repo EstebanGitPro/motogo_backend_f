@@ -13,7 +13,7 @@ type Diagnostic struct {
 	MotorcycleID       string         `db:"motocicleta_id"`
 	BranchID           string         `db:"sede_id"`
 	Date               time.Time      `db:"fecha"`
-	ProblemDescription sql.NullString `db:"descripcion_problema"`
+	ProblemDescription sql.NullString `db:"descripcion_problema"` //nolint:misspell // Spanish DB column
 	PossibleSolution   sql.NullString `db:"posible_solucion"`
 }
 
@@ -22,7 +22,7 @@ type DiagnosticEvidence struct {
 	ID           string         `db:"id"`
 	DiagnosticID string         `db:"diagnostico_id"`
 	ImageURL     string         `db:"url_imagen"`
-	Description  sql.NullString `db:"descripcion"`
+	Description  sql.NullString `db:"descripcion"` //nolint:misspell // Spanish DB column
 	CreatedAt    time.Time      `db:"created_at"`
 }
 

@@ -127,14 +127,15 @@ func (c *mapboxClient) Geocode(ctx context.Context, address, city, department st
 
 	// Extract coordinates - prefer properties.coordinates for precision
 	var lat, lng float64
-	if feature.Properties.Coordinates.Latitude != 0 || feature.Properties.Coordinates.Longitude != 0 {
+	switch {
+	case feature.Properties.Coordinates.Latitude != 0 || feature.Properties.Coordinates.Longitude != 0:
 		lat = feature.Properties.Coordinates.Latitude
 		lng = feature.Properties.Coordinates.Longitude
-	} else if len(feature.Geometry.Coordinates) >= 2 {
+	case len(feature.Geometry.Coordinates) >= 2:
 		// Fallback to geometry coordinates [longitude, latitude]
 		lng = feature.Geometry.Coordinates[0]
 		lat = feature.Geometry.Coordinates[1]
-	} else {
+	default:
 		log.Warn(logger.LogGeocodingNoResults, "query", query, "reason", "no coordinates in response")
 		return nil, nil
 	}

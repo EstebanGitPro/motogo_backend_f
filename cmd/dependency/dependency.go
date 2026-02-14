@@ -141,63 +141,8 @@ func Init() (*Dependencies, error) {
 	}
 	log.Success(logger.LogDepBranchRepoInitOK)
 
-	timeout := time.Duration(cfg.Geocoding.TimeoutSeconds) * time.Second
-
-	var primaryClient geocoding.Client
-	switch cfg.Geocoding.Provider {
-	case "google":
-		primaryClient = geocoding.NewGoogleMapsClient(
-			cfg.Geocoding.APIKey,
-			cfg.Geocoding.BaseURL,
-			cfg.Geocoding.CountryCode,
-			timeout,
-			log,
-		)
-	case "mapbox":
-		fallthrough
-	default:
-		primaryClient = geocoding.NewMapboxClient(
-			cfg.Geocoding.APIKey,
-			cfg.Geocoding.BaseURL,
-			cfg.Geocoding.CountryCode,
-			timeout,
-		)
-	}
-
-	var geocodingClient geocoding.Client
-	if cfg.Geocoding.FallbackProvider != "" {
-		var fallbackClient geocoding.Client
-		switch cfg.Geocoding.FallbackProvider {
-		case "mapbox":
-			fallbackClient = geocoding.NewMapboxClient(
-				cfg.Geocoding.FallbackAPIKey,
-				cfg.Geocoding.FallbackBaseURL,
-				cfg.Geocoding.CountryCode,
-				timeout,
-			)
-		case "google":
-			fallbackClient = geocoding.NewGoogleMapsClient(
-				cfg.Geocoding.FallbackAPIKey,
-				cfg.Geocoding.FallbackBaseURL,
-				cfg.Geocoding.CountryCode,
-				timeout,
-				log,
-			)
-		}
-
-		if fallbackClient != nil {
-			geocodingClient = geocoding.NewFallbackClient(primaryClient, fallbackClient)
-			log.Success(logger.LogDepGeocodingClientInitOK,
-				"primary", cfg.Geocoding.Provider,
-				"fallback", cfg.Geocoding.FallbackProvider)
-		} else {
-			geocodingClient = primaryClient
-			log.Success(logger.LogDepGeocodingClientInitOK, "provider", cfg.Geocoding.Provider)
-		}
-	} else {
-		geocodingClient = primaryClient
-		log.Success(logger.LogDepGeocodingClientInitOK, "provider", cfg.Geocoding.Provider)
-	}
+	// Initialize geocoding client with optional fallback
+	geocodingClient := initGeocodingClient(cfg, log)
 
 	locationRepository, err := locationRepo.NewRepository(db)
 	if err != nil {
@@ -386,4 +331,64 @@ func Init() (*Dependencies, error) {
 		MessagingCache:              messagingCache,
 		ResponseHandler:             responseHandler,
 	}, nil
+}
+
+// initGeocodingClient creates a geocoding client based on config, with optional fallback provider.
+func initGeocodingClient(cfg *config.Config, log logger.Logger) geocoding.Client {
+	timeout := time.Duration(cfg.Geocoding.TimeoutSeconds) * time.Second
+
+	var primaryClient geocoding.Client
+	switch cfg.Geocoding.Provider {
+	case "google":
+		primaryClient = geocoding.NewGoogleMapsClient(
+			cfg.Geocoding.APIKey,
+			cfg.Geocoding.BaseURL,
+			cfg.Geocoding.CountryCode,
+			timeout,
+			log,
+		)
+	case "mapbox":
+		fallthrough
+	default:
+		primaryClient = geocoding.NewMapboxClient(
+			cfg.Geocoding.APIKey,
+			cfg.Geocoding.BaseURL,
+			cfg.Geocoding.CountryCode,
+			timeout,
+		)
+	}
+
+	if cfg.Geocoding.FallbackProvider == "" {
+		log.Success(logger.LogDepGeocodingClientInitOK, "provider", cfg.Geocoding.Provider)
+		return primaryClient
+	}
+
+	var fallbackClient geocoding.Client
+	switch cfg.Geocoding.FallbackProvider {
+	case "mapbox":
+		fallbackClient = geocoding.NewMapboxClient(
+			cfg.Geocoding.FallbackAPIKey,
+			cfg.Geocoding.FallbackBaseURL,
+			cfg.Geocoding.CountryCode,
+			timeout,
+		)
+	case "google":
+		fallbackClient = geocoding.NewGoogleMapsClient(
+			cfg.Geocoding.FallbackAPIKey,
+			cfg.Geocoding.FallbackBaseURL,
+			cfg.Geocoding.CountryCode,
+			timeout,
+			log,
+		)
+	}
+
+	if fallbackClient != nil {
+		log.Success(logger.LogDepGeocodingClientInitOK,
+			"primary", cfg.Geocoding.Provider,
+			"fallback", cfg.Geocoding.FallbackProvider)
+		return geocoding.NewFallbackClient(primaryClient, fallbackClient)
+	}
+
+	log.Success(logger.LogDepGeocodingClientInitOK, "provider", cfg.Geocoding.Provider)
+	return primaryClient
 }

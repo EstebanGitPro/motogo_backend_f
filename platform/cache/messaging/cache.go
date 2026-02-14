@@ -195,11 +195,11 @@ func (c *MessageCache) GetMessageResponse(code string, params ...string) *Messag
 }
 
 // replaceAll is a simple helper for placeholder replacement
-func replaceAll(s, old, new string) string {
+func replaceAll(s, old, replacement string) string {
 	result := ""
 	for i := 0; i < len(s); {
 		if i+len(old) <= len(s) && s[i:i+len(old)] == old {
-			result += new
+			result += replacement
 			i += len(old)
 		} else {
 			result += string(s[i])
