@@ -46,7 +46,7 @@ jobs:
         run: go mod download
 
       - name: 🔨 Build
-        run: go build -o bin/motogo-api ./cmd/api
+        run: go build -o bin/motogo-api ./cmd
 
       - name: 🧪 Tests con cobertura
         run: |
