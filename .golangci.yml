@@ -52,10 +52,6 @@ linters:
         - G101
         - G301
         - G302
-    misspell:
-      ignore-words:
-        - descripcion
-        - direccion
     revive:
       rules:
         - name: exported
