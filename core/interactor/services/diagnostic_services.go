@@ -13,7 +13,6 @@ func NewDiagnostic(motorcycleID, branchID string, problemDescription *string) *d
 		BranchID:           branchID,
 		Date:               time.Now(),
 		ProblemDescription: problemDescription,
-		SentViaWhatsApp:    false,
 	}
 	d.SetID()
 	return d
@@ -36,5 +35,4 @@ func NewDiagnosticEvidence(diagnosticID, imageURL string, description *string) *
 func RefreshDiagnostic(existing *domain.Diagnostic, problemDescription *string) {
 	existing.ProblemDescription = problemDescription
 	existing.Date = time.Now()
-	existing.SentViaWhatsApp = false
 }

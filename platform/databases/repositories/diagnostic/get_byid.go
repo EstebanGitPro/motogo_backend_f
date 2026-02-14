@@ -19,7 +19,6 @@ func (r *repository) GetByID(ctx context.Context, diagnosticID string) (*domain.
 		&diag.Date,
 		&diag.ProblemDescription,
 		&diag.PossibleSolution,
-		&diag.SentViaWhatsApp,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {

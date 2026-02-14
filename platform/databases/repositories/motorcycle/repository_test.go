@@ -1170,3 +1170,608 @@ func TestDelete_DBError(t *testing.T) {
 	err = repo.Delete(context.Background(), tx, "moto-123")
 	assert.Error(t, err)
 }
+
+// ============================================
+// GetDistinctCategories Tests (HU41)
+// ============================================
+
+func TestGetDistinctCategories_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	rows := sqlmock.NewRows([]string{"category", "line_count"}).
+		AddRow("Sport", 15).
+		AddRow("Naked", 8).
+		AddRow("Touring", 3)
+
+	stmt := mock.ExpectPrepare("SELECT")
+	stmt.ExpectQuery().WillReturnRows(rows)
+
+	repo := &repository{db: db}
+	repo.stmtGetDistinctCategories, _ = db.Prepare("SELECT r.category, COUNT(*) FROM motorcycle_references r GROUP BY r.category")
+
+	cats, err := repo.GetDistinctCategories(context.Background())
+
+	assert.NoError(t, err)
+	assert.Len(t, cats, 3)
+	assert.Equal(t, "Sport", cats[0].Name)
+	assert.Equal(t, 15, cats[0].LineCount)
+	assert.Equal(t, "Naked", cats[1].Name)
+}
+
+func TestGetDistinctCategories_Empty(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	rows := sqlmock.NewRows([]string{"category", "line_count"})
+
+	stmt := mock.ExpectPrepare("SELECT")
+	stmt.ExpectQuery().WillReturnRows(rows)
+
+	repo := &repository{db: db}
+	repo.stmtGetDistinctCategories, _ = db.Prepare("SELECT r.category, COUNT(*) FROM motorcycle_references r GROUP BY r.category")
+
+	cats, err := repo.GetDistinctCategories(context.Background())
+
+	assert.NoError(t, err)
+	assert.Empty(t, cats)
+}
+
+func TestGetDistinctCategories_DBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	stmt := mock.ExpectPrepare("SELECT")
+	stmt.ExpectQuery().WillReturnError(sql.ErrConnDone)
+
+	repo := &repository{db: db}
+	repo.stmtGetDistinctCategories, _ = db.Prepare("SELECT r.category, COUNT(*) FROM motorcycle_references r GROUP BY r.category")
+
+	cats, err := repo.GetDistinctCategories(context.Background())
+
+	assert.Nil(t, cats)
+	assert.Error(t, err)
+}
+
+// ============================================
+// GetLinesByCategory Tests (HU41)
+// ============================================
+
+func TestGetLinesByCategory_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	rows := sqlmock.NewRows([]string{"model", "brand_name", "engine_displacement"}).
+		AddRow("MT-07", "Yamaha", 689).
+		AddRow("CBR-600", "Honda", 599)
+
+	stmt := mock.ExpectPrepare("SELECT")
+	stmt.ExpectQuery().
+		WithArgs("Sport").
+		WillReturnRows(rows)
+
+	repo := &repository{db: db}
+	repo.stmtGetLinesByCategory, _ = db.Prepare("SELECT r.model, b.name, r.engine_displacement FROM motorcycle_references r WHERE r.category = ?")
+
+	lines, err := repo.GetLinesByCategory(context.Background(), "Sport")
+
+	assert.NoError(t, err)
+	assert.Len(t, lines, 2)
+	assert.Equal(t, "MT-07", lines[0].Model)
+	assert.Equal(t, "Yamaha", lines[0].BrandName)
+	assert.Equal(t, 689, lines[0].EngineDisplacement)
+}
+
+func TestGetLinesByCategory_Empty(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	rows := sqlmock.NewRows([]string{"model", "brand_name", "engine_displacement"})
+
+	stmt := mock.ExpectPrepare("SELECT")
+	stmt.ExpectQuery().
+		WithArgs("NonExistent").
+		WillReturnRows(rows)
+
+	repo := &repository{db: db}
+	repo.stmtGetLinesByCategory, _ = db.Prepare("SELECT r.model, b.name, r.engine_displacement FROM motorcycle_references r WHERE r.category = ?")
+
+	lines, err := repo.GetLinesByCategory(context.Background(), "NonExistent")
+
+	assert.NoError(t, err)
+	assert.Empty(t, lines)
+}
+
+func TestGetLinesByCategory_DBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	stmt := mock.ExpectPrepare("SELECT")
+	stmt.ExpectQuery().
+		WithArgs("Error").
+		WillReturnError(sql.ErrConnDone)
+
+	repo := &repository{db: db}
+	repo.stmtGetLinesByCategory, _ = db.Prepare("SELECT r.model, b.name, r.engine_displacement FROM motorcycle_references r WHERE r.category = ?")
+
+	lines, err := repo.GetLinesByCategory(context.Background(), "Error")
+
+	assert.Nil(t, lines)
+	assert.Error(t, err)
+}
+
+// ============================================
+// GetDistinctDisplacements Tests (HU49)
+// ============================================
+
+func TestGetDistinctDisplacements_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	rows := sqlmock.NewRows([]string{"displacement_range"}).
+		AddRow("BAJO").
+		AddRow("MEDIO").
+		AddRow("ALTO")
+
+	stmt := mock.ExpectPrepare("SELECT")
+	stmt.ExpectQuery().WillReturnRows(rows)
+
+	repo := &repository{db: db}
+	repo.stmtGetDistinctDisplacements, _ = db.Prepare("SELECT DISTINCT r.displacement_range FROM motorcycle_references r")
+
+	disps, err := repo.GetDistinctDisplacements(context.Background())
+
+	assert.NoError(t, err)
+	assert.Len(t, disps, 3)
+	assert.Equal(t, "BAJO", disps[0].Range)
+	assert.Equal(t, "MEDIO", disps[1].Range)
+	assert.Equal(t, "ALTO", disps[2].Range)
+}
+
+func TestGetDistinctDisplacements_Empty(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	rows := sqlmock.NewRows([]string{"displacement_range"})
+
+	stmt := mock.ExpectPrepare("SELECT")
+	stmt.ExpectQuery().WillReturnRows(rows)
+
+	repo := &repository{db: db}
+	repo.stmtGetDistinctDisplacements, _ = db.Prepare("SELECT DISTINCT r.displacement_range FROM motorcycle_references r")
+
+	disps, err := repo.GetDistinctDisplacements(context.Background())
+
+	assert.NoError(t, err)
+	assert.Empty(t, disps)
+}
+
+func TestGetDistinctDisplacements_DBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	stmt := mock.ExpectPrepare("SELECT")
+	stmt.ExpectQuery().WillReturnError(sql.ErrConnDone)
+
+	repo := &repository{db: db}
+	repo.stmtGetDistinctDisplacements, _ = db.Prepare("SELECT DISTINCT r.displacement_range FROM motorcycle_references r")
+
+	disps, err := repo.GetDistinctDisplacements(context.Background())
+
+	assert.Nil(t, disps)
+	assert.Error(t, err)
+}
+
+// ============================================
+// HardDelete Tests (HU45)
+// ============================================
+
+func TestHardDelete_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("UPDATE motorcycles")
+	mock.ExpectPrepare("UPDATE motorcycles")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id")
+	mock.ExpectPrepare("SELECT EXISTS")
+	mock.ExpectPrepare("SELECT r.category")
+	mock.ExpectPrepare("SELECT r.model")
+	mock.ExpectPrepare("SELECT DISTINCT r.displacement_range")
+
+	repo, err := NewRepository(db)
+	assert.NoError(t, err)
+
+	mock.ExpectBegin()
+	tx, err := repo.BeginTx(context.Background())
+	assert.NoError(t, err)
+
+	mock.ExpectExec("DELETE FROM motorcycles").
+		WithArgs("moto-hard-del").
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	err = repo.HardDelete(context.Background(), tx, "moto-hard-del")
+	assert.NoError(t, err)
+}
+
+func TestHardDelete_InvalidTx(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("UPDATE motorcycles")
+	mock.ExpectPrepare("UPDATE motorcycles")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id")
+	mock.ExpectPrepare("SELECT EXISTS")
+	mock.ExpectPrepare("SELECT r.category")
+	mock.ExpectPrepare("SELECT r.model")
+	mock.ExpectPrepare("SELECT DISTINCT r.displacement_range")
+
+	repo, err := NewRepository(db)
+	assert.NoError(t, err)
+
+	err = repo.HardDelete(context.Background(), nil, "moto-123")
+	assert.Error(t, err)
+	assert.Equal(t, domain.ErrInvalidTransaction, err)
+}
+
+func TestHardDelete_NotFound(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("UPDATE motorcycles")
+	mock.ExpectPrepare("UPDATE motorcycles")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id")
+	mock.ExpectPrepare("SELECT EXISTS")
+	mock.ExpectPrepare("SELECT r.category")
+	mock.ExpectPrepare("SELECT r.model")
+	mock.ExpectPrepare("SELECT DISTINCT r.displacement_range")
+
+	repo, err := NewRepository(db)
+	assert.NoError(t, err)
+
+	mock.ExpectBegin()
+	tx, err := repo.BeginTx(context.Background())
+	assert.NoError(t, err)
+
+	mock.ExpectExec("DELETE FROM motorcycles").
+		WithArgs("not-found").
+		WillReturnResult(sqlmock.NewResult(0, 0))
+
+	err = repo.HardDelete(context.Background(), tx, "not-found")
+	assert.Error(t, err)
+	assert.Equal(t, domain.ErrMotorcycleNotFound, err)
+}
+
+func TestHardDelete_DBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("UPDATE motorcycles")
+	mock.ExpectPrepare("UPDATE motorcycles")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id")
+	mock.ExpectPrepare("SELECT EXISTS")
+	mock.ExpectPrepare("SELECT r.category")
+	mock.ExpectPrepare("SELECT r.model")
+	mock.ExpectPrepare("SELECT DISTINCT r.displacement_range")
+
+	repo, err := NewRepository(db)
+	assert.NoError(t, err)
+
+	mock.ExpectBegin()
+	tx, err := repo.BeginTx(context.Background())
+	assert.NoError(t, err)
+
+	mock.ExpectExec("DELETE FROM motorcycles").
+		WillReturnError(sql.ErrConnDone)
+
+	err = repo.HardDelete(context.Background(), tx, "moto-123")
+	assert.Error(t, err)
+}
+
+// ============================================
+// ClearProfileImageURL Tests (HU39)
+// ============================================
+
+func TestClearProfileImageURL_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("UPDATE motorcycles")
+	mock.ExpectPrepare("UPDATE motorcycles")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id")
+	mock.ExpectPrepare("SELECT EXISTS")
+	mock.ExpectPrepare("SELECT r.category")
+	mock.ExpectPrepare("SELECT r.model")
+	mock.ExpectPrepare("SELECT DISTINCT r.displacement_range")
+
+	repo, err := NewRepository(db)
+	assert.NoError(t, err)
+
+	mock.ExpectBegin()
+	tx, err := repo.BeginTx(context.Background())
+	assert.NoError(t, err)
+
+	mock.ExpectExec("UPDATE motorcycles.*SET profile_image_url").
+		WithArgs("moto-clear").
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	err = repo.ClearProfileImageURL(context.Background(), tx, "moto-clear")
+	assert.NoError(t, err)
+}
+
+func TestClearProfileImageURL_InvalidTx(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("UPDATE motorcycles")
+	mock.ExpectPrepare("UPDATE motorcycles")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id")
+	mock.ExpectPrepare("SELECT EXISTS")
+	mock.ExpectPrepare("SELECT r.category")
+	mock.ExpectPrepare("SELECT r.model")
+	mock.ExpectPrepare("SELECT DISTINCT r.displacement_range")
+
+	repo, err := NewRepository(db)
+	assert.NoError(t, err)
+
+	err = repo.ClearProfileImageURL(context.Background(), nil, "moto-123")
+	assert.Error(t, err)
+	assert.Equal(t, domain.ErrInvalidTransaction, err)
+}
+
+func TestClearProfileImageURL_NotFound(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("UPDATE motorcycles")
+	mock.ExpectPrepare("UPDATE motorcycles")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id")
+	mock.ExpectPrepare("SELECT EXISTS")
+	mock.ExpectPrepare("SELECT r.category")
+	mock.ExpectPrepare("SELECT r.model")
+	mock.ExpectPrepare("SELECT DISTINCT r.displacement_range")
+
+	repo, err := NewRepository(db)
+	assert.NoError(t, err)
+
+	mock.ExpectBegin()
+	tx, err := repo.BeginTx(context.Background())
+	assert.NoError(t, err)
+
+	mock.ExpectExec("UPDATE motorcycles.*SET profile_image_url").
+		WithArgs("not-found").
+		WillReturnResult(sqlmock.NewResult(0, 0))
+
+	err = repo.ClearProfileImageURL(context.Background(), tx, "not-found")
+	assert.Error(t, err)
+	assert.Equal(t, domain.ErrMotorcycleNotFound, err)
+}
+
+func TestClearProfileImageURL_DBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("SELECT m.id, m.license_plate")
+	mock.ExpectPrepare("UPDATE motorcycles")
+	mock.ExpectPrepare("UPDATE motorcycles")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id")
+	mock.ExpectPrepare("SELECT EXISTS")
+	mock.ExpectPrepare("SELECT r.category")
+	mock.ExpectPrepare("SELECT r.model")
+	mock.ExpectPrepare("SELECT DISTINCT r.displacement_range")
+
+	repo, err := NewRepository(db)
+	assert.NoError(t, err)
+
+	mock.ExpectBegin()
+	tx, err := repo.BeginTx(context.Background())
+	assert.NoError(t, err)
+
+	mock.ExpectExec("UPDATE motorcycles.*SET profile_image_url").
+		WillReturnError(sql.ErrConnDone)
+
+	err = repo.ClearProfileImageURL(context.Background(), tx, "moto-123")
+	assert.Error(t, err)
+}
+
+// ============================================
+// HasServiceHistory Tests (HU45)
+// ============================================
+
+func TestHasServiceHistory_True(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	rows := sqlmock.NewRows([]string{"exists"}).AddRow(true)
+	mock.ExpectQuery("SELECT EXISTS").
+		WithArgs("moto-with-history", "moto-with-history").
+		WillReturnRows(rows)
+
+	repo := &repository{db: db}
+
+	has, err := repo.HasServiceHistory(context.Background(), "moto-with-history")
+
+	assert.NoError(t, err)
+	assert.True(t, has)
+}
+
+func TestHasServiceHistory_False(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	rows := sqlmock.NewRows([]string{"exists"}).AddRow(false)
+	mock.ExpectQuery("SELECT EXISTS").
+		WithArgs("moto-no-history", "moto-no-history").
+		WillReturnRows(rows)
+
+	repo := &repository{db: db}
+
+	has, err := repo.HasServiceHistory(context.Background(), "moto-no-history")
+
+	assert.NoError(t, err)
+	assert.False(t, has)
+}
+
+func TestHasServiceHistory_DBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectQuery("SELECT EXISTS").
+		WithArgs("moto-error", "moto-error").
+		WillReturnError(sql.ErrConnDone)
+
+	repo := &repository{db: db}
+
+	has, err := repo.HasServiceHistory(context.Background(), "moto-error")
+
+	assert.False(t, has)
+	assert.Error(t, err)
+}
+
+// ============================================
+// NewRepository Prepare Error Tests (new statements)
+// ============================================
+
+func TestNewRepository_PrepareError_HasServiceHistory(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("SELECT m.id, m.license_plate.*WHERE m.id")
+	mock.ExpectPrepare("SELECT m.id.*WHERE m.owner_id")
+	mock.ExpectPrepare("SELECT m.id.*WHERE m.license_plate")
+	mock.ExpectPrepare("UPDATE motorcycles.*SET reference_id")
+	mock.ExpectPrepare("UPDATE motorcycles.*SET deleted_at")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id.*ORDER BY b.name")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id.*WHERE r.brand_id")
+	mock.ExpectPrepare("SELECT EXISTS.*completed_services.*diagnostics").
+		WillReturnError(sql.ErrConnDone)
+
+	repo, err := NewRepository(db)
+
+	assert.Nil(t, repo)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "error preparing stmtHasServiceHistory")
+}
+
+func TestNewRepository_PrepareError_GetDistinctCategories(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("SELECT m.id, m.license_plate.*WHERE m.id")
+	mock.ExpectPrepare("SELECT m.id.*WHERE m.owner_id")
+	mock.ExpectPrepare("SELECT m.id.*WHERE m.license_plate")
+	mock.ExpectPrepare("UPDATE motorcycles.*SET reference_id")
+	mock.ExpectPrepare("UPDATE motorcycles.*SET deleted_at")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id.*ORDER BY b.name")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id.*WHERE r.brand_id")
+	mock.ExpectPrepare("SELECT EXISTS.*completed_services.*diagnostics")
+	mock.ExpectPrepare("SELECT r.category.*FROM motorcycle_references").
+		WillReturnError(sql.ErrConnDone)
+
+	repo, err := NewRepository(db)
+
+	assert.Nil(t, repo)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "error preparing stmtGetDistinctCategories")
+}
+
+func TestNewRepository_PrepareError_GetLinesByCategory(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("SELECT m.id, m.license_plate.*WHERE m.id")
+	mock.ExpectPrepare("SELECT m.id.*WHERE m.owner_id")
+	mock.ExpectPrepare("SELECT m.id.*WHERE m.license_plate")
+	mock.ExpectPrepare("UPDATE motorcycles.*SET reference_id")
+	mock.ExpectPrepare("UPDATE motorcycles.*SET deleted_at")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id.*ORDER BY b.name")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id.*WHERE r.brand_id")
+	mock.ExpectPrepare("SELECT EXISTS.*completed_services.*diagnostics")
+	mock.ExpectPrepare("SELECT r.category.*FROM motorcycle_references")
+	mock.ExpectPrepare("SELECT r.model.*FROM motorcycle_references").
+		WillReturnError(sql.ErrConnDone)
+
+	repo, err := NewRepository(db)
+
+	assert.Nil(t, repo)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "error preparing stmtGetLinesByCategory")
+}
+
+func TestNewRepository_PrepareError_GetDistinctDisplacements(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectPrepare("SELECT m.id, m.license_plate.*WHERE m.id")
+	mock.ExpectPrepare("SELECT m.id.*WHERE m.owner_id")
+	mock.ExpectPrepare("SELECT m.id.*WHERE m.license_plate")
+	mock.ExpectPrepare("UPDATE motorcycles.*SET reference_id")
+	mock.ExpectPrepare("UPDATE motorcycles.*SET deleted_at")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id.*ORDER BY b.name")
+	mock.ExpectPrepare("SELECT r.id, r.brand_id.*WHERE r.brand_id")
+	mock.ExpectPrepare("SELECT EXISTS.*completed_services.*diagnostics")
+	mock.ExpectPrepare("SELECT r.category.*FROM motorcycle_references")
+	mock.ExpectPrepare("SELECT r.model.*FROM motorcycle_references")
+	mock.ExpectPrepare("SELECT DISTINCT r.displacement_range").
+		WillReturnError(sql.ErrConnDone)
+
+	repo, err := NewRepository(db)
+
+	assert.Nil(t, repo)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "error preparing stmtGetDistinctDisplacements")
+}

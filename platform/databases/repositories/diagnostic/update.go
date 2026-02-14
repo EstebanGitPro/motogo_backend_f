@@ -20,7 +20,6 @@ func (r *repository) Update(ctx context.Context, tx output.Tx, diagnostic *domai
 	_, err := sqlTx.ExecContext(ctx, queryUpdate,
 		dbDiag.ProblemDescription,
 		dbDiag.PossibleSolution,
-		dbDiag.SentViaWhatsApp,
 		dbDiag.ID,
 	)
 	if err != nil {
