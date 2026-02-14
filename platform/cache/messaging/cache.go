@@ -417,12 +417,17 @@ var messageCodeToHTTPStatus = map[string]int{
 	// Motorcycle Module (MOD_MOT_*) - HU43-47
 	// ========================================
 	// Success messages
-	"MOD_MOT_CREATE_EXI_00001":   http.StatusCreated, // 201 - Motocicleta registrada (HU43)
-	"MOD_MOT_GET_EXI_00001":      http.StatusOK,      // 200 - Motocicleta consultada (HU46)
-	"MOD_MOT_UPDATE_EXI_00001":   http.StatusOK,      // 200 - Motocicleta actualizada (HU44)
-	"MOD_MOT_DELETE_EXI_00001":   http.StatusOK,      // 200 - Motocicleta eliminada (HU45)
-	"MOD_MOT_LIST_EXI_00001":     http.StatusOK,      // 200 - Motocicletas listadas (HU47)
-	"MOD_MOT_REF_LIST_EXI_00001": http.StatusOK,      // 200 - Referencias listadas (HU50)
+	"MOD_MOT_CREATE_EXI_00001":      http.StatusCreated, // 201 - Motocicleta registrada (HU43)
+	"MOD_MOT_GET_EXI_00001":         http.StatusOK,      // 200 - Motocicleta consultada (HU46)
+	"MOD_MOT_UPDATE_EXI_00001":      http.StatusOK,      // 200 - Motocicleta actualizada (HU44)
+	"MOD_MOT_DELETE_EXI_00001":      http.StatusOK,      // 200 - Motocicleta eliminada (HU45)
+	"MOD_MOT_LIST_EXI_00001":        http.StatusOK,      // 200 - Motocicletas listadas (HU47)
+	"MOD_MOT_REF_LIST_EXI_00001":    http.StatusOK,      // 200 - Referencias listadas (HU50)
+	"MOD_MOT_BRAND_LINES_EXI_00001": http.StatusOK,      // 200 - Líneas de marca obtenidas (HU40)
+	"MOD_MOT_CAT_LIST_EXI_00001":    http.StatusOK,      // 200 - Categorías obtenidas (HU41)
+	"MOD_MOT_CAT_LINES_EXI_00001":   http.StatusOK,      // 200 - Líneas de categoría obtenidas (HU41)
+	"MOD_MOT_DISP_LIST_EXI_00001":   http.StatusOK,      // 200 - Rangos de cilindraje obtenidos (HU49)
+	"MOD_MOT_RATE_LIST_EXI_00001":   http.StatusOK,      // 200 - Rangos de calificación obtenidos (HU48)
 	// Error messages
 	"MOD_MOT_NOT_FOUND_ERR_00001":     http.StatusNotFound,   // 404 - Motocicleta no encontrada
 	"MOD_MOT_CREATE_ERR_00001":        http.StatusBadRequest, // 400 - Error al registrar

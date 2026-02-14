@@ -351,6 +351,74 @@ func (i *MotorcycleInteractor) GetReferencesByBrandID(ctx context.Context, brand
 	return references, nil
 }
 
+// GetDistinctCategories retrieves all distinct motorcycle categories with line counts (HU41)
+func (i *MotorcycleInteractor) GetDistinctCategories(ctx context.Context) ([]domain.MotorcycleCategory, error) {
+	traceID := middleware.GetTraceIDFromContext(ctx)
+	log := log.WithTraceID(traceID)
+
+	log.Info(logger.LogMotorcycleCatInteractorStart)
+
+	categories, err := i.motorcycleSvc.GetDistinctCategories(ctx)
+	if err != nil {
+		log.Error(logger.LogMotorcycleCatInteractorError, "error", err)
+		return nil, err
+	}
+
+	log.Success(logger.LogMotorcycleCatInteractorSuccess, "count", len(categories))
+	return categories, nil
+}
+
+// GetLinesByCategory retrieves all motorcycle lines for a specific category (HU41)
+func (i *MotorcycleInteractor) GetLinesByCategory(ctx context.Context, categoryName string) ([]domain.CategoryLine, error) {
+	traceID := middleware.GetTraceIDFromContext(ctx)
+	log := log.WithTraceID(traceID)
+
+	log.Info(logger.LogMotorcycleCatLinesInteractorStart, "category", categoryName)
+
+	lines, err := i.motorcycleSvc.GetLinesByCategory(ctx, categoryName)
+	if err != nil {
+		log.Error(logger.LogMotorcycleCatLinesInteractorError, "error", err, "category", categoryName)
+		return nil, err
+	}
+
+	log.Success(logger.LogMotorcycleCatLinesInteractorSuccess, "category", categoryName, "count", len(lines))
+	return lines, nil
+}
+
+// GetDistinctDisplacements retrieves all distinct engine displacement values with counts (HU49)
+func (i *MotorcycleInteractor) GetDistinctDisplacements(ctx context.Context) ([]domain.EngineDisplacementRange, error) {
+	traceID := middleware.GetTraceIDFromContext(ctx)
+	log := log.WithTraceID(traceID)
+
+	log.Info(logger.LogMotorcycleDispInteractorStart)
+
+	displacements, err := i.motorcycleSvc.GetDistinctDisplacements(ctx)
+	if err != nil {
+		log.Error(logger.LogMotorcycleDispInteractorError, "error", err)
+		return nil, err
+	}
+
+	log.Success(logger.LogMotorcycleDispInteractorSuccess, "count", len(displacements))
+	return displacements, nil
+}
+
+// GetRatingRanges retrieves all valid rating range values (HU48)
+func (i *MotorcycleInteractor) GetRatingRanges(ctx context.Context) ([]domain.RatingRange, error) {
+	traceID := middleware.GetTraceIDFromContext(ctx)
+	log := log.WithTraceID(traceID)
+
+	log.Info(logger.LogRatingRangeInteractorStart)
+
+	ranges, err := i.motorcycleSvc.GetRatingRanges(ctx)
+	if err != nil {
+		log.Error(logger.LogRatingRangeInteractorError, "error", err)
+		return nil, err
+	}
+
+	log.Success(logger.LogRatingRangeInteractorSuccess, "count", len(ranges))
+	return ranges, nil
+}
+
 // GrantDiagnosticPermission grants a branch permission to view motorcycle diagnostic details
 // Only the motorcycle owner can grant permissions
 func (i *MotorcycleInteractor) GrantDiagnosticPermission(ctx context.Context, motorcycleID, branchID, ownerID string, active bool) (result *domain.DiagnosticPermission, err error) {

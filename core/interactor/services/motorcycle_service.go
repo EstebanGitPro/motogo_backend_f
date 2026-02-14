@@ -226,6 +226,38 @@ func (s *MotorcycleServiceImpl) GetReferencesByBrandID(ctx context.Context, bran
 	return s.motorcycleRepo.GetReferencesByBrandID(ctx, brandID)
 }
 
+// GetDistinctCategories retrieves all distinct motorcycle categories with line counts (HU41)
+func (s *MotorcycleServiceImpl) GetDistinctCategories(ctx context.Context) ([]domain.MotorcycleCategory, error) {
+	return s.motorcycleRepo.GetDistinctCategories(ctx)
+}
+
+// GetLinesByCategory retrieves all motorcycle lines for a specific category (HU41)
+func (s *MotorcycleServiceImpl) GetLinesByCategory(ctx context.Context, categoryName string) ([]domain.CategoryLine, error) {
+	return s.motorcycleRepo.GetLinesByCategory(ctx, categoryName)
+}
+
+// GetDistinctDisplacements returns the fixed ENUM displacement range values (HU49)
+// Values are hardcoded since they are fixed ENUM: BAJO (50-200cc), MEDIO (201-400cc), ALTO (401-3000cc)
+func (s *MotorcycleServiceImpl) GetDistinctDisplacements(_ context.Context) ([]domain.EngineDisplacementRange, error) {
+	return []domain.EngineDisplacementRange{
+		{Range: domain.DisplacementRangeLow},
+		{Range: domain.DisplacementRangeMedium},
+		{Range: domain.DisplacementRangeHigh},
+	}, nil
+}
+
+// GetRatingRanges returns the fixed rating range values (HU48)
+// Values are hardcoded since they are fixed: 1 (Very bad) to 5 (Excellent)
+func (s *MotorcycleServiceImpl) GetRatingRanges(_ context.Context) ([]domain.RatingRange, error) {
+	return []domain.RatingRange{
+		{Value: 1, Label: "Very bad"},
+		{Value: 2, Label: "Bad"},
+		{Value: 3, Label: "Average"},
+		{Value: 4, Label: "Good"},
+		{Value: 5, Label: "Excellent"},
+	}, nil
+}
+
 // ============================================
 // Diagnostic Permissions
 // ============================================

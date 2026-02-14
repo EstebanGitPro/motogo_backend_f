@@ -135,6 +135,20 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		// GET /departments/:id/cities - Listar ciudades de un departamento
 		public.GET("/departments/:id/cities", handler.GetCitiesByDepartment())
 
+		// === MOTORCYCLE CATEGORY CATALOGS (HU41) ===
+		// GET /motorcycle-categories - List all motorcycle categories
+		public.GET("/motorcycle-categories", handler.GetMotorcycleCategories())
+		// GET /motorcycle-categories/:categoryName/lines - List lines for a specific category
+		public.GET("/motorcycle-categories/:categoryName/lines", handler.GetCategoryLines())
+
+		// === ENGINE DISPLACEMENT CATALOG (HU49) ===
+		// GET /engine-displacements - List all distinct engine displacement ranges
+		public.GET("/engine-displacements", handler.GetEngineDisplacements())
+
+		// === RATING RANGE CATALOG (HU48) ===
+		// GET /rating-ranges - List all valid rating values (1-5)
+		public.GET("/rating-ranges", handler.GetRatingRanges())
+
 		// === BRANCH TYPES CATALOG (HU76) ===
 		// GET /branch-types - Listar todos los tipos de establecimiento
 		public.GET("/branch-types", handler.GetBranchTypes())
