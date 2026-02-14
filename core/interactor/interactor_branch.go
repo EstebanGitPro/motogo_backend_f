@@ -53,6 +53,14 @@ func (i *BranchInteractor) RegisterBranch(ctx context.Context, branch domain.Bra
 		log.Debug(logger.LogBranchInteractorBrandsValidated, "brands_count", len(branch.Brands))
 	}
 
+	// STEP 1.5: Validate displacement ranges if provided (in-memory validation)
+	if len(branch.DisplacementRanges) > 0 {
+		if err := i.branchService.ValidateDisplacementRanges(branch.DisplacementRanges); err != nil {
+			log.Warn(logger.LogBranchInteractorValidationError, "error", err, "displacement_ranges", branch.DisplacementRanges)
+			return nil, false, err
+		}
+	}
+
 	// STEP 2: Geocode location if coordinates not provided
 	// This is done before the transaction to avoid holding it open during external API call
 	var geocodingSucceeded bool
@@ -178,6 +186,14 @@ func (i *BranchInteractor) UpdateBranch(ctx context.Context, branchID string, br
 	if len(branch.Brands) > 0 {
 		if err := i.branchService.ValidateBrands(ctx, branch.Brands); err != nil {
 			log.Warn(logger.LogBranchInteractorValidationError, "error", err, "brands", branch.Brands)
+			return nil, false, err
+		}
+	}
+
+	// 3.5. Validate displacement ranges if provided
+	if len(branch.DisplacementRanges) > 0 {
+		if err := i.branchService.ValidateDisplacementRanges(branch.DisplacementRanges); err != nil {
+			log.Warn(logger.LogBranchInteractorValidationError, "error", err, "displacement_ranges", branch.DisplacementRanges)
 			return nil, false, err
 		}
 	}
@@ -319,7 +335,7 @@ func (i *BranchInteractor) DeleteBranch(ctx context.Context, branchID string, pe
 
 // GetBranchesNearby retrieves branches within radius of given coordinates (HU89)
 // Default radius is 5km if not specified
-func (i *BranchInteractor) GetBranchesNearby(ctx context.Context, lat, lng, radiusKm float64, establishmentType string) ([]domain.NearbyBranch, error) {
+func (i *BranchInteractor) GetBranchesNearby(ctx context.Context, lat, lng, radiusKm float64, establishmentType, brandID, displacementRange string) ([]domain.NearbyBranch, error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
 	log := log.WithTraceID(traceID)
 
@@ -327,9 +343,11 @@ func (i *BranchInteractor) GetBranchesNearby(ctx context.Context, lat, lng, radi
 		"lat", lat,
 		"lng", lng,
 		"radius_km", radiusKm,
-		"type", establishmentType)
+		"type", establishmentType,
+		"brand_id", brandID,
+		"displacement_range", displacementRange)
 
-	branches, err := i.branchService.GetBranchesNearby(ctx, lat, lng, radiusKm, establishmentType)
+	branches, err := i.branchService.GetBranchesNearby(ctx, lat, lng, radiusKm, establishmentType, brandID, displacementRange)
 	if err != nil {
 		log.Error(logger.LogBranchInteractorNearbyError, "error", err)
 		return nil, err

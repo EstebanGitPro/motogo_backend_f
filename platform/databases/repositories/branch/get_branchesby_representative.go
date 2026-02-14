@@ -80,6 +80,12 @@ func (r *repository) GetBranchesByRepresentative(ctx context.Context, representa
 		}
 		branch.Brands = brands
 
+		displacementRanges, err := r.getBranchDisplacementRanges(ctx, branch.ID)
+		if err != nil {
+			log.Error(logger.LogBranchRepoDisplRangeGetError, "error", err, "branch_id", branch.ID)
+		}
+		branch.DisplacementRanges = displacementRanges
+
 		branches = append(branches, branch)
 	}
 

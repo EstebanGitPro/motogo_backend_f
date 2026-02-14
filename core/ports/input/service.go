@@ -91,6 +91,10 @@ type BranchService interface {
 	// Branch - Brands operations
 	SaveBranchBrands(ctx context.Context, tx output.Tx, branchID string, brands []string) error
 
+	// Branch - Displacement ranges operations
+	ValidateDisplacementRanges(ranges []string) error
+	SaveBranchDisplacementRanges(ctx context.Context, tx output.Tx, branchID string, ranges []string) error
+
 	// GetBranchesByRepresentative retrieves all branches for a representative (HU62)
 	GetBranchesByRepresentative(ctx context.Context, representativeID string) ([]domain.Branch, error)
 
@@ -101,7 +105,7 @@ type BranchService interface {
 	DeleteBranch(ctx context.Context, tx output.Tx, branchID string) error
 
 	// GetBranchesNearby retrieves branches within radius of given coordinates (HU89)
-	GetBranchesNearby(ctx context.Context, lat, lng, radiusKm float64, establishmentType string) ([]domain.NearbyBranch, error)
+	GetBranchesNearby(ctx context.Context, lat, lng, radiusKm float64, establishmentType, brandID, displacementRange string) ([]domain.NearbyBranch, error)
 }
 
 // BrandService - Use Cases for Brand catalog operations
@@ -256,6 +260,12 @@ type MotorcycleService interface {
 	// Reference catalog (HU50, HU40)
 	GetAllReferences(ctx context.Context) ([]domain.MotorcycleReference, error)
 	GetReferencesByBrandID(ctx context.Context, brandID string) ([]domain.MotorcycleReference, error)
+
+	// Category catalog (HU41)
+	GetDistinctCategories(ctx context.Context) ([]domain.MotorcycleCategory, error)
+	GetLinesByCategory(ctx context.Context, categoryName string) ([]domain.CategoryLine, error)
+	GetDistinctDisplacements(ctx context.Context) ([]domain.EngineDisplacementRange, error)
+	GetRatingRanges(ctx context.Context) ([]domain.RatingRange, error)
 
 	// Diagnostic Permissions
 	GrantPermission(ctx context.Context, tx output.Tx, motorcycleID, branchID string, active bool) (*domain.DiagnosticPermission, error)

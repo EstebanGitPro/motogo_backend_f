@@ -74,5 +74,11 @@ func (r *repository) GetBranchByID(ctx context.Context, branchID string) (*domai
 	}
 	branch.Brands = brands
 
+	displacementRanges, err := r.getBranchDisplacementRanges(ctx, branchID)
+	if err != nil {
+		log.Error(logger.LogBranchRepoDisplRangeGetError, "error", err, "branch_id", branchID)
+	}
+	branch.DisplacementRanges = displacementRanges
+
 	return &branch, nil
 }

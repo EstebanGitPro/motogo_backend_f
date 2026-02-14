@@ -58,6 +58,10 @@ type BranchRepository interface {
 	SaveBranchBrands(ctx context.Context, tx Tx, branchID string, brands []string) error
 	DeleteBranchBrands(ctx context.Context, tx Tx, branchID string) error
 
+	// Branch displacement ranges operations - transactional
+	SaveBranchDisplacementRanges(ctx context.Context, tx Tx, branchID string, ranges []string) error
+	DeleteBranchDisplacementRanges(ctx context.Context, tx Tx, branchID string) error
+
 	// Branch operations - read
 	GetBranchByID(ctx context.Context, branchID string) (*domain.Branch, error)
 	GetBranchByFranchiseAndName(ctx context.Context, franchiseID, name string) (*domain.Branch, error)
@@ -68,7 +72,7 @@ type BranchRepository interface {
 	ValidateBrands(ctx context.Context, brands []string) error
 
 	// GetBranchesNearby retrieves branches within radius of given coordinates (HU89)
-	GetBranchesNearby(ctx context.Context, lat, lng, radiusKm float64, establishmentType string, latMin, latMax, lngMin, lngMax float64) ([]domain.NearbyBranch, error)
+	GetBranchesNearby(ctx context.Context, lat, lng, radiusKm float64, establishmentType string, latMin, latMax, lngMin, lngMax float64, brandID, displacementRange string) ([]domain.NearbyBranch, error)
 }
 
 // BrandRepository interface for Brand catalog operations
@@ -219,6 +223,11 @@ type MotorcycleRepository interface {
 	// Reference catalog (HU50, HU40)
 	GetAllReferences(ctx context.Context) ([]domain.MotorcycleReference, error)
 	GetReferencesByBrandID(ctx context.Context, brandID string) ([]domain.MotorcycleReference, error)
+
+	// Category catalog (HU41)
+	GetDistinctCategories(ctx context.Context) ([]domain.MotorcycleCategory, error)
+	GetLinesByCategory(ctx context.Context, categoryName string) ([]domain.CategoryLine, error)
+	GetDistinctDisplacements(ctx context.Context) ([]domain.EngineDisplacementRange, error)
 
 	// Validation methods (HU43, HU44)
 	ValidateReferenceExists(ctx context.Context, referenceID string) (bool, error)
