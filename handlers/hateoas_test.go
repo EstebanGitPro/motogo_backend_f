@@ -654,9 +654,17 @@ func TestBuildRatingRangeLinks(t *testing.T) {
 func TestBuildPermissionLinks(t *testing.T) {
 	links := handlers.BuildPermissionLinks("http://localhost:8080", "moto-123")
 
-	assert.GreaterOrEqual(t, len(links), 1)
+	assert.Len(t, links, 3)
 
-	selfLink := findLinkByRel(links, "self")
-	assert.NotNil(t, selfLink)
-	assert.Contains(t, selfLink.Href, "motorcycles/moto-123")
+	listLink := findLinkByRel(links, "list-permissions")
+	assert.NotNil(t, listLink)
+	assert.Contains(t, listLink.Href, "motorcycles/moto-123/permissions")
+
+	grantLink := findLinkByRel(links, "grant-permission")
+	assert.NotNil(t, grantLink)
+	assert.Equal(t, "POST", grantLink.Method)
+
+	motoLink := findLinkByRel(links, "motorcycle")
+	assert.NotNil(t, motoLink)
+	assert.Contains(t, motoLink.Href, "motorcycles/moto-123")
 }
