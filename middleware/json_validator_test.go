@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	json_schema "github.com/EstebanGitPro/motogo-backend/platform/schema"
+	"github.com/kaptinlin/jsonschema"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -243,4 +244,134 @@ func TestWithValidateEvidence_ReturnsHandler(t *testing.T) {
 	builder := NewMiddlewareValidator(&json_schema.Validators{})
 	handler := builder.WithValidateEvidence()
 	assert.NotNil(t, handler)
+}
+
+// ============================================
+// extractFieldNames Tests
+// ============================================
+
+func TestExtractFieldNames_WithPropertiesParam(t *testing.T) {
+	errors := map[string]*jsonschema.EvaluationError{
+		"required": {
+			Keyword: "required",
+			Code:    "required",
+			Message: "missing properties",
+			Params: map[string]any{
+				"properties": "email, password",
+			},
+		},
+	}
+
+	result := extractFieldNames(errors)
+
+	assert.Len(t, result, 2)
+	assert.Contains(t, result, "email")
+	assert.Contains(t, result, "password")
+}
+
+func TestExtractFieldNames_WithPropertyParam(t *testing.T) {
+	errors := map[string]*jsonschema.EvaluationError{
+		"type": {
+			Keyword: "type",
+			Code:    "type",
+			Message: "invalid type",
+			Params: map[string]any{
+				"property": "phone",
+			},
+		},
+	}
+
+	result := extractFieldNames(errors)
+
+	assert.Len(t, result, 1)
+	assert.Equal(t, "phone", result[0])
+}
+
+func TestExtractFieldNames_NilParams(t *testing.T) {
+	errors := map[string]*jsonschema.EvaluationError{
+		"null": {
+			Keyword: "required",
+			Code:    "required",
+			Message: "missing",
+			Params:  nil,
+		},
+	}
+
+	result := extractFieldNames(errors)
+
+	assert.Empty(t, result)
+}
+
+func TestExtractFieldNames_EmptyErrors(t *testing.T) {
+	errors := map[string]*jsonschema.EvaluationError{}
+
+	result := extractFieldNames(errors)
+
+	assert.Empty(t, result)
+}
+
+// ============================================
+// classifyValidationError Tests
+// ============================================
+
+func TestClassifyValidationError_MultipleFields(t *testing.T) {
+	fields := []string{"email", "password", "phone"}
+	errors := map[string]*jsonschema.EvaluationError{}
+
+	result := classifyValidationError(fields, errors)
+
+	assert.Equal(t, json_schema.ErrMultipleFields, result)
+}
+
+func TestClassifyValidationError_PropertyMismatch(t *testing.T) {
+	fields := []string{"email"}
+	errors := map[string]*jsonschema.EvaluationError{
+		"property": {Code: "property_mismatch"},
+	}
+
+	result := classifyValidationError(fields, errors)
+
+	assert.Equal(t, json_schema.ErrFieldPropertyMismatch, result)
+}
+
+func TestClassifyValidationError_Required(t *testing.T) {
+	fields := []string{"name"}
+	errors := map[string]*jsonschema.EvaluationError{
+		"required": {Code: "required"},
+	}
+
+	result := classifyValidationError(fields, errors)
+
+	assert.Equal(t, json_schema.ErrFieldRequired, result)
+}
+
+func TestClassifyValidationError_TypeInvalid(t *testing.T) {
+	fields := []string{"age"}
+	errors := map[string]*jsonschema.EvaluationError{
+		"type": {Code: "type"},
+	}
+
+	result := classifyValidationError(fields, errors)
+
+	assert.Equal(t, json_schema.ErrFieldTypeInvalid, result)
+}
+
+func TestClassifyValidationError_DefaultCase(t *testing.T) {
+	fields := []string{"field"}
+	errors := map[string]*jsonschema.EvaluationError{
+		"unknown": {Code: "unknown_code"},
+	}
+
+	result := classifyValidationError(fields, errors)
+
+	assert.Equal(t, json_schema.ErrValidationFailed, result)
+}
+
+func TestClassifyValidationError_NilFirstError(t *testing.T) {
+	fields := []string{"field"}
+	errors := map[string]*jsonschema.EvaluationError{}
+
+	result := classifyValidationError(fields, errors)
+
+	assert.Equal(t, json_schema.ErrValidationFailed, result)
 }

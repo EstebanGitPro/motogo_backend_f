@@ -27,6 +27,7 @@ func createTestMessageCache() *messagingCache.MessageCache {
 
 	mockRepo.On("GetAllActiveForCache", mock.Anything).Return([]messagingCache.CachedMessage{
 		{Code: "MOD_B_REG_EXI_00001", Type: "EXITO", Title: "Sede registrada", Content: "La sede ha sido registrada exitosamente", Active: true},
+		{Code: "MOD_B_UPD_EXI_00001", Type: "EXITO", Title: "Sede actualizada", Content: "La sede ha sido actualizada exitosamente", Active: true},
 		{Code: "MOD_B_BRD_EXI_00001", Type: "EXITO", Title: "Marcas obtenidas", Content: "Catálogo de marcas obtenido", Active: true},
 		{Code: "MOD_L_DEP_EXI_00001", Type: "EXITO", Title: "Departamentos", Content: "Departamentos obtenidos", Active: true},
 		{Code: "MOD_MOT_CREATE_EXI_00001", Type: "EXITO", Title: "Motocicleta registrada", Content: "Motocicleta registrada exitosamente", Active: true},
@@ -315,4 +316,330 @@ func TestRegisterBranch_Integration_Success(t *testing.T) {
 	// ============================================
 	mockBranchService.AssertExpectations(t)
 	mockTx.AssertCalled(t, "Commit")
+}
+
+// TestGetNearbyBranches_Integration_Success validates GET /branches/nearby
+// Exercises: parseNearbyFilters → parseOptionalBrandFilter → interactor call → brand encoding → response building
+func TestGetNearbyBranches_Integration_Success(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	encoder := createTestEncoder()
+
+	// Add nearby success message to cache
+	mockRepo := new(mocks.MockMessageCacheRepo)
+	cache := messagingCache.NewMessageCache(mockRepo, 0)
+	mockRepo.On("GetAllActiveForCache", mock.Anything).Return([]messagingCache.CachedMessage{
+		{Code: "MOD_B_NEARBY_EXI_00001", Type: "EXITO", Title: "Sedes cercanas", Content: "Sedes cercanas encontradas", Active: true},
+	}, nil)
+	_ = cache.LoadMessages(context.TODO())
+	responseHandler := middleware.NewResponseHandler(cache)
+
+	mockBranchService := new(mocks.MockBranchService)
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
+
+	h := handlers.New(nil, nil, branchInteractor, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+
+	// Domain data returned by interactor
+	branchNearbyUUID := "a1234567-89ab-cdef-0123-456789abcdef"
+	brandUUID := "b1234567-89ab-cdef-0123-456789abcdef"
+	encodedBrand, _ := encoder.Encode(brandUUID)
+	lat, lng := 4.710989, -74.072092
+
+	nearbyBranches := []domain.NearbyBranch{
+		{
+			ID:                branchNearbyUUID,
+			Name:              "Taller Norte",
+			EstablishmentType: domain.EstablishmentTypeWorkshop,
+			DistanceKm:        2.5,
+			Brands:            []string{brandUUID},
+			Location: &domain.NearbyLocation{
+				Address:        "Calle 100 #15-20",
+				CityName:       "Bogotá",
+				DepartmentName: "Cundinamarca",
+				Latitude:       lat,
+				Longitude:      lng,
+			},
+		},
+	}
+
+	// Mock expectations: interactor.GetBranchesNearby delegates to service
+	mockBranchService.On("GetBranchesNearby",
+		mock.Anything,
+		mock.AnythingOfType("float64"),
+		mock.AnythingOfType("float64"),
+		mock.AnythingOfType("float64"),
+		"WORKSHOP",
+		mock.AnythingOfType("string"),
+		"BAJO",
+	).Return(nearbyBranches, nil)
+
+	// Build request with all query params including brand filter
+	router := gin.New()
+	router.Use(func(c *gin.Context) {
+		c.Set("authenticated_user", &domain.Person{ID: "user-1", Role: "USER"})
+		c.Next()
+	})
+	router.GET("/branches/nearby", h.GetNearbyBranches())
+
+	w := httptest.NewRecorder()
+	url := "/branches/nearby?lat=4.710989&lng=-74.072092&radius=10&type=WORKSHOP&brand=" + encodedBrand + "&displacement_range=BAJO"
+	req, _ := http.NewRequest("GET", url, nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.True(t, response["success"].(bool))
+
+	data, ok := response["data"].(map[string]interface{})
+	assert.True(t, ok)
+	assert.Equal(t, float64(1), data["count"])
+
+	branches := data["branches"].([]interface{})
+	assert.Len(t, branches, 1)
+	branch := branches[0].(map[string]interface{})
+	assert.Equal(t, "Taller Norte", branch["name"])
+	assert.NotEmpty(t, branch["id"])
+}
+
+// TestListBranches_Integration_Success validates GET /branches (my branches)
+// Exercises: buildBranchListItem helper with franchise, brands, location encoding
+func TestListBranches_Integration_Success(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	encoder := createTestEncoder()
+
+	mockRepo := new(mocks.MockMessageCacheRepo)
+	cache := messagingCache.NewMessageCache(mockRepo, 0)
+	mockRepo.On("GetAllActiveForCache", mock.Anything).Return([]messagingCache.CachedMessage{
+		{Code: "MOD_B_LIST_EXI_00001", Type: "EXITO", Title: "Sedes listadas", Content: "Lista de sedes obtenida", Active: true},
+	}, nil)
+	_ = cache.LoadMessages(context.TODO())
+	responseHandler := middleware.NewResponseHandler(cache)
+
+	mockBranchService := new(mocks.MockBranchService)
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
+	h := handlers.New(nil, nil, branchInteractor, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+
+	repID := "rep-123"
+	franchiseUUID := "f1234567-89ab-cdef-0123-456789abcdef"
+	brandUUID := "b1234567-89ab-cdef-0123-456789abcdef"
+	lat, lng := 4.71, -74.07
+
+	branches := []domain.Branch{
+		{
+			ID:                "a1234567-89ab-cdef-0123-456789abcdef",
+			Name:              "Taller Norte",
+			RepresentativeID:  repID,
+			EstablishmentType: domain.EstablishmentTypeWorkshop,
+			Status:            "ACTIVE",
+			FranchiseID:       &franchiseUUID,
+			Brands:            []string{brandUUID},
+			Location: &domain.Location{
+				DepartmentID: "d1234567-89ab-cdef-0123-456789abcdef",
+				CityID:       "e1234567-89ab-cdef-0123-456789abcdef",
+				Address:      "Calle 100",
+				Latitude:     &lat,
+				Longitude:    &lng,
+			},
+		},
+	}
+
+	mockBranchService.On("GetBranchesByRepresentative", mock.Anything, repID).Return(branches, nil)
+
+	router := gin.New()
+	router.Use(func(c *gin.Context) {
+		c.Set("authenticated_user", &domain.Person{ID: repID, Role: "REPRESENTANTE"})
+		c.Next()
+	})
+	router.GET("/branches", h.ListBranches())
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/branches", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.True(t, response["success"].(bool))
+
+	data := response["data"].(map[string]interface{})
+	assert.Equal(t, float64(1), data["count"])
+}
+
+// TestUpdateBranch_Integration_Success validates PUT /branches/:id
+// Exercises: decodeBranchRequestIDs, encodeBranchResponseIDs, geocoding status
+func TestUpdateBranch_Integration_Success(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	encoder := createTestEncoder()
+	msgCache := createTestMessageCache()
+	responseHandler := middleware.NewResponseHandler(msgCache)
+
+	mockBranchService := new(mocks.MockBranchService)
+	mockTx := new(mocks.MockTx)
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
+	h := handlers.New(nil, nil, branchInteractor, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+
+	branchUUID := "a1234567-89ab-cdef-0123-456789abcdef"
+	brandUUID := "b1234567-89ab-cdef-0123-456789abcdef"
+	departmentUUID := "d1234567-89ab-cdef-0123-456789abcdef"
+	cityUUID := "e1234567-89ab-cdef-0123-456789abcdef"
+	repID := "rep-123"
+	lat, lng := 4.71, -74.07
+
+	encodedBranchID, _ := encoder.Encode(branchUUID)
+	encodedBrand, _ := encoder.Encode(brandUUID)
+	encodedDept, _ := encoder.Encode(departmentUUID)
+	encodedCity, _ := encoder.Encode(cityUUID)
+
+	updatedBranch := &domain.Branch{
+		ID:                branchUUID,
+		Name:              "Taller Actualizado",
+		RepresentativeID:  repID,
+		EstablishmentType: domain.EstablishmentTypeWorkshopStore,
+		Status:            "ACTIVE",
+		Brands:            []string{brandUUID},
+		Location: &domain.Location{
+			DepartmentID: departmentUUID,
+			CityID:       cityUUID,
+			Address:      "Calle 200",
+			Latitude:     &lat,
+			Longitude:    &lng,
+		},
+	}
+
+	// Mock: validation, geocoding, tx, update, re-fetch
+	mockBranchService.On("ValidateBrands", mock.Anything, mock.AnythingOfType("[]string")).Return(nil)
+	mockBranchService.On("ValidateDisplacementRanges", mock.AnythingOfType("[]string")).Return(nil)
+	mockBranchService.On("GeocodeLocation", mock.Anything, mock.AnythingOfType("*domain.Location")).
+		Run(func(args mock.Arguments) {
+			loc := args.Get(1).(*domain.Location)
+			loc.Latitude = &lat
+			loc.Longitude = &lng
+		}).Return(true, nil)
+	mockBranchService.On("BeginTx", mock.Anything).Return(mockTx, nil)
+	mockBranchService.On("GetBranchByID", mock.Anything, branchUUID).Return(updatedBranch, nil)
+	mockBranchService.On("UpdateBranch", mock.Anything, mockTx, mock.AnythingOfType("domain.Branch")).Return(nil)
+	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil)
+
+	reqBody := map[string]interface{}{
+		"name":               "Taller Actualizado",
+		"establishment_type": "WORKSHOP_STORE",
+		"brands":             []string{encodedBrand},
+		"location": map[string]interface{}{
+			"department_id": encodedDept,
+			"city_id":       encodedCity,
+			"address":       "Calle 200",
+		},
+	}
+	bodyJSON, _ := json.Marshal(reqBody)
+
+	router := gin.New()
+	router.Use(func(c *gin.Context) {
+		c.Set("authenticated_user", &domain.Person{ID: repID, Role: "REPRESENTANTE"})
+		c.Next()
+	})
+	router.PUT("/branches/:id", h.UpdateBranch())
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("PUT", "/branches/"+encodedBranchID, bytes.NewBuffer(bodyJSON))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.True(t, response["success"].(bool))
+
+	data := response["data"].(map[string]interface{})
+	assert.Equal(t, "Taller Actualizado", data["name"])
+	assert.NotEmpty(t, data["id"])
+}
+
+// TestDeleteBranch_Integration_Success validates DELETE /branches/:id
+func TestDeleteBranch_Integration_Success(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	encoder := createTestEncoder()
+
+	mockRepo := new(mocks.MockMessageCacheRepo)
+	cache := messagingCache.NewMessageCache(mockRepo, 0)
+	mockRepo.On("GetAllActiveForCache", mock.Anything).Return([]messagingCache.CachedMessage{
+		{Code: "MOD_B_DEL_EXI_00001", Type: "EXITO", Title: "Sede eliminada", Content: "Sede eliminada exitosamente", Active: true},
+	}, nil)
+	_ = cache.LoadMessages(context.TODO())
+	responseHandler := middleware.NewResponseHandler(cache)
+
+	mockBranchService := new(mocks.MockBranchService)
+	mockTx := new(mocks.MockTx)
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
+	h := handlers.New(nil, nil, branchInteractor, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+
+	branchUUID := "a1234567-89ab-cdef-0123-456789abcdef"
+	repID := "rep-123"
+	encodedBranchID, _ := encoder.Encode(branchUUID)
+
+	existingBranch := &domain.Branch{
+		ID:               branchUUID,
+		Name:             "Taller Eliminar",
+		RepresentativeID: repID,
+		Status:           "ACTIVE",
+	}
+
+	mockBranchService.On("GetBranchByID", mock.Anything, branchUUID).Return(existingBranch, nil)
+	mockBranchService.On("BeginTx", mock.Anything).Return(mockTx, nil)
+	mockBranchService.On("DeleteBranch", mock.Anything, mockTx, branchUUID).Return(nil)
+	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil)
+
+	router := gin.New()
+	router.Use(func(c *gin.Context) {
+		c.Set("authenticated_user", &domain.Person{ID: repID, Role: "REPRESENTANTE"})
+		c.Next()
+	})
+	router.DELETE("/branches/:id", h.DeleteBranch())
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("DELETE", "/branches/"+encodedBranchID, nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.True(t, response["success"].(bool))
+}
+
+// TestGetBranchTypes_Integration_Success validates GET /branch-types
+func TestGetBranchTypes_Integration_Success(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	encoder := createTestEncoder()
+
+	mockRepo := new(mocks.MockMessageCacheRepo)
+	cache := messagingCache.NewMessageCache(mockRepo, 0)
+	mockRepo.On("GetAllActiveForCache", mock.Anything).Return([]messagingCache.CachedMessage{
+		{Code: "MOD_B_TYPES_EXI_00001", Type: "EXITO", Title: "Tipos obtenidos", Content: "Tipos de sede obtenidos", Active: true},
+	}, nil)
+	_ = cache.LoadMessages(context.TODO())
+	responseHandler := middleware.NewResponseHandler(cache)
+
+	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+
+	router := gin.New()
+	router.GET("/branch-types", h.GetBranchTypes())
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/branch-types", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.True(t, response["success"].(bool))
+
+	data := response["data"].(map[string]interface{})
+	types := data["types"].([]interface{})
+	assert.Len(t, types, 3) // WORKSHOP, STORE, WORKSHOP_STORE
 }
