@@ -16,7 +16,7 @@ const (
 
 // NewEvidence creates a new MotorcycleEvidence with generated ID and timestamp
 // This is a factory function that encapsulates ID generation and timestamp assignment
-func NewEvidence(motorcycleID, imageURL string, angle, description *string) *domain.MotorcycleEvidence {
+func NewEvidence(motorcycleID, imageURL string, angle *domain.EvidenceAngle, description *string) *domain.MotorcycleEvidence {
 	e := &domain.MotorcycleEvidence{
 		MotorcycleID: motorcycleID,
 		Angle:        angle,
@@ -30,8 +30,9 @@ func NewEvidence(motorcycleID, imageURL string, angle, description *string) *dom
 
 // IsValidAngle checks if the angle is valid (FRONTAL, LATERAL, REAR)
 func IsValidAngle(angle string) bool {
+	a := domain.EvidenceAngle(angle)
 	for _, valid := range domain.ValidEvidenceAngles {
-		if angle == valid {
+		if a == valid {
 			return true
 		}
 	}

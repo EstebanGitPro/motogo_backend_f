@@ -51,12 +51,18 @@ linters:
         - G304
         - G101
         - G301
+        - G302
     revive:
       rules:
         - name: exported
           disabled: true
         - name: package-comments
           disabled: true
+  exclusions:
+    rules:
+      - path: "mocks/"
+        linters:
+          - errcheck
 
 formatters:
   enable:

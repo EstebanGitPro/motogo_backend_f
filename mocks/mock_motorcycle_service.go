@@ -125,6 +125,42 @@ func (m *MockMotorcycleService) GetReferencesByBrandID(ctx context.Context, bran
 	return args.Get(0).([]domain.MotorcycleReference), args.Error(1)
 }
 
+// Category catalog (HU41)
+
+func (m *MockMotorcycleService) GetDistinctCategories(ctx context.Context) ([]domain.MotorcycleCategory, error) {
+	args := m.Called(ctx)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]domain.MotorcycleCategory), args.Error(1)
+}
+
+func (m *MockMotorcycleService) GetLinesByCategory(ctx context.Context, categoryName string) ([]domain.CategoryLine, error) {
+	args := m.Called(ctx, categoryName)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]domain.CategoryLine), args.Error(1)
+}
+
+// GetDistinctDisplacements mocks (HU49)
+func (m *MockMotorcycleService) GetDistinctDisplacements(ctx context.Context) ([]domain.EngineDisplacementRange, error) {
+	args := m.Called(ctx)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]domain.EngineDisplacementRange), args.Error(1)
+}
+
+// GetRatingRanges mocks (HU48)
+func (m *MockMotorcycleService) GetRatingRanges(ctx context.Context) ([]domain.RatingRange, error) {
+	args := m.Called(ctx)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]domain.RatingRange), args.Error(1)
+}
+
 // Diagnostic Permissions
 
 func (m *MockMotorcycleService) GrantPermission(ctx context.Context, tx output.Tx, motorcycleID, branchID string, active bool) (*domain.DiagnosticPermission, error) {

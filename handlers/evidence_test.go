@@ -67,7 +67,7 @@ func TestCreateEvidenceRequest_ToDomain(t *testing.T) {
 	// Assert
 	assert.Equal(t, "https://storage.com/lateral.jpg", result.ImageURL)
 	assert.NotNil(t, result.Angle)
-	assert.Equal(t, "LATERAL", *result.Angle)
+	assert.Equal(t, domain.EvidenceAngle("LATERAL"), *result.Angle)
 	assert.NotNil(t, result.Description)
 	assert.Equal(t, "Vista lateral", *result.Description)
 }
@@ -93,7 +93,7 @@ func TestCreateEvidenceRequest_ToDomain_NilOptionals(t *testing.T) {
 
 func TestToEvidenceResponse_FullData(t *testing.T) {
 	// Arrange
-	angle := "FRONTAL"
+	angle := domain.EvidenceAngle("FRONTAL")
 	description := "Foto frontal"
 	evidence := &domain.MotorcycleEvidence{
 		ID:           "evidence-123",

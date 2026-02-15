@@ -2,6 +2,7 @@ package dependency
 
 import (
 	"context"
+	"database/sql"
 	"path/filepath"
 	"time"
 
@@ -134,232 +135,65 @@ func Init() (*Dependencies, error) {
 	messageInteractor := interactor.NewMessageInteractor(messageService)
 	log.Success(logger.LogDependencyMessageIntInit)
 
-	branchRepository, err := branchRepo.NewRepository(db)
+	// Initialize all domain repositories and interactors
+	repos, err := initRepositories(db, log)
 	if err != nil {
-		log.Error(logger.LogDepBranchRepoInitErr, "error", err)
 		return nil, err
 	}
-	log.Success(logger.LogDepBranchRepoInitOK)
 
-	timeout := time.Duration(cfg.Geocoding.TimeoutSeconds) * time.Second
+	// Build services and interactors from repositories
+	geocodingClient := initGeocodingClient(cfg, log)
 
-	var primaryClient geocoding.Client
-	switch cfg.Geocoding.Provider {
-	case "google":
-		primaryClient = geocoding.NewGoogleMapsClient(
-			cfg.Geocoding.APIKey,
-			cfg.Geocoding.BaseURL,
-			cfg.Geocoding.CountryCode,
-			timeout,
-			log,
-		)
-	case "mapbox":
-		fallthrough
-	default:
-		primaryClient = geocoding.NewMapboxClient(
-			cfg.Geocoding.APIKey,
-			cfg.Geocoding.BaseURL,
-			cfg.Geocoding.CountryCode,
-			timeout,
-		)
-	}
-
-	var geocodingClient geocoding.Client
-	if cfg.Geocoding.FallbackProvider != "" {
-		var fallbackClient geocoding.Client
-		switch cfg.Geocoding.FallbackProvider {
-		case "mapbox":
-			fallbackClient = geocoding.NewMapboxClient(
-				cfg.Geocoding.FallbackAPIKey,
-				cfg.Geocoding.FallbackBaseURL,
-				cfg.Geocoding.CountryCode,
-				timeout,
-			)
-		case "google":
-			fallbackClient = geocoding.NewGoogleMapsClient(
-				cfg.Geocoding.FallbackAPIKey,
-				cfg.Geocoding.FallbackBaseURL,
-				cfg.Geocoding.CountryCode,
-				timeout,
-				log,
-			)
-		}
-
-		if fallbackClient != nil {
-			geocodingClient = geocoding.NewFallbackClient(primaryClient, fallbackClient)
-			log.Success(logger.LogDepGeocodingClientInitOK,
-				"primary", cfg.Geocoding.Provider,
-				"fallback", cfg.Geocoding.FallbackProvider)
-		} else {
-			geocodingClient = primaryClient
-			log.Success(logger.LogDepGeocodingClientInitOK, "provider", cfg.Geocoding.Provider)
-		}
-	} else {
-		geocodingClient = primaryClient
-		log.Success(logger.LogDepGeocodingClientInitOK, "provider", cfg.Geocoding.Provider)
-	}
-
-	locationRepository, err := locationRepo.NewRepository(db)
-	if err != nil {
-		log.Error(logger.LogDepLocationRepoInitErr, "error", err)
-		return nil, err
-	}
-	log.Success(logger.LogDepLocationRepoInitOK)
-
-	branchService := services.NewBranchService(branchRepository, locationRepository, geocodingClient)
+	branchService := services.NewBranchService(repos.branch, repos.location, geocodingClient)
 	branchInteractor := interactor.NewBranchInteractor(branchService)
 	log.Success(logger.LogDepBranchInteractorInitOK)
 
-	brandRepository, err := brandRepo.NewRepository(db)
-	if err != nil {
-		log.Error(logger.LogDepBrandRepoInitErr, "error", err)
-		return nil, err
-	}
-	log.Success(logger.LogDepBrandRepoInitOK)
-
-	brandService := services.NewBrandService(brandRepository)
+	brandService := services.NewBrandService(repos.brand)
 	brandInteractor := interactor.NewBrandInteractor(brandService)
 	log.Success(logger.LogDepBrandInteractorInitOK)
 
-	locationService := services.NewLocationService(locationRepository)
+	locationService := services.NewLocationService(repos.location)
 	locationInteractor := interactor.NewLocationInteractor(locationService)
 	log.Success(logger.LogDepLocationInteractorInitOK)
 
-	serviceRepository, err := serviceRepo.NewRepository(db)
-	if err != nil {
-		log.Error(logger.LogDepServiceRepoInitErr, "error", err)
-		return nil, err
-	}
-	log.Success(logger.LogDepServiceRepoInitOK)
-
-	serviceCatalogService := services.NewServiceCatalogService(serviceRepository)
+	serviceCatalogService := services.NewServiceCatalogService(repos.service)
 	serviceInteractor := interactor.NewServiceInteractor(serviceCatalogService)
 	log.Success(logger.LogDepServiceInteractorInitOK)
 
-	franchiseRepository, err := franchiseRepo.NewRepository(db)
-	if err != nil {
-		log.Error(logger.LogDepFranchiseRepoInitErr, "error", err)
-		return nil, err
-	}
-	log.Success(logger.LogDepFranchiseRepoInitOK)
-
-	franchiseService := services.NewFranchiseService(franchiseRepository, branchRepository)
+	franchiseService := services.NewFranchiseService(repos.franchise, repos.branch)
 	franchiseInteractor := interactor.NewFranchiseInteractor(franchiseService)
 	log.Success(logger.LogDepFranchiseInteractorInitOK)
 
-	scheduleRepository, err := scheduleRepo.NewRepository(db)
-	if err != nil {
-		log.Error(logger.LogDepScheduleRepoInitErr, "error", err)
-		return nil, err
-	}
-	log.Success(logger.LogDepScheduleRepoInitOK)
-
-	scheduleService := services.NewScheduleService(scheduleRepository, branchRepository)
+	scheduleService := services.NewScheduleService(repos.schedule, repos.branch)
 	scheduleInteractor := interactor.NewScheduleInteractor(scheduleService, branchService)
 	log.Success(logger.LogDepScheduleIntInitOK)
 
-	scheduleDetailRepository, err := scheduleDetailRepo.NewRepository(db)
-	if err != nil {
-		log.Error(logger.LogDepScheduleDetailRepoInitErr, "error", err)
-		return nil, err
-	}
-	log.Success(logger.LogDepScheduleDetailRepoInitOK)
-
-	scheduleDetailService := services.NewScheduleDetailService(scheduleDetailRepository, scheduleRepository)
+	scheduleDetailService := services.NewScheduleDetailService(repos.scheduleDetail, repos.schedule)
 	scheduleDetailInteractor := interactor.NewScheduleDetailInteractor(scheduleDetailService, scheduleService, branchService)
 	log.Success(logger.LogDepScheduleDetailIntInitOK)
 
 	scheduleExceptionInteractor := interactor.NewScheduleExceptionInteractor(scheduleDetailService, scheduleService, branchService)
 	log.Success(logger.LogDepScheduleExceptionIntInitOK)
 
-	motorcycleRepository, err := motorcycleRepo.NewRepository(db)
-	if err != nil {
-		log.Error(logger.LogDepMotorcycleRepoInitErr, "error", err)
-		return nil, err
-	}
-	log.Success(logger.LogDepMotorcycleRepoInitOK)
-
-	// Create motorcycle interactor with diagnostic permission repository
-	diagnosticPermissionRepository, err := diagPermRepo.NewRepository(db)
-	if err != nil {
-		log.Error(logger.LogDepDiagPermRepoInitErr, "error", err)
-		return nil, err
-	}
-	log.Success(logger.LogDepDiagPermRepoInitOK)
-
-	motorcycleService := services.NewMotorcycleService(motorcycleRepository, diagnosticPermissionRepository)
+	motorcycleService := services.NewMotorcycleService(repos.motorcycle, repos.diagPerm)
 	log.Success(logger.LogDepMotorcycleServiceInitOK)
 
 	motorcycleInteractor := interactor.NewMotorcycleInteractor(motorcycleService)
 	log.Success(logger.LogDepMotorcycleInteractorInitOK)
 
-	// Evidence feature (HU16-19)
-	evidenceRepository, err := evidenceRepo.NewRepository(db)
-	if err != nil {
-		log.Error(logger.LogDepEvidenceRepoInitErr, "error", err)
-		return nil, err
-	}
-	log.Success(logger.LogDepEvidenceRepoInitOK)
-
-	evidenceService := services.NewEvidenceService(evidenceRepository, motorcycleRepository)
+	evidenceService := services.NewEvidenceService(repos.evidence, repos.motorcycle)
 	evidenceInteractor := interactor.NewEvidenceInteractor(evidenceService)
 	log.Success(logger.LogDepEvidenceInteractorInitOK)
 
-	// Diagnostic feature (HU11-14)
-	diagnosticRepository, err := diagnosticRepo.NewRepository(db)
-	if err != nil {
-		log.Error(logger.LogDepDiagnosticRepoInitErr, "error", err)
-		return nil, err
-	}
-	log.Success(logger.LogDepDiagnosticRepoInitOK)
-
-	diagnosticService := services.NewDiagnosticService(diagnosticRepository, motorcycleRepository, branchRepository)
+	diagnosticService := services.NewDiagnosticService(repos.diagnostic, repos.motorcycle, repos.branch)
 	diagnosticInteractor := interactor.NewDiagnosticInteractor(diagnosticService)
 	log.Success(logger.LogDepDiagnosticInteractorInitOK)
 
-	var firebaseClient *firebase.Client
-	if cfg.Firebase.CredentialsPath != "" {
-		firebaseCredPath := cfg.Firebase.CredentialsPath
-		if !filepath.IsAbs(firebaseCredPath) {
-			root, rootErr := utils.FindModuleRoot()
-			if rootErr == nil {
-				firebaseCredPath = filepath.Join(root, firebaseCredPath)
-			}
-		}
-		log.Debug(logger.LogDepFirebaseCredPathResolved, "path", firebaseCredPath)
-		firebaseClient, err = firebase.NewClient(firebaseCredPath)
-		if err != nil {
-			log.Warn(logger.LogDepFirebaseInitSkipped, "error", err)
-			// Don't fail startup if Firebase is not configured
-		} else {
-			log.Success(logger.LogDepFirebaseClientInitOK)
-			// Connect Firebase Storage to MotorcycleService for image deletion (HU45)
-			motorcycleService.WithStorageClient(firebaseClient)
-			log.Success(logger.LogDepMotorcycleServiceInitOK, "with_storage", true)
-			// Connect Firebase Storage to EvidenceService for evidence deletion (HU19)
-			evidenceService.WithStorageClient(firebaseClient)
-			log.Success(logger.LogDepEvidenceInteractorInitOK, "with_storage", true)
-			// Connect Firebase Storage to BranchInteractor for profile image deletion (HU60-61)
-			branchInteractor.WithStorageClient(firebaseClient)
-			log.Success(logger.LogDepBranchInteractorInitOK, "with_storage", true)
-		}
-	} else {
-		log.Warn(logger.LogDepFirebaseCredNotConfig)
-	}
+	// Firebase and storage integration
+	firebaseClient := initFirebaseIntegration(cfg, log, motorcycleService, evidenceService, branchInteractor)
 
-	var jwtValidator output.JWTValidator
-	jwtConfig := jwt.JWKSConfig{
-		JWKSURL:         cfg.GetKeycloakJWKSURL(),
-		Issuer:          cfg.GetKeycloakIssuerURL(),
-		RefreshInterval: 15 * time.Minute, // Refresh keys every 15 minutes
-	}
-	jwtValidator, err = jwt.NewJWKSValidator(context.Background(), jwtConfig)
-	if err != nil {
-		log.Warn(logger.LogDepJWKSValidatorInitErr, "error", err)
-		jwtValidator = nil
-	} else {
-		log.Success(logger.LogDepJWKSValidatorInitOK, "jwks_url", jwtConfig.JWKSURL)
-	}
+	// JWT / JWKS validation
+	jwtValidator := initJWTValidator(cfg, log)
 
 	return &Dependencies{
 		PersonService:               personService,
@@ -386,4 +220,228 @@ func Init() (*Dependencies, error) {
 		MessagingCache:              messagingCache,
 		ResponseHandler:             responseHandler,
 	}, nil
+}
+
+// domainRepositories holds all initialized domain repositories.
+type domainRepositories struct {
+	branch         output.BranchRepository
+	brand          output.BrandRepository
+	location       output.LocationRepository
+	service        output.ServiceRepository
+	franchise      output.FranchiseRepository
+	schedule       output.ScheduleRepository
+	scheduleDetail output.ScheduleDetailRepository
+	motorcycle     output.MotorcycleRepository
+	diagPerm       output.DiagnosticPermissionRepository
+	evidence       output.EvidenceRepository
+	diagnostic     output.DiagnosticRepository
+}
+
+// initRepositories initializes all database repositories.
+func initRepositories(db *sql.DB, log logger.Logger) (*domainRepositories, error) {
+	branchRepository, err := branchRepo.NewRepository(db)
+	if err != nil {
+		log.Error(logger.LogDepBranchRepoInitErr, "error", err)
+		return nil, err
+	}
+	log.Success(logger.LogDepBranchRepoInitOK)
+
+	locationRepository, err := locationRepo.NewRepository(db)
+	if err != nil {
+		log.Error(logger.LogDepLocationRepoInitErr, "error", err)
+		return nil, err
+	}
+	log.Success(logger.LogDepLocationRepoInitOK)
+
+	brandRepository, err := brandRepo.NewRepository(db)
+	if err != nil {
+		log.Error(logger.LogDepBrandRepoInitErr, "error", err)
+		return nil, err
+	}
+	log.Success(logger.LogDepBrandRepoInitOK)
+
+	serviceRepository, err := serviceRepo.NewRepository(db)
+	if err != nil {
+		log.Error(logger.LogDepServiceRepoInitErr, "error", err)
+		return nil, err
+	}
+	log.Success(logger.LogDepServiceRepoInitOK)
+
+	franchiseRepository, err := franchiseRepo.NewRepository(db)
+	if err != nil {
+		log.Error(logger.LogDepFranchiseRepoInitErr, "error", err)
+		return nil, err
+	}
+	log.Success(logger.LogDepFranchiseRepoInitOK)
+
+	scheduleRepository, err := scheduleRepo.NewRepository(db)
+	if err != nil {
+		log.Error(logger.LogDepScheduleRepoInitErr, "error", err)
+		return nil, err
+	}
+	log.Success(logger.LogDepScheduleRepoInitOK)
+
+	scheduleDetailRepository, err := scheduleDetailRepo.NewRepository(db)
+	if err != nil {
+		log.Error(logger.LogDepScheduleDetailRepoInitErr, "error", err)
+		return nil, err
+	}
+	log.Success(logger.LogDepScheduleDetailRepoInitOK)
+
+	motorcycleRepository, err := motorcycleRepo.NewRepository(db)
+	if err != nil {
+		log.Error(logger.LogDepMotorcycleRepoInitErr, "error", err)
+		return nil, err
+	}
+	log.Success(logger.LogDepMotorcycleRepoInitOK)
+
+	diagnosticPermissionRepository, err := diagPermRepo.NewRepository(db)
+	if err != nil {
+		log.Error(logger.LogDepDiagPermRepoInitErr, "error", err)
+		return nil, err
+	}
+	log.Success(logger.LogDepDiagPermRepoInitOK)
+
+	evidenceRepository, err := evidenceRepo.NewRepository(db)
+	if err != nil {
+		log.Error(logger.LogDepEvidenceRepoInitErr, "error", err)
+		return nil, err
+	}
+	log.Success(logger.LogDepEvidenceRepoInitOK)
+
+	diagnosticRepository, err := diagnosticRepo.NewRepository(db)
+	if err != nil {
+		log.Error(logger.LogDepDiagnosticRepoInitErr, "error", err)
+		return nil, err
+	}
+	log.Success(logger.LogDepDiagnosticRepoInitOK)
+
+	return &domainRepositories{
+		branch:         branchRepository,
+		brand:          brandRepository,
+		location:       locationRepository,
+		service:        serviceRepository,
+		franchise:      franchiseRepository,
+		schedule:       scheduleRepository,
+		scheduleDetail: scheduleDetailRepository,
+		motorcycle:     motorcycleRepository,
+		diagPerm:       diagnosticPermissionRepository,
+		evidence:       evidenceRepository,
+		diagnostic:     diagnosticRepository,
+	}, nil
+}
+
+// initFirebaseIntegration sets up Firebase client and wires storage to services that need it.
+func initFirebaseIntegration(
+	cfg *config.Config,
+	log logger.Logger,
+	motorcycleService *services.MotorcycleServiceImpl,
+	evidenceService *services.EvidenceServiceImpl,
+	branchInteractor *interactor.BranchInteractor,
+) output.CustomTokenProvider {
+	if cfg.Firebase.CredentialsPath == "" {
+		log.Warn(logger.LogDepFirebaseCredNotConfig)
+		return nil
+	}
+
+	firebaseCredPath := cfg.Firebase.CredentialsPath
+	if !filepath.IsAbs(firebaseCredPath) {
+		root, rootErr := utils.FindModuleRoot()
+		if rootErr == nil {
+			firebaseCredPath = filepath.Join(root, firebaseCredPath)
+		}
+	}
+	log.Debug(logger.LogDepFirebaseCredPathResolved, "path", firebaseCredPath)
+
+	firebaseClient, err := firebase.NewClient(firebaseCredPath)
+	if err != nil {
+		log.Warn(logger.LogDepFirebaseInitSkipped, "error", err)
+		return nil
+	}
+
+	log.Success(logger.LogDepFirebaseClientInitOK)
+	motorcycleService.WithStorageClient(firebaseClient)
+	log.Success(logger.LogDepMotorcycleServiceInitOK, "with_storage", true)
+	evidenceService.WithStorageClient(firebaseClient)
+	log.Success(logger.LogDepEvidenceInteractorInitOK, "with_storage", true)
+	branchInteractor.WithStorageClient(firebaseClient)
+	log.Success(logger.LogDepBranchInteractorInitOK, "with_storage", true)
+
+	return firebaseClient
+}
+
+// initJWTValidator creates a JWKS-based JWT validator from Keycloak config.
+func initJWTValidator(cfg *config.Config, log logger.Logger) output.JWTValidator {
+	jwtConfig := jwt.JWKSConfig{
+		JWKSURL:         cfg.GetKeycloakJWKSURL(),
+		Issuer:          cfg.GetKeycloakIssuerURL(),
+		RefreshInterval: 15 * time.Minute,
+	}
+	jwtValidator, err := jwt.NewJWKSValidator(context.Background(), jwtConfig)
+	if err != nil {
+		log.Warn(logger.LogDepJWKSValidatorInitErr, "error", err)
+		return nil
+	}
+	log.Success(logger.LogDepJWKSValidatorInitOK, "jwks_url", jwtConfig.JWKSURL)
+	return jwtValidator
+}
+
+// initGeocodingClient creates a geocoding client based on config, with optional fallback provider.
+func initGeocodingClient(cfg *config.Config, log logger.Logger) geocoding.Client {
+	timeout := time.Duration(cfg.Geocoding.TimeoutSeconds) * time.Second
+
+	var primaryClient geocoding.Client
+	switch cfg.Geocoding.Provider {
+	case "google":
+		primaryClient = geocoding.NewGoogleMapsClient(
+			cfg.Geocoding.APIKey,
+			cfg.Geocoding.BaseURL,
+			cfg.Geocoding.CountryCode,
+			timeout,
+			log,
+		)
+	case "mapbox":
+		fallthrough
+	default:
+		primaryClient = geocoding.NewMapboxClient(
+			cfg.Geocoding.APIKey,
+			cfg.Geocoding.BaseURL,
+			cfg.Geocoding.CountryCode,
+			timeout,
+		)
+	}
+
+	if cfg.Geocoding.FallbackProvider == "" {
+		log.Success(logger.LogDepGeocodingClientInitOK, "provider", cfg.Geocoding.Provider)
+		return primaryClient
+	}
+
+	var fallbackClient geocoding.Client
+	switch cfg.Geocoding.FallbackProvider {
+	case "mapbox":
+		fallbackClient = geocoding.NewMapboxClient(
+			cfg.Geocoding.FallbackAPIKey,
+			cfg.Geocoding.FallbackBaseURL,
+			cfg.Geocoding.CountryCode,
+			timeout,
+		)
+	case "google":
+		fallbackClient = geocoding.NewGoogleMapsClient(
+			cfg.Geocoding.FallbackAPIKey,
+			cfg.Geocoding.FallbackBaseURL,
+			cfg.Geocoding.CountryCode,
+			timeout,
+			log,
+		)
+	}
+
+	if fallbackClient != nil {
+		log.Success(logger.LogDepGeocodingClientInitOK,
+			"primary", cfg.Geocoding.Provider,
+			"fallback", cfg.Geocoding.FallbackProvider)
+		return geocoding.NewFallbackClient(primaryClient, fallbackClient)
+	}
+
+	log.Success(logger.LogDepGeocodingClientInitOK, "provider", cfg.Geocoding.Provider)
+	return primaryClient
 }

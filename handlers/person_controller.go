@@ -37,7 +37,7 @@ func (h handler) RegisterPerson() func(c *gin.Context) {
 			log.Error(logger.LogRegJSONParseError,
 				"error", err,
 				"client_ip", c.ClientIP())
-			c.Error(domain.ErrInvalidJSONFormat)
+			_ = c.Error(domain.ErrInvalidJSONFormat)
 			return
 		}
 
@@ -54,7 +54,7 @@ func (h handler) RegisterPerson() func(c *gin.Context) {
 				"email", personRequest.Email,
 				"error", err,
 				"client_ip", c.ClientIP())
-			c.Error(err)
+			_ = c.Error(err)
 			return
 		}
 
@@ -182,7 +182,7 @@ func (h handler) Login() gin.HandlerFunc {
 
 			// Map specific errors to appropriate messages
 			switch {
-			case errors.Is(err, domain.ErrorEmailNotVerified):
+			case errors.Is(err, domain.ErrEmailNotVerified):
 				h.Response.Error(c, domain.MsgUserEmailNotVerified)
 			case errors.Is(err, domain.ErrUserNotFound):
 				h.Response.Error(c, domain.MsgUnauthorized)
@@ -383,7 +383,7 @@ func (h handler) GetAuthenticatedUser() gin.HandlerFunc {
 		person, ok := middleware.GetAuthenticatedUser(c)
 		if !ok {
 			log.Error(logger.LogPersonAuthNotFoundInContext)
-			c.Error(domain.ErrUserNotFound)
+			_ = c.Error(domain.ErrUserNotFound)
 			return
 		}
 
@@ -393,7 +393,7 @@ func (h handler) GetAuthenticatedUser() gin.HandlerFunc {
 		encodedID, err := h.EncodeID(person.ID)
 		if err != nil {
 			log.Error(logger.LogPersonIDEncodeError, "error", err, "user_id", person.ID)
-			c.Error(err)
+			_ = c.Error(err)
 			return
 		}
 
@@ -410,7 +410,7 @@ func (h handler) GetAuthenticatedUser() gin.HandlerFunc {
 			LastName:       person.LastName,
 			SecondLastName: person.SecondLastName,
 			PhoneNumber:    person.PhoneNumber,
-			Role:           person.Role,
+			Role:           string(person.Role),
 			Links:          hateoasLinks,
 		}
 
@@ -440,7 +440,7 @@ func (h handler) ChangePassword() gin.HandlerFunc {
 		person, ok := middleware.GetAuthenticatedUser(c)
 		if !ok {
 			log.Error(logger.LogPersonControllerUserNotInContext)
-			c.Error(domain.ErrUserNotFound)
+			_ = c.Error(domain.ErrUserNotFound)
 			return
 		}
 
@@ -511,7 +511,7 @@ func (h handler) UpdateProfile() gin.HandlerFunc {
 		person, ok := middleware.GetAuthenticatedUser(c)
 		if !ok {
 			log.Error(logger.LogPersonControllerUserNotInContext)
-			c.Error(domain.ErrUserNotFound)
+			_ = c.Error(domain.ErrUserNotFound)
 			return
 		}
 
@@ -563,7 +563,7 @@ func (h handler) UpdateProfile() gin.HandlerFunc {
 		encodedID, err := h.EncodeID(result.ID)
 		if err != nil {
 			log.Error(logger.LogPersonControllerIDEncodeError, "error", err, "user_id", result.ID)
-			c.Error(err)
+			_ = c.Error(err)
 			return
 		}
 
@@ -579,7 +579,7 @@ func (h handler) UpdateProfile() gin.HandlerFunc {
 			LastName:       result.LastName,
 			SecondLastName: result.SecondLastName,
 			PhoneNumber:    result.PhoneNumber,
-			Role:           result.Role,
+			Role:           string(result.Role),
 			Links:          hateoasLinks,
 		}
 
@@ -623,7 +623,7 @@ func (h handler) GetPublicContact() gin.HandlerFunc {
 		person, err := h.Interactor.GetPublicContact(c, personID)
 		if err != nil {
 			log.Error(logger.LogPersonGetError, "person_id", personID, "error", err)
-			c.Error(domain.ErrPersonNotFound)
+			_ = c.Error(domain.ErrPersonNotFound)
 			return
 		}
 
@@ -653,7 +653,7 @@ func (h handler) DeleteSelf() gin.HandlerFunc {
 		person, ok := middleware.GetAuthenticatedUser(c)
 		if !ok {
 			log.Error(logger.LogPersonAuthNotFoundInContext)
-			c.Error(domain.ErrUserNotFound)
+			_ = c.Error(domain.ErrUserNotFound)
 			return
 		}
 

@@ -42,7 +42,7 @@ func TestCreateEvidence_Integration_Success(t *testing.T) {
 	ownerID := "a1111111-1111-4000-8000-111111111111"
 	motorcycleUUID := "a2222222-2222-4000-8000-222222222222"
 	evidenceUUID := "a3333333-3333-4000-8000-333333333333"
-	angle := "FRONTAL"
+	angle := domain.EvidenceAngle("FRONTAL")
 
 	encodedMotorcycleID, err := encoder.Encode(motorcycleUUID)
 	assert.NoError(t, err)

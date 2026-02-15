@@ -369,57 +369,13 @@ func (s *scheduleDetailService) CreateException(
 		"existing_exceptions_count", len(existingExceptions))
 
 	// Check for overlapping dates with any existing exception
-	for _, existing := range existingExceptions {
-		if existing.ExceptionStartDate == nil || existing.ExceptionEndDate == nil {
-			continue
-		}
-
-		// Use date-only strings to compare (YYYY-MM-DD) - avoids timezone truncation issues
-		existingStartStr := existing.ExceptionStartDate.Format("2006-01-02")
-		existingEndStr := existing.ExceptionEndDate.Format("2006-01-02")
-		newStartStr := exception.ExceptionStartDate.Format("2006-01-02")
-		newEndStr := exception.ExceptionEndDate.Format("2006-01-02")
-
-		// Overlap condition: existing.start <= new.end AND existing.end >= new.start
-		hasOverlap := existingStartStr <= newEndStr && existingEndStr >= newStartStr
-
-		scheduleDetailLog.Info(logger.LogScheduleDetailDebugCheckOverlap,
-			"existing_id", existing.ID,
-			"existing_start", existingStartStr,
-			"existing_end", existingEndStr,
-			"new_start", newStartStr,
-			"new_end", newEndStr,
-			"existing_is_closed", existing.IsClosed,
-			"has_overlap", hasOverlap)
-
-		if hasOverlap {
-			scheduleDetailLog.Warn(logger.LogScheduleDetailServiceTimeConflict,
-				"schedule_id", exception.ScheduleID,
-				"exception_start_date", exception.ExceptionStartDate,
-				"conflicting_exception_id", existing.ID)
-			return nil, domain.ErrScheduleExceptionDateConflict
-		}
+	if err := s.checkDateOverlap(exception, existingExceptions); err != nil {
+		return nil, err
 	}
 
 	// 6. Validation E1: If is_closed=true, check if day is already closed in REGULAR schedule (redundant)
-	if exception.IsClosed {
-		// Get day of week from exception date
-		dayOfWeek := int(exception.ExceptionStartDate.Weekday())
-		if dayOfWeek == 0 {
-			dayOfWeek = 7 // Sunday is 7 in ISO format
-		}
-
-		isRedundant, err := s.detailRepo.CheckExceptionIsRedundant(ctx, exception.ScheduleID, dayOfWeek)
-		if err != nil {
-			return nil, err
-		}
-		if isRedundant {
-			scheduleDetailLog.Warn(logger.LogScheduleDetailServiceTimeConflict,
-				"schedule_id", exception.ScheduleID,
-				"exception_start_date", exception.ExceptionStartDate,
-				"reason", "exception_redundant_day_already_closed")
-			return nil, domain.ErrScheduleExceptionRedundant
-		}
+	if err := s.checkClosedDayRedundancy(ctx, exception); err != nil {
+		return nil, err
 	}
 
 	// 7. Validate time format if not closed
@@ -607,4 +563,66 @@ func (s *scheduleDetailService) CheckExceptionDateConflict(
 	scheduleID, excludeExceptionID, startDate, endDate string,
 ) (bool, error) {
 	return s.detailRepo.CheckExceptionDateConflict(ctx, scheduleID, excludeExceptionID, startDate, endDate)
+}
+
+// checkDateOverlap checks if the new exception overlaps with any existing exceptions.
+func (s *scheduleDetailService) checkDateOverlap(exception domain.ScheduleDetail, existingExceptions []domain.ScheduleDetail) error {
+	for _, existing := range existingExceptions {
+		if existing.ExceptionStartDate == nil || existing.ExceptionEndDate == nil {
+			continue
+		}
+
+		// Use date-only strings to compare (YYYY-MM-DD) - avoids timezone truncation issues
+		existingStartStr := existing.ExceptionStartDate.Format("2006-01-02")
+		existingEndStr := existing.ExceptionEndDate.Format("2006-01-02")
+		newStartStr := exception.ExceptionStartDate.Format("2006-01-02")
+		newEndStr := exception.ExceptionEndDate.Format("2006-01-02")
+
+		// Overlap condition: existing.start <= new.end AND existing.end >= new.start
+		hasOverlap := existingStartStr <= newEndStr && existingEndStr >= newStartStr
+
+		scheduleDetailLog.Info(logger.LogScheduleDetailDebugCheckOverlap,
+			"existing_id", existing.ID,
+			"existing_start", existingStartStr,
+			"existing_end", existingEndStr,
+			"new_start", newStartStr,
+			"new_end", newEndStr,
+			"existing_is_closed", existing.IsClosed,
+			"has_overlap", hasOverlap)
+
+		if hasOverlap {
+			scheduleDetailLog.Warn(logger.LogScheduleDetailServiceTimeConflict,
+				"schedule_id", exception.ScheduleID,
+				"exception_start_date", exception.ExceptionStartDate,
+				"conflicting_exception_id", existing.ID)
+			return domain.ErrScheduleExceptionDateConflict
+		}
+	}
+	return nil
+}
+
+// checkClosedDayRedundancy checks if a closed exception is redundant (day already closed in regular schedule).
+func (s *scheduleDetailService) checkClosedDayRedundancy(ctx context.Context, exception domain.ScheduleDetail) error {
+	if !exception.IsClosed {
+		return nil
+	}
+
+	dayOfWeek := int(exception.ExceptionStartDate.Weekday())
+	if dayOfWeek == 0 {
+		dayOfWeek = 7 // Sunday is 7 in ISO format
+	}
+
+	isRedundant, err := s.detailRepo.CheckExceptionIsRedundant(ctx, exception.ScheduleID, dayOfWeek)
+	if err != nil {
+		return err
+	}
+	if isRedundant {
+		scheduleDetailLog.Warn(logger.LogScheduleDetailServiceTimeConflict,
+			"schedule_id", exception.ScheduleID,
+			"exception_start_date", exception.ExceptionStartDate,
+			"reason", "exception_redundant_day_already_closed")
+		return domain.ErrScheduleExceptionRedundant
+	}
+
+	return nil
 }

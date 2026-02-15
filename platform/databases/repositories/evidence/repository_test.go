@@ -214,7 +214,7 @@ func TestGetByID_Success(t *testing.T) {
 	assert.Equal(t, "evidence-123", evidence.ID)
 	assert.Equal(t, "moto-456", evidence.MotorcycleID)
 	assert.NotNil(t, evidence.Angle)
-	assert.Equal(t, "FRONT", *evidence.Angle)
+	assert.Equal(t, domain.EvidenceAngle("FRONT"), *evidence.Angle)
 }
 
 func TestGetByID_NotFound(t *testing.T) {
@@ -408,7 +408,7 @@ func TestSave_Success(t *testing.T) {
 	sqlTx, _ := db.Begin()
 	tx := common.NewSQLTx(sqlTx)
 
-	angle := "FRONT"
+	angle := domain.EvidenceAngle("FRONT")
 	evidence := &domain.MotorcycleEvidence{
 		ID:           "evidence-new",
 		MotorcycleID: "moto-123",
@@ -487,7 +487,7 @@ func TestUpdate_Success(t *testing.T) {
 	sqlTx, _ := db.Begin()
 	tx := common.NewSQLTx(sqlTx)
 
-	angle := "BACK"
+	angle := domain.EvidenceAngle("BACK")
 	evidence := &domain.MotorcycleEvidence{
 		ID:       "evidence-update",
 		Angle:    &angle,
@@ -669,7 +669,7 @@ func TestEvidence_ToDomain(t *testing.T) {
 	assert.Equal(t, "evidence-001", de.ID)
 	assert.Equal(t, "moto-001", de.MotorcycleID)
 	assert.NotNil(t, de.Angle)
-	assert.Equal(t, "FRONT", *de.Angle)
+	assert.Equal(t, domain.EvidenceAngle("FRONT"), *de.Angle)
 	assert.Equal(t, "https://storage/image.jpg", de.ImageURL)
 	assert.Equal(t, uploadDate, de.CreatedAt)
 }
@@ -693,7 +693,7 @@ func TestEvidence_ToDomain_NullAngle(t *testing.T) {
 
 func TestFromDomain(t *testing.T) {
 	uploadDate := time.Now()
-	angle := "SIDE"
+	angle := domain.EvidenceAngle("SIDE")
 
 	de := &domain.MotorcycleEvidence{
 		ID:           "evidence-003",

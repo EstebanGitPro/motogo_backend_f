@@ -1018,10 +1018,10 @@ func TestGetBranchesNearby_Success(t *testing.T) {
 	}
 
 	// Mock expectations
-	mockBranchService.On("GetBranchesNearby", ctx, lat, lng, radiusKm, establishmentType).Return(expectedBranches, nil)
+	mockBranchService.On("GetBranchesNearby", ctx, lat, lng, radiusKm, establishmentType, "", "").Return(expectedBranches, nil)
 
 	// Act
-	result, err := branchInteractor.GetBranchesNearby(ctx, lat, lng, radiusKm, establishmentType)
+	result, err := branchInteractor.GetBranchesNearby(ctx, lat, lng, radiusKm, establishmentType, "", "")
 
 	// Assert
 	assert.NoError(t, err)
@@ -1045,10 +1045,10 @@ func TestGetBranchesNearby_EmptyResults(t *testing.T) {
 	establishmentType := "WORKSHOP"
 
 	// Mock expectations - no branches found
-	mockBranchService.On("GetBranchesNearby", ctx, lat, lng, radiusKm, establishmentType).Return([]domain.NearbyBranch{}, nil)
+	mockBranchService.On("GetBranchesNearby", ctx, lat, lng, radiusKm, establishmentType, "", "").Return([]domain.NearbyBranch{}, nil)
 
 	// Act
-	result, err := branchInteractor.GetBranchesNearby(ctx, lat, lng, radiusKm, establishmentType)
+	result, err := branchInteractor.GetBranchesNearby(ctx, lat, lng, radiusKm, establishmentType, "", "")
 
 	// Assert
 	assert.NoError(t, err)
@@ -1072,10 +1072,10 @@ func TestGetBranchesNearby_Error(t *testing.T) {
 	dbError := errors.New("database error")
 
 	// Mock expectations
-	mockBranchService.On("GetBranchesNearby", ctx, lat, lng, radiusKm, establishmentType).Return(nil, dbError)
+	mockBranchService.On("GetBranchesNearby", ctx, lat, lng, radiusKm, establishmentType, "", "").Return(nil, dbError)
 
 	// Act
-	result, err := branchInteractor.GetBranchesNearby(ctx, lat, lng, radiusKm, establishmentType)
+	result, err := branchInteractor.GetBranchesNearby(ctx, lat, lng, radiusKm, establishmentType, "", "")
 
 	// Assert
 	assert.Error(t, err)

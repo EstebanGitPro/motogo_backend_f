@@ -19,14 +19,14 @@ func RequireAuth(personService input.Service, msgCache *messaging.MessageCache, 
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			c.Error(domain.ErrInvalidToken)
+			_ = c.Error(domain.ErrInvalidToken)
 			c.Abort()
 			return
 		}
 
 		parts := strings.Split(authHeader, " ")
 		if len(parts) != 2 || parts[0] != "Bearer" {
-			c.Error(domain.ErrInvalidToken)
+			_ = c.Error(domain.ErrInvalidToken)
 			c.Abort()
 			return
 		}
@@ -40,13 +40,13 @@ func RequireAuth(personService input.Service, msgCache *messaging.MessageCache, 
 			if err != nil {
 				switch {
 				case errors.Is(err, jwt.ErrTokenExpired):
-					c.Error(domain.ErrTokenExpired)
+					_ = c.Error(domain.ErrTokenExpired)
 				case errors.Is(err, jwt.ErrInvalidSignature):
-					c.Error(domain.ErrInvalidToken)
+					_ = c.Error(domain.ErrInvalidToken)
 				case errors.Is(err, jwt.ErrInvalidIssuer):
-					c.Error(domain.ErrInvalidToken)
+					_ = c.Error(domain.ErrInvalidToken)
 				default:
-					c.Error(domain.ErrInvalidToken)
+					_ = c.Error(domain.ErrInvalidToken)
 				}
 				c.Abort()
 				return
@@ -54,7 +54,7 @@ func RequireAuth(personService input.Service, msgCache *messaging.MessageCache, 
 		} else {
 			claims, err = tokenParser.ExtractClaimsFromToken(token)
 			if err != nil {
-				c.Error(domain.ErrInvalidToken)
+				_ = c.Error(domain.ErrInvalidToken)
 				c.Abort()
 				return
 			}
@@ -62,14 +62,14 @@ func RequireAuth(personService input.Service, msgCache *messaging.MessageCache, 
 
 		keycloakUserID, ok := claims["sub"].(string)
 		if !ok || keycloakUserID == "" {
-			c.Error(domain.ErrInvalidToken)
+			_ = c.Error(domain.ErrInvalidToken)
 			c.Abort()
 			return
 		}
 
 		person, err := personService.GetPersonByKeycloakID(c.Request.Context(), keycloakUserID)
 		if err != nil {
-			c.Error(domain.ErrUserNotFound)
+			_ = c.Error(domain.ErrUserNotFound)
 			c.Abort()
 			return
 		}
@@ -90,11 +90,11 @@ func GetAuthenticatedUser(c *gin.Context) (*domain.Person, bool) {
 	return person, ok
 }
 
-func RequireRole(allowedRoles ...string) gin.HandlerFunc {
+func RequireRole(allowedRoles ...domain.Role) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		person, exists := GetAuthenticatedUser(c)
 		if !exists {
-			c.Error(domain.ErrUserNotFound)
+			_ = c.Error(domain.ErrUserNotFound)
 			c.Abort()
 			return
 		}
@@ -108,7 +108,7 @@ func RequireRole(allowedRoles ...string) gin.HandlerFunc {
 		}
 
 		// Role not allowed
-		c.Error(domain.ErrRoleRequired)
+		_ = c.Error(domain.ErrRoleRequired)
 		c.Abort()
 	}
 }

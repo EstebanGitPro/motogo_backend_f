@@ -34,7 +34,10 @@ type MotorcycleInteractorInterface interface {
 	DeleteProfileImage(ctx context.Context, motorcycleID string, ownerID string) error // HU39
 	GetMotorcycleReferences(ctx context.Context) ([]domain.MotorcycleReference, error)
 	GetReferencesByBrandID(ctx context.Context, brandID string) ([]domain.MotorcycleReference, error)
-	// Diagnostic Permissions
+	GetDistinctCategories(ctx context.Context) ([]domain.MotorcycleCategory, error)
+	GetLinesByCategory(ctx context.Context, categoryName string) ([]domain.CategoryLine, error)
+	GetDistinctDisplacements(ctx context.Context) ([]domain.EngineDisplacementRange, error)
+	GetRatingRanges(ctx context.Context) ([]domain.RatingRange, error)
 	GrantDiagnosticPermission(ctx context.Context, motorcycleID, branchID, ownerID string, active bool) (*domain.DiagnosticPermission, error)
 	RevokeDiagnosticPermission(ctx context.Context, motorcycleID, branchID, ownerID string) error
 	ListDiagnosticPermissions(ctx context.Context, motorcycleID, ownerID string) ([]domain.DiagnosticPermission, error)

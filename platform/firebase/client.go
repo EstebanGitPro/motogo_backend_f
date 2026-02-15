@@ -2,6 +2,7 @@ package firebase
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -116,7 +117,7 @@ func (c *Client) DeleteStorageFile(ctx context.Context, fileURL string) error {
 
 	if err := obj.Delete(ctx); err != nil {
 		// Check if object doesn't exist (already deleted)
-		if err == storage.ErrObjectNotExist {
+		if errors.Is(err, storage.ErrObjectNotExist) {
 			log.Info(logger.LogFirebaseStorageAlreadyDeleted, "path", objectPath)
 			return nil
 		}

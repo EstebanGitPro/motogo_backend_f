@@ -27,7 +27,7 @@ func (e *Evidence) ToDomain() domain.MotorcycleEvidence {
 	}
 
 	if e.Angle.Valid {
-		angle := e.Angle.String
+		angle := domain.EvidenceAngle(e.Angle.String)
 		evidence.Angle = &angle
 	}
 
@@ -49,7 +49,7 @@ func FromDomain(evidence *domain.MotorcycleEvidence) *Evidence {
 	}
 
 	if evidence.Angle != nil {
-		e.Angle = sql.NullString{String: *evidence.Angle, Valid: true}
+		e.Angle = sql.NullString{String: string(*evidence.Angle), Valid: true}
 	}
 
 	if evidence.Description != nil {

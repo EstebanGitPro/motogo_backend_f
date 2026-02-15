@@ -1,9 +1,14 @@
 package middleware
 
 import (
+	"bytes"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	json_schema "github.com/EstebanGitPro/motogo-backend/platform/schema"
+	"github.com/gin-gonic/gin"
+	"github.com/kaptinlin/jsonschema"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -167,6 +172,12 @@ func TestWithValidateMessage_ReturnsHandler(t *testing.T) {
 	assert.NotNil(t, handler)
 }
 
+func TestWithValidateCreateMessage_ReturnsHandler(t *testing.T) {
+	builder := NewMiddlewareValidator(&json_schema.Validators{})
+	handler := builder.WithValidateCreateMessage()
+	assert.NotNil(t, handler)
+}
+
 func TestWithValidateResendVerification_ReturnsHandler(t *testing.T) {
 	builder := NewMiddlewareValidator(&json_schema.Validators{})
 	handler := builder.WithValidateResendVerification()
@@ -243,4 +254,258 @@ func TestWithValidateEvidence_ReturnsHandler(t *testing.T) {
 	builder := NewMiddlewareValidator(&json_schema.Validators{})
 	handler := builder.WithValidateEvidence()
 	assert.NotNil(t, handler)
+}
+
+// ============================================
+// extractFieldNames Tests
+// ============================================
+
+func TestExtractFieldNames_WithPropertiesParam(t *testing.T) {
+	errors := map[string]*jsonschema.EvaluationError{
+		"required": {
+			Keyword: "required",
+			Code:    "required",
+			Message: "missing properties",
+			Params: map[string]any{
+				"properties": "email, password",
+			},
+		},
+	}
+
+	result := extractFieldNames(errors)
+
+	assert.Len(t, result, 2)
+	assert.Contains(t, result, "email")
+	assert.Contains(t, result, "password")
+}
+
+func TestExtractFieldNames_WithPropertyParam(t *testing.T) {
+	errors := map[string]*jsonschema.EvaluationError{
+		"type": {
+			Keyword: "type",
+			Code:    "type",
+			Message: "invalid type",
+			Params: map[string]any{
+				"property": "phone",
+			},
+		},
+	}
+
+	result := extractFieldNames(errors)
+
+	assert.Len(t, result, 1)
+	assert.Equal(t, "phone", result[0])
+}
+
+func TestExtractFieldNames_NilParams(t *testing.T) {
+	errors := map[string]*jsonschema.EvaluationError{
+		"null": {
+			Keyword: "required",
+			Code:    "required",
+			Message: "missing",
+			Params:  nil,
+		},
+	}
+
+	result := extractFieldNames(errors)
+
+	assert.Empty(t, result)
+}
+
+func TestExtractFieldNames_EmptyErrors(t *testing.T) {
+	errors := map[string]*jsonschema.EvaluationError{}
+
+	result := extractFieldNames(errors)
+
+	assert.Empty(t, result)
+}
+
+// ============================================
+// classifyValidationError Tests
+// ============================================
+
+func TestClassifyValidationError_MultipleFields(t *testing.T) {
+	fields := []string{"email", "password", "phone"}
+	errors := map[string]*jsonschema.EvaluationError{}
+
+	result := classifyValidationError(fields, errors)
+
+	assert.Equal(t, json_schema.ErrMultipleFields, result)
+}
+
+func TestClassifyValidationError_PropertyMismatch(t *testing.T) {
+	fields := []string{"email"}
+	errors := map[string]*jsonschema.EvaluationError{
+		"property": {Code: "property_mismatch"},
+	}
+
+	result := classifyValidationError(fields, errors)
+
+	assert.Equal(t, json_schema.ErrFieldPropertyMismatch, result)
+}
+
+func TestClassifyValidationError_Required(t *testing.T) {
+	fields := []string{"name"}
+	errors := map[string]*jsonschema.EvaluationError{
+		"required": {Code: "required"},
+	}
+
+	result := classifyValidationError(fields, errors)
+
+	assert.Equal(t, json_schema.ErrFieldRequired, result)
+}
+
+func TestClassifyValidationError_TypeInvalid(t *testing.T) {
+	fields := []string{"age"}
+	errors := map[string]*jsonschema.EvaluationError{
+		"type": {Code: "type"},
+	}
+
+	result := classifyValidationError(fields, errors)
+
+	assert.Equal(t, json_schema.ErrFieldTypeInvalid, result)
+}
+
+func TestClassifyValidationError_DefaultCase(t *testing.T) {
+	fields := []string{"field"}
+	errors := map[string]*jsonschema.EvaluationError{
+		"unknown": {Code: "unknown_code"},
+	}
+
+	result := classifyValidationError(fields, errors)
+
+	assert.Equal(t, json_schema.ErrValidationFailed, result)
+}
+
+func TestClassifyValidationError_NilFirstError(t *testing.T) {
+	fields := []string{"field"}
+	errors := map[string]*jsonschema.EvaluationError{}
+
+	result := classifyValidationError(fields, errors)
+
+	assert.Equal(t, json_schema.ErrValidationFailed, result)
+}
+
+// ============================================
+// jsonValidator Handler Tests
+// ============================================
+
+// helper to compile an inline JSON schema for tests
+func compileTestSchema(t *testing.T) *jsonschema.Schema {
+	t.Helper()
+	compiler := jsonschema.NewCompiler()
+	schema, err := compiler.Compile([]byte(`{
+		"type": "object",
+		"properties": {
+			"email": {"type": "string"}
+		},
+		"required": ["email"],
+		"additionalProperties": false
+	}`))
+	assert.NoError(t, err)
+	return schema
+}
+
+func TestJsonValidator_ValidJSON_PassesThrough(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	schema := compileTestSchema(t)
+	builder := &Builder{}
+	handler := builder.jsonValidator(schema)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPost, "/test", bytes.NewBufferString(`{"email":"test@example.com"}`))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	handler(c)
+
+	assert.False(t, c.IsAborted())
+	assert.Empty(t, c.Errors)
+}
+
+func TestJsonValidator_InvalidJSON_Aborts(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	schema := compileTestSchema(t)
+	builder := &Builder{}
+	handler := builder.jsonValidator(schema)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPost, "/test", bytes.NewBufferString(`{invalid json`))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	handler(c)
+
+	assert.True(t, c.IsAborted())
+	assert.Len(t, c.Errors, 1)
+	assert.Equal(t, json_schema.ErrBadRequest, c.Errors[0].Err)
+}
+
+func TestJsonValidator_MissingRequiredField_Aborts(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	schema := compileTestSchema(t)
+	builder := &Builder{}
+	handler := builder.jsonValidator(schema)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPost, "/test", bytes.NewBufferString(`{}`))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	handler(c)
+
+	assert.True(t, c.IsAborted())
+	assert.NotEmpty(t, c.Errors)
+}
+
+func TestJsonValidator_WrongFieldType_Aborts(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	schema := compileTestSchema(t)
+	builder := &Builder{}
+	handler := builder.jsonValidator(schema)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	// email should be string, not number
+	c.Request = httptest.NewRequest(http.MethodPost, "/test", bytes.NewBufferString(`{"email": 12345}`))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	handler(c)
+
+	assert.True(t, c.IsAborted())
+	assert.NotEmpty(t, c.Errors)
+}
+
+func TestJsonValidator_AdditionalProperties_Aborts(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	schema := compileTestSchema(t)
+	builder := &Builder{}
+	handler := builder.jsonValidator(schema)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPost, "/test", bytes.NewBufferString(`{"email":"a@b.com","extra":"field"}`))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	handler(c)
+
+	assert.True(t, c.IsAborted())
+	assert.NotEmpty(t, c.Errors)
+}
+
+func TestJsonValidator_EmptyBody_Aborts(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	schema := compileTestSchema(t)
+	builder := &Builder{}
+	handler := builder.jsonValidator(schema)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPost, "/test", bytes.NewBufferString(``))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	handler(c)
+
+	assert.True(t, c.IsAborted())
+	assert.NotEmpty(t, c.Errors)
 }

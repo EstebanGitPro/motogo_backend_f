@@ -420,29 +420,7 @@ func (h *handler) LookupMotorcycleByPlate() gin.HandlerFunc {
 		}
 
 		// 6. Intersect: find branches where rep has access AND motorcycle has active permission
-		var permittedBranches []PermittedBranchInfo
-		permittedBranchIDs := make(map[string]bool)
-
-		for _, perm := range permissions {
-			if !perm.Active {
-				continue
-			}
-			if branch, ok := repBranchSet[perm.BranchID]; ok {
-				encodedBranchID, encErr := h.EncodeID(branch.ID)
-				if encErr != nil {
-					log.Error(logger.LogMotorcycleControllerIDEncError,
-						"branch_id", branch.ID,
-						"error", encErr,
-						"client_ip", c.ClientIP())
-					continue
-				}
-				permittedBranches = append(permittedBranches, PermittedBranchInfo{
-					ID:   encodedBranchID,
-					Name: branch.Name,
-				})
-				permittedBranchIDs[perm.BranchID] = true
-			}
-		}
+		permittedBranches, permittedBranchIDs := h.buildPermittedBranches(permissions, repBranchSet, log, c.ClientIP())
 
 		// 7. If no intersection → 403 Forbidden
 		if len(permittedBranches) == 0 {
@@ -473,70 +451,10 @@ func (h *handler) LookupMotorcycleByPlate() gin.HandlerFunc {
 		response.ID = encodedID
 
 		// 9. Fetch diagnostics and filter by permitted branches
-		if h.DiagnosticInteractor != nil {
-			diagnostics, err := h.DiagnosticInteractor.ListDiagnosticsByMotorcycleID(c.Request.Context(), motorcycle.ID)
-			if err != nil {
-				log.Warn(logger.LogDiagnosticControllerListError,
-					"error", err,
-					"motorcycle_id", motorcycle.ID,
-					"client_ip", c.ClientIP())
-				// Non-fatal: proceed without diagnostics
-			} else if len(diagnostics) > 0 {
-				// Filter diagnostics to only include those from permitted branches
-				var filteredDiagnostics []domain.Diagnostic
-				for _, d := range diagnostics {
-					if permittedBranchIDs[d.BranchID] {
-						filteredDiagnostics = append(filteredDiagnostics, d)
-					}
-				}
+		response.Diagnostics = h.fetchAndEncodeDiagnostics(c, motorcycle.ID, encodedID, permittedBranchIDs, log)
 
-				if len(filteredDiagnostics) > 0 {
-					diagnosticResponses := ToDiagnosticResponseList(filteredDiagnostics)
-
-					// Encode diagnostic and evidence IDs
-					for i := range diagnosticResponses {
-						if encDiagID, err := h.EncodeID(filteredDiagnostics[i].ID); err == nil {
-							diagnosticResponses[i].ID = encDiagID
-						}
-						if encBranchID, err := h.EncodeID(filteredDiagnostics[i].BranchID); err == nil {
-							diagnosticResponses[i].BranchID = encBranchID
-						}
-						diagnosticResponses[i].MotorcycleID = encodedID
-
-						for j := range diagnosticResponses[i].Evidence {
-							if encEvidID, err := h.EncodeID(filteredDiagnostics[i].Evidence[j].ID); err == nil {
-								diagnosticResponses[i].Evidence[j].ID = encEvidID
-							}
-						}
-					}
-
-					response.Diagnostics = diagnosticResponses
-				}
-			}
-		}
 		// 10. Fetch motorcycle evidence (HU16-19)
-		if h.EvidenceInteractor != nil {
-			evidences, err := h.EvidenceInteractor.LookupEvidence(c.Request.Context(), motorcycle.ID)
-			if err != nil {
-				log.Warn(logger.LogEvidenceInteractorLookupError,
-					"error", err,
-					"motorcycle_id", motorcycle.ID,
-					"client_ip", c.ClientIP())
-				// Non-fatal: proceed without evidence
-			} else if len(evidences) > 0 {
-				evidenceResponses := ToEvidenceResponseList(evidences)
-
-				// Encode evidence IDs
-				for i := range evidenceResponses {
-					if encID, err := h.EncodeID(evidences[i].ID); err == nil {
-						evidenceResponses[i].ID = encID
-					}
-					evidenceResponses[i].MotorcycleID = encodedID
-				}
-
-				response.Evidence = evidenceResponses
-			}
-		}
+		response.Evidence = h.fetchAndEncodeEvidence(c, motorcycle.ID, encodedID, log)
 
 		// 11. Set permitted branches in response
 		response.PermittedBranches = permittedBranches
@@ -904,4 +822,136 @@ func (h *handler) GetBrandLines() gin.HandlerFunc {
 		// 6. Send success response (200 OK)
 		h.Response.SuccessWithData(c, domain.MsgBrandLinesRetrieved, response)
 	}
+}
+
+// ============================================
+// LookupMotorcycleByPlate helpers (extracted to reduce cognitive complexity)
+// ============================================
+
+// buildPermittedBranches intersects active permissions with the representative's branches,
+// encoding each branch ID. Returns the permitted branches list and a set of raw IDs.
+func (h *handler) buildPermittedBranches(
+	permissions []domain.DiagnosticPermission,
+	repBranchSet map[string]domain.Branch,
+	log logger.Logger,
+	clientIP string,
+) ([]PermittedBranchInfo, map[string]bool) {
+	var permittedBranches []PermittedBranchInfo
+	permittedBranchIDs := make(map[string]bool)
+
+	for _, perm := range permissions {
+		if !perm.Active {
+			continue
+		}
+		if branch, ok := repBranchSet[perm.BranchID]; ok {
+			encodedBranchID, encErr := h.EncodeID(branch.ID)
+			if encErr != nil {
+				log.Error(logger.LogMotorcycleControllerIDEncError,
+					"branch_id", branch.ID,
+					"error", encErr,
+					"client_ip", clientIP)
+				continue
+			}
+			permittedBranches = append(permittedBranches, PermittedBranchInfo{
+				ID:   encodedBranchID,
+				Name: branch.Name,
+			})
+			permittedBranchIDs[perm.BranchID] = true
+		}
+	}
+
+	return permittedBranches, permittedBranchIDs
+}
+
+// fetchAndEncodeDiagnostics fetches diagnostics for a motorcycle, filters by permitted branches,
+// and encodes all IDs in the response. Returns nil on error (non-fatal).
+func (h *handler) fetchAndEncodeDiagnostics(
+	c *gin.Context,
+	motorcycleID, encodedMotorcycleID string,
+	permittedBranchIDs map[string]bool,
+	log logger.Logger,
+) []DiagnosticResponse {
+	if h.DiagnosticInteractor == nil {
+		return nil
+	}
+
+	diagnostics, err := h.DiagnosticInteractor.ListDiagnosticsByMotorcycleID(c.Request.Context(), motorcycleID)
+	if err != nil {
+		log.Warn(logger.LogDiagnosticControllerListError,
+			"error", err,
+			"motorcycle_id", motorcycleID,
+			"client_ip", c.ClientIP())
+		return nil
+	}
+
+	// Filter diagnostics to only include those from permitted branches
+	var filteredDiagnostics []domain.Diagnostic
+	for _, d := range diagnostics {
+		if permittedBranchIDs[d.BranchID] {
+			filteredDiagnostics = append(filteredDiagnostics, d)
+		}
+	}
+	if len(filteredDiagnostics) == 0 {
+		return nil
+	}
+
+	diagnosticResponses := ToDiagnosticResponseList(filteredDiagnostics)
+
+	// Encode IDs (extracted to reduce cognitive complexity)
+	h.encodeDiagnosticIDs(diagnosticResponses, filteredDiagnostics, encodedMotorcycleID)
+
+	return diagnosticResponses
+}
+
+// encodeDiagnosticIDs encodes all IDs (diagnostic, branch, motorcycle, evidence) in a diagnostic response list.
+func (h *handler) encodeDiagnosticIDs(responses []DiagnosticResponse, diagnostics []domain.Diagnostic, encodedMotorcycleID string) {
+	for i := range responses {
+		if encDiagID, err := h.EncodeID(diagnostics[i].ID); err == nil {
+			responses[i].ID = encDiagID
+		}
+		if encBranchID, err := h.EncodeID(diagnostics[i].BranchID); err == nil {
+			responses[i].BranchID = encBranchID
+		}
+		responses[i].MotorcycleID = encodedMotorcycleID
+
+		for j := range responses[i].Evidence {
+			if encEvidID, err := h.EncodeID(diagnostics[i].Evidence[j].ID); err == nil {
+				responses[i].Evidence[j].ID = encEvidID
+			}
+		}
+	}
+}
+
+// fetchAndEncodeEvidence fetches motorcycle evidence and encodes all IDs.
+// Returns nil on error (non-fatal).
+func (h *handler) fetchAndEncodeEvidence(
+	c *gin.Context,
+	motorcycleID, encodedMotorcycleID string,
+	log logger.Logger,
+) []EvidenceResponse {
+	if h.EvidenceInteractor == nil {
+		return nil
+	}
+
+	evidences, err := h.EvidenceInteractor.LookupEvidence(c.Request.Context(), motorcycleID)
+	if err != nil {
+		log.Warn(logger.LogEvidenceInteractorLookupError,
+			"error", err,
+			"motorcycle_id", motorcycleID,
+			"client_ip", c.ClientIP())
+		return nil
+	}
+	if len(evidences) == 0 {
+		return nil
+	}
+
+	evidenceResponses := ToEvidenceResponseList(evidences)
+	for i := range evidenceResponses {
+		if encID, err := h.EncodeID(evidences[i].ID); err == nil {
+			evidenceResponses[i].ID = encID
+		}
+		evidenceResponses[i].MotorcycleID = encodedMotorcycleID
+	}
+
+	return evidenceResponses
 }

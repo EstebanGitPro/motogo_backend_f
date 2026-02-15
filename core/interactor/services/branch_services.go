@@ -12,6 +12,15 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
+// displacementRangesToStrings converts []DisplacementRange to []string for port interface compatibility
+func displacementRangesToStrings(ranges []domain.DisplacementRange) []string {
+	result := make([]string, len(ranges))
+	for i, r := range ranges {
+		result[i] = string(r)
+	}
+	return result
+}
+
 // branchService implements input.BranchService
 type branchService struct {
 	repository      output.BranchRepository
@@ -162,6 +171,14 @@ func (s *branchService) RegisterBranch(ctx context.Context, tx output.Tx, branch
 		}
 	}
 
+	// 8. Save displacement ranges if provided
+	if len(branch.DisplacementRanges) > 0 {
+		if err := s.repository.SaveBranchDisplacementRanges(ctx, tx, branch.ID, displacementRangesToStrings(branch.DisplacementRanges)); err != nil {
+			log.Error(logger.LogBranchRepoDisplRangeSaveError, "error", err, "branch_id", branch.ID)
+			return nil, err
+		}
+	}
+
 	log.Info(logger.LogBranchServiceRegComplete, "branch_id", branch.ID, "name", branch.Name)
 	return &branch, nil
 }
@@ -192,6 +209,20 @@ func (s *branchService) SaveLocation(ctx context.Context, tx output.Tx, location
 // SaveBranchBrands saves brands for a branch
 func (s *branchService) SaveBranchBrands(ctx context.Context, tx output.Tx, branchID string, brands []string) error {
 	return s.repository.SaveBranchBrands(ctx, tx, branchID, brands)
+}
+
+// ValidateDisplacementRanges validates that all displacement ranges are valid ENUM values
+func (s *branchService) ValidateDisplacementRanges(ranges []string) error {
+	dr := make([]domain.DisplacementRange, len(ranges))
+	for i, r := range ranges {
+		dr[i] = domain.DisplacementRange(r)
+	}
+	return domain.ValidateDisplacementRanges(dr)
+}
+
+// SaveBranchDisplacementRanges saves displacement ranges for a branch
+func (s *branchService) SaveBranchDisplacementRanges(ctx context.Context, tx output.Tx, branchID string, ranges []string) error {
+	return s.repository.SaveBranchDisplacementRanges(ctx, tx, branchID, ranges)
 }
 
 // GetBranchesByRepresentative retrieves all branches for a representative (HU62)
@@ -235,6 +266,19 @@ func (s *branchService) UpdateBranch(ctx context.Context, tx output.Tx, branch d
 		}
 	}
 
+	// 5. Update displacement ranges: delete existing and save new
+	if err := s.repository.DeleteBranchDisplacementRanges(ctx, tx, branch.ID); err != nil {
+		log.Error(logger.LogBranchRepoDisplRangeDelError, "error", err, "branch_id", branch.ID)
+		return err
+	}
+
+	if len(branch.DisplacementRanges) > 0 {
+		if err := s.repository.SaveBranchDisplacementRanges(ctx, tx, branch.ID, displacementRangesToStrings(branch.DisplacementRanges)); err != nil {
+			log.Error(logger.LogBranchRepoDisplRangeSaveError, "error", err, "branch_id", branch.ID)
+			return err
+		}
+	}
+
 	log.Info(logger.LogBranchServiceRegComplete, "branch_id", branch.ID, "name", branch.Name)
 	return nil
 }
@@ -268,7 +312,7 @@ func isForeignKeyError(err error) bool {
 
 // GetBranchesNearby retrieves branches within radius of given coordinates (HU89)
 // Uses bounding box pre-filter for optimization before Haversine calculation
-func (s *branchService) GetBranchesNearby(ctx context.Context, lat, lng, radiusKm float64, establishmentType string) ([]domain.NearbyBranch, error) {
+func (s *branchService) GetBranchesNearby(ctx context.Context, lat, lng, radiusKm float64, establishmentType, brandID, displacementRange string) ([]domain.NearbyBranch, error) {
 	const earthRadiusKm = 6371.0
 	const degToRad = 3.141592653589793 / 180.0
 
@@ -285,7 +329,7 @@ func (s *branchService) GetBranchesNearby(ctx context.Context, lat, lng, radiusK
 	lngMin := lng - lngDelta
 	lngMax := lng + lngDelta
 
-	return s.repository.GetBranchesNearby(ctx, lat, lng, radiusKm, establishmentType, latMin, latMax, lngMin, lngMax)
+	return s.repository.GetBranchesNearby(ctx, lat, lng, radiusKm, establishmentType, latMin, latMax, lngMin, lngMax, brandID, displacementRange)
 }
 
 // cosine calculates cosine using Taylor series (avoids math import)
