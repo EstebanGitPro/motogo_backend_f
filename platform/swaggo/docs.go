@@ -2166,6 +2166,44 @@ const docTemplate = `{
                 }
             }
         },
+        "/engine-displacements": {
+            "get": {
+                "description": "Retrieves all distinct engine displacement values with reference counts. Public endpoint (no authentication required). Returns HATEOAS links (Richardson Maturity Level 3).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogs"
+                ],
+                "summary": "List engine displacement ranges",
+                "responses": {
+                    "200": {
+                        "description": "Displacements retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.DisplacementListResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/franchises": {
             "get": {
                 "security": [
@@ -2546,6 +2584,91 @@ const docTemplate = `{
                         "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/middleware.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/motorcycle-categories": {
+            "get": {
+                "description": "Retrieves all distinct motorcycle categories with line counts. Public endpoint (no authentication required). Returns HATEOAS links for category drill-down (Richardson Maturity Level 3).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogs"
+                ],
+                "summary": "List motorcycle categories",
+                "responses": {
+                    "200": {
+                        "description": "Categories retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.CategoryListResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/motorcycle-categories/{categoryName}/lines": {
+            "get": {
+                "description": "Retrieves all motorcycle lines (models) for a specific category with brand and engine displacement. Public endpoint (no authentication required). Returns HATEOAS links (Richardson Maturity Level 3).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogs"
+                ],
+                "summary": "List motorcycle lines by category",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Category name (e.g., Sport, Scooter, Urban)",
+                        "name": "categoryName",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lines retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.CategoryLinesResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
                         }
                     }
                 }
@@ -4377,6 +4500,44 @@ const docTemplate = `{
                 }
             }
         },
+        "/rating-ranges": {
+            "get": {
+                "description": "Retrieves all valid rating values (1-5) with labels. Public endpoint (no authentication required). Returns HATEOAS links (Richardson Maturity Level 3).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogs"
+                ],
+                "summary": "List rating ranges",
+                "responses": {
+                    "200": {
+                        "description": "Rating ranges retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.RatingRangeListResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/schedule-details/{id}": {
             "put": {
                 "security": [
@@ -4612,11 +4773,24 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "github_com_EstebanGitPro_motogo-backend_core_interactor_services_domain.EstablishmentType": {
+            "type": "string",
+            "enum": [
+                "WORKSHOP",
+                "STORE",
+                "WORKSHOP_STORE"
+            ],
+            "x-enum-varnames": [
+                "EstablishmentTypeWorkshop",
+                "EstablishmentTypeStore",
+                "EstablishmentTypeWorkshopStore"
+            ]
+        },
         "github_com_EstebanGitPro_motogo-backend_core_interactor_services_domain.EstablishmentTypeInfo": {
             "type": "object",
             "properties": {
                 "code": {
-                    "type": "string"
+                    "$ref": "#/definitions/github_com_EstebanGitPro_motogo-backend_core_interactor_services_domain.EstablishmentType"
                 },
                 "label": {
                     "type": "string"
@@ -4730,6 +4904,12 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
+                "displacement_ranges": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "establishment_type": {
                     "type": "string"
                 },
@@ -4775,6 +4955,12 @@ const docTemplate = `{
                 "contact_phone": {
                     "description": "Representative's phone",
                     "type": "string"
+                },
+                "displacement_ranges": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "establishment_type": {
                     "type": "string"
@@ -4894,6 +5080,74 @@ const docTemplate = `{
                 },
                 "success": {
                     "type": "boolean"
+                }
+            }
+        },
+        "handlers.CategoryItemResponse": {
+            "type": "object",
+            "properties": {
+                "_links": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.Link"
+                    }
+                },
+                "line_count": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.CategoryLineItemResponse": {
+            "type": "object",
+            "properties": {
+                "brand": {
+                    "type": "string"
+                },
+                "engine_displacement": {
+                    "type": "integer"
+                },
+                "model": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.CategoryLinesResponse": {
+            "type": "object",
+            "properties": {
+                "_links": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.Link"
+                    }
+                },
+                "category": {
+                    "type": "string"
+                },
+                "lines": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.CategoryLineItemResponse"
+                    }
+                }
+            }
+        },
+        "handlers.CategoryListResponse": {
+            "type": "object",
+            "properties": {
+                "_links": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.Link"
+                    }
+                },
+                "categories": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.CategoryItemResponse"
+                    }
                 }
             }
         },
@@ -5136,9 +5390,31 @@ const docTemplate = `{
                 },
                 "problem_description": {
                     "type": "string"
+                }
+            }
+        },
+        "handlers.DisplacementItemResponse": {
+            "type": "object",
+            "properties": {
+                "range": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.DisplacementListResponse": {
+            "type": "object",
+            "properties": {
+                "_links": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.Link"
+                    }
                 },
-                "sent_via_whatsapp": {
-                    "type": "boolean"
+                "displacements": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.DisplacementItemResponse"
+                    }
                 }
             }
         },
@@ -5603,6 +5879,12 @@ const docTemplate = `{
                 "address": {
                     "type": "string"
                 },
+                "brands": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "city_name": {
                     "type": "string"
                 },
@@ -5612,6 +5894,12 @@ const docTemplate = `{
                 },
                 "department_name": {
                     "type": "string"
+                },
+                "displacement_ranges": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "distance_km": {
                     "type": "number"
@@ -5766,6 +6054,34 @@ const docTemplate = `{
                 }
             }
         },
+        "handlers.RatingRangeItemResponse": {
+            "type": "object",
+            "properties": {
+                "label": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "integer"
+                }
+            }
+        },
+        "handlers.RatingRangeListResponse": {
+            "type": "object",
+            "properties": {
+                "_links": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.Link"
+                    }
+                },
+                "ratings": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.RatingRangeItemResponse"
+                    }
+                }
+            }
+        },
         "handlers.RefreshTokenRequest": {
             "type": "object",
             "required": [
@@ -5786,6 +6102,12 @@ const docTemplate = `{
             ],
             "properties": {
                 "brands": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "displacement_ranges": {
                     "type": "array",
                     "items": {
                         "type": "string"
