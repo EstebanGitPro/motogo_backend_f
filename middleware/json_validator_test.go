@@ -1,9 +1,13 @@
 package middleware
 
 import (
+	"bytes"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	json_schema "github.com/EstebanGitPro/motogo-backend/platform/schema"
+	"github.com/gin-gonic/gin"
 	"github.com/kaptinlin/jsonschema"
 	"github.com/stretchr/testify/assert"
 )
@@ -165,6 +169,12 @@ func TestWithValidateRegister_ReturnsHandler(t *testing.T) {
 func TestWithValidateMessage_ReturnsHandler(t *testing.T) {
 	builder := NewMiddlewareValidator(&json_schema.Validators{})
 	handler := builder.WithValidateMessage()
+	assert.NotNil(t, handler)
+}
+
+func TestWithValidateCreateMessage_ReturnsHandler(t *testing.T) {
+	builder := NewMiddlewareValidator(&json_schema.Validators{})
+	handler := builder.WithValidateCreateMessage()
 	assert.NotNil(t, handler)
 }
 
@@ -374,4 +384,128 @@ func TestClassifyValidationError_NilFirstError(t *testing.T) {
 	result := classifyValidationError(fields, errors)
 
 	assert.Equal(t, json_schema.ErrValidationFailed, result)
+}
+
+// ============================================
+// jsonValidator Handler Tests
+// ============================================
+
+// helper to compile an inline JSON schema for tests
+func compileTestSchema(t *testing.T) *jsonschema.Schema {
+	t.Helper()
+	compiler := jsonschema.NewCompiler()
+	schema, err := compiler.Compile([]byte(`{
+		"type": "object",
+		"properties": {
+			"email": {"type": "string"}
+		},
+		"required": ["email"],
+		"additionalProperties": false
+	}`))
+	assert.NoError(t, err)
+	return schema
+}
+
+func TestJsonValidator_ValidJSON_PassesThrough(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	schema := compileTestSchema(t)
+	builder := &Builder{}
+	handler := builder.jsonValidator(schema)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPost, "/test", bytes.NewBufferString(`{"email":"test@example.com"}`))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	handler(c)
+
+	assert.False(t, c.IsAborted())
+	assert.Empty(t, c.Errors)
+}
+
+func TestJsonValidator_InvalidJSON_Aborts(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	schema := compileTestSchema(t)
+	builder := &Builder{}
+	handler := builder.jsonValidator(schema)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPost, "/test", bytes.NewBufferString(`{invalid json`))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	handler(c)
+
+	assert.True(t, c.IsAborted())
+	assert.Len(t, c.Errors, 1)
+	assert.Equal(t, json_schema.ErrBadRequest, c.Errors[0].Err)
+}
+
+func TestJsonValidator_MissingRequiredField_Aborts(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	schema := compileTestSchema(t)
+	builder := &Builder{}
+	handler := builder.jsonValidator(schema)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPost, "/test", bytes.NewBufferString(`{}`))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	handler(c)
+
+	assert.True(t, c.IsAborted())
+	assert.NotEmpty(t, c.Errors)
+}
+
+func TestJsonValidator_WrongFieldType_Aborts(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	schema := compileTestSchema(t)
+	builder := &Builder{}
+	handler := builder.jsonValidator(schema)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	// email should be string, not number
+	c.Request = httptest.NewRequest(http.MethodPost, "/test", bytes.NewBufferString(`{"email": 12345}`))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	handler(c)
+
+	assert.True(t, c.IsAborted())
+	assert.NotEmpty(t, c.Errors)
+}
+
+func TestJsonValidator_AdditionalProperties_Aborts(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	schema := compileTestSchema(t)
+	builder := &Builder{}
+	handler := builder.jsonValidator(schema)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPost, "/test", bytes.NewBufferString(`{"email":"a@b.com","extra":"field"}`))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	handler(c)
+
+	assert.True(t, c.IsAborted())
+	assert.NotEmpty(t, c.Errors)
+}
+
+func TestJsonValidator_EmptyBody_Aborts(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	schema := compileTestSchema(t)
+	builder := &Builder{}
+	handler := builder.jsonValidator(schema)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPost, "/test", bytes.NewBufferString(``))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	handler(c)
+
+	assert.True(t, c.IsAborted())
+	assert.NotEmpty(t, c.Errors)
 }

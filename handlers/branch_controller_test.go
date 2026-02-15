@@ -119,6 +119,10 @@ func createTestMessageCache() *messagingCache.MessageCache {
 		{Code: "MOD_DGP_SAVE_ERR_00001", Type: "ERROR", Title: "No se pudo guardar", Content: "No se pudo guardar el permiso", Active: true},
 		{Code: "MOD_DGP_DELETE_ERR_00001", Type: "ERROR", Title: "No se pudo eliminar", Content: "No se pudo eliminar el permiso", Active: true},
 		{Code: "MOD_MOT_NOT_FOUND_ERR_00001", Type: "ERROR", Title: "Moto no encontrada", Content: "La motocicleta no fue encontrada", Active: true},
+		// Motorcycle lookup error messages
+		{Code: "MOD_MOT_PLATE_REQ_ERR_00001", Type: "ERROR", Title: "Placa requerida", Content: "El parámetro de placa es requerido", Active: true},
+		{Code: "MOD_MOT_NO_PERMISSION_ERR_00001", Type: "ERROR", Title: "Sin permiso", Content: "Sin permiso para esta motocicleta", Active: true},
+		{Code: "GEN_SRV_ERR_00001", Type: "ERROR", Title: "Error de servidor", Content: "Error interno del servidor", Active: true},
 	}, nil)
 	_ = cache.LoadMessages(context.TODO())
 
@@ -642,4 +646,193 @@ func TestGetBranchTypes_Integration_Success(t *testing.T) {
 	data := response["data"].(map[string]interface{})
 	types := data["types"].([]interface{})
 	assert.Len(t, types, 3) // WORKSHOP, STORE, WORKSHOP_STORE
+}
+
+// ============================================
+// parseNearbyFilters Error Path Tests
+// ============================================
+
+// setupNearbyHandler creates the handler and router for nearby branch error tests.
+func setupNearbyHandler(t *testing.T) (*gin.Engine, *httptest.ResponseRecorder) {
+	t.Helper()
+	gin.SetMode(gin.TestMode)
+	encoder := createTestEncoder()
+
+	mockRepo := new(mocks.MockMessageCacheRepo)
+	cache := messagingCache.NewMessageCache(mockRepo, 0)
+	mockRepo.On("GetAllActiveForCache", mock.Anything).Return([]messagingCache.CachedMessage{
+		{Code: "MOD_V_GEO_LAT_REQ_ERR_00001", Type: "ERROR", Title: "Latitud requerida", Content: "La latitud es requerida", Active: true},
+		{Code: "MOD_V_GEO_LAT_INV_ERR_00001", Type: "ERROR", Title: "Latitud inválida", Content: "El valor de latitud es inválido", Active: true},
+		{Code: "MOD_V_GEO_LNG_REQ_ERR_00001", Type: "ERROR", Title: "Longitud requerida", Content: "La longitud es requerida", Active: true},
+		{Code: "MOD_V_GEO_LNG_INV_ERR_00001", Type: "ERROR", Title: "Longitud inválida", Content: "El valor de longitud es inválido", Active: true},
+		{Code: "MOD_V_GEO_RAD_INV_ERR_00001", Type: "ERROR", Title: "Radio inválido", Content: "El radio de búsqueda es inválido", Active: true},
+		{Code: "MOD_B_INVALID_TYPE_ERR_00001", Type: "ERROR", Title: "Tipo inválido", Content: "El tipo de establecimiento es inválido", Active: true},
+	}, nil)
+	_ = cache.LoadMessages(context.TODO())
+	responseHandler := middleware.NewResponseHandler(cache)
+
+	mockBranchService := new(mocks.MockBranchService)
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
+	h := handlers.New(nil, nil, branchInteractor, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+
+	router := gin.New()
+	router.Use(func(c *gin.Context) {
+		c.Set("authenticated_user", &domain.Person{ID: "user-1", Role: "USER"})
+		c.Next()
+	})
+	router.GET("/branches/nearby", h.GetNearbyBranches())
+
+	return router, httptest.NewRecorder()
+}
+
+func TestGetNearbyBranches_MissingLat(t *testing.T) {
+	router, w := setupNearbyHandler(t)
+	req, _ := http.NewRequest("GET", "/branches/nearby?lng=-74.07", nil)
+	router.ServeHTTP(w, req)
+
+	assert.NotEqual(t, http.StatusOK, w.Code)
+	var response map[string]interface{}
+	_ = json.Unmarshal(w.Body.Bytes(), &response)
+	assert.False(t, response["success"].(bool))
+}
+
+func TestGetNearbyBranches_InvalidLat(t *testing.T) {
+	router, w := setupNearbyHandler(t)
+	req, _ := http.NewRequest("GET", "/branches/nearby?lat=999&lng=-74.07", nil)
+	router.ServeHTTP(w, req)
+
+	assert.NotEqual(t, http.StatusOK, w.Code)
+	var response map[string]interface{}
+	_ = json.Unmarshal(w.Body.Bytes(), &response)
+	assert.False(t, response["success"].(bool))
+}
+
+func TestGetNearbyBranches_MissingLng(t *testing.T) {
+	router, w := setupNearbyHandler(t)
+	req, _ := http.NewRequest("GET", "/branches/nearby?lat=4.71", nil)
+	router.ServeHTTP(w, req)
+
+	assert.NotEqual(t, http.StatusOK, w.Code)
+	var response map[string]interface{}
+	_ = json.Unmarshal(w.Body.Bytes(), &response)
+	assert.False(t, response["success"].(bool))
+}
+
+func TestGetNearbyBranches_InvalidRadius(t *testing.T) {
+	router, w := setupNearbyHandler(t)
+	req, _ := http.NewRequest("GET", "/branches/nearby?lat=4.71&lng=-74.07&radius=-5", nil)
+	router.ServeHTTP(w, req)
+
+	assert.NotEqual(t, http.StatusOK, w.Code)
+	var response map[string]interface{}
+	_ = json.Unmarshal(w.Body.Bytes(), &response)
+	assert.False(t, response["success"].(bool))
+}
+
+func TestGetNearbyBranches_InvalidType(t *testing.T) {
+	router, w := setupNearbyHandler(t)
+	req, _ := http.NewRequest("GET", "/branches/nearby?lat=4.71&lng=-74.07&type=INVALID_TYPE", nil)
+	router.ServeHTTP(w, req)
+
+	assert.NotEqual(t, http.StatusOK, w.Code)
+	var response map[string]interface{}
+	_ = json.Unmarshal(w.Body.Bytes(), &response)
+	assert.False(t, response["success"].(bool))
+}
+
+func TestGetNearbyBranches_InvalidBrandFilter(t *testing.T) {
+	// When brand filter is invalid, it's silently ignored (empty string passed to interactor)
+	gin.SetMode(gin.TestMode)
+	encoder := createTestEncoder()
+
+	mockRepo := new(mocks.MockMessageCacheRepo)
+	cache := messagingCache.NewMessageCache(mockRepo, 0)
+	mockRepo.On("GetAllActiveForCache", mock.Anything).Return([]messagingCache.CachedMessage{
+		{Code: "MOD_B_NEARBY_EXI_00001", Type: "EXITO", Title: "Sedes cercanas", Content: "Sedes cercanas encontradas", Active: true},
+	}, nil)
+	_ = cache.LoadMessages(context.TODO())
+	responseHandler := middleware.NewResponseHandler(cache)
+
+	mockBranchService := new(mocks.MockBranchService)
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
+	h := handlers.New(nil, nil, branchInteractor, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+
+	// Expect the interactor to be called with empty brandID because the invalid brand is ignored
+	mockBranchService.On("GetBranchesNearby",
+		mock.Anything,
+		mock.AnythingOfType("float64"),
+		mock.AnythingOfType("float64"),
+		mock.AnythingOfType("float64"),
+		mock.AnythingOfType("string"),
+		"", // brandID — invalid brand becomes empty string
+		mock.AnythingOfType("string"),
+	).Return([]domain.NearbyBranch{}, nil)
+
+	router := gin.New()
+	router.Use(func(c *gin.Context) {
+		c.Set("authenticated_user", &domain.Person{ID: "user-1", Role: "USER"})
+		c.Next()
+	})
+	router.GET("/branches/nearby", h.GetNearbyBranches())
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/branches/nearby?lat=4.71&lng=-74.07&brand=INVALID!!!", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	mockBranchService.AssertExpectations(t)
+}
+
+// ============================================
+// DeleteBranch Error Path Tests
+// ============================================
+
+func TestDeleteBranch_Integration_CannotDelete(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	encoder := createTestEncoder()
+
+	mockRepo := new(mocks.MockMessageCacheRepo)
+	cache := messagingCache.NewMessageCache(mockRepo, 0)
+	mockRepo.On("GetAllActiveForCache", mock.Anything).Return([]messagingCache.CachedMessage{
+		{Code: "MOD_B_HAS_ASSOC_ERR_00001", Type: "ERROR", Title: "Tiene asociaciones", Content: "La sede tiene diagnósticos o servicios asociados", Active: true},
+	}, nil)
+	_ = cache.LoadMessages(context.TODO())
+	responseHandler := middleware.NewResponseHandler(cache)
+
+	mockBranchService := new(mocks.MockBranchService)
+	mockTx := new(mocks.MockTx)
+	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
+	h := handlers.New(nil, nil, branchInteractor, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+
+	branchUUID := "a1234567-89ab-cdef-0123-456789abcdef"
+	repID := "rep-123"
+	encodedBranchID, _ := encoder.Encode(branchUUID)
+
+	existingBranch := &domain.Branch{
+		ID:               branchUUID,
+		Name:             "Taller con Diagnosticos",
+		RepresentativeID: repID,
+		Status:           "ACTIVE",
+	}
+
+	mockBranchService.On("GetBranchByID", mock.Anything, branchUUID).Return(existingBranch, nil)
+	mockBranchService.On("BeginTx", mock.Anything).Return(mockTx, nil)
+	mockBranchService.On("DeleteBranch", mock.Anything, mockTx, branchUUID).Return(domain.ErrBranchCannotDelete)
+	mockTx.On("Rollback").Return(nil)
+
+	router := gin.New()
+	router.Use(func(c *gin.Context) {
+		c.Set("authenticated_user", &domain.Person{ID: repID, Role: "REPRESENTANTE"})
+		c.Next()
+	})
+	router.DELETE("/branches/:id", h.DeleteBranch())
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("DELETE", "/branches/"+encodedBranchID, nil)
+	router.ServeHTTP(w, req)
+
+	assert.NotEqual(t, http.StatusOK, w.Code)
+	var response map[string]interface{}
+	_ = json.Unmarshal(w.Body.Bytes(), &response)
+	assert.False(t, response["success"].(bool))
 }
