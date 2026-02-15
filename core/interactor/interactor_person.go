@@ -119,11 +119,11 @@ func (i *Interactor) RegisterPerson(ctx context.Context, person domain.Person) (
 	}
 	log.Success(logger.LogPersonInteractorStep5_OK)
 
-	if err = i.service.AssignUserRole(ctx, keycloakUserID, person.Role); err != nil {
+	if err = i.service.AssignUserRole(ctx, keycloakUserID, string(person.Role)); err != nil {
 		log.Error(logger.LogPersonInteractorStep6_Error, "error", err)
 		return result, err
 	}
-	log.Success(logger.LogPersonInteractorStep6_OK, "role", person.Role)
+	log.Success(logger.LogPersonInteractorStep6_OK, "role", string(person.Role))
 
 	// PASO 7: Actualizar BD con keycloak_user_id
 	if err = i.service.UpdatePersonKeycloakID(ctx, tx, person.ID, keycloakUserID); err != nil {

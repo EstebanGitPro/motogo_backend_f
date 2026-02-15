@@ -205,33 +205,12 @@ func (h *handler) UpdateBranchSchedule(scheduleInteractor *interactor.ScheduleIn
 			return
 		}
 
-		// 5. Apply updates to schedule
+		// 5. Apply updates and parse dates
 		if req.Active != nil {
 			schedule.Active = *req.Active
 		}
-		if req.StartDate != nil {
-			parsed, err := time.Parse(dateFormat, *req.StartDate)
-			if err != nil {
-				log.Warn(logger.LogScheduleControllerDateParseError, "field", "start_date", "error", err)
-				h.Response.Error(c, domain.MsgScheduleInvalidDateFormat)
-				return
-			}
-			schedule.StartDate = parsed
-		}
-		if req.EndDate != nil {
-			parsed, err := time.Parse(dateFormat, *req.EndDate)
-			if err != nil {
-				log.Warn(logger.LogScheduleControllerDateParseError, "field", "end_date", "error", err)
-				h.Response.Error(c, domain.MsgScheduleInvalidDateFormat)
-				return
-			}
-			schedule.EndDate = &parsed
-		}
-
-		// 6. Validate date range
-		if schedule.EndDate != nil && schedule.EndDate.Before(schedule.StartDate) {
-			log.Warn(logger.LogScheduleControllerDateValidationError, "start", schedule.StartDate, "end", schedule.EndDate)
-			h.Response.Error(c, domain.MsgScheduleInvalidDateRange)
+		if parseErr := parseScheduleDates(req, schedule, log); parseErr != nil {
+			h.Response.Error(c, parseErr.msgCode)
 			return
 		}
 
@@ -545,4 +524,37 @@ func BuildScheduleDetailListLinks(baseURL, encodedBranchID string) []Link {
 		{Rel: "branch", Href: BuildResourceURL(baseURL, "branches", encodedBranchID), Method: "GET"},
 		{Rel: "days-catalog", Href: baseURL + "/schedules/days", Method: "GET"},
 	}
+}
+
+// scheduleParseError wraps a message code for schedule date parse/validation errors.
+type scheduleParseError struct {
+	msgCode string
+}
+
+// parseScheduleDates parses start_date and end_date from the request and validates the date range.
+func parseScheduleDates(req UpdateScheduleRequest, schedule *domain.BranchSchedule, log logger.Logger) *scheduleParseError {
+	if req.StartDate != nil {
+		parsed, err := time.Parse(dateFormat, *req.StartDate)
+		if err != nil {
+			log.Warn(logger.LogScheduleControllerDateParseError, "field", "start_date", "error", err)
+			return &scheduleParseError{msgCode: domain.MsgScheduleInvalidDateFormat}
+		}
+		schedule.StartDate = parsed
+	}
+	if req.EndDate != nil {
+		parsed, err := time.Parse(dateFormat, *req.EndDate)
+		if err != nil {
+			log.Warn(logger.LogScheduleControllerDateParseError, "field", "end_date", "error", err)
+			return &scheduleParseError{msgCode: domain.MsgScheduleInvalidDateFormat}
+		}
+		schedule.EndDate = &parsed
+	}
+
+	// Validate date range
+	if schedule.EndDate != nil && schedule.EndDate.Before(schedule.StartDate) {
+		log.Warn(logger.LogScheduleControllerDateValidationError, "start", schedule.StartDate, "end", schedule.EndDate)
+		return &scheduleParseError{msgCode: domain.MsgScheduleInvalidDateRange}
+	}
+
+	return nil
 }

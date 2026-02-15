@@ -13,9 +13,8 @@ type Diagnostic struct {
 	MotorcycleID       string         `db:"motocicleta_id"`
 	BranchID           string         `db:"sede_id"`
 	Date               time.Time      `db:"fecha"`
-	ProblemDescription sql.NullString `db:"descripcion_problema"`
+	ProblemDescription sql.NullString `db:"descripcion_problema"` //nolint:misspell // Spanish DB column
 	PossibleSolution   sql.NullString `db:"posible_solucion"`
-	SentViaWhatsApp    bool           `db:"enviado_whatsapp"`
 }
 
 // DiagnosticEvidence represents the database model for evidencias_diagnostico table
@@ -23,18 +22,17 @@ type DiagnosticEvidence struct {
 	ID           string         `db:"id"`
 	DiagnosticID string         `db:"diagnostico_id"`
 	ImageURL     string         `db:"url_imagen"`
-	Description  sql.NullString `db:"descripcion"`
+	Description  sql.NullString `db:"descripcion"` //nolint:misspell // Spanish DB column
 	CreatedAt    time.Time      `db:"created_at"`
 }
 
 // ToDomain converts the database Diagnostic model to domain entity
 func (d *Diagnostic) ToDomain() domain.Diagnostic {
 	diagnostic := domain.Diagnostic{
-		ID:              d.ID,
-		MotorcycleID:    d.MotorcycleID,
-		BranchID:        d.BranchID,
-		Date:            d.Date,
-		SentViaWhatsApp: d.SentViaWhatsApp,
+		ID:           d.ID,
+		MotorcycleID: d.MotorcycleID,
+		BranchID:     d.BranchID,
+		Date:         d.Date,
 	}
 
 	if d.ProblemDescription.Valid {
@@ -53,11 +51,10 @@ func (d *Diagnostic) ToDomain() domain.Diagnostic {
 // FromDomain converts a domain Diagnostic entity to database model
 func FromDomain(diagnostic *domain.Diagnostic) *Diagnostic {
 	d := &Diagnostic{
-		ID:              diagnostic.ID,
-		MotorcycleID:    diagnostic.MotorcycleID,
-		BranchID:        diagnostic.BranchID,
-		Date:            diagnostic.Date,
-		SentViaWhatsApp: diagnostic.SentViaWhatsApp,
+		ID:           diagnostic.ID,
+		MotorcycleID: diagnostic.MotorcycleID,
+		BranchID:     diagnostic.BranchID,
+		Date:         diagnostic.Date,
 	}
 
 	if diagnostic.ProblemDescription != nil {

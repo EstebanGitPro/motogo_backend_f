@@ -18,7 +18,7 @@ var (
 	ErrNotFoundUserByEmail       = errors.New("ERR_NOT_FOUND_USER_BY_EMAIL")
 	ErrUserCannotFound           = errors.New("ERR_USER_CANNOT_FOUND")
 	ErrUserCannotGet             = errors.New("ERR_USER_CANNOT_GET")
-	ErrorEmailNotVerified        = errors.New("ERR_EMAIL_NOT_VERIFIED")
+	ErrEmailNotVerified          = errors.New("ERR_EMAIL_NOT_VERIFIED")
 	ErrVerificationTokenNotFound = errors.New("ERR_VERIFICATION_TOKEN_NOT_FOUND")
 	ErrTokenExpired              = errors.New("ERR_TOKEN_EXPIRED")
 	ErrTokenAlreadyUsed          = errors.New("ERR_TOKEN_ALREADY_USED")
@@ -93,16 +93,17 @@ var (
 
 // Branch Management Errors (MOD_B_*) - HU59
 var (
-	ErrBranchNotFound      = errors.New("ERR_BRANCH_NOT_FOUND")
-	ErrBranchCannotSave    = errors.New("ERR_BRANCH_CANNOT_SAVE")
-	ErrDuplicateBranchName = errors.New("ERR_DUPLICATE_BRANCH_NAME")
-	ErrInvalidBranchType   = errors.New("ERR_INVALID_BRANCH_TYPE")
-	ErrBranchCannotUpdate  = errors.New("ERR_BRANCH_CANNOT_UPDATE")
-	ErrBranchCannotDelete  = errors.New("ERR_BRANCH_CANNOT_DELETE")
-	ErrLocationCannotSave  = errors.New("ERR_LOCATION_CANNOT_SAVE")
-	ErrDuplicateAddress    = errors.New("ERR_DUPLICATE_ADDRESS")
-	ErrBrandNotFound       = errors.New("ERR_BRAND_NOT_FOUND")
-	ErrInvalidImageURL     = errors.New("ERR_INVALID_IMAGE_URL")
+	ErrBranchNotFound           = errors.New("ERR_BRANCH_NOT_FOUND")
+	ErrBranchCannotSave         = errors.New("ERR_BRANCH_CANNOT_SAVE")
+	ErrDuplicateBranchName      = errors.New("ERR_DUPLICATE_BRANCH_NAME")
+	ErrInvalidBranchType        = errors.New("ERR_INVALID_BRANCH_TYPE")
+	ErrBranchCannotUpdate       = errors.New("ERR_BRANCH_CANNOT_UPDATE")
+	ErrBranchCannotDelete       = errors.New("ERR_BRANCH_CANNOT_DELETE")
+	ErrLocationCannotSave       = errors.New("ERR_LOCATION_CANNOT_SAVE")
+	ErrDuplicateAddress         = errors.New("ERR_DUPLICATE_ADDRESS")
+	ErrBrandNotFound            = errors.New("ERR_BRAND_NOT_FOUND")
+	ErrInvalidImageURL          = errors.New("ERR_INVALID_IMAGE_URL")
+	ErrInvalidDisplacementRange = errors.New("ERR_INVALID_DISPLACEMENT_RANGE")
 )
 
 // Person Deletion Errors (HU53)
@@ -456,6 +457,16 @@ const (
 	MsgMotorcyclesListed          = "MOD_MOT_LIST_EXI_00001"
 	MsgMotorcycleReferencesListed = "MOD_MOT_REF_LIST_EXI_00001"    // HU50
 	MsgBrandLinesRetrieved        = "MOD_MOT_BRAND_LINES_EXI_00001" // HU40
+
+	// Category Catalog (HU41)
+	MsgMotorcycleCategoriesRetrieved = "MOD_MOT_CAT_LIST_EXI_00001"  // HU41
+	MsgCategoryLinesRetrieved        = "MOD_MOT_CAT_LINES_EXI_00001" // HU41
+
+	// Engine Displacement Ranges (HU49)
+	MsgEngineDisplacementsRetrieved = "MOD_MOT_DISP_LIST_EXI_00001" // HU49
+
+	// Rating Ranges (HU48)
+	MsgRatingRangesRetrieved = "MOD_MOT_RATE_LIST_EXI_00001" // HU48
 
 	// Profile Image Success Messages (HU36-39)
 	MsgProfileImageUpdated = "MOD_MOT_IMG_UPDATE_EXI_00001" // HU36/37

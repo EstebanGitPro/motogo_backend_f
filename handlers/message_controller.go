@@ -36,7 +36,7 @@ func (h handler) CreateMessage() func(c *gin.Context) {
 			log.Error(logger.LogMiddlewareJSONParseError,
 				"error", err,
 				"client_ip", c.ClientIP())
-			c.Error(domain.ErrInvalidJSONFormat)
+			_ = c.Error(domain.ErrInvalidJSONFormat)
 			return
 		}
 
@@ -56,7 +56,7 @@ func (h handler) CreateMessage() func(c *gin.Context) {
 				"code", messageRequest.Code,
 				"error", err,
 				"client_ip", c.ClientIP())
-			c.Error(err)
+			_ = c.Error(err)
 			return
 		}
 
@@ -125,7 +125,7 @@ func (h handler) UpdateMessage() func(c *gin.Context) {
 				"encoded_id", encodedID,
 				"error", err,
 				"client_ip", c.ClientIP())
-			c.Error(domain.ErrInvalidID)
+			_ = c.Error(domain.ErrInvalidID)
 			return
 		}
 
@@ -134,7 +134,7 @@ func (h handler) UpdateMessage() func(c *gin.Context) {
 			log.Error(logger.LogMiddlewareJSONParseError,
 				"error", err,
 				"client_ip", c.ClientIP())
-			c.Error(domain.ErrInvalidJSONFormat)
+			_ = c.Error(domain.ErrInvalidJSONFormat)
 			return
 		}
 
@@ -154,7 +154,7 @@ func (h handler) UpdateMessage() func(c *gin.Context) {
 				"id", uuid,
 				"error", err,
 				"client_ip", c.ClientIP())
-			c.Error(err)
+			_ = c.Error(err)
 			return
 		}
 
@@ -207,7 +207,7 @@ func (h handler) DeleteMessage() func(c *gin.Context) {
 				"encoded_id", encodedID,
 				"error", err,
 				"client_ip", c.ClientIP())
-			c.Error(domain.ErrInvalidID)
+			_ = c.Error(domain.ErrInvalidID)
 			return
 		}
 
@@ -219,7 +219,7 @@ func (h handler) DeleteMessage() func(c *gin.Context) {
 				"id", uuid,
 				"error", err,
 				"client_ip", c.ClientIP())
-			c.Error(err)
+			_ = c.Error(err)
 			return
 		}
 
@@ -263,7 +263,7 @@ func (h handler) GetMessageByID() func(c *gin.Context) {
 				"encoded_id", encodedID,
 				"error", err,
 				"client_ip", c.ClientIP())
-			c.Error(domain.ErrInvalidID)
+			_ = c.Error(domain.ErrInvalidID)
 			return
 		}
 
@@ -273,7 +273,7 @@ func (h handler) GetMessageByID() func(c *gin.Context) {
 				"id", uuid,
 				"error", err,
 				"client_ip", c.ClientIP())
-			c.Error(err)
+			_ = c.Error(err)
 			return
 		}
 
@@ -349,7 +349,7 @@ func (h handler) ListMessages() func(c *gin.Context) {
 			log.Error(logger.LogMessageListError,
 				"error", err,
 				"client_ip", c.ClientIP())
-			c.Error(err)
+			_ = c.Error(err)
 			return
 		}
 
@@ -405,7 +405,7 @@ func (h handler) ReloadMessageCache() func(c *gin.Context) {
 			log.Error(logger.LogMessageCacheReloadError,
 				"error", err,
 				"client_ip", c.ClientIP())
-			c.Error(domain.ErrInternalServer)
+			_ = c.Error(domain.ErrInternalServer)
 			return
 		}
 

@@ -61,7 +61,6 @@ type DiagnosticResponse struct {
 	Date               string                       `json:"date"`
 	ProblemDescription *string                      `json:"problem_description,omitempty"`
 	PossibleSolution   *string                      `json:"possible_solution,omitempty"`
-	SentViaWhatsApp    bool                         `json:"sent_via_whatsapp"`
 	Evidence           []DiagnosticEvidenceResponse `json:"evidence,omitempty"`
 	Links              []Link                       `json:"_links,omitempty"`
 }
@@ -83,7 +82,6 @@ func ToDiagnosticResponse(d *domain.Diagnostic) DiagnosticResponse {
 		Date:               d.Date.Format(time.RFC3339),
 		ProblemDescription: d.ProblemDescription,
 		PossibleSolution:   d.PossibleSolution,
-		SentViaWhatsApp:    d.SentViaWhatsApp,
 	}
 
 	if len(d.Evidence) > 0 {

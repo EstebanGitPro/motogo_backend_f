@@ -14,7 +14,6 @@ type Diagnostic struct {
 	Date               time.Time            // Diagnostic date
 	ProblemDescription *string              // User description of the problem
 	PossibleSolution   *string              // Response from the branch
-	SentViaWhatsApp    bool                 // Whether sent via WhatsApp
 	Evidence           []DiagnosticEvidence // Associated photos (populated on read)
 }
 

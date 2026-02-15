@@ -4,12 +4,13 @@ import "github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 
 // RegisterBranchRequest is the DTO for branch registration (HU59)
 type RegisterBranchRequest struct {
-	Name              string      `json:"name" binding:"required"`
-	EstablishmentType string      `json:"establishment_type" binding:"required"` // WORKSHOP or STORE
-	FranchiseID       *string     `json:"franchise_id,omitempty"`
-	ProfileImageURL   *string     `json:"profile_image_url,omitempty"`
-	Location          LocationDTO `json:"location" binding:"required"`
-	Brands            []string    `json:"brands,omitempty"`
+	Name               string      `json:"name" binding:"required"`
+	EstablishmentType  string      `json:"establishment_type" binding:"required"` // WORKSHOP or STORE
+	FranchiseID        *string     `json:"franchise_id,omitempty"`
+	ProfileImageURL    *string     `json:"profile_image_url,omitempty"`
+	Location           LocationDTO `json:"location" binding:"required"`
+	Brands             []string    `json:"brands,omitempty"`
+	DisplacementRanges []string    `json:"displacement_ranges,omitempty"`
 }
 
 // Sanitize trims whitespace from all string fields
@@ -23,17 +24,22 @@ func (r *RegisterBranchRequest) Sanitize() {
 	for i := range r.Brands {
 		r.Brands[i] = TrimString(r.Brands[i])
 	}
+	// Displacement ranges are trimmed individually
+	for i := range r.DisplacementRanges {
+		r.DisplacementRanges[i] = TrimString(r.DisplacementRanges[i])
+	}
 }
 
 // ToDomain maps RegisterBranchRequest to domain.Branch
 func (r *RegisterBranchRequest) ToDomain(representativeID string) domain.Branch {
 	branch := domain.Branch{
-		RepresentativeID:  representativeID,
-		Name:              r.Name,
-		EstablishmentType: r.EstablishmentType,
-		FranchiseID:       r.FranchiseID,
-		ProfileImageURL:   r.ProfileImageURL,
-		Brands:            r.Brands,
+		RepresentativeID:   representativeID,
+		Name:               r.Name,
+		EstablishmentType:  domain.EstablishmentType(r.EstablishmentType),
+		FranchiseID:        r.FranchiseID,
+		ProfileImageURL:    r.ProfileImageURL,
+		Brands:             r.Brands,
+		DisplacementRanges: toDisplacementRanges(r.DisplacementRanges),
 	}
 
 	// Location is now required, always map it
@@ -92,6 +98,7 @@ type BranchResponse struct {
 	ProfileImageURL        *string         `json:"profile_image_url,omitempty"`
 	Location               *LocationDTO    `json:"location,omitempty"`
 	Brands                 []string        `json:"brands,omitempty"`
+	DisplacementRanges     []string        `json:"displacement_ranges,omitempty"`
 	GeocodingStatus        GeocodingStatus `json:"geocoding_status,omitempty"` // Indicates geocoding result
 	Links                  []Link          `json:"_links"`
 }
@@ -101,13 +108,14 @@ func NewBranchResponse(branch *domain.Branch, encodedID string, geocodingStatus 
 	response := BranchResponse{
 		ID:                     encodedID,
 		Name:                   branch.Name,
-		EstablishmentType:      branch.EstablishmentType,
+		EstablishmentType:      string(branch.EstablishmentType),
 		EstablishmentTypeLabel: domain.GetEstablishmentTypeLabel(branch.EstablishmentType),
-		Status:                 branch.Status,
+		Status:                 string(branch.Status),
 		ContactPhone:           branch.RepresentativePhone,
 		FranchiseID:            branch.FranchiseID,
 		ProfileImageURL:        branch.ProfileImageURL,
 		Brands:                 branch.Brands,
+		DisplacementRanges:     fromDisplacementRanges(branch.DisplacementRanges),
 		GeocodingStatus:        geocodingStatus,
 		Links:                  links,
 	}
@@ -137,6 +145,7 @@ type BranchListItemResponse struct {
 	ProfileImageURL        *string      `json:"profile_image_url,omitempty"`
 	Location               *LocationDTO `json:"location,omitempty"`
 	Brands                 []string     `json:"brands,omitempty"`
+	DisplacementRanges     []string     `json:"displacement_ranges,omitempty"`
 	Links                  []Link       `json:"_links"`
 }
 
@@ -146,12 +155,13 @@ func NewBranchListItemResponse(branch domain.Branch, encodedID string, encodedFr
 	item := BranchListItemResponse{
 		ID:                     encodedID,
 		Name:                   branch.Name,
-		EstablishmentType:      branch.EstablishmentType,
+		EstablishmentType:      string(branch.EstablishmentType),
 		EstablishmentTypeLabel: domain.GetEstablishmentTypeLabel(branch.EstablishmentType),
-		Status:                 branch.Status,
+		Status:                 string(branch.Status),
 		FranchiseID:            encodedFranchiseID,
 		ProfileImageURL:        branch.ProfileImageURL,
 		Brands:                 branch.Brands,
+		DisplacementRanges:     fromDisplacementRanges(branch.DisplacementRanges),
 		Links:                  links,
 	}
 
@@ -170,19 +180,21 @@ func NewBranchListItemResponse(branch domain.Branch, encodedID string, encodedFr
 
 // NearbyBranchResponse represents a branch in nearby search results (HU89)
 type NearbyBranchResponse struct {
-	ID                     string  `json:"id"`
-	Name                   string  `json:"name"`
-	EstablishmentType      string  `json:"establishment_type"`
-	EstablishmentTypeLabel string  `json:"establishment_type_label"`
-	ProfileImageURL        *string `json:"profile_image_url,omitempty"`
-	ContactPhone           *string `json:"contact_phone,omitempty"` // Representative's phone
-	Address                string  `json:"address"`
-	CityName               string  `json:"city_name"`
-	DepartmentName         string  `json:"department_name"`
-	Latitude               float64 `json:"latitude"`
-	Longitude              float64 `json:"longitude"`
-	DistanceKm             float64 `json:"distance_km"`
-	Links                  []Link  `json:"_links"`
+	ID                     string   `json:"id"`
+	Name                   string   `json:"name"`
+	EstablishmentType      string   `json:"establishment_type"`
+	EstablishmentTypeLabel string   `json:"establishment_type_label"`
+	ProfileImageURL        *string  `json:"profile_image_url,omitempty"`
+	ContactPhone           *string  `json:"contact_phone,omitempty"` // Representative's phone
+	Address                string   `json:"address"`
+	CityName               string   `json:"city_name"`
+	DepartmentName         string   `json:"department_name"`
+	Latitude               float64  `json:"latitude"`
+	Longitude              float64  `json:"longitude"`
+	DistanceKm             float64  `json:"distance_km"`
+	Brands                 []string `json:"brands,omitempty"`
+	DisplacementRanges     []string `json:"displacement_ranges,omitempty"`
+	Links                  []Link   `json:"_links"`
 }
 
 // NewNearbyBranchResponse creates a NearbyBranchResponse from domain.NearbyBranch
@@ -190,11 +202,12 @@ func NewNearbyBranchResponse(branch domain.NearbyBranch, encodedID string, baseU
 	resp := NearbyBranchResponse{
 		ID:                     encodedID,
 		Name:                   branch.Name,
-		EstablishmentType:      branch.EstablishmentType,
+		EstablishmentType:      string(branch.EstablishmentType),
 		EstablishmentTypeLabel: domain.GetEstablishmentTypeLabel(branch.EstablishmentType),
 		ProfileImageURL:        branch.ProfileImageURL,
 		ContactPhone:           branch.ContactPhone,
 		DistanceKm:             branch.DistanceKm,
+		DisplacementRanges:     fromDisplacementRanges(branch.DisplacementRanges),
 		Links:                  BuildBranchDetailLinks(baseURL, encodedID, false),
 	}
 

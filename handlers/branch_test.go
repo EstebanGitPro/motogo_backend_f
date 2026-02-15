@@ -103,7 +103,7 @@ func TestRegisterBranchRequest_ToDomain_Complete(t *testing.T) {
 	// Assert
 	assert.Equal(t, "rep-123", result.RepresentativeID)
 	assert.Equal(t, "Taller Express", result.Name)
-	assert.Equal(t, "WORKSHOP", result.EstablishmentType)
+	assert.Equal(t, domain.EstablishmentType("WORKSHOP"), result.EstablishmentType)
 	assert.Equal(t, "franchise-123", *result.FranchiseID)
 	assert.Equal(t, profileURL, *result.ProfileImageURL)
 	assert.Len(t, result.Brands, 2)

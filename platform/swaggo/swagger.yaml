@@ -1,9 +1,19 @@
 basePath: /motogo/api/v1
 definitions:
+  github_com_EstebanGitPro_motogo-backend_core_interactor_services_domain.EstablishmentType:
+    enum:
+    - WORKSHOP
+    - STORE
+    - WORKSHOP_STORE
+    type: string
+    x-enum-varnames:
+    - EstablishmentTypeWorkshop
+    - EstablishmentTypeStore
+    - EstablishmentTypeWorkshopStore
   github_com_EstebanGitPro_motogo-backend_core_interactor_services_domain.EstablishmentTypeInfo:
     properties:
       code:
-        type: string
+        $ref: '#/definitions/github_com_EstebanGitPro_motogo-backend_core_interactor_services_domain.EstablishmentType'
       label:
         type: string
     type: object
@@ -80,6 +90,10 @@ definitions:
         items:
           type: string
         type: array
+      displacement_ranges:
+        items:
+          type: string
+        type: array
       establishment_type:
         type: string
       establishment_type_label:
@@ -111,6 +125,10 @@ definitions:
       contact_phone:
         description: Representative's phone
         type: string
+      displacement_ranges:
+        items:
+          type: string
+        type: array
       establishment_type:
         type: string
       establishment_type_label:
@@ -188,6 +206,50 @@ definitions:
         type: string
       success:
         type: boolean
+    type: object
+  handlers.CategoryItemResponse:
+    properties:
+      _links:
+        items:
+          $ref: '#/definitions/handlers.Link'
+        type: array
+      line_count:
+        type: integer
+      name:
+        type: string
+    type: object
+  handlers.CategoryLineItemResponse:
+    properties:
+      brand:
+        type: string
+      engine_displacement:
+        type: integer
+      model:
+        type: string
+    type: object
+  handlers.CategoryLinesResponse:
+    properties:
+      _links:
+        items:
+          $ref: '#/definitions/handlers.Link'
+        type: array
+      category:
+        type: string
+      lines:
+        items:
+          $ref: '#/definitions/handlers.CategoryLineItemResponse'
+        type: array
+    type: object
+  handlers.CategoryListResponse:
+    properties:
+      _links:
+        items:
+          $ref: '#/definitions/handlers.Link'
+        type: array
+      categories:
+        items:
+          $ref: '#/definitions/handlers.CategoryItemResponse'
+        type: array
     type: object
   handlers.ChangePasswordRequest:
     properties:
@@ -348,8 +410,22 @@ definitions:
         type: string
       problem_description:
         type: string
-      sent_via_whatsapp:
-        type: boolean
+    type: object
+  handlers.DisplacementItemResponse:
+    properties:
+      range:
+        type: string
+    type: object
+  handlers.DisplacementListResponse:
+    properties:
+      _links:
+        items:
+          $ref: '#/definitions/handlers.Link'
+        type: array
+      displacements:
+        items:
+          $ref: '#/definitions/handlers.DisplacementItemResponse'
+        type: array
     type: object
   handlers.EvidenceResponse:
     properties:
@@ -657,6 +733,10 @@ definitions:
         type: array
       address:
         type: string
+      brands:
+        items:
+          type: string
+        type: array
       city_name:
         type: string
       contact_phone:
@@ -664,6 +744,10 @@ definitions:
         type: string
       department_name:
         type: string
+      displacement_ranges:
+        items:
+          type: string
+        type: array
       distance_km:
         type: number
       establishment_type:
@@ -763,6 +847,24 @@ definitions:
       phone_number:
         type: string
     type: object
+  handlers.RatingRangeItemResponse:
+    properties:
+      label:
+        type: string
+      value:
+        type: integer
+    type: object
+  handlers.RatingRangeListResponse:
+    properties:
+      _links:
+        items:
+          $ref: '#/definitions/handlers.Link'
+        type: array
+      ratings:
+        items:
+          $ref: '#/definitions/handlers.RatingRangeItemResponse'
+        type: array
+    type: object
   handlers.RefreshTokenRequest:
     properties:
       refresh_token:
@@ -773,6 +875,10 @@ definitions:
   handlers.RegisterBranchRequest:
     properties:
       brands:
+        items:
+          type: string
+        type: array
+      displacement_ranges:
         items:
           type: string
         type: array
@@ -2413,6 +2519,30 @@ paths:
       security:
       - BearerAuth: []
       summary: Set diagnostic solution
+  /engine-displacements:
+    get:
+      description: Retrieves all distinct engine displacement values with reference
+        counts. Public endpoint (no authentication required). Returns HATEOAS links
+        (Richardson Maturity Level 3).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Displacements retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.DisplacementListResponse'
+              type: object
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      summary: List engine displacement ranges
+      tags:
+      - Catalogs
   /franchises:
     get:
       produces:
@@ -2653,6 +2783,60 @@ paths:
       summary: Test geocoding service
       tags:
       - Dev Tools
+  /motorcycle-categories:
+    get:
+      description: Retrieves all distinct motorcycle categories with line counts.
+        Public endpoint (no authentication required). Returns HATEOAS links for category
+        drill-down (Richardson Maturity Level 3).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Categories retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.CategoryListResponse'
+              type: object
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      summary: List motorcycle categories
+      tags:
+      - Catalogs
+  /motorcycle-categories/{categoryName}/lines:
+    get:
+      description: Retrieves all motorcycle lines (models) for a specific category
+        with brand and engine displacement. Public endpoint (no authentication required).
+        Returns HATEOAS links (Richardson Maturity Level 3).
+      parameters:
+      - description: Category name (e.g., Sport, Scooter, Urban)
+        in: path
+        name: categoryName
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Lines retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.CategoryLinesResponse'
+              type: object
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      summary: List motorcycle lines by category
+      tags:
+      - Catalogs
   /motorcycle-references:
     get:
       description: Retrieves all motorcycle references (brands/models) for selection
@@ -3790,6 +3974,30 @@ paths:
       summary: Cambiar contraseña del usuario autenticado
       tags:
       - Autenticación
+  /rating-ranges:
+    get:
+      description: Retrieves all valid rating values (1-5) with labels. Public endpoint
+        (no authentication required). Returns HATEOAS links (Richardson Maturity Level
+        3).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Rating ranges retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.RatingRangeListResponse'
+              type: object
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      summary: List rating ranges
+      tags:
+      - Catalogs
   /schedule-details/{id}:
     delete:
       description: Deletes an existing time slot (schedule detail)

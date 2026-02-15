@@ -60,33 +60,13 @@ const (
 	`
 	queryHasBranchesByRepresentative = "SELECT EXISTS(SELECT 1 FROM branches WHERE representative_id = ? LIMIT 1)"
 
-	// HU89: Nearby branches search with Haversine formula and bounding box optimization
-	queryGetBranchesNearby = `
-		SELECT 
-			b.id, b.name, b.establishment_type, b.profile_image_url, b.status,
-			l.address, l.latitude, l.longitude,
-			ci.name AS city_name, d.name AS department_name,
-			p.phone_number,
-			(6371 * ACOS(
-				COS(RADIANS(?)) * COS(RADIANS(l.latitude)) *
-				COS(RADIANS(l.longitude) - RADIANS(?)) +
-				SIN(RADIANS(?)) * SIN(RADIANS(l.latitude))
-			)) AS distance_km
-		FROM branches b
-		INNER JOIN locations l ON b.id = l.branch_id
-		INNER JOIN cities ci ON l.city_id = ci.id
-		INNER JOIN departments d ON ci.department_id = d.id
-		LEFT JOIN persons p ON b.representative_id = p.id
-		WHERE b.status = 'ACTIVE'
-		  AND l.latitude IS NOT NULL
-		  AND l.longitude IS NOT NULL
-		  AND (? = '' OR b.establishment_type LIKE CONCAT('%', ?, '%'))
-		  AND l.latitude BETWEEN ? AND ?
-		  AND l.longitude BETWEEN ? AND ?
-		HAVING distance_km <= ?
-		ORDER BY distance_km ASC
-		LIMIT 50
+	// Displacement range pivot queries
+	querySaveBranchDisplacementRange = `
+		INSERT INTO branch_displacement_ranges (id, branch_id, displacement_range, active, created_at, updated_at)
+		VALUES (?, ?, ?, TRUE, NOW(), NOW())
 	`
+	queryDeleteBranchDisplacementRanges = "DELETE FROM branch_displacement_ranges WHERE branch_id = ?"
+	queryGetBranchDisplacementRanges    = "SELECT displacement_range FROM branch_displacement_ranges WHERE branch_id = ? AND active = TRUE"
 )
 
 var log logger.Logger = logger.NewSlogLogger()
@@ -102,7 +82,11 @@ type repository struct {
 	stmtSaveBranchBrand             *sql.Stmt
 	stmtDeleteBranchBrands          *sql.Stmt
 	stmtGetBranchBrands             *sql.Stmt
-	stmtGetBranchesNearby           *sql.Stmt // HU89
+
+	// Displacement range pivot
+	stmtSaveBranchDisplacementRange    *sql.Stmt
+	stmtDeleteBranchDisplacementRanges *sql.Stmt
+	stmtGetBranchDisplacementRanges    *sql.Stmt
 }
 
 // NewRepository creates a new BranchRepository with prepared statements (fail-fast pattern)
@@ -165,10 +149,22 @@ func NewRepository(db *sql.DB) (output.BranchRepository, error) {
 		return nil, fmt.Errorf("error preparing stmtGetBranchBrands: %w", err)
 	}
 
-	stmtGetBranchesNearby, err := db.Prepare(queryGetBranchesNearby)
+	stmtSaveBranchDisplacementRange, err := db.Prepare(querySaveBranchDisplacementRange)
 	if err != nil {
-		log.Error(logger.LogDatabaseUnavailable, "error preparing stmtGetBranchesNearby", err)
-		return nil, fmt.Errorf("error preparing stmtGetBranchesNearby: %w", err)
+		log.Error(logger.LogDatabaseUnavailable, "error preparing stmtSaveBranchDisplacementRange", err)
+		return nil, fmt.Errorf("error preparing stmtSaveBranchDisplacementRange: %w", err)
+	}
+
+	stmtDeleteBranchDisplacementRanges, err := db.Prepare(queryDeleteBranchDisplacementRanges)
+	if err != nil {
+		log.Error(logger.LogDatabaseUnavailable, "error preparing stmtDeleteBranchDisplacementRanges", err)
+		return nil, fmt.Errorf("error preparing stmtDeleteBranchDisplacementRanges: %w", err)
+	}
+
+	stmtGetBranchDisplacementRanges, err := db.Prepare(queryGetBranchDisplacementRanges)
+	if err != nil {
+		log.Error(logger.LogDatabaseUnavailable, "error preparing stmtGetBranchDisplacementRanges", err)
+		return nil, fmt.Errorf("error preparing stmtGetBranchDisplacementRanges: %w", err)
 	}
 
 	return &repository{
@@ -182,7 +178,10 @@ func NewRepository(db *sql.DB) (output.BranchRepository, error) {
 		stmtSaveBranchBrand:             stmtSaveBranchBrand,
 		stmtDeleteBranchBrands:          stmtDeleteBranchBrands,
 		stmtGetBranchBrands:             stmtGetBranchBrands,
-		stmtGetBranchesNearby:           stmtGetBranchesNearby,
+
+		stmtSaveBranchDisplacementRange:    stmtSaveBranchDisplacementRange,
+		stmtDeleteBranchDisplacementRanges: stmtDeleteBranchDisplacementRanges,
+		stmtGetBranchDisplacementRanges:    stmtGetBranchDisplacementRanges,
 	}, nil
 }
 

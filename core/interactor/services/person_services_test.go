@@ -972,7 +972,7 @@ func TestLogin_EmailNotVerified(t *testing.T) {
 	// Assert
 	assert.Error(t, err)
 	assert.Nil(t, token)
-	assert.Equal(t, domain.ErrorEmailNotVerified, err)
+	assert.Equal(t, domain.ErrEmailNotVerified, err)
 	mockAuthClient.AssertExpectations(t)
 }
 

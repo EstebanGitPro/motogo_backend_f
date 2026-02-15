@@ -36,7 +36,7 @@ func TestPersonRequest_ToDomain(t *testing.T) {
 	assert.Equal(t, req.Email, domain.Email)
 	assert.Equal(t, req.PhoneNumber, domain.PhoneNumber)
 	assert.Equal(t, req.Password, domain.Password)
-	assert.Equal(t, req.Role, domain.Role)
+	assert.Equal(t, req.Role, string(domain.Role))
 }
 
 func TestLoginRequest_Binding(t *testing.T) {

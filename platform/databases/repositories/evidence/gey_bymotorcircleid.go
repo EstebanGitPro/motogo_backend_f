@@ -14,7 +14,7 @@ func (r *repository) GetByMotorcycleID(ctx context.Context, motorcycleID string)
 		log.Error(logger.LogEvidenceRepoListByMotoError, err)
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var evidences []domain.MotorcycleEvidence
 	for rows.Next() {

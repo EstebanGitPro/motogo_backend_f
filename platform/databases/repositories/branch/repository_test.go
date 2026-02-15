@@ -37,7 +37,9 @@ func TestNewRepository_Success(t *testing.T) {
 	mock.ExpectPrepare("INSERT INTO branch_brands")
 	mock.ExpectPrepare("DELETE FROM branch_brands")
 	mock.ExpectPrepare("SELECT brand_id FROM branch_brands")
-	mock.ExpectPrepare("SELECT.*FROM branches b.*INNER JOIN locations l")
+	mock.ExpectPrepare("INSERT INTO branch_displacement_ranges")
+	mock.ExpectPrepare("DELETE FROM branch_displacement_ranges")
+	mock.ExpectPrepare("SELECT displacement_range FROM branch_displacement_ranges")
 
 	repo, err := NewRepository(db)
 
@@ -458,10 +460,20 @@ func TestGetBranchesByRepresentative_DBError(t *testing.T) {
 // ============================================
 
 func TestGetBranchesNearby_Success(t *testing.T) {
-	db, mock, err := sqlmock.New()
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherRegexp))
 	assert.NoError(t, err)
 	defer db.Close()
 
+	// 1. Expect prepared statements for hydration
+	stmtBrands := mock.ExpectPrepare("SELECT brand_id FROM branch_brands")
+	stmtDR := mock.ExpectPrepare("SELECT displacement_range FROM branch_displacement_ranges")
+
+	// 2. Set up repo with real prepared statements
+	repo := &repository{db: db}
+	repo.stmtGetBranchBrands, _ = db.Prepare("SELECT brand_id FROM branch_brands WHERE branch_id = ?")
+	repo.stmtGetBranchDisplacementRanges, _ = db.Prepare("SELECT displacement_range FROM branch_displacement_ranges WHERE branch_id = ?")
+
+	// 3. Expect main nearby query
 	rows := sqlmock.NewRows([]string{
 		"id", "name", "establishment_type", "profile_image_url", "status",
 		"address", "latitude", "longitude", "city_name", "department_name", "phone_number", "distance_km",
@@ -472,20 +484,26 @@ func TestGetBranchesNearby_Success(t *testing.T) {
 		"branch-002", "Tienda Norte", "STORE", nil, "ACTIVE",
 		"Carrera 15 #80-45", 4.7200, -74.0650, "Bogotá", "Cundinamarca", nil, 2.3,
 	)
+	mock.ExpectQuery("SELECT").WillReturnRows(rows)
 
-	stmt := mock.ExpectPrepare("SELECT")
-	stmt.ExpectQuery().
-		WithArgs(4.7110, -74.0721, 4.7110, "", "", 4.6110, 4.8110, -74.1721, -73.9721, 5.0).
-		WillReturnRows(rows)
+	// 4. Expect hydration queries for branch-001
+	stmtBrands.ExpectQuery().WithArgs("branch-001").
+		WillReturnRows(sqlmock.NewRows([]string{"brand_id"}).AddRow("brand-A").AddRow("brand-B"))
+	stmtDR.ExpectQuery().WithArgs("branch-001").
+		WillReturnRows(sqlmock.NewRows([]string{"displacement_range"}).AddRow("BAJO").AddRow("MEDIO"))
 
-	repo := &repository{db: db}
-	repo.stmtGetBranchesNearby, _ = db.Prepare("SELECT * FROM branches")
+	// 5. Expect hydration queries for branch-002
+	stmtBrands.ExpectQuery().WithArgs("branch-002").
+		WillReturnRows(sqlmock.NewRows([]string{"brand_id"}))
+	stmtDR.ExpectQuery().WithArgs("branch-002").
+		WillReturnRows(sqlmock.NewRows([]string{"displacement_range"}).AddRow("ALTO"))
 
 	branches, err := repo.GetBranchesNearby(
 		context.Background(),
 		4.7110, -74.0721, 5.0,
 		"",
 		4.6110, 4.8110, -74.1721, -73.9721,
+		"", "",
 	)
 
 	assert.NoError(t, err)
@@ -494,10 +512,15 @@ func TestGetBranchesNearby_Success(t *testing.T) {
 	assert.Equal(t, 1.5, branches[0].DistanceKm)
 	assert.NotNil(t, branches[0].ProfileImageURL)
 	assert.Nil(t, branches[1].ProfileImageURL)
+	// Verify hydrated data
+	assert.Equal(t, []string{"brand-A", "brand-B"}, branches[0].Brands)
+	assert.Equal(t, []domain.DisplacementRange{"BAJO", "MEDIO"}, branches[0].DisplacementRanges)
+	assert.Empty(t, branches[1].Brands)
+	assert.Equal(t, []domain.DisplacementRange{"ALTO"}, branches[1].DisplacementRanges)
 }
 
 func TestGetBranchesNearby_Empty(t *testing.T) {
-	db, mock, err := sqlmock.New()
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherRegexp))
 	assert.NoError(t, err)
 	defer db.Close()
 
@@ -506,19 +529,17 @@ func TestGetBranchesNearby_Empty(t *testing.T) {
 		"address", "latitude", "longitude", "city_name", "department_name", "phone_number", "distance_km",
 	})
 
-	stmt := mock.ExpectPrepare("SELECT")
-	stmt.ExpectQuery().
-		WithArgs(4.7110, -74.0721, 4.7110, "WORKSHOP", "WORKSHOP", 4.6110, 4.8110, -74.1721, -73.9721, 1.0).
+	mock.ExpectQuery("SELECT").
 		WillReturnRows(rows)
 
 	repo := &repository{db: db}
-	repo.stmtGetBranchesNearby, _ = db.Prepare("SELECT * FROM branches")
 
 	branches, err := repo.GetBranchesNearby(
 		context.Background(),
 		4.7110, -74.0721, 1.0,
 		"WORKSHOP",
 		4.6110, 4.8110, -74.1721, -73.9721,
+		"", "",
 	)
 
 	assert.NoError(t, err)
@@ -526,23 +547,21 @@ func TestGetBranchesNearby_Empty(t *testing.T) {
 }
 
 func TestGetBranchesNearby_DBError(t *testing.T) {
-	db, mock, err := sqlmock.New()
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherRegexp))
 	assert.NoError(t, err)
 	defer db.Close()
 
-	stmt := mock.ExpectPrepare("SELECT")
-	stmt.ExpectQuery().
-		WithArgs(4.7110, -74.0721, 4.7110, "", "", 4.6110, 4.8110, -74.1721, -73.9721, 5.0).
+	mock.ExpectQuery("SELECT").
 		WillReturnError(sql.ErrConnDone)
 
 	repo := &repository{db: db}
-	repo.stmtGetBranchesNearby, _ = db.Prepare("SELECT * FROM branches")
 
 	branches, err := repo.GetBranchesNearby(
 		context.Background(),
 		4.7110, -74.0721, 5.0,
 		"",
 		4.6110, 4.8110, -74.1721, -73.9721,
+		"", "",
 	)
 
 	assert.Nil(t, branches)
@@ -1013,4 +1032,298 @@ func TestDeleteBranchBrands_InvalidTransaction(t *testing.T) {
 	repo := &repository{}
 	err := repo.DeleteBranchBrands(context.Background(), nil, "branch-123")
 	assert.Equal(t, domain.ErrInvalidTransaction, err)
+}
+
+// ============================================
+// SaveBranchDisplacementRanges Tests
+// ============================================
+
+func TestSaveBranchDisplacementRanges_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("INSERT INTO branch_displacement_ranges").
+		WithArgs(sqlmock.AnyArg(), "branch-123", "BAJO").
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("INSERT INTO branch_displacement_ranges").
+		WithArgs(sqlmock.AnyArg(), "branch-123", "MEDIO").
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	err = repo.SaveBranchDisplacementRanges(context.Background(), sqlTx, "branch-123", []string{"BAJO", "MEDIO"})
+
+	assert.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestSaveBranchDisplacementRanges_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("INSERT INTO branch_displacement_ranges").WillReturnError(sql.ErrConnDone)
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	err = repo.SaveBranchDisplacementRanges(context.Background(), sqlTx, "branch-123", []string{"BAJO"})
+	assert.Equal(t, domain.ErrBranchCannotSave, err)
+}
+
+func TestSaveBranchDisplacementRanges_InvalidTransaction(t *testing.T) {
+	repo := &repository{}
+	err := repo.SaveBranchDisplacementRanges(context.Background(), nil, "branch-123", []string{"BAJO"})
+	assert.Equal(t, domain.ErrInvalidTransaction, err)
+}
+
+func TestSaveBranchDisplacementRanges_Empty(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	err = repo.SaveBranchDisplacementRanges(context.Background(), sqlTx, "branch-123", []string{})
+
+	assert.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+// ============================================
+// DeleteBranchDisplacementRanges Tests
+// ============================================
+
+func TestDeleteBranchDisplacementRanges_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("DELETE FROM branch_displacement_ranges").
+		WithArgs("branch-123").
+		WillReturnResult(sqlmock.NewResult(0, 3))
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	err = repo.DeleteBranchDisplacementRanges(context.Background(), sqlTx, "branch-123")
+
+	assert.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestDeleteBranchDisplacementRanges_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("DELETE FROM branch_displacement_ranges").WillReturnError(sql.ErrConnDone)
+
+	tx, err := db.Begin()
+	assert.NoError(t, err)
+
+	sqlTx := common.NewSQLTx(tx)
+	repo := &repository{db: db}
+
+	err = repo.DeleteBranchDisplacementRanges(context.Background(), sqlTx, "branch-err")
+	assert.Equal(t, domain.ErrBranchCannotDelete, err)
+}
+
+func TestDeleteBranchDisplacementRanges_InvalidTransaction(t *testing.T) {
+	repo := &repository{}
+	err := repo.DeleteBranchDisplacementRanges(context.Background(), nil, "branch-123")
+	assert.Equal(t, domain.ErrInvalidTransaction, err)
+}
+
+// ============================================
+// GetBranchByID Success Path Tests
+// ============================================
+
+func TestGetBranchByID_Success_WithAllFields(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	// 1. Prepare hydration statements FIRST (they are used after main query)
+	stmtBrands := mock.ExpectPrepare("SELECT brand_id FROM branch_brands")
+	stmtDR := mock.ExpectPrepare("SELECT displacement_range FROM branch_displacement_ranges")
+
+	// 2. Prepare main query
+	stmt := mock.ExpectPrepare("SELECT b.id, b.representative_id")
+
+	// 3. Set up repo with real prepared statements
+	repo := &repository{db: db}
+	repo.stmtGetBranchBrands, _ = db.Prepare("SELECT brand_id FROM branch_brands WHERE branch_id = ?")
+	repo.stmtGetBranchDisplacementRanges, _ = db.Prepare("SELECT displacement_range FROM branch_displacement_ranges WHERE branch_id = ?")
+	repo.stmtGetBranchByID, _ = db.Prepare("SELECT b.id, b.representative_id FROM branches b WHERE b.id = ?")
+
+	// 4. Main query returns branch with all nullable fields populated
+	rows := sqlmock.NewRows([]string{
+		"id", "representative_id", "franchise_id", "name", "establishment_type", "profile_image_url", "status",
+		"location_id", "city_id", "address", "latitude", "longitude", "department_id", "phone_number",
+	}).AddRow(
+		"branch-001", "rep-123", "franchise-001", "Taller Central", "WORKSHOP", "http://example.com/img.jpg", "ACTIVE",
+		"loc-001", "city-001", "Calle 123 #45-67", 4.7110, -74.0721, "dept-001", "3001234567",
+	)
+	stmt.ExpectQuery().
+		WithArgs("branch-001").
+		WillReturnRows(rows)
+
+	// 5. Hydration queries (executed after main query)
+	stmtBrands.ExpectQuery().
+		WithArgs("branch-001").
+		WillReturnRows(sqlmock.NewRows([]string{"brand_id"}).AddRow("brand-A").AddRow("brand-B"))
+	stmtDR.ExpectQuery().
+		WithArgs("branch-001").
+		WillReturnRows(sqlmock.NewRows([]string{"displacement_range"}).AddRow("BAJO").AddRow("MEDIO"))
+
+	branch, err := repo.GetBranchByID(context.Background(), "branch-001")
+
+	assert.NoError(t, err)
+	assert.NotNil(t, branch)
+	assert.Equal(t, "branch-001", branch.ID)
+	assert.Equal(t, "rep-123", branch.RepresentativeID)
+	assert.NotNil(t, branch.FranchiseID)
+	assert.Equal(t, "franchise-001", *branch.FranchiseID)
+	assert.NotNil(t, branch.ProfileImageURL)
+	assert.Equal(t, "http://example.com/img.jpg", *branch.ProfileImageURL)
+	assert.NotNil(t, branch.RepresentativePhone)
+	assert.Equal(t, "3001234567", *branch.RepresentativePhone)
+	assert.NotNil(t, branch.Location)
+	assert.Equal(t, "loc-001", branch.Location.ID)
+	assert.Equal(t, "dept-001", branch.Location.DepartmentID)
+	assert.Equal(t, "city-001", branch.Location.CityID)
+	assert.NotNil(t, branch.Location.Latitude)
+	assert.NotNil(t, branch.Location.Longitude)
+	assert.Equal(t, []string{"brand-A", "brand-B"}, branch.Brands)
+	assert.Equal(t, []domain.DisplacementRange{"BAJO", "MEDIO"}, branch.DisplacementRanges)
+}
+
+func TestGetBranchByID_Success_NullableFieldsNil(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	// 1. Prepare hydration statements FIRST
+	stmtBrands := mock.ExpectPrepare("SELECT brand_id FROM branch_brands")
+	stmtDR := mock.ExpectPrepare("SELECT displacement_range FROM branch_displacement_ranges")
+
+	// 2. Prepare main query
+	stmt := mock.ExpectPrepare("SELECT b.id, b.representative_id")
+
+	// 3. Set up repo
+	repo := &repository{db: db}
+	repo.stmtGetBranchBrands, _ = db.Prepare("SELECT brand_id FROM branch_brands WHERE branch_id = ?")
+	repo.stmtGetBranchDisplacementRanges, _ = db.Prepare("SELECT displacement_range FROM branch_displacement_ranges WHERE branch_id = ?")
+	repo.stmtGetBranchByID, _ = db.Prepare("SELECT b.id, b.representative_id FROM branches b WHERE b.id = ?")
+
+	// 4. Main query with nullable fields as NULL
+	rows := sqlmock.NewRows([]string{
+		"id", "representative_id", "franchise_id", "name", "establishment_type", "profile_image_url", "status",
+		"location_id", "city_id", "address", "latitude", "longitude", "department_id", "phone_number",
+	}).AddRow(
+		"branch-002", "rep-456", nil, "Tienda Sin Extra", "STORE", nil, "ACTIVE",
+		nil, nil, nil, nil, nil, nil, nil,
+	)
+	stmt.ExpectQuery().
+		WithArgs("branch-002").
+		WillReturnRows(rows)
+
+	// 5. Hydration queries (empty results)
+	stmtBrands.ExpectQuery().
+		WithArgs("branch-002").
+		WillReturnRows(sqlmock.NewRows([]string{"brand_id"}))
+	stmtDR.ExpectQuery().
+		WithArgs("branch-002").
+		WillReturnRows(sqlmock.NewRows([]string{"displacement_range"}))
+
+	branch, err := repo.GetBranchByID(context.Background(), "branch-002")
+
+	assert.NoError(t, err)
+	assert.NotNil(t, branch)
+	assert.Nil(t, branch.FranchiseID)
+	assert.Nil(t, branch.ProfileImageURL)
+	assert.Nil(t, branch.RepresentativePhone)
+	assert.Nil(t, branch.Location)
+	assert.Empty(t, branch.Brands)
+}
+
+// ============================================
+// GetBranchesByRepresentative Success Path Tests
+// ============================================
+
+func TestGetBranchesByRepresentative_Success_WithData(t *testing.T) {
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherRegexp))
+	assert.NoError(t, err)
+	defer db.Close()
+
+	// 1. Prepare hydration stmts on repo
+	mock.ExpectPrepare("SELECT brand_id FROM branch_brands")
+	mock.ExpectPrepare("SELECT displacement_range FROM branch_displacement_ranges")
+
+	repo := &repository{db: db}
+	repo.stmtGetBranchBrands, _ = db.Prepare("SELECT brand_id FROM branch_brands WHERE branch_id = ?")
+	repo.stmtGetBranchDisplacementRanges, _ = db.Prepare("SELECT displacement_range FROM branch_displacement_ranges WHERE branch_id = ?")
+
+	// 2. Prepare main query
+	stmtMain := mock.ExpectPrepare("SELECT b.id, b.representative_id")
+	repo.stmtGetBranchesByRepresentative, _ = db.Prepare("SELECT b.id, b.representative_id FROM branches b WHERE b.representative_id = ?")
+
+	// 3. Main query returns 2 branches
+	rows := sqlmock.NewRows([]string{
+		"id", "representative_id", "franchise_id", "name", "establishment_type", "profile_image_url", "status",
+		"location_id", "city_id", "address", "latitude", "longitude", "department_id", "phone_number",
+	}).AddRow(
+		"branch-001", "rep-123", "franchise-001", "Taller Norte", "WORKSHOP", "http://example.com/img.jpg", "ACTIVE",
+		"loc-001", "city-001", "Calle 123", 4.7110, -74.0721, "dept-001", "3001234567",
+	).AddRow(
+		"branch-002", "rep-123", nil, "Tienda Sur", "STORE", nil, "ACTIVE",
+		nil, nil, nil, nil, nil, nil, nil,
+	)
+	stmtMain.ExpectQuery().WillReturnRows(rows)
+
+	// 4. During rows iteration, Go re-prepares hydration stmts on new connections
+	reBrands := mock.ExpectPrepare("SELECT brand_id FROM branch_brands")
+	reBrands.ExpectQuery().WillReturnRows(sqlmock.NewRows([]string{"brand_id"}).AddRow("brand-A"))
+	reDR := mock.ExpectPrepare("SELECT displacement_range FROM branch_displacement_ranges")
+	reDR.ExpectQuery().WillReturnRows(sqlmock.NewRows([]string{"displacement_range"}).AddRow("BAJO"))
+
+	branches, err := repo.GetBranchesByRepresentative(context.Background(), "rep-123")
+
+	assert.NoError(t, err)
+	assert.NotEmpty(t, branches)
+
+	// First branch: all fields populated
+	assert.Equal(t, "branch-001", branches[0].ID)
+	assert.Equal(t, "rep-123", branches[0].RepresentativeID)
+	assert.Equal(t, "Taller Norte", branches[0].Name)
+	assert.NotNil(t, branches[0].FranchiseID)
+	assert.Equal(t, "franchise-001", *branches[0].FranchiseID)
+	assert.NotNil(t, branches[0].ProfileImageURL)
+	assert.NotNil(t, branches[0].RepresentativePhone)
+	assert.NotNil(t, branches[0].Location)
+	assert.Equal(t, "loc-001", branches[0].Location.ID)
+	assert.Equal(t, []string{"brand-A"}, branches[0].Brands)
+	assert.Equal(t, []domain.DisplacementRange{"BAJO"}, branches[0].DisplacementRanges)
 }

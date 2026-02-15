@@ -87,6 +87,42 @@ func (m *MockMotorcycleInteractor) GetReferencesByBrandID(ctx context.Context, b
 	return args.Get(0).([]domain.MotorcycleReference), args.Error(1)
 }
 
+// GetDistinctCategories mocks the GetDistinctCategories method (HU41)
+func (m *MockMotorcycleInteractor) GetDistinctCategories(ctx context.Context) ([]domain.MotorcycleCategory, error) {
+	args := m.Called(ctx)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]domain.MotorcycleCategory), args.Error(1)
+}
+
+// GetLinesByCategory mocks the GetLinesByCategory method (HU41)
+func (m *MockMotorcycleInteractor) GetLinesByCategory(ctx context.Context, categoryName string) ([]domain.CategoryLine, error) {
+	args := m.Called(ctx, categoryName)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]domain.CategoryLine), args.Error(1)
+}
+
+// GetDistinctDisplacements mocks the GetDistinctDisplacements method (HU49)
+func (m *MockMotorcycleInteractor) GetDistinctDisplacements(ctx context.Context) ([]domain.EngineDisplacementRange, error) {
+	args := m.Called(ctx)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]domain.EngineDisplacementRange), args.Error(1)
+}
+
+// GetRatingRanges mocks the GetRatingRanges method (HU48)
+func (m *MockMotorcycleInteractor) GetRatingRanges(ctx context.Context) ([]domain.RatingRange, error) {
+	args := m.Called(ctx)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]domain.RatingRange), args.Error(1)
+}
+
 // GrantDiagnosticPermission mocks the GrantDiagnosticPermission method
 func (m *MockMotorcycleInteractor) GrantDiagnosticPermission(ctx context.Context, motorcycleID, branchID, ownerID string, active bool) (*domain.DiagnosticPermission, error) {
 	args := m.Called(ctx, motorcycleID, branchID, ownerID, active)

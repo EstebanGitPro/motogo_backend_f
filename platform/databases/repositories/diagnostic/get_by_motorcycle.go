@@ -14,7 +14,7 @@ func (r *repository) GetByMotorcycleID(ctx context.Context, motorcycleID string)
 		log.Error(logger.LogDiagnosticRepoListByMotoError, err)
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var diagnostics []domain.Diagnostic
 	for rows.Next() {
@@ -26,7 +26,6 @@ func (r *repository) GetByMotorcycleID(ctx context.Context, motorcycleID string)
 			&diag.Date,
 			&diag.ProblemDescription,
 			&diag.PossibleSolution,
-			&diag.SentViaWhatsApp,
 		); err != nil {
 			log.Error(logger.LogDiagnosticRepoScanError, err)
 			return nil, err
@@ -48,7 +47,7 @@ func (r *repository) GetEvidenceByDiagnosticID(ctx context.Context, diagnosticID
 		log.Error(logger.LogDiagnosticRepoListEvidenceError, err)
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var evidences []domain.DiagnosticEvidence
 	for rows.Next() {

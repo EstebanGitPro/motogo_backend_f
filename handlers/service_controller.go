@@ -265,7 +265,7 @@ func (h *handler) AssociateBranchServices() gin.HandlerFunc {
 
 		err = h.ServiceInteractor.AssociateBranchServices(c.Request.Context(), tx, decodedBranchID, decodedServiceIDs)
 		if err != nil {
-			tx.Rollback()
+			_ = tx.Rollback()
 			log.Error(logger.LogBranchServicesControllerAssociateErr, "error", err)
 			h.Response.Error(c, domain.MsgServerError)
 			return
@@ -337,7 +337,7 @@ func (h *handler) DissociateBranchService() gin.HandlerFunc {
 
 		err = h.ServiceInteractor.DissociateBranchService(c.Request.Context(), tx, decodedBranchID, decodedServiceID)
 		if err != nil {
-			tx.Rollback()
+			_ = tx.Rollback()
 			if errors.Is(err, domain.ErrServiceNotFound) {
 				log.Warn(logger.LogBranchServicesControllerNotFound, "branch_id", branchID, "service_id", serviceID)
 				h.Response.Error(c, domain.MsgServiceNotFound)

@@ -36,7 +36,7 @@ func (r *repository) GetByMotorcycleID(ctx context.Context, motorcycleID string)
 		log.Error(logger.LogDiagPermRepoListError, err)
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var permissions []domain.DiagnosticPermission
 	for rows.Next() {

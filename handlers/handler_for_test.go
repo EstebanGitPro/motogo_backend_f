@@ -94,3 +94,23 @@ func NewForTestWithPerson(
 		Response:         responseHandler,
 	}
 }
+
+// NewForTestWithLookup creates a handler with all interactors needed for
+// LookupMotorcycleByPlate integration tests (Branch, Motorcycle, Diagnostic, Evidence).
+func NewForTestWithLookup(
+	branchInteractor *interactor.BranchInteractor,
+	motorcycleInteractor input.MotorcycleInteractorInterface,
+	diagnosticInteractor *interactor.DiagnosticInteractor,
+	evidenceInteractor input.EvidenceInteractorInterface,
+	encoder *idencoder.HashidsEncoder,
+	responseHandler *middleware.ResponseHandler,
+) *handler {
+	return &handler{
+		BranchInteractor:     branchInteractor,
+		MotorcycleInteractor: motorcycleInteractor,
+		DiagnosticInteractor: diagnosticInteractor,
+		EvidenceInteractor:   evidenceInteractor,
+		IDEncoder:            encoder,
+		Response:             responseHandler,
+	}
+}

@@ -20,7 +20,7 @@ var errorToMessageCode = map[error]string{
 	domain.ErrUserCannotGet:             domain.MsgUserNotFound,
 	domain.ErrNotFoundUserByEmail:       domain.MsgUserEmailNotFound,
 	domain.ErrGettingUserByEmail:        domain.MsgUserEmailError,
-	domain.ErrorEmailNotVerified:        domain.MsgUserEmailNotVerified,
+	domain.ErrEmailNotVerified:          domain.MsgUserEmailNotVerified,
 	domain.ErrVerificationTokenNotFound: domain.MsgUserTokenNotFound,
 	domain.ErrTokenExpired:              domain.MsgUserTokenExpired,
 	domain.ErrTokenAlreadyUsed:          domain.MsgUserTokenUsed,

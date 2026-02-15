@@ -21,14 +21,14 @@ func TestBranch_SetID(t *testing.T) {
 func TestBranch_IsValidEstablishmentType_Valid(t *testing.T) {
 	tests := []struct {
 		name          string
-		establishment string
+		establishment EstablishmentType
 		expected      bool
 	}{
 		{"Workshop", EstablishmentTypeWorkshop, true},
 		{"Store", EstablishmentTypeStore, true},
 		{"WorkshopStore", EstablishmentTypeWorkshopStore, true},
-		{"Invalid", "INVALID_TYPE", false},
-		{"Empty", "", false},
+		{"Invalid", EstablishmentType("INVALID_TYPE"), false},
+		{"Empty", EstablishmentType(""), false},
 	}
 
 	for _, tt := range tests {
@@ -44,8 +44,8 @@ func TestIsValidEstablishmentType_Standalone(t *testing.T) {
 	assert.True(t, IsValidEstablishmentType(EstablishmentTypeWorkshop))
 	assert.True(t, IsValidEstablishmentType(EstablishmentTypeStore))
 	assert.True(t, IsValidEstablishmentType(EstablishmentTypeWorkshopStore))
-	assert.False(t, IsValidEstablishmentType("INVALID"))
-	assert.False(t, IsValidEstablishmentType(""))
+	assert.False(t, IsValidEstablishmentType(EstablishmentType("INVALID")))
+	assert.False(t, IsValidEstablishmentType(EstablishmentType("")))
 }
 
 func TestBranch_ToLogger(t *testing.T) {
@@ -76,17 +76,17 @@ func TestGetAllEstablishmentTypes(t *testing.T) {
 
 func TestGetEstablishmentTypeLabel(t *testing.T) {
 	tests := []struct {
-		code     string
+		code     EstablishmentType
 		expected string
 	}{
 		{EstablishmentTypeWorkshop, "Taller"},
 		{EstablishmentTypeStore, "Tienda"},
 		{EstablishmentTypeWorkshopStore, "Taller y Tienda"},
-		{"UNKNOWN", "UNKNOWN"}, // Falls back to code
+		{EstablishmentType("UNKNOWN"), "UNKNOWN"}, // Falls back to code
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.code, func(t *testing.T) {
+		t.Run(string(tt.code), func(t *testing.T) {
 			result := GetEstablishmentTypeLabel(tt.code)
 			assert.Equal(t, tt.expected, result)
 		})

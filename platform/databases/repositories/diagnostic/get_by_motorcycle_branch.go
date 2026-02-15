@@ -23,7 +23,6 @@ func (r *repository) GetByMotorcycleAndBranch(ctx context.Context, motorcycleID,
 		&diag.Date,
 		&diag.ProblemDescription,
 		&diag.PossibleSolution,
-		&diag.SentViaWhatsApp,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {

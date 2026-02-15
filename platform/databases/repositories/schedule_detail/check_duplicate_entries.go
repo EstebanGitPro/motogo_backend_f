@@ -6,6 +6,9 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
+// nullUUID is a UUID that won't match any real record ID, used as default excludeID
+const nullUUID = "00000000-0000-0000-0000-000000000000"
+
 func (r *repository) CheckDayIsClosed(
 	ctx context.Context,
 	scheduleID string,
@@ -13,7 +16,7 @@ func (r *repository) CheckDayIsClosed(
 	excludeDetailID string,
 ) (bool, error) {
 	if excludeDetailID == "" {
-		excludeDetailID = "00000000-0000-0000-0000-000000000000" // UUID that won't match any real ID
+		excludeDetailID = nullUUID
 	}
 
 	var count int
@@ -38,7 +41,7 @@ func (r *repository) CheckDayHasTimeSlots(
 	excludeDetailID string,
 ) (bool, error) {
 	if excludeDetailID == "" {
-		excludeDetailID = "00000000-0000-0000-0000-000000000000" // UUID that won't match any real ID
+		excludeDetailID = nullUUID
 	}
 
 	var count int

@@ -571,6 +571,10 @@ const (
 	LogBranchRepoBrandDelError    = "Error eliminando marcas de sede"
 	LogBranchRepoBrandGetError    = "Error obteniendo marcas de sede"
 	LogBranchRepoBrandValidateErr = "Error validando marcas"
+	// Displacement range pivot
+	LogBranchRepoDisplRangeSaveError = "Error guardando rango de cilindraje de sede"
+	LogBranchRepoDisplRangeDelError  = "Error eliminando rangos de cilindraje de sede"
+	LogBranchRepoDisplRangeGetError  = "Error obteniendo rangos de cilindraje de sede"
 )
 
 // ============================================
@@ -1288,6 +1292,53 @@ const (
 	LogMotorcycleControllerBrandLinesRequest = "Solicitud de líneas de marca recibida"
 	LogMotorcycleControllerBrandLinesError   = "Error obteniendo líneas de marca"
 	LogMotorcycleControllerBrandLinesSuccess = "Líneas de marca obtenidas exitosamente"
+
+	// Motorcycle Category Catalog (HU41)
+	LogMotorcycleCatRepoQuery          = "Repositorio obteniendo categorías distintas de motocicletas"
+	LogMotorcycleCatRepoError          = "Error de repositorio obteniendo categorías de motocicletas"
+	LogMotorcycleCatRepoScanError      = "Error de repositorio escaneando fila de categoría"
+	LogMotorcycleCatRepoIterError      = "Error de repositorio iterando filas de categorías"
+	LogMotorcycleCatLinesRepoQuery     = "Repositorio obteniendo líneas por categoría"
+	LogMotorcycleCatLinesRepoError     = "Error de repositorio obteniendo líneas por categoría"
+	LogMotorcycleCatLinesRepoScanError = "Error de repositorio escaneando fila de línea de categoría"
+	LogMotorcycleCatLinesRepoIterError = "Error de repositorio iterando filas de líneas de categoría"
+
+	LogMotorcycleCatInteractorStart        = "Consulta de categorías de motocicletas iniciada"
+	LogMotorcycleCatInteractorError        = "Error obteniendo categorías de motocicletas"
+	LogMotorcycleCatInteractorSuccess      = "Categorías de motocicletas obtenidas exitosamente"
+	LogMotorcycleCatLinesInteractorStart   = "Consulta de líneas por categoría iniciada"
+	LogMotorcycleCatLinesInteractorError   = "Error obteniendo líneas por categoría"
+	LogMotorcycleCatLinesInteractorSuccess = "Líneas por categoría obtenidas exitosamente"
+
+	LogMotorcycleCatControllerRequest      = "Solicitud de categorías de motocicletas recibida"
+	LogMotorcycleCatControllerError        = "Error obteniendo categorías de motocicletas"
+	LogMotorcycleCatControllerSuccess      = "Categorías de motocicletas obtenidas exitosamente"
+	LogMotorcycleCatLinesControllerRequest = "Solicitud de líneas por categoría recibida"
+	LogMotorcycleCatLinesControllerError   = "Error obteniendo líneas por categoría"
+	LogMotorcycleCatLinesControllerSuccess = "Líneas por categoría obtenidas exitosamente"
+
+	// Engine Displacement Ranges (HU49)
+	LogMotorcycleDispRepoQuery     = "Repositorio obteniendo rangos de cilindraje distintos"
+	LogMotorcycleDispRepoError     = "Error de repositorio obteniendo rangos de cilindraje"
+	LogMotorcycleDispRepoScanError = "Error de repositorio escaneando fila de cilindraje"
+	LogMotorcycleDispRepoIterError = "Error de repositorio iterando filas de cilindraje"
+
+	LogMotorcycleDispInteractorStart   = "Consulta de rangos de cilindraje iniciada"
+	LogMotorcycleDispInteractorError   = "Error obteniendo rangos de cilindraje"
+	LogMotorcycleDispInteractorSuccess = "Rangos de cilindraje obtenidos exitosamente"
+
+	LogMotorcycleDispControllerRequest = "Solicitud de rangos de cilindraje recibida"
+	LogMotorcycleDispControllerError   = "Error obteniendo rangos de cilindraje"
+	LogMotorcycleDispControllerSuccess = "Rangos de cilindraje obtenidos exitosamente"
+
+	// Rating Ranges (HU48)
+	LogRatingRangeInteractorStart   = "Consulta de rangos de calificación iniciada"
+	LogRatingRangeInteractorError   = "Error obteniendo rangos de calificación"
+	LogRatingRangeInteractorSuccess = "Rangos de calificación obtenidos exitosamente"
+
+	LogRatingRangeControllerRequest = "Solicitud de rangos de calificación recibida"
+	LogRatingRangeControllerError   = "Error obteniendo rangos de calificación"
+	LogRatingRangeControllerSuccess = "Rangos de calificación obtenidos exitosamente"
 )
 
 // ============================================

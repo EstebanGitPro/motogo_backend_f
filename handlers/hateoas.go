@@ -6,6 +6,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// URL path format strings (extracted to avoid duplication — SonarCloud S1192)
+const (
+	motorcycleReferencesPath = "%s/motogo/api/v1/motorcycle-references"
+	motorcycleCategoriesPath = "%s/motogo/api/v1/motorcycle-categories"
+)
+
 type Link struct {
 	Href   string `json:"href"`
 	Rel    string `json:"rel"`
@@ -543,7 +549,7 @@ func BuildNearbyBranchesLinks(baseURL string, lat, lng, radiusKm float64) []Link
 // BuildMotorcycleReferencesLinks constructs HATEOAS links for motorcycle references catalog (HU50)
 func BuildMotorcycleReferencesLinks(baseURL string) []Link {
 	return []Link{
-		{Href: fmt.Sprintf("%s/motogo/api/v1/motorcycle-references", baseURL), Rel: "self", Method: "GET"},
+		{Href: fmt.Sprintf(motorcycleReferencesPath, baseURL), Rel: "self", Method: "GET"},
 		{Href: BuildCollectionURL(baseURL, "motorcycles"), Rel: "motorcycles", Method: "GET"},
 		{Href: BuildCollectionURL(baseURL, "brands"), Rel: "brands", Method: "GET"},
 	}
@@ -554,7 +560,54 @@ func BuildBrandLinesLinks(baseURL string, brandID string) []Link {
 	return []Link{
 		{Href: fmt.Sprintf("%s/motogo/api/v1/admin/brands/%s/lines", baseURL, brandID), Rel: "self", Method: "GET"},
 		{Href: BuildCollectionURL(baseURL, "brands"), Rel: "brands", Method: "GET"},
-		{Href: fmt.Sprintf("%s/motogo/api/v1/motorcycle-references", baseURL), Rel: "references", Method: "GET"},
+		{Href: fmt.Sprintf(motorcycleReferencesPath, baseURL), Rel: "references", Method: "GET"},
+	}
+}
+
+// ============================================
+// MOTORCYCLE CATEGORY HATEOAS (HU41)
+// ============================================
+
+// BuildMotorcycleCategoryListLinks constructs HATEOAS links for the motorcycle categories list
+func BuildMotorcycleCategoryListLinks(baseURL string) []Link {
+	return []Link{
+		{Href: fmt.Sprintf(motorcycleCategoriesPath, baseURL), Rel: "self", Method: "GET"},
+		{Href: fmt.Sprintf(motorcycleReferencesPath, baseURL), Rel: "references", Method: "GET"},
+		{Href: BuildCollectionURL(baseURL, "brands"), Rel: "brands", Method: "GET"},
+	}
+}
+
+// BuildMotorcycleCategoryItemLinks constructs drill-down HATEOAS links for a single category item
+func BuildMotorcycleCategoryItemLinks(baseURL, categoryName string) []Link {
+	return []Link{
+		{Href: fmt.Sprintf(motorcycleCategoriesPath+"/%s/lines", baseURL, categoryName), Rel: "lines", Method: "GET"},
+	}
+}
+
+// BuildCategoryLinesLinks constructs HATEOAS links for lines within a specific category
+func BuildCategoryLinesLinks(baseURL, categoryName string) []Link {
+	return []Link{
+		{Href: fmt.Sprintf(motorcycleCategoriesPath+"/%s/lines", baseURL, categoryName), Rel: "self", Method: "GET"},
+		{Href: fmt.Sprintf(motorcycleCategoriesPath, baseURL), Rel: "categories", Method: "GET"},
+		{Href: BuildCollectionURL(baseURL, "brands"), Rel: "brands", Method: "GET"},
+	}
+}
+
+// BuildEngineDisplacementLinks constructs HATEOAS links for the engine displacement list (HU49)
+func BuildEngineDisplacementLinks(baseURL string) []Link {
+	return []Link{
+		{Href: fmt.Sprintf("%s/motogo/api/v1/engine-displacements", baseURL), Rel: "self", Method: "GET"},
+		{Href: fmt.Sprintf(motorcycleCategoriesPath, baseURL), Rel: "categories", Method: "GET"},
+		{Href: BuildCollectionURL(baseURL, "brands"), Rel: "brands", Method: "GET"},
+	}
+}
+
+// BuildRatingRangeLinks constructs HATEOAS links for the rating range list (HU48)
+func BuildRatingRangeLinks(baseURL string) []Link {
+	return []Link{
+		{Href: fmt.Sprintf("%s/motogo/api/v1/rating-ranges", baseURL), Rel: "self", Method: "GET"},
+		{Href: fmt.Sprintf("%s/motogo/api/v1/engine-displacements", baseURL), Rel: "displacements", Method: "GET"},
+		{Href: fmt.Sprintf(motorcycleCategoriesPath, baseURL), Rel: "categories", Method: "GET"},
 	}
 }
 

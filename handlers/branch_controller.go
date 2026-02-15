@@ -61,42 +61,11 @@ func (h *handler) RegisterBranch() gin.HandlerFunc {
 			"establishment_type", req.EstablishmentType,
 			"brands_count", len(req.Brands))
 
-		// 3. Decode brand IDs (they come encoded from frontend)
-		decodedBrands := make([]string, 0, len(req.Brands))
-		for _, encodedBrandID := range req.Brands {
-			decoded, err := h.DecodeID(encodedBrandID)
-			if err != nil {
-				log.Warn(logger.LogBranchControllerIDDecodeError, "encoded_id", encodedBrandID, "error", err)
-				h.Response.Error(c, domain.MsgBrandNotFound)
-				return
-			}
-			decodedBrands = append(decodedBrands, decoded)
-		}
-
-		// 3.1 Decode location IDs (department_id and city_id come encoded from frontend)
-		decodedDepartmentID, err := h.DecodeID(req.Location.DepartmentID)
-		if err != nil {
-			log.Warn(logger.LogBranchControllerIDDecodeError, "encoded_id", req.Location.DepartmentID, "error", err)
-			h.Response.Error(c, domain.MsgValIDInvalid)
+		// 3. Decode all encoded IDs from request
+		decodedBrands, decodedDepartmentID, decodedCityID, decodedFranchiseID, decodeErr := h.decodeBranchRequestIDs(req, log)
+		if decodeErr != nil {
+			h.Response.Error(c, decodeErr.msgCode)
 			return
-		}
-		decodedCityID, err := h.DecodeID(req.Location.CityID)
-		if err != nil {
-			log.Warn(logger.LogBranchControllerIDDecodeError, "encoded_id", req.Location.CityID, "error", err)
-			h.Response.Error(c, domain.MsgValIDInvalid)
-			return
-		}
-
-		// 3.2 Decode franchise_id if provided (comes encoded from frontend)
-		var decodedFranchiseID *string
-		if req.FranchiseID != nil && *req.FranchiseID != "" {
-			decoded, err := h.DecodeID(*req.FranchiseID)
-			if err != nil {
-				log.Warn(logger.LogBranchControllerIDDecodeError, "encoded_id", *req.FranchiseID, "error", err)
-				h.Response.Error(c, domain.MsgValIDInvalid)
-				return
-			}
-			decodedFranchiseID = &decoded
 		}
 
 		// 4. Map DTO to domain model (using mapper in branch.go)
@@ -150,47 +119,18 @@ func (h *handler) RegisterBranch() gin.HandlerFunc {
 
 		// 9. Determine geocoding status for response
 		var geocodingStatus GeocodingStatus
-		if userProvidedCoords {
+		switch {
+		case userProvidedCoords:
 			geocodingStatus = GeocodingStatusSkipped // User provided coords, no geocoding attempted
-		} else if geocodingSucceeded {
+		case geocodingSucceeded:
 			geocodingStatus = GeocodingStatusSuccess // Coords were auto-generated
-		} else {
+		default:
 			geocodingStatus = GeocodingStatusFailed // Geocoding was attempted but failed
 		}
 
-		// 10. Encode brand IDs for response
-		encodedBrands := make([]string, 0, len(savedBranch.Brands))
-		for _, brandID := range savedBranch.Brands {
-			encodedBrand, err := h.EncodeID(brandID)
-			if err != nil {
-				log.Warn(logger.LogIDEncodeError, "brand_id", brandID, "error", err)
-				continue // Skip brands with encoding errors
-			}
-			encodedBrands = append(encodedBrands, encodedBrand)
-		}
-
-		// 11. Build response DTO (using mapper in branch.go)
+		// 10. Build response DTO and encode IDs
 		response := NewBranchResponse(savedBranch, encodedID, geocodingStatus, links)
-		response.Brands = encodedBrands // Override with encoded brand IDs
-
-		// 11.1 Encode franchise_id if present
-		if savedBranch.FranchiseID != nil && *savedBranch.FranchiseID != "" {
-			if encodedFranchiseID, err := h.EncodeID(*savedBranch.FranchiseID); err == nil {
-				response.FranchiseID = &encodedFranchiseID
-			} else {
-				log.Warn(logger.LogIDEncodeError, "franchise_id", *savedBranch.FranchiseID, "error", err)
-			}
-		}
-
-		// 11.2 Encode location IDs if present
-		if response.Location != nil && savedBranch.Location != nil {
-			if encodedDeptID, err := h.EncodeID(savedBranch.Location.DepartmentID); err == nil {
-				response.Location.DepartmentID = encodedDeptID
-			}
-			if encodedCityID, err := h.EncodeID(savedBranch.Location.CityID); err == nil {
-				response.Location.CityID = encodedCityID
-			}
-		}
+		h.encodeBranchResponseIDs(&response, savedBranch, log)
 
 		log.Success(logger.LogBranchControllerRegSuccess,
 			"branch_id", savedBranch.ID,
@@ -269,39 +209,9 @@ func (h *handler) GetBranch() gin.HandlerFunc {
 		baseURL := GetBaseURL(c)
 		links := BuildBranchDetailLinks(baseURL, encodedID, isOwner)
 
-		// 6. Encode brand IDs for response
-		encodedBrands := make([]string, 0, len(branch.Brands))
-		for _, brandID := range branch.Brands {
-			encodedBrand, err := h.EncodeID(brandID)
-			if err != nil {
-				log.Warn(logger.LogIDEncodeError, "brand_id", brandID, "error", err)
-				continue
-			}
-			encodedBrands = append(encodedBrands, encodedBrand)
-		}
-
-		// 7. Build response DTO (no geocoding status for query)
+		// 6. Build response DTO and encode IDs
 		response := NewBranchResponse(branch, encodedID, "", links)
-		response.Brands = encodedBrands // Override with encoded brand IDs
-
-		// 7.1 Encode franchise_id if present
-		if branch.FranchiseID != nil && *branch.FranchiseID != "" {
-			if encodedFranchiseID, err := h.EncodeID(*branch.FranchiseID); err == nil {
-				response.FranchiseID = &encodedFranchiseID
-			} else {
-				log.Warn(logger.LogIDEncodeError, "franchise_id", *branch.FranchiseID, "error", err)
-			}
-		}
-
-		// 8. Encode location IDs if present
-		if response.Location != nil && branch.Location != nil {
-			if encodedDeptID, err := h.EncodeID(branch.Location.DepartmentID); err == nil {
-				response.Location.DepartmentID = encodedDeptID
-			}
-			if encodedCityID, err := h.EncodeID(branch.Location.CityID); err == nil {
-				response.Location.CityID = encodedCityID
-			}
-		}
+		h.encodeBranchResponseIDs(&response, branch, log)
 
 		log.Success(logger.LogBranchControllerGetSuccess,
 			"branch_id", branch.ID,
@@ -391,50 +301,10 @@ func (h *handler) ListBranches() gin.HandlerFunc {
 		baseURL := GetBaseURL(c)
 		items := make([]BranchListItemResponse, 0, len(branches))
 		for _, branch := range branches {
-			encodedID, err := h.EncodeID(branch.ID)
-			if err != nil {
-				log.Warn(logger.LogIDEncodeError, "branch_id", branch.ID, "error", err)
-				continue // Skip branches with encoding errors
+			item, ok := h.buildBranchListItem(branch, baseURL, log)
+			if !ok {
+				continue
 			}
-
-			// Encode franchise_id if present
-			var encodedFranchiseID *string
-			if branch.FranchiseID != nil && *branch.FranchiseID != "" {
-				encoded, err := h.EncodeID(*branch.FranchiseID)
-				if err != nil {
-					log.Warn(logger.LogIDEncodeError, "franchise_id", *branch.FranchiseID, "error", err)
-					// Continue without franchise_id - don't skip the whole branch
-				} else {
-					encodedFranchiseID = &encoded
-				}
-			}
-
-			// Encode brand IDs for response
-			encodedBrands := make([]string, 0, len(branch.Brands))
-			for _, brandID := range branch.Brands {
-				encodedBrand, err := h.EncodeID(brandID)
-				if err != nil {
-					log.Warn(logger.LogIDEncodeError, "brand_id", brandID, "error", err)
-					continue
-				}
-				encodedBrands = append(encodedBrands, encodedBrand)
-			}
-
-			// Owner always sees full links since this is "my branches"
-			itemLinks := BuildBranchDetailLinks(baseURL, encodedID, true)
-			item := NewBranchListItemResponse(branch, encodedID, encodedFranchiseID, itemLinks)
-			item.Brands = encodedBrands // Override with encoded brand IDs
-
-			// Encode location IDs if present
-			if item.Location != nil && branch.Location != nil {
-				if encodedDeptID, err := h.EncodeID(branch.Location.DepartmentID); err == nil {
-					item.Location.DepartmentID = encodedDeptID
-				}
-				if encodedCityID, err := h.EncodeID(branch.Location.CityID); err == nil {
-					item.Location.CityID = encodedCityID
-				}
-			}
-
 			items = append(items, item)
 		}
 
@@ -512,42 +382,11 @@ func (h *handler) UpdateBranch() gin.HandlerFunc {
 			"branch_name", req.Name,
 			"establishment_type", req.EstablishmentType)
 
-		// 4. Decode brand IDs (they come encoded from frontend)
-		decodedBrands := make([]string, 0, len(req.Brands))
-		for _, encodedBrandID := range req.Brands {
-			decoded, err := h.DecodeID(encodedBrandID)
-			if err != nil {
-				log.Warn(logger.LogBranchControllerIDDecodeError, "encoded_id", encodedBrandID, "error", err)
-				h.Response.Error(c, domain.MsgBrandNotFound)
-				return
-			}
-			decodedBrands = append(decodedBrands, decoded)
-		}
-
-		// 4.1 Decode location IDs (department_id and city_id come encoded from frontend)
-		decodedDepartmentID, err := h.DecodeID(req.Location.DepartmentID)
-		if err != nil {
-			log.Warn(logger.LogBranchControllerIDDecodeError, "encoded_id", req.Location.DepartmentID, "error", err)
-			h.Response.Error(c, domain.MsgValIDInvalid)
+		// 4. Decode all encoded IDs from request
+		decodedBrands, decodedDepartmentID, decodedCityID, decodedFranchiseID, decodeErr := h.decodeBranchRequestIDs(req, log)
+		if decodeErr != nil {
+			h.Response.Error(c, decodeErr.msgCode)
 			return
-		}
-		decodedCityID, err := h.DecodeID(req.Location.CityID)
-		if err != nil {
-			log.Warn(logger.LogBranchControllerIDDecodeError, "encoded_id", req.Location.CityID, "error", err)
-			h.Response.Error(c, domain.MsgValIDInvalid)
-			return
-		}
-
-		// 4.2 Decode franchise_id if provided (comes encoded from frontend)
-		var decodedFranchiseID *string
-		if req.FranchiseID != nil && *req.FranchiseID != "" {
-			decoded, err := h.DecodeID(*req.FranchiseID)
-			if err != nil {
-				log.Warn(logger.LogBranchControllerIDDecodeError, "encoded_id", *req.FranchiseID, "error", err)
-				h.Response.Error(c, domain.MsgValIDInvalid)
-				return
-			}
-			decodedFranchiseID = &decoded
 		}
 
 		// 5. Map DTO to domain model
@@ -596,47 +435,18 @@ func (h *handler) UpdateBranch() gin.HandlerFunc {
 
 		// 10. Determine geocoding status
 		var geocodingStatus GeocodingStatus
-		if userProvidedCoords {
+		switch {
+		case userProvidedCoords:
 			geocodingStatus = GeocodingStatusSkipped
-		} else if geocodingSucceeded {
+		case geocodingSucceeded:
 			geocodingStatus = GeocodingStatusSuccess
-		} else {
+		default:
 			geocodingStatus = GeocodingStatusFailed
 		}
 
-		// 11. Encode brand IDs for response
-		encodedBrands := make([]string, 0, len(updatedBranch.Brands))
-		for _, brandID := range updatedBranch.Brands {
-			encodedBrand, err := h.EncodeID(brandID)
-			if err != nil {
-				log.Warn(logger.LogIDEncodeError, "brand_id", brandID, "error", err)
-				continue
-			}
-			encodedBrands = append(encodedBrands, encodedBrand)
-		}
-
-		// 12. Build response DTO
+		// 11. Build response DTO and encode IDs
 		response := NewBranchResponse(updatedBranch, responseEncodedID, geocodingStatus, links)
-		response.Brands = encodedBrands // Override with encoded brand IDs
-
-		// 12.1 Encode franchise_id if present
-		if updatedBranch.FranchiseID != nil && *updatedBranch.FranchiseID != "" {
-			if encodedFranchiseID, err := h.EncodeID(*updatedBranch.FranchiseID); err == nil {
-				response.FranchiseID = &encodedFranchiseID
-			} else {
-				log.Warn(logger.LogIDEncodeError, "franchise_id", *updatedBranch.FranchiseID, "error", err)
-			}
-		}
-
-		// 12.2 Encode location IDs if present
-		if response.Location != nil && updatedBranch.Location != nil {
-			if encodedDeptID, err := h.EncodeID(updatedBranch.Location.DepartmentID); err == nil {
-				response.Location.DepartmentID = encodedDeptID
-			}
-			if encodedCityID, err := h.EncodeID(updatedBranch.Location.CityID); err == nil {
-				response.Location.CityID = encodedCityID
-			}
-		}
+		h.encodeBranchResponseIDs(&response, updatedBranch, log)
 
 		log.Success(logger.LogBranchControllerUpdateSuccess,
 			"branch_id", updatedBranch.ID,
@@ -747,64 +557,25 @@ func (h *handler) GetNearbyBranches() gin.HandlerFunc {
 			"path", c.Request.URL.Path,
 			"client_ip", c.ClientIP())
 
-		// 1. Parse latitude (required)
-		latStr := c.Query("lat")
-		if latStr == "" {
-			log.Warn(logger.LogBranchNearbyMissingLat, "client_ip", c.ClientIP())
-			h.Response.Error(c, domain.MsgValLatitudeRequired)
+		// 1. Parse and validate all nearby filters
+		filters, filterErr := h.parseNearbyFilters(c, log)
+		if filterErr != nil {
+			h.Response.Error(c, filterErr.msgCode)
 			return
 		}
-		lat, err := parseFloat(latStr)
-		if err != nil || lat < -90 || lat > 90 {
-			log.Warn(logger.LogBranchNearbyInvalidLat, "lat", latStr, "error", err)
-			h.Response.Error(c, domain.MsgValLatitudeInvalid)
-			return
-		}
-
-		// 2. Parse longitude (required)
-		lngStr := c.Query("lng")
-		if lngStr == "" {
-			log.Warn(logger.LogBranchNearbyMissingLng, "client_ip", c.ClientIP())
-			h.Response.Error(c, domain.MsgValLongitudeRequired)
-			return
-		}
-		lng, err := parseFloat(lngStr)
-		if err != nil || lng < -180 || lng > 180 {
-			log.Warn(logger.LogBranchNearbyInvalidLng, "lng", lngStr, "error", err)
-			h.Response.Error(c, domain.MsgValLongitudeInvalid)
-			return
-		}
-
-		// 3. Parse radius (optional, default 5km, max 50km)
-		radiusKm := 5.0 // default
-		if radiusStr := c.Query("radius"); radiusStr != "" {
-			radius, err := parseFloat(radiusStr)
-			if err != nil || radius <= 0 || radius > 50 {
-				log.Warn(logger.LogBranchNearbyInvalidRadius, "radius", radiusStr, "error", err)
-				h.Response.Error(c, domain.MsgValRadiusInvalid)
-				return
-			}
-			radiusKm = radius
-		}
-
-		// 4. Parse type (optional: WORKSHOP, STORE, WORKSHOP_STORE)
-		establishmentType := c.Query("type")
-		if establishmentType != "" {
-			if !domain.IsValidEstablishmentType(establishmentType) {
-				log.Warn(logger.LogBranchNearbyInvalidType, "type", establishmentType)
-				h.Response.Error(c, domain.MsgBranchInvalidType)
-				return
-			}
-		}
+		lat, lng, radiusKm := filters.lat, filters.lng, filters.radiusKm
+		establishmentType, brandID, displacementRange := filters.establishmentType, filters.brandID, filters.displacementRange
 
 		log.Info(logger.LogBranchNearbySearch,
 			"lat", lat,
 			"lng", lng,
 			"radius_km", radiusKm,
-			"type", establishmentType)
+			"type", establishmentType,
+			"brand", brandID,
+			"displacement_range", displacementRange)
 
-		// 5. Call interactor
-		branches, err := h.BranchInteractor.GetBranchesNearby(c.Request.Context(), lat, lng, radiusKm, establishmentType)
+		// 6. Call interactor
+		branches, err := h.BranchInteractor.GetBranchesNearby(c.Request.Context(), lat, lng, radiusKm, establishmentType, brandID, displacementRange)
 		if err != nil {
 			log.Error(logger.LogBranchNearbyError, "error", err)
 			h.Response.Error(c, domain.MsgServerError)
@@ -820,7 +591,23 @@ func (h *handler) GetNearbyBranches() gin.HandlerFunc {
 				log.Warn(logger.LogIDEncodeError, "branch_id", branch.ID, "error", err)
 				continue
 			}
-			items = append(items, NewNearbyBranchResponse(branch, encodedID, baseURL))
+			resp := NewNearbyBranchResponse(branch, encodedID, baseURL)
+
+			// Encode brand IDs
+			if len(branch.Brands) > 0 {
+				encodedBrands := make([]string, 0, len(branch.Brands))
+				for _, brandID := range branch.Brands {
+					encodedBrand, err := h.EncodeID(brandID)
+					if err != nil {
+						log.Warn(logger.LogIDEncodeError, "brand_id", brandID, "error", err)
+						continue
+					}
+					encodedBrands = append(encodedBrands, encodedBrand)
+				}
+				resp.Brands = encodedBrands
+			}
+
+			items = append(items, resp)
 		}
 
 		// 7. Build collection response
@@ -891,4 +678,220 @@ func parseFloat(s string) (float64, error) {
 		result = -result
 	}
 	return result, nil
+}
+
+// ============================================
+// Branch controller helpers (extracted to reduce cognitive complexity)
+// ============================================
+
+// buildBranchListItem encodes all IDs for a single branch and builds its list response item.
+// Returns the response item and false if the branch should be skipped (encoding error on branch ID).
+func (h *handler) buildBranchListItem(branch domain.Branch, baseURL string, log logger.Logger) (BranchListItemResponse, bool) {
+	encodedID, err := h.EncodeID(branch.ID)
+	if err != nil {
+		log.Warn(logger.LogIDEncodeError, "branch_id", branch.ID, "error", err)
+		return BranchListItemResponse{}, false
+	}
+
+	// Encode franchise_id if present
+	var encodedFranchiseID *string
+	if branch.FranchiseID != nil && *branch.FranchiseID != "" {
+		encoded, err := h.EncodeID(*branch.FranchiseID)
+		if err != nil {
+			log.Warn(logger.LogIDEncodeError, "franchise_id", *branch.FranchiseID, "error", err)
+		} else {
+			encodedFranchiseID = &encoded
+		}
+	}
+
+	// Encode brand IDs for response
+	encodedBrands := make([]string, 0, len(branch.Brands))
+	for _, brandID := range branch.Brands {
+		encodedBrand, err := h.EncodeID(brandID)
+		if err != nil {
+			log.Warn(logger.LogIDEncodeError, "brand_id", brandID, "error", err)
+			continue
+		}
+		encodedBrands = append(encodedBrands, encodedBrand)
+	}
+
+	// Owner always sees full links since this is "my branches"
+	itemLinks := BuildBranchDetailLinks(baseURL, encodedID, true)
+	item := NewBranchListItemResponse(branch, encodedID, encodedFranchiseID, itemLinks)
+	item.Brands = encodedBrands // Override with encoded brand IDs
+
+	// Encode location IDs if present
+	if item.Location != nil && branch.Location != nil {
+		if encodedDeptID, err := h.EncodeID(branch.Location.DepartmentID); err == nil {
+			item.Location.DepartmentID = encodedDeptID
+		}
+		if encodedCityID, err := h.EncodeID(branch.Location.CityID); err == nil {
+			item.Location.CityID = encodedCityID
+		}
+	}
+
+	return item, true
+}
+
+// branchDecodeError wraps a message code for decode/parse errors.
+type branchDecodeError struct {
+	msgCode string
+}
+
+// decodeBranchRequestIDs decodes all encoded IDs from a branch register/update request.
+// Returns decoded brands, department ID, city ID, franchise ID, and an error if any decoding fails.
+func (h *handler) decodeBranchRequestIDs(req RegisterBranchRequest, log logger.Logger) (
+	brands []string, departmentID string, cityID string, franchiseID *string, err *branchDecodeError,
+) {
+	// Decode brand IDs
+	brands = make([]string, 0, len(req.Brands))
+	for _, encodedBrandID := range req.Brands {
+		decoded, decErr := h.DecodeID(encodedBrandID)
+		if decErr != nil {
+			log.Warn(logger.LogBranchControllerIDDecodeError, "encoded_id", encodedBrandID, "error", decErr)
+			return nil, "", "", nil, &branchDecodeError{msgCode: domain.MsgBrandNotFound}
+		}
+		brands = append(brands, decoded)
+	}
+
+	// Decode location IDs
+	departmentID, decErr := h.DecodeID(req.Location.DepartmentID)
+	if decErr != nil {
+		log.Warn(logger.LogBranchControllerIDDecodeError, "encoded_id", req.Location.DepartmentID, "error", decErr)
+		return nil, "", "", nil, &branchDecodeError{msgCode: domain.MsgValIDInvalid}
+	}
+	cityID, decErr = h.DecodeID(req.Location.CityID)
+	if decErr != nil {
+		log.Warn(logger.LogBranchControllerIDDecodeError, "encoded_id", req.Location.CityID, "error", decErr)
+		return nil, "", "", nil, &branchDecodeError{msgCode: domain.MsgValIDInvalid}
+	}
+
+	// Decode franchise_id if provided
+	if req.FranchiseID != nil && *req.FranchiseID != "" {
+		decoded, decErr := h.DecodeID(*req.FranchiseID)
+		if decErr != nil {
+			log.Warn(logger.LogBranchControllerIDDecodeError, "encoded_id", *req.FranchiseID, "error", decErr)
+			return nil, "", "", nil, &branchDecodeError{msgCode: domain.MsgValIDInvalid}
+		}
+		franchiseID = &decoded
+	}
+
+	return brands, departmentID, cityID, franchiseID, nil
+}
+
+// encodeBranchResponseIDs encodes brand IDs, franchise ID, and location IDs in the response.
+func (h *handler) encodeBranchResponseIDs(response *BranchResponse, branch *domain.Branch, log logger.Logger) {
+	// Encode brand IDs
+	encodedBrands := make([]string, 0, len(branch.Brands))
+	for _, brandID := range branch.Brands {
+		encodedBrand, err := h.EncodeID(brandID)
+		if err != nil {
+			log.Warn(logger.LogIDEncodeError, "brand_id", brandID, "error", err)
+			continue
+		}
+		encodedBrands = append(encodedBrands, encodedBrand)
+	}
+	response.Brands = encodedBrands
+
+	// Encode franchise_id if present
+	if branch.FranchiseID != nil && *branch.FranchiseID != "" {
+		if encodedFranchiseID, err := h.EncodeID(*branch.FranchiseID); err == nil {
+			response.FranchiseID = &encodedFranchiseID
+		} else {
+			log.Warn(logger.LogIDEncodeError, "franchise_id", *branch.FranchiseID, "error", err)
+		}
+	}
+
+	// Encode location IDs if present
+	if response.Location != nil && branch.Location != nil {
+		if encodedDeptID, err := h.EncodeID(branch.Location.DepartmentID); err == nil {
+			response.Location.DepartmentID = encodedDeptID
+		}
+		if encodedCityID, err := h.EncodeID(branch.Location.CityID); err == nil {
+			response.Location.CityID = encodedCityID
+		}
+	}
+}
+
+// nearbyFilters holds parsed query parameters for GetNearbyBranches.
+type nearbyFilters struct {
+	lat               float64
+	lng               float64
+	radiusKm          float64
+	establishmentType string
+	brandID           string
+	displacementRange string
+}
+
+// parseNearbyFilters parses and validates all query parameters for GetNearbyBranches.
+func (h *handler) parseNearbyFilters(c *gin.Context, log logger.Logger) (*nearbyFilters, *branchDecodeError) {
+	// Parse latitude (required)
+	latStr := c.Query("lat")
+	if latStr == "" {
+		log.Warn(logger.LogBranchNearbyMissingLat, "client_ip", c.ClientIP())
+		return nil, &branchDecodeError{msgCode: domain.MsgValLatitudeRequired}
+	}
+	lat, err := parseFloat(latStr)
+	if err != nil || lat < -90 || lat > 90 {
+		log.Warn(logger.LogBranchNearbyInvalidLat, "lat", latStr, "error", err)
+		return nil, &branchDecodeError{msgCode: domain.MsgValLatitudeInvalid}
+	}
+
+	// Parse longitude (required)
+	lngStr := c.Query("lng")
+	if lngStr == "" {
+		log.Warn(logger.LogBranchNearbyMissingLng, "client_ip", c.ClientIP())
+		return nil, &branchDecodeError{msgCode: domain.MsgValLongitudeRequired}
+	}
+	lng, err := parseFloat(lngStr)
+	if err != nil || lng < -180 || lng > 180 {
+		log.Warn(logger.LogBranchNearbyInvalidLng, "lng", lngStr, "error", err)
+		return nil, &branchDecodeError{msgCode: domain.MsgValLongitudeInvalid}
+	}
+
+	// Parse radius (optional, default 5km, max 50km)
+	radiusKm := 5.0
+	if radiusStr := c.Query("radius"); radiusStr != "" {
+		radius, err := parseFloat(radiusStr)
+		if err != nil || radius <= 0 || radius > 50 {
+			log.Warn(logger.LogBranchNearbyInvalidRadius, "radius", radiusStr, "error", err)
+			return nil, &branchDecodeError{msgCode: domain.MsgValRadiusInvalid}
+		}
+		radiusKm = radius
+	}
+
+	// Parse type (optional)
+	establishmentType := c.Query("type")
+	if establishmentType != "" {
+		if !domain.IsValidEstablishmentType(domain.EstablishmentType(establishmentType)) {
+			log.Warn(logger.LogBranchNearbyInvalidType, "type", establishmentType)
+			return nil, &branchDecodeError{msgCode: domain.MsgBranchInvalidType}
+		}
+	}
+
+	// Parse optional brand filter (extracted to reduce cognitive complexity)
+	brandID := h.parseOptionalBrandFilter(c.Query("brand"), log)
+
+	return &nearbyFilters{
+		lat:               lat,
+		lng:               lng,
+		radiusKm:          radiusKm,
+		establishmentType: establishmentType,
+		brandID:           brandID,
+		displacementRange: c.Query("displacement_range"),
+	}, nil
+}
+
+// parseOptionalBrandFilter decodes an optional brand filter parameter.
+// Returns the decoded brand ID, or empty string if not provided or invalid.
+func (h *handler) parseOptionalBrandFilter(brandEncoded string, log logger.Logger) string {
+	if brandEncoded == "" {
+		return ""
+	}
+	decoded, err := h.DecodeID(brandEncoded)
+	if err != nil {
+		log.Warn(logger.LogBranchControllerIDDecodeError, "brand_filter", brandEncoded, "error", err)
+		return "" // Invalid brand ID, ignore filter
+	}
+	return decoded
 }
