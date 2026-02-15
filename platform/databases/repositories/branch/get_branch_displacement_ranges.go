@@ -16,7 +16,7 @@ func (r *repository) getBranchDisplacementRanges(ctx context.Context, branchID s
 	var ranges []domain.DisplacementRange
 	for rows.Next() {
 		var dr domain.DisplacementRange
-		if err := rows.Scan(&dr); err != nil {
+		if rows.Scan(&dr) != nil {
 			continue
 		}
 		ranges = append(ranges, dr)
