@@ -85,6 +85,9 @@ var errorToMessageCode = map[error]string{
 	domain.ErrInvalidCredentials: domain.MsgUnauthorized,
 	domain.ErrTokenExpired:       domain.MsgUserTokenExpired,
 
+	// Rate limiting (429 Too Many Requests)
+	domain.ErrRateLimitExceeded: domain.MsgRateLimitExceeded,
+
 	// Motorcycle errors (MOD_MOT_*)
 	domain.ErrMotorcycleNotFound:     domain.MsgMotorcycleNotFound,
 	domain.ErrMotorcycleCannotSave:   domain.MsgMotorcycleCannotSave,
@@ -92,6 +95,10 @@ var errorToMessageCode = map[error]string{
 	domain.ErrMotorcycleCannotDelete: domain.MsgMotorcycleCannotDelete,
 	domain.ErrDuplicateLicensePlate:  domain.MsgDuplicateLicensePlate,
 	domain.ErrReferenceNotFound:      domain.MsgMotorcycleReferenceNotFound,
+
+	// Completed Service errors
+	domain.ErrCompletedServiceCannotDelete: domain.MsgCompletedServiceDeleteError,
+	domain.ErrInvalidStatusTransition:      domain.MsgStatusTransitionError,
 
 	// General errors
 	domain.ErrInternalServer: domain.MsgServerError,

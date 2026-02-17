@@ -65,6 +65,9 @@ var (
 	ErrSchemaFieldRequired    = errors.New("ERR_SCHEMA_FIELD_REQUIRED")
 	ErrSchemaFieldType        = errors.New("ERR_SCHEMA_FIELD_TYPE")
 	ErrSchemaMultipleFields   = errors.New("ERR_SCHEMA_MULTIPLE_FIELDS")
+
+	// Rate limiting
+	ErrRateLimitExceeded = errors.New("ERR_RATE_LIMIT_EXCEEDED")
 )
 
 // Authorization Errors (MOD_A_*)
@@ -203,12 +206,13 @@ const (
 
 // General Module (GEN_*)
 const (
-	MsgServerError   = "GEN_SRV_ERR_00001"
-	MsgUnauthorized  = "GEN_AUTH_ERR_00002"
-	MsgForbidden     = "GEN_FORBIDDEN_ERR_00003"
-	MsgOpSuccess     = "GEN_OPE_EXI_00001"
-	MsgInfoProcess   = "GEN_INFO_00001"
-	MsgWarningAction = "GEN_WARN_00001"
+	MsgServerError       = "GEN_SRV_ERR_00001"
+	MsgUnauthorized      = "GEN_AUTH_ERR_00002"
+	MsgForbidden         = "GEN_FORBIDDEN_ERR_00003"
+	MsgRateLimitExceeded = "GEN_RATE_LIMIT_ERR_00004"
+	MsgOpSuccess         = "GEN_OPE_EXI_00001"
+	MsgInfoProcess       = "GEN_INFO_00001"
+	MsgWarningAction     = "GEN_WARN_00001"
 )
 
 // Message Module (MOD_M_*)
@@ -555,4 +559,36 @@ const (
 	MsgPermissionNotFound     = "MOD_DGP_NOT_FOUND_ERR_00001"
 	MsgPermissionCannotSave   = "MOD_DGP_SAVE_ERR_00001"
 	MsgPermissionCannotDelete = "MOD_DGP_DELETE_ERR_00001"
+)
+
+// Completed Service Errors (MOD_CS_*) - HU64/HU65/HU73/HU74
+var (
+	ErrCompletedServiceNotFound     = errors.New("ERR_COMPLETED_SERVICE_NOT_FOUND")
+	ErrCompletedServiceCannotSave   = errors.New("ERR_COMPLETED_SERVICE_CANNOT_SAVE")
+	ErrCompletedServiceCannotDelete = errors.New("ERR_COMPLETED_SERVICE_CANNOT_DELETE")
+	ErrInvalidBranchServices        = errors.New("ERR_INVALID_BRANCH_SERVICES")
+	ErrDiagnosticNotForMotorcycle   = errors.New("ERR_DIAGNOSTIC_NOT_FOR_MOTORCYCLE")
+	ErrActiveServiceExists          = errors.New("ERR_ACTIVE_SERVICE_EXISTS")
+	ErrInvalidStatusTransition      = errors.New("ERR_INVALID_STATUS_TRANSITION")
+)
+
+// Completed Service Module (MOD_CS_*) - HU64/HU65/HU73/HU74
+const (
+	// Success messages
+	MsgCompletedServiceCreated   = "MOD_CS_CREATE_EXI_00001"
+	MsgCompletedServiceRetrieved = "MOD_CS_GET_EXI_00001"
+	MsgCompletedServicesListed   = "MOD_CS_LIST_EXI_00001"
+	MsgCompletedServiceDeleted   = "MOD_CS_DEL_EXI_00001"
+	MsgStatusTransitionSuccess   = "MOD_CS_STATUS_EXI_00001"
+	MsgStatusHistoryRetrieved    = "MOD_CS_TRANS_EXI_00001"
+
+	// Error messages
+	MsgCompletedServiceNotFound    = "MOD_CS_NOT_FOUND_ERR_00001"
+	MsgCompletedServiceCannotSave  = "MOD_CS_CREATE_ERR_00001"
+	MsgCompletedServiceDeleteError = "MOD_CS_DEL_ERR_00001"
+	MsgInvalidBranchServices       = "MOD_CS_BRANCH_SVC_ERR_00001"
+	MsgDiagnosticNotForMotorcycle  = "MOD_CS_DGN_MOTO_ERR_00001"
+	MsgActiveServiceExists         = "MOD_CS_ACTIVE_ERR_00001"
+	MsgStatusTransitionError       = "MOD_CS_STATUS_ERR_00001"
+	MsgStatusHistoryError          = "MOD_CS_TRANS_ERR_00001"
 )
