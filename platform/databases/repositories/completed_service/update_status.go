@@ -39,7 +39,11 @@ func (r *repository) GetStatusHistory(ctx context.Context, serviceID string) ([]
 		log.Error(logger.LogCSRepoGetHistoryErr, err)
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil {
+			log.Error(logger.LogCSRepoRowsCloseError, closeErr)
+		}
+	}()
 
 	var history []domain.ServiceStatusHistory
 	for rows.Next() {
