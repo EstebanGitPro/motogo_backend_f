@@ -27,6 +27,15 @@ type Validators struct {
 	FranchiseValidator               *jsonschema.Schema // HU26-29 (franchises)
 	RegisterMotorcycleValidator      *jsonschema.Schema // HU43 (register motorcycle)
 	CreateEvidenceValidator          *jsonschema.Schema // HU16 (create evidence)
+	CompletedServiceValidator        *jsonschema.Schema // HU64 (completed services)
+	DiagnosticValidator              *jsonschema.Schema // HU11 (create diagnostic)
+	UpdateDiagnosticValidator        *jsonschema.Schema // HU12 (update diagnostic)
+	DiagnosticSolutionValidator      *jsonschema.Schema // PATCH diagnostic solution
+	UpdateScheduleDetailValidator    *jsonschema.Schema // HU7 (update schedule detail)
+	DiagnosticPermissionValidator    *jsonschema.Schema // diagnostic permission
+	BranchServicesValidator          *jsonschema.Schema // branch services association
+	FranchiseBranchValidator         *jsonschema.Schema // franchise branch association
+	UpdateStatusValidator            *jsonschema.Schema // HU74 (update status)
 }
 
 type FileReaderInterface interface {
@@ -136,6 +145,51 @@ func NewValidator(fileReader FileReaderInterface) (*Validators, error) {
 		return nil, err
 	}
 
+	completedService, err := validator.createSchema("completed_service_schema.json")
+	if err != nil {
+		return nil, err
+	}
+
+	diagnostic, err := validator.createSchema("diagnostic_schema.json")
+	if err != nil {
+		return nil, err
+	}
+
+	updateDiagnostic, err := validator.createSchema("update_diagnostic_schema.json")
+	if err != nil {
+		return nil, err
+	}
+
+	diagnosticSolution, err := validator.createSchema("diagnostic_solution_schema.json")
+	if err != nil {
+		return nil, err
+	}
+
+	updateScheduleDetail, err := validator.createSchema("update_schedule_detail_schema.json")
+	if err != nil {
+		return nil, err
+	}
+
+	diagnosticPermission, err := validator.createSchema("diagnostic_permission_schema.json")
+	if err != nil {
+		return nil, err
+	}
+
+	branchServices, err := validator.createSchema("branch_services_schema.json")
+	if err != nil {
+		return nil, err
+	}
+
+	franchiseBranch, err := validator.createSchema("franchise_branch_schema.json")
+	if err != nil {
+		return nil, err
+	}
+
+	updateStatus, err := validator.createSchema("update_status_schema.json")
+	if err != nil {
+		return nil, err
+	}
+
 	validator.RegisterValidator = register
 	validator.MessageValidator = message
 	validator.CreateMessageValidator = createMessage
@@ -152,6 +206,15 @@ func NewValidator(fileReader FileReaderInterface) (*Validators, error) {
 	validator.FranchiseValidator = franchise
 	validator.RegisterMotorcycleValidator = registerMotorcycle
 	validator.CreateEvidenceValidator = createEvidence
+	validator.CompletedServiceValidator = completedService
+	validator.DiagnosticValidator = diagnostic
+	validator.UpdateDiagnosticValidator = updateDiagnostic
+	validator.DiagnosticSolutionValidator = diagnosticSolution
+	validator.UpdateScheduleDetailValidator = updateScheduleDetail
+	validator.DiagnosticPermissionValidator = diagnosticPermission
+	validator.BranchServicesValidator = branchServices
+	validator.FranchiseBranchValidator = franchiseBranch
+	validator.UpdateStatusValidator = updateStatus
 
 	return validator, nil
 }

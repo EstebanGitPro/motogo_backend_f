@@ -31,7 +31,7 @@
     "title": {
       "type": "string",
       "description": "Message title",
-      "maxLength": 200,
+      "maxLength": 255,
       "minLength": 1
     },
     "content": {

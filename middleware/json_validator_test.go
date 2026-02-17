@@ -85,8 +85,8 @@ func TestTranslateFieldNames_UnknownFields(t *testing.T) {
 }
 
 func TestTranslateFieldNames_MixedFields(t *testing.T) {
-	input := []string{"email", "unknown_field", "phone"}
-	expected := []string{"Correo electrónico", "unknown_field", "Teléfono"}
+	input := []string{"email", "unknown_field", "phone_number"}
+	expected := []string{"Correo electrónico", "unknown_field", "Número de teléfono"}
 
 	result := translateFieldNames(input)
 
@@ -256,6 +256,84 @@ func TestWithValidateEvidence_ReturnsHandler(t *testing.T) {
 	assert.NotNil(t, handler)
 }
 
+func TestWithValidateCompletedService_ReturnsHandler(t *testing.T) {
+	builder := NewMiddlewareValidator(&json_schema.Validators{})
+	handler := builder.WithValidateCompletedService()
+	assert.NotNil(t, handler)
+}
+
+func TestWithValidateDiagnostic_ReturnsHandler(t *testing.T) {
+	builder := NewMiddlewareValidator(&json_schema.Validators{})
+	handler := builder.WithValidateDiagnostic()
+	assert.NotNil(t, handler)
+}
+
+func TestWithValidateUpdateDiagnostic_ReturnsHandler(t *testing.T) {
+	builder := NewMiddlewareValidator(&json_schema.Validators{})
+	handler := builder.WithValidateUpdateDiagnostic()
+	assert.NotNil(t, handler)
+}
+
+func TestWithValidateDiagnosticSolution_ReturnsHandler(t *testing.T) {
+	builder := NewMiddlewareValidator(&json_schema.Validators{})
+	handler := builder.WithValidateDiagnosticSolution()
+	assert.NotNil(t, handler)
+}
+
+func TestWithValidateUpdateScheduleDetail_ReturnsHandler(t *testing.T) {
+	builder := NewMiddlewareValidator(&json_schema.Validators{})
+	handler := builder.WithValidateUpdateScheduleDetail()
+	assert.NotNil(t, handler)
+}
+
+func TestWithValidateDiagnosticPermission_ReturnsHandler(t *testing.T) {
+	builder := NewMiddlewareValidator(&json_schema.Validators{})
+	handler := builder.WithValidateDiagnosticPermission()
+	assert.NotNil(t, handler)
+}
+
+func TestWithValidateBranchServices_ReturnsHandler(t *testing.T) {
+	builder := NewMiddlewareValidator(&json_schema.Validators{})
+	handler := builder.WithValidateBranchServices()
+	assert.NotNil(t, handler)
+}
+
+func TestWithValidateFranchiseBranch_ReturnsHandler(t *testing.T) {
+	builder := NewMiddlewareValidator(&json_schema.Validators{})
+	handler := builder.WithValidateFranchiseBranch()
+	assert.NotNil(t, handler)
+}
+
+func TestWithValidateUpdateStatus_ReturnsHandler(t *testing.T) {
+	builder := NewMiddlewareValidator(&json_schema.Validators{})
+	handler := builder.WithValidateUpdateStatus()
+	assert.NotNil(t, handler)
+}
+
+func TestTranslateFieldNames_StatusField(t *testing.T) {
+	fields := []string{"status"}
+	expected := []string{"Estado del servicio"}
+
+	result := translateFieldNames(fields)
+	assert.Equal(t, expected, result)
+}
+
+func TestTranslateFieldNames_CompletedServiceFields(t *testing.T) {
+	fields := []string{"motorcycle_id", "service_ids", "diagnostic_id", "quoted_price", "final_price", "representative_notes"}
+	expected := []string{"Motocicleta", "Servicios", "Diagnóstico", "Precio cotizado", "Precio final", "Notas del representante"}
+
+	result := translateFieldNames(fields)
+	assert.Equal(t, expected, result)
+}
+
+func TestTranslateFieldNames_DiagnosticFields(t *testing.T) {
+	fields := []string{"branch_id", "problem_description", "possible_solution", "evidence_urls"}
+	expected := []string{"Sede", "Descripción del problema", "Posible solución", "URLs de evidencia"}
+
+	result := translateFieldNames(fields)
+	assert.Equal(t, expected, result)
+}
+
 // ============================================
 // extractFieldNames Tests
 // ============================================
@@ -286,7 +364,7 @@ func TestExtractFieldNames_WithPropertyParam(t *testing.T) {
 			Code:    "type",
 			Message: "invalid type",
 			Params: map[string]any{
-				"property": "phone",
+				"property": "phone_number",
 			},
 		},
 	}
@@ -294,7 +372,7 @@ func TestExtractFieldNames_WithPropertyParam(t *testing.T) {
 	result := extractFieldNames(errors)
 
 	assert.Len(t, result, 1)
-	assert.Equal(t, "phone", result[0])
+	assert.Equal(t, "phone_number", result[0])
 }
 
 func TestExtractFieldNames_NilParams(t *testing.T) {
@@ -325,7 +403,7 @@ func TestExtractFieldNames_EmptyErrors(t *testing.T) {
 // ============================================
 
 func TestClassifyValidationError_MultipleFields(t *testing.T) {
-	fields := []string{"email", "password", "phone"}
+	fields := []string{"email", "password", "phone_number"}
 	errors := map[string]*jsonschema.EvaluationError{}
 
 	result := classifyValidationError(fields, errors)
