@@ -293,6 +293,7 @@ const (
 	LogMiddlewareResponseCacheError = "Error obteniendo mensaje de cache"
 	LogMiddlewareResponseSuccess    = "Respuesta enviada exitosamente"
 	LogMiddlewareNotFound           = "Endpoint no encontrado (404)"
+	LogMiddlewareRateLimitHit       = "Rate limit excedido"
 )
 
 // ============================================
@@ -1715,4 +1716,134 @@ const (
 	// Dependency initialization
 	LogDepDiagPermRepoInitOK  = "Repositorio de permisos de diagnóstico inicializado"
 	LogDepDiagPermRepoInitErr = "Error inicializando repositorio de permisos de diagnóstico"
+)
+
+// ============================================
+// COMPLETED SERVICE (HU64)
+// ============================================
+const (
+	// Controller
+	LogCSControllerCreateRequest     = "Solicitud de registro de servicio realizado recibida"
+	LogCSControllerCreateError       = "Error registrando servicio realizado"
+	LogCSControllerCreateSuccess     = "Servicio realizado registrado exitosamente"
+	LogCSControllerListRequest       = "Solicitud de listado de servicios realizados recibida"
+	LogCSControllerListError         = "Error listando servicios realizados"
+	LogCSControllerListSuccess       = "Servicios realizados listados exitosamente"
+	LogCSControllerListByMotoReq     = "Solicitud de listado de servicios realizados por moto recibida"
+	LogCSControllerListByMotoError   = "Error listando servicios realizados por moto"
+	LogCSControllerListByMotoSuccess = "Servicios realizados por moto listados exitosamente"
+
+	// Interactor
+	LogCSInteractorRegStart        = "Iniciando registro de servicio realizado"
+	LogCSInteractorValidateSvcErr  = "Error al validar servicios de la sede"
+	LogCSInteractorSvcValidated    = "Servicios de sede validados"
+	LogCSInteractorValidateDiagErr = "Error al validar diagnóstico para motocicleta"
+	LogCSInteractorDiagValidated   = "Diagnóstico validado para motocicleta"
+	LogCSInteractorActiveCheckErr  = "Error al verificar servicio activo existente"
+	LogCSInteractorActiveExists    = "Ya existe un servicio activo para esta motocicleta en esta sede"
+	LogCSInteractorTxError         = "Error al iniciar transacción"
+	LogCSInteractorRollbackError   = "Error en rollback de transacción"
+	LogCSInteractorRollbackOK      = "Rollback de transacción ejecutado correctamente"
+	LogCSInteractorSaveError       = "Error al guardar servicio realizado"
+	LogCSInteractorSaved           = "Servicio realizado guardado"
+	LogCSInteractorSaveItemsErr    = "Error al guardar items de servicio"
+	LogCSInteractorItemsSaved      = "Items de servicio guardados"
+	LogCSInteractorSaveHistoryErr  = "Error al guardar historial de estado"
+	LogCSInteractorCommitError     = "Error al hacer commit de transacción"
+	LogCSInteractorRegSuccess      = "Servicio realizado registrado exitosamente"
+	LogCSInteractorGetByID         = "Consultando servicio realizado por ID"
+	LogCSInteractorGetByIDErr      = "Error al obtener servicio realizado"
+	LogCSInteractorGetByIDOK       = "Servicio realizado obtenido"
+	LogCSInteractorGetByBranch     = "Consultando servicios realizados por sede"
+	LogCSInteractorGetByBranchErr  = "Error al obtener servicios por sede"
+	LogCSInteractorGetByBranchOK   = "Servicios por sede obtenidos"
+	LogCSInteractorGetByMoto       = "Consultando servicios realizados por motocicleta"
+	LogCSInteractorGetByMotoErr    = "Error al obtener servicios por motocicleta"
+	LogCSInteractorGetByMotoOK     = "Servicios por motocicleta obtenidos"
+
+	// Service
+	LogCSServiceNoServices     = "No se proporcionaron servicios para validar"
+	LogCSServiceDiagGetErr     = "Error al obtener diagnóstico"
+	LogCSServiceDiagNotForMoto = "Diagnóstico no pertenece a la motocicleta"
+
+	// Repository - Operations
+	LogCSRepoPrepareError       = "Error preparando statement de servicio realizado"
+	LogCSRepoSaveError          = "Error guardando servicio realizado en BD"
+	LogCSRepoSaveItemErr        = "Error al guardar item de servicio"
+	LogCSRepoSaveHistoryErr     = "Error al guardar historial de estado"
+	LogCSRepoValidateSvcErr     = "Error al validar servicios de la sede"
+	LogCSRepoGetError           = "Error obteniendo servicio realizado de BD"
+	LogCSRepoGetByMotoErr       = "Error al obtener servicios por motocicleta"
+	LogCSRepoGetByBranchErr     = "Error al obtener servicios por sede"
+	LogCSRepoGetItemsErr        = "Error al obtener items del servicio"
+	LogCSRepoScanItemErr        = "Error al escanear item del servicio"
+	LogCSRepoScanError          = "Error escaneando fila de servicio realizado"
+	LogCSRepoHasActiveErr       = "Error al verificar servicio activo"
+	LogCSRepoPrepareInsert      = "Error preparando stmtInsert de completed_services"
+	LogCSRepoPrepareInsertItem  = "Error preparando stmtInsertItem de completed_service_items"
+	LogCSRepoPrepareHistory     = "Error preparando stmtInsertStatusHistory"
+	LogCSRepoPrepareGetByID     = "Error preparando stmtGetByID de completed_services"
+	LogCSRepoPrepareGetByMoto   = "Error preparando stmtGetByMotorcycleID"
+	LogCSRepoPrepareGetByBranch = "Error preparando stmtGetByBranchID"
+	LogCSRepoPrepareGetItems    = "Error preparando stmtGetItemsByCSID"
+	LogCSRepoPrepareHasActive   = "Error preparando stmtHasActiveService"
+	LogCSRepoPrepareDelete      = "Error preparando stmtDelete de completed_services"
+	LogCSRepoDeleteError        = "Error eliminando servicio realizado de BD"
+
+	// Delete (HU65) - Controller
+	LogCSControllerDeleteRequest = "Solicitud de eliminación de servicio realizado recibida"
+	LogCSControllerDeleteError   = "Error eliminando servicio realizado"
+	LogCSControllerDeleteSuccess = "Servicio realizado eliminado exitosamente"
+
+	// Delete (HU65) - Interactor
+	LogCSInteractorDelStart       = "Iniciando eliminación de servicio realizado"
+	LogCSInteractorDelNotFound    = "Servicio realizado no encontrado para eliminar"
+	LogCSInteractorDelTxErr       = "Error al iniciar transacción para eliminación"
+	LogCSInteractorDelRollbackErr = "Error en rollback de transacción de eliminación"
+	LogCSInteractorDelRollbackOK  = "Rollback de eliminación ejecutado correctamente"
+	LogCSServiceDelStrategy       = "Estrategia de eliminación seleccionada"
+	LogCSInteractorDelError       = "Error al eliminar servicio realizado"
+	LogCSInteractorDelCommitErr   = "Error al hacer commit de eliminación"
+	LogCSInteractorDelSuccess     = "Servicio realizado eliminado exitosamente"
+
+	// Dependency initialization
+	LogDepCSRepoInitOK       = "Repositorio de servicios realizados inicializado"
+	LogDepCSRepoInitErr      = "Error inicializando repositorio de servicios realizados"
+	LogDepCSInteractorInitOK = "Interactor de servicios realizados inicializado"
+
+	// Motorcycle Controller - Completed Service Lookup
+	LogMotorcycleControllerRepBranchErr = "Error obteniendo sedes del representante"
+	LogMotorcycleControllerPermErr      = "Error consultando permisos de la motocicleta"
+	LogMotorcycleControllerNoPerm       = "Representante sin permisos para esta motocicleta"
+
+	// Status Transitions (HU73/HU74) - Controller
+	LogCSControllerTransRequest  = "Solicitud de consulta de transiciones de estado"
+	LogCSControllerTransError    = "Error al consultar transiciones de estado"
+	LogCSControllerTransSuccess  = "Transiciones de estado consultadas exitosamente"
+	LogCSControllerStatusRequest = "Solicitud de actualización de estado de servicio"
+	LogCSControllerStatusError   = "Error al actualizar estado de servicio"
+	LogCSControllerStatusSuccess = "Estado de servicio actualizado exitosamente"
+
+	// Status Transitions (HU73/HU74) - Interactor
+	LogCSInteractorTransStart     = "Consultando transiciones de estado"
+	LogCSInteractorTransNotFound  = "Servicio no encontrado para consultar transiciones"
+	LogCSInteractorTransError     = "Error al obtener transiciones de estado"
+	LogCSInteractorTransSuccess   = "Transiciones de estado obtenidas"
+	LogCSInteractorStatusStart    = "Iniciando transición de estado"
+	LogCSInteractorStatusNotFound = "Servicio no encontrado para transición"
+	LogCSInteractorStatusInvalid  = "Transición de estado no válida"
+	LogCSInteractorStatusTxErr    = "Error al iniciar transacción para transición"
+	LogCSInteractorStatusUpdErr   = "Error al actualizar estado en BD"
+	LogCSInteractorStatusHistErr  = "Error al guardar historial de transición"
+	LogCSInteractorStatusCommErr  = "Error al hacer commit de transición"
+	LogCSInteractorStatusRbErr    = "Error en rollback de transición"
+	LogCSInteractorStatusRbOK     = "Rollback de transición ejecutado"
+	LogCSInteractorStatusSuccess  = "Transición de estado completada exitosamente"
+
+	// Status Transitions (HU73/HU74) - Repository
+	LogCSRepoPrepareUpdateStatus = "Error preparando stmtUpdateStatus"
+	LogCSRepoPrepareGetHistory   = "Error preparando stmtGetStatusHistory"
+	LogCSRepoUpdateStatusErr     = "Error actualizando estado en BD"
+	LogCSRepoGetHistoryErr       = "Error obteniendo historial de transiciones"
+	LogCSRepoScanHistoryErr      = "Error escaneando transición de estado"
 )

@@ -379,7 +379,7 @@ func (h *handler) LookupMotorcycleByPlate() gin.HandlerFunc {
 		// 3. Get representative's branches
 		repBranches, err := h.BranchInteractor.GetBranchesByRepresentative(c.Request.Context(), person.ID)
 		if err != nil {
-			log.Error("Error obteniendo sedes del representante",
+			log.Error(logger.LogMotorcycleControllerRepBranchErr,
 				"error", err,
 				"person_id", person.ID,
 				"client_ip", c.ClientIP())
@@ -411,7 +411,7 @@ func (h *handler) LookupMotorcycleByPlate() gin.HandlerFunc {
 		// 5. Get active permissions for this motorcycle (no ownership check)
 		permissions, err := h.MotorcycleInteractor.LookupPermissions(c.Request.Context(), motorcycle.ID)
 		if err != nil {
-			log.Error("Error consultando permisos de la motocicleta",
+			log.Error(logger.LogMotorcycleControllerPermErr,
 				"error", err,
 				"motorcycle_id", motorcycle.ID,
 				"client_ip", c.ClientIP())
@@ -424,7 +424,7 @@ func (h *handler) LookupMotorcycleByPlate() gin.HandlerFunc {
 
 		// 7. If no intersection → 403 Forbidden
 		if len(permittedBranches) == 0 {
-			log.Warn("Representante sin permisos para esta motocicleta",
+			log.Warn(logger.LogMotorcycleControllerNoPerm,
 				"person_id", person.ID,
 				"motorcycle_id", motorcycle.ID,
 				"license_plate", plate,
@@ -455,6 +455,9 @@ func (h *handler) LookupMotorcycleByPlate() gin.HandlerFunc {
 
 		// 10. Fetch motorcycle evidence (HU16-19)
 		response.Evidence = h.fetchAndEncodeEvidence(c, motorcycle.ID, encodedID, log)
+
+		// 10.5 Fetch completed services for this motorcycle (HU64)
+		response.CompletedServices = h.fetchAndEncodeCompletedServices(c, motorcycle.ID, encodedID, log)
 
 		// 11. Set permitted branches in response
 		response.PermittedBranches = permittedBranches
@@ -954,4 +957,48 @@ func (h *handler) fetchAndEncodeEvidence(
 	}
 
 	return evidenceResponses
+}
+
+// fetchAndEncodeCompletedServices fetches completed services for a motorcycle and encodes all IDs.
+// Returns nil on error (non-fatal, same pattern as fetchAndEncodeDiagnostics).
+func (h *handler) fetchAndEncodeCompletedServices(
+	c *gin.Context,
+	motorcycleID, encodedMotorcycleID string,
+	log logger.Logger,
+) []CompletedServiceResponse {
+	if h.CompletedServiceInteractor == nil {
+		return nil
+	}
+
+	services, err := h.CompletedServiceInteractor.GetCompletedServicesByMotorcycle(
+		c.Request.Context(),
+		motorcycleID,
+	)
+	if err != nil {
+		log.Warn(logger.LogCSControllerListByMotoError,
+			"motorcycle_id", motorcycleID,
+			"error", err)
+		return nil
+	}
+
+	if len(services) == 0 {
+		return nil
+	}
+
+	responses := make([]CompletedServiceResponse, 0, len(services))
+	for _, svc := range services {
+		resp := ToCompletedServiceResponse(&svc)
+		encodedID, err := h.EncodeID(svc.ID)
+		if err == nil {
+			resp.ID = encodedID
+		}
+		resp.MotorcycleID = encodedMotorcycleID
+		encodedBranchID, err := h.EncodeID(svc.BranchID)
+		if err == nil {
+			resp.BranchID = encodedBranchID
+		}
+		responses = append(responses, resp)
+	}
+
+	return responses
 }
