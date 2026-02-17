@@ -123,6 +123,24 @@ func createTestMessageCache() *messagingCache.MessageCache {
 		{Code: "MOD_MOT_PLATE_REQ_ERR_00001", Type: "ERROR", Title: "Placa requerida", Content: "El parámetro de placa es requerido", Active: true},
 		{Code: "MOD_MOT_NO_PERMISSION_ERR_00001", Type: "ERROR", Title: "Sin permiso", Content: "Sin permiso para esta motocicleta", Active: true},
 		{Code: "GEN_SRV_ERR_00001", Type: "ERROR", Title: "Error de servidor", Content: "Error interno del servidor", Active: true},
+		// Completed service messages (HU64)
+		{Code: "MOD_CS_CREATE_EXI_00001", Type: "EXITO", Title: "Servicio registrado", Content: "Servicio realizado registrado exitosamente", Active: true},
+		{Code: "MOD_CS_GET_EXI_00001", Type: "EXITO", Title: "Servicio obtenido", Content: "Servicio realizado obtenido exitosamente", Active: true},
+		{Code: "MOD_CS_LIST_EXI_00001", Type: "EXITO", Title: "Servicios listados", Content: "Servicios realizados listados exitosamente", Active: true},
+		{Code: "MOD_CS_DEL_EXI_00001", Type: "EXITO", Title: "Servicio eliminado", Content: "Servicio realizado eliminado exitosamente", Active: true},
+		{Code: "MOD_CS_TRANS_EXI_00001", Type: "EXITO", Title: "Historial obtenido", Content: "Historial de transiciones obtenido exitosamente", Active: true},
+		{Code: "MOD_CS_STATUS_EXI_00001", Type: "EXITO", Title: "Estado actualizado", Content: "Estado del servicio actualizado exitosamente", Active: true},
+		{Code: "MOD_CS_NOT_FOUND_ERR_00001", Type: "ERROR", Title: "Servicio no encontrado", Content: "El servicio realizado no fue encontrado", Active: true},
+		{Code: "MOD_CS_CREATE_ERR_00001", Type: "ERROR", Title: "Error al crear", Content: "Error al crear el servicio realizado", Active: true},
+		{Code: "MOD_CS_DEL_ERR_00001", Type: "ERROR", Title: "Error al eliminar", Content: "Error al eliminar el servicio realizado", Active: true},
+		{Code: "MOD_CS_BRANCH_SVC_ERR_00001", Type: "ERROR", Title: "Servicios inválidos", Content: "Los servicios no pertenecen a la sede", Active: true},
+		{Code: "MOD_CS_DGN_MOTO_ERR_00001", Type: "ERROR", Title: "Diagnóstico inválido", Content: "El diagnóstico no corresponde a la motocicleta", Active: true},
+		{Code: "MOD_CS_ACTIVE_ERR_00001", Type: "ERROR", Title: "Servicio activo", Content: "Ya existe un servicio activo para esta motocicleta en esta sede", Active: true},
+		{Code: "MOD_CS_TRANS_ERR_00001", Type: "ERROR", Title: "Error de historial", Content: "Error al obtener historial de transiciones", Active: true},
+		{Code: "MOD_CS_STATUS_ERR_00001", Type: "ERROR", Title: "Error de estado", Content: "Error al actualizar estado del servicio", Active: true},
+		// Auth error messages
+		{Code: "GEN_AUTH_ERR_00002", Type: "ERROR", Title: "No autorizado", Content: "No tiene autorización para realizar esta acción", Active: true},
+		{Code: "MOD_DGN_NOT_FOUND_ERR_00001", Type: "ERROR", Title: "Diagnóstico no encontrado", Content: "El diagnóstico no fue encontrado", Active: true},
 	}, nil)
 	_ = cache.LoadMessages(context.TODO())
 
