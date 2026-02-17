@@ -93,6 +93,71 @@ func ToCompletedServiceResponse(cs *domain.CompletedService) CompletedServiceRes
 }
 
 // ==========================================
+// Private Helpers
+// ==========================================
+
+// decodeServiceIDs decodes a slice of obfuscated service IDs.
+func (h *handler) decodeServiceIDs(encodedIDs []string) ([]string, error) {
+	decodedIDs := make([]string, len(encodedIDs))
+	for i, encodedID := range encodedIDs {
+		decoded, err := h.DecodeID(encodedID)
+		if err != nil {
+			return nil, err
+		}
+		decodedIDs[i] = decoded
+	}
+	return decodedIDs, nil
+}
+
+// mapRegisterCSError maps domain errors from RegisterCompletedService to API responses.
+func (h *handler) mapRegisterCSError(c *gin.Context, err error) {
+	switch {
+	case errors.Is(err, domain.ErrInvalidBranchServices):
+		h.Response.Error(c, domain.MsgInvalidBranchServices)
+	case errors.Is(err, domain.ErrDiagnosticNotForMotorcycle):
+		h.Response.Error(c, domain.MsgDiagnosticNotForMotorcycle)
+	case errors.Is(err, domain.ErrBranchNotFound):
+		h.Response.Error(c, domain.MsgBranchNotFound)
+	case errors.Is(err, domain.ErrActiveServiceExists):
+		h.Response.Error(c, domain.MsgActiveServiceExists)
+	default:
+		h.Response.Error(c, domain.MsgCompletedServiceCannotSave)
+	}
+}
+
+// validateMotorcycleOwnership decodes and validates motorcycle ownership, returning the decoded ID.
+func (h *handler) validateMotorcycleOwnership(c *gin.Context, log logger.Logger, encodedID string, personID string) (string, error) {
+	motorcycleID, err := h.DecodeID(encodedID)
+	if err != nil {
+		log.Warn(logger.LogMotorcycleControllerIDDecodeError, "encoded_id", encodedID, "error", err)
+		h.Response.Error(c, domain.MsgMotorcycleNotFound)
+		return "", err
+	}
+
+	motorcycle, err := h.MotorcycleInteractor.GetMotorcycleByID(c.Request.Context(), motorcycleID)
+	if err != nil {
+		log.Error(logger.LogMotorcycleControllerGetError, "error", err, "motorcycle_id", motorcycleID)
+		if errors.Is(err, domain.ErrMotorcycleNotFound) {
+			h.Response.Error(c, domain.MsgMotorcycleNotFound)
+		} else {
+			h.Response.Error(c, domain.MsgServerError)
+		}
+		return "", err
+	}
+
+	if personID != motorcycle.OwnerID {
+		log.Warn(logger.LogMotorcycleControllerOwnershipDenied,
+			"motorcycle_id", motorcycleID,
+			"requested_by", personID,
+			"owner_id", motorcycle.OwnerID)
+		h.Response.Error(c, domain.MsgMotorcycleNotFound)
+		return "", domain.ErrMotorcycleNotFound
+	}
+
+	return motorcycleID, nil
+}
+
+// ==========================================
 // Handler Methods
 // ==========================================
 
@@ -162,15 +227,11 @@ func (h *handler) RegisterCompletedService() gin.HandlerFunc {
 		}
 
 		// Decode service IDs
-		decodedServiceIDs := make([]string, len(request.ServiceIDs))
-		for i, encodedID := range request.ServiceIDs {
-			decoded, err := h.DecodeID(encodedID)
-			if err != nil {
-				Logger.Error(logger.LogCSControllerCreateError, "service_decode_error", err, "index", i)
-				h.Response.Error(c, domain.MsgInvalidBranchServices)
-				return
-			}
-			decodedServiceIDs[i] = decoded
+		decodedServiceIDs, err := h.decodeServiceIDs(request.ServiceIDs)
+		if err != nil {
+			Logger.Error(logger.LogCSControllerCreateError, "service_decode_error", err)
+			h.Response.Error(c, domain.MsgInvalidBranchServices)
+			return
 		}
 
 		// Step 4: Build domain entity
@@ -192,19 +253,7 @@ func (h *handler) RegisterCompletedService() gin.HandlerFunc {
 		)
 		if err != nil {
 			Logger.Error(logger.LogCSControllerCreateError, "error", err)
-
-			switch {
-			case errors.Is(err, domain.ErrInvalidBranchServices):
-				h.Response.Error(c, domain.MsgInvalidBranchServices)
-			case errors.Is(err, domain.ErrDiagnosticNotForMotorcycle):
-				h.Response.Error(c, domain.MsgDiagnosticNotForMotorcycle)
-			case errors.Is(err, domain.ErrBranchNotFound):
-				h.Response.Error(c, domain.MsgBranchNotFound)
-			case errors.Is(err, domain.ErrActiveServiceExists):
-				h.Response.Error(c, domain.MsgActiveServiceExists)
-			default:
-				h.Response.Error(c, domain.MsgCompletedServiceCannotSave)
-			}
+			h.mapRegisterCSError(c, err)
 			return
 		}
 
@@ -312,41 +361,14 @@ func (h *handler) GetCompletedServicesByMotorcycle() gin.HandlerFunc {
 			return
 		}
 
-		// 2. Decode motorcycle ID
+		// 2. Decode motorcycle ID and validate ownership
 		encodedID := c.Param("id")
-		motorcycleID, err := h.DecodeID(encodedID)
+		motorcycleID, err := h.validateMotorcycleOwnership(c, log, encodedID, person.ID)
 		if err != nil {
-			log.Warn(logger.LogMotorcycleControllerIDDecodeError,
-				"encoded_id", encodedID,
-				"error", err)
-			h.Response.Error(c, domain.MsgMotorcycleNotFound)
 			return
 		}
 
-		// 3. Validate ownership
-		motorcycle, err := h.MotorcycleInteractor.GetMotorcycleByID(c.Request.Context(), motorcycleID)
-		if err != nil {
-			log.Error(logger.LogMotorcycleControllerGetError,
-				"error", err,
-				"motorcycle_id", motorcycleID)
-			if errors.Is(err, domain.ErrMotorcycleNotFound) {
-				h.Response.Error(c, domain.MsgMotorcycleNotFound)
-			} else {
-				h.Response.Error(c, domain.MsgServerError)
-			}
-			return
-		}
-
-		if person.ID != motorcycle.OwnerID {
-			log.Warn(logger.LogMotorcycleControllerOwnershipDenied,
-				"motorcycle_id", motorcycleID,
-				"requested_by", person.ID,
-				"owner_id", motorcycle.OwnerID)
-			h.Response.Error(c, domain.MsgMotorcycleNotFound)
-			return
-		}
-
-		// 4. Get completed services
+		// 3. Get completed services
 		services, err := h.CompletedServiceInteractor.GetCompletedServicesByMotorcycle(
 			c.Request.Context(),
 			motorcycleID,
@@ -359,7 +381,7 @@ func (h *handler) GetCompletedServicesByMotorcycle() gin.HandlerFunc {
 			return
 		}
 
-		// 5. Build response with encoded IDs
+		// 4. Build response with encoded IDs
 		responses := make([]CompletedServiceResponse, len(services))
 		for i := range services {
 			responses[i] = ToCompletedServiceResponse(&services[i])
