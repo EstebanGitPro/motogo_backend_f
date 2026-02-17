@@ -30,7 +30,7 @@ func TestCreateBranchSchedule_Success(t *testing.T) {
 	mockSchedSvc := new(mocks.MockScheduleService)
 	mockBranchSvc := new(mocks.MockBranchService)
 	schedInteractor := interactor.NewScheduleInteractor(mockSchedSvc, mockBranchSvc)
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
 
 	branchUUID := "a1234567-89ab-cdef-0123-456789abcdef"
 	scheduleUUID := "b1234567-89ab-cdef-0123-456789abcdef"
@@ -69,7 +69,7 @@ func TestCreateBranchSchedule_InvalidBranchID(t *testing.T) {
 	msgCache := createTestMessageCache()
 	responseHandler := middleware.NewResponseHandler(msgCache)
 	schedInteractor := interactor.NewScheduleInteractor(new(mocks.MockScheduleService), new(mocks.MockBranchService))
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
 
 	router := gin.New()
 	router.Use(func(c *gin.Context) {
@@ -93,7 +93,7 @@ func TestCreateBranchSchedule_AlreadyExists(t *testing.T) {
 	mockSchedSvc := new(mocks.MockScheduleService)
 	mockBranchSvc := new(mocks.MockBranchService)
 	schedInteractor := interactor.NewScheduleInteractor(mockSchedSvc, mockBranchSvc)
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
 
 	branchUUID := "a1234567-89ab-cdef-0123-456789abcdef"
 	repID := "rep-123"
@@ -133,7 +133,7 @@ func TestGetBranchSchedule_Success(t *testing.T) {
 	responseHandler := middleware.NewResponseHandler(msgCache)
 	mockSchedSvc := new(mocks.MockScheduleService)
 	schedInteractor := interactor.NewScheduleInteractor(mockSchedSvc, new(mocks.MockBranchService))
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
 
 	branchUUID := "a1234567-89ab-cdef-0123-456789abcdef"
 	schedUUID := "b1234567-89ab-cdef-0123-456789abcdef"
@@ -162,7 +162,7 @@ func TestGetBranchSchedule_NotFound(t *testing.T) {
 	responseHandler := middleware.NewResponseHandler(msgCache)
 	mockSchedSvc := new(mocks.MockScheduleService)
 	schedInteractor := interactor.NewScheduleInteractor(mockSchedSvc, new(mocks.MockBranchService))
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
 
 	branchUUID := "a1234567-89ab-cdef-0123-456789abcdef"
 	encodedBranchID, _ := encoder.Encode(branchUUID)
@@ -186,7 +186,7 @@ func TestGetBranchSchedule_InvalidID(t *testing.T) {
 	msgCache := createTestMessageCache()
 	responseHandler := middleware.NewResponseHandler(msgCache)
 	schedInteractor := interactor.NewScheduleInteractor(new(mocks.MockScheduleService), new(mocks.MockBranchService))
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
 
 	router := gin.New()
 	router.GET("/branches/:id/schedules", h.GetBranchSchedule(schedInteractor))
@@ -210,7 +210,7 @@ func TestDeleteBranchSchedule_Success(t *testing.T) {
 	mockSchedSvc := new(mocks.MockScheduleService)
 	mockBranchSvc := new(mocks.MockBranchService)
 	schedInteractor := interactor.NewScheduleInteractor(mockSchedSvc, mockBranchSvc)
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
 
 	branchUUID := "a1234567-89ab-cdef-0123-456789abcdef"
 	schedUUID := "b1234567-89ab-cdef-0123-456789abcdef"
@@ -250,7 +250,7 @@ func TestDeleteBranchSchedule_NotFound(t *testing.T) {
 	responseHandler := middleware.NewResponseHandler(msgCache)
 	mockSchedSvc := new(mocks.MockScheduleService)
 	schedInteractor := interactor.NewScheduleInteractor(mockSchedSvc, new(mocks.MockBranchService))
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
 
 	branchUUID := "a1234567-89ab-cdef-0123-456789abcdef"
 	encodedBranchID, _ := encoder.Encode(branchUUID)
@@ -284,7 +284,7 @@ func TestActivateBranchSchedule_Success(t *testing.T) {
 	mockSchedSvc := new(mocks.MockScheduleService)
 	mockBranchSvc := new(mocks.MockBranchService)
 	schedInteractor := interactor.NewScheduleInteractor(mockSchedSvc, mockBranchSvc)
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
 
 	branchUUID := "a1234567-89ab-cdef-0123-456789abcdef"
 	schedUUID := "b1234567-89ab-cdef-0123-456789abcdef"
@@ -324,7 +324,7 @@ func TestActivateBranchSchedule_ScheduleNotFound(t *testing.T) {
 	responseHandler := middleware.NewResponseHandler(msgCache)
 	mockSchedSvc := new(mocks.MockScheduleService)
 	schedInteractor := interactor.NewScheduleInteractor(mockSchedSvc, new(mocks.MockBranchService))
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
 
 	branchUUID := "a1234567-89ab-cdef-0123-456789abcdef"
 	encodedBranchID, _ := encoder.Encode(branchUUID)
@@ -358,7 +358,7 @@ func TestDeactivateBranchSchedule_Success(t *testing.T) {
 	mockSchedSvc := new(mocks.MockScheduleService)
 	mockBranchSvc := new(mocks.MockBranchService)
 	schedInteractor := interactor.NewScheduleInteractor(mockSchedSvc, mockBranchSvc)
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
 
 	branchUUID := "a1234567-89ab-cdef-0123-456789abcdef"
 	schedUUID := "b1234567-89ab-cdef-0123-456789abcdef"
@@ -397,7 +397,7 @@ func TestDeactivateBranchSchedule_InvalidID(t *testing.T) {
 	msgCache := createTestMessageCache()
 	responseHandler := middleware.NewResponseHandler(msgCache)
 	schedInteractor := interactor.NewScheduleInteractor(new(mocks.MockScheduleService), new(mocks.MockBranchService))
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
 
 	router := gin.New()
 	router.Use(func(c *gin.Context) {
@@ -422,7 +422,7 @@ func TestGetDaysOfWeek_Success(t *testing.T) {
 	encoder := createTestEncoder()
 	msgCache := createTestMessageCache()
 	responseHandler := middleware.NewResponseHandler(msgCache)
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
 
 	router := gin.New()
 	router.GET("/schedules/days", h.GetDaysOfWeek())
@@ -449,7 +449,7 @@ func TestUpdateBranchSchedule_Success(t *testing.T) {
 	mockSchedSvc := new(mocks.MockScheduleService)
 	mockBranchSvc := new(mocks.MockBranchService)
 	schedInteractor := interactor.NewScheduleInteractor(mockSchedSvc, mockBranchSvc)
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
 
 	branchUUID := "a1234567-89ab-cdef-0123-456789abcdef"
 	schedUUID := "b1234567-89ab-cdef-0123-456789abcdef"
@@ -493,7 +493,7 @@ func TestUpdateBranchSchedule_InvalidID(t *testing.T) {
 	msgCache := createTestMessageCache()
 	responseHandler := middleware.NewResponseHandler(msgCache)
 	schedInteractor := interactor.NewScheduleInteractor(new(mocks.MockScheduleService), new(mocks.MockBranchService))
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
 
 	router := gin.New()
 	router.Use(func(c *gin.Context) {
@@ -517,7 +517,7 @@ func TestUpdateBranchSchedule_ScheduleNotFound(t *testing.T) {
 	responseHandler := middleware.NewResponseHandler(msgCache)
 	mockSchedSvc := new(mocks.MockScheduleService)
 	schedInteractor := interactor.NewScheduleInteractor(mockSchedSvc, new(mocks.MockBranchService))
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
 
 	branchUUID := "a1234567-89ab-cdef-0123-456789abcdef"
 	encodedBranchID, _ := encoder.Encode(branchUUID)

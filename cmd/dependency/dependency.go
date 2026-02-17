@@ -25,7 +25,8 @@ import (
 
 	branchRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/branch"
 	brandRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/brand"
-	diagnosticRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/diagnostic" // HU11-14
+	completedServiceRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/completed_service" // HU64
+	diagnosticRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/diagnostic"              // HU11-14
 	diagPermRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/diagnostic_permission"
 	evidenceRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/evidence" // HU16-19
 	franchiseRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/franchise"
@@ -55,6 +56,7 @@ type Dependencies struct {
 	MotorcycleInteractor        *interactor.MotorcycleInteractor        // HU43-47
 	EvidenceInteractor          *interactor.EvidenceInteractor          // HU16-19
 	DiagnosticInteractor        *interactor.DiagnosticInteractor        // HU11-14
+	CompletedServiceInteractor  *interactor.CompletedServiceInteractor  // HU64
 	FirebaseClient              output.CustomTokenProvider              // Firebase Auth
 	JWTValidator                output.JWTValidator                     // JWT validation with JWKS
 	Config                      *config.Config
@@ -189,6 +191,18 @@ func Init() (*Dependencies, error) {
 	diagnosticInteractor := interactor.NewDiagnosticInteractor(diagnosticService)
 	log.Success(logger.LogDepDiagnosticInteractorInitOK)
 
+	// Completed Service (HU64)
+	completedServiceRepository, err := completedServiceRepo.NewRepository(db)
+	if err != nil {
+		log.Error(logger.LogDepCSRepoInitErr, "error", err)
+		return nil, err
+	}
+	log.Success(logger.LogDepCSRepoInitOK)
+
+	completedServiceService := services.NewCompletedServiceService(completedServiceRepository, repos.diagnostic)
+	completedServiceInteractor := interactor.NewCompletedServiceInteractor(completedServiceService)
+	log.Success(logger.LogDepCSInteractorInitOK)
+
 	// Firebase and storage integration
 	firebaseClient := initFirebaseIntegration(cfg, log, motorcycleService, evidenceService, branchInteractor)
 
@@ -210,8 +224,9 @@ func Init() (*Dependencies, error) {
 		ScheduleDetailInteractor:    scheduleDetailInteractor,
 		ScheduleExceptionInteractor: scheduleExceptionInteractor,
 		MotorcycleInteractor:        motorcycleInteractor,
-		EvidenceInteractor:          evidenceInteractor,   // HU16-19
-		DiagnosticInteractor:        diagnosticInteractor, // HU11-14
+		EvidenceInteractor:          evidenceInteractor,         // HU16-19
+		DiagnosticInteractor:        diagnosticInteractor,       // HU11-14
+		CompletedServiceInteractor:  completedServiceInteractor, // HU64
 		FirebaseClient:              firebaseClient,
 		JWTValidator:                jwtValidator,
 		Config:                      cfg,

@@ -163,6 +163,7 @@ func TestRegisterBranch_Integration_Success(t *testing.T) {
 		nil,              // motorcycleInteractor
 		nil,              // evidenceInteractor
 		nil,              // diagnosticInteractor
+		nil,              // completedServiceInteractor
 		nil,              // firebaseClient
 		nil,              // messageCache
 		encoder,          // IDEncoder
@@ -340,7 +341,7 @@ func TestGetNearbyBranches_Integration_Success(t *testing.T) {
 	mockBranchService := new(mocks.MockBranchService)
 	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
 
-	h := handlers.New(nil, nil, branchInteractor, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(nil, nil, branchInteractor, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
 
 	// Domain data returned by interactor
 	branchNearbyUUID := "a1234567-89ab-cdef-0123-456789abcdef"
@@ -422,7 +423,7 @@ func TestListBranches_Integration_Success(t *testing.T) {
 
 	mockBranchService := new(mocks.MockBranchService)
 	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
-	h := handlers.New(nil, nil, branchInteractor, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(nil, nil, branchInteractor, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
 
 	repID := "rep-123"
 	franchiseUUID := "f1234567-89ab-cdef-0123-456789abcdef"
@@ -482,7 +483,7 @@ func TestUpdateBranch_Integration_Success(t *testing.T) {
 	mockBranchService := new(mocks.MockBranchService)
 	mockTx := new(mocks.MockTx)
 	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
-	h := handlers.New(nil, nil, branchInteractor, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(nil, nil, branchInteractor, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
 
 	branchUUID := "a1234567-89ab-cdef-0123-456789abcdef"
 	brandUUID := "b1234567-89ab-cdef-0123-456789abcdef"
@@ -578,7 +579,7 @@ func TestDeleteBranch_Integration_Success(t *testing.T) {
 	mockBranchService := new(mocks.MockBranchService)
 	mockTx := new(mocks.MockTx)
 	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
-	h := handlers.New(nil, nil, branchInteractor, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(nil, nil, branchInteractor, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
 
 	branchUUID := "a1234567-89ab-cdef-0123-456789abcdef"
 	repID := "rep-123"
@@ -628,7 +629,7 @@ func TestGetBranchTypes_Integration_Success(t *testing.T) {
 	_ = cache.LoadMessages(context.TODO())
 	responseHandler := middleware.NewResponseHandler(cache)
 
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
 
 	router := gin.New()
 	router.GET("/branch-types", h.GetBranchTypes())
@@ -673,7 +674,7 @@ func setupNearbyHandler(t *testing.T) (*gin.Engine, *httptest.ResponseRecorder) 
 
 	mockBranchService := new(mocks.MockBranchService)
 	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
-	h := handlers.New(nil, nil, branchInteractor, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(nil, nil, branchInteractor, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
 
 	router := gin.New()
 	router.Use(func(c *gin.Context) {
@@ -755,7 +756,7 @@ func TestGetNearbyBranches_InvalidBrandFilter(t *testing.T) {
 
 	mockBranchService := new(mocks.MockBranchService)
 	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
-	h := handlers.New(nil, nil, branchInteractor, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(nil, nil, branchInteractor, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
 
 	// Expect the interactor to be called with empty brandID because the invalid brand is ignored
 	mockBranchService.On("GetBranchesNearby",
@@ -802,7 +803,7 @@ func TestDeleteBranch_Integration_CannotDelete(t *testing.T) {
 	mockBranchService := new(mocks.MockBranchService)
 	mockTx := new(mocks.MockTx)
 	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
-	h := handlers.New(nil, nil, branchInteractor, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(nil, nil, branchInteractor, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
 
 	branchUUID := "a1234567-89ab-cdef-0123-456789abcdef"
 	repID := "rep-123"

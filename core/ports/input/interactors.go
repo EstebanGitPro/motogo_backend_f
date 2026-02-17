@@ -53,3 +53,11 @@ type EvidenceInteractorInterface interface {
 	DeleteEvidence(ctx context.Context, evidenceID, ownerID string) error
 	LookupEvidence(ctx context.Context, motorcycleID string) ([]domain.MotorcycleEvidence, error) // Workshop lookup (no ownership check)
 }
+
+// CompletedServiceInteractorInterface defines the contract for completed service operations (HU64)
+type CompletedServiceInteractorInterface interface {
+	RegisterCompletedService(ctx context.Context, service *domain.CompletedService, serviceIDs []string, personID string) (*domain.CompletedService, error)
+	GetCompletedServiceByID(ctx context.Context, serviceID string) (*domain.CompletedService, error)
+	GetCompletedServicesByBranch(ctx context.Context, branchID string) ([]domain.CompletedService, error)
+	GetCompletedServicesByMotorcycle(ctx context.Context, motorcycleID string) ([]domain.CompletedService, error)
+}
