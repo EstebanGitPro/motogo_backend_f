@@ -141,6 +141,15 @@ func createTestMessageCache() *messagingCache.MessageCache {
 		// Auth error messages
 		{Code: "GEN_AUTH_ERR_00002", Type: "ERROR", Title: "No autorizado", Content: "No tiene autorización para realizar esta acción", Active: true},
 		{Code: "MOD_DGN_NOT_FOUND_ERR_00001", Type: "ERROR", Title: "Diagnóstico no encontrado", Content: "El diagnóstico no fue encontrado", Active: true},
+		// Service catalog messages (HU63, HU68, HU75)
+		{Code: "MOD_S_TYPES_EXI_00001", Type: "EXITO", Title: "Tipos obtenidos", Content: "Tipos de servicio obtenidos exitosamente", Active: true},
+		{Code: "MOD_S_ASSOC_EXI_00001", Type: "EXITO", Title: "Servicios asociados", Content: "Servicios asociados a sede exitosamente", Active: true},
+		{Code: "MOD_S_DISSOC_EXI_00001", Type: "EXITO", Title: "Servicio desasociado", Content: "Servicio desasociado de sede exitosamente", Active: true},
+		{Code: "MOD_S_UPD_EXI_00001", Type: "EXITO", Title: "Servicio actualizado", Content: "Servicio actualizado exitosamente", Active: true},
+		{Code: "MOD_S_INVALID_TYPE_ERR_00001", Type: "ERROR", Title: "Tipo inválido", Content: "El tipo de servicio proporcionado no es válido", Active: true},
+		{Code: "MOD_S_NOT_FOUND_ERR_00001", Type: "ERROR", Title: "Servicio no encontrado", Content: "El servicio no fue encontrado", Active: true},
+		{Code: "MOD_S_RES_ERR_00001", Type: "ERROR", Title: "Servicio no existe", Content: "El servicio no existe en el catálogo", Active: true},
+		{Code: "MOD_S_TYPE_ERR_00001", Type: "ERROR", Title: "Tipo de servicio inválido", Content: "El tipo de servicio es inválido", Active: true},
 	}, nil)
 	_ = cache.LoadMessages(context.TODO())
 
