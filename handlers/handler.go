@@ -13,20 +13,21 @@ import (
 )
 
 type handler struct {
-	Interactor           *interactor.Interactor
-	MessageInteractor    *interactor.MessageInteractor
-	BranchInteractor     *interactor.BranchInteractor        // HU59
-	BrandInteractor      input.BrandInteractorInterface      // Brands catalog (interface for testing)
-	LocationInteractor   input.LocationInteractorInterface   // Geographic catalogs (interface for testing)
-	ServiceInteractor    *interactor.ServiceInteractor       // Services catalog (HU63, HU75)
-	FranchiseInteractor  *interactor.FranchiseInteractor     // Franchise CRUD (HU26-29)
-	MotorcycleInteractor input.MotorcycleInteractorInterface // Motorcycle CRUD (interface for testing)
-	EvidenceInteractor   input.EvidenceInteractorInterface   // Evidence CRUD (HU16-19)
-	DiagnosticInteractor *interactor.DiagnosticInteractor    // Diagnostic CRUD (HU11-14)
-	FirebaseClient       output.CustomTokenProvider          // Firebase Auth
-	MessagingCache       *messagingCache.MessageCache
-	IDEncoder            *idencoder.HashidsEncoder
-	Response             *middleware.ResponseHandler
+	Interactor                 *interactor.Interactor
+	MessageInteractor          *interactor.MessageInteractor
+	BranchInteractor           *interactor.BranchInteractor           // HU59
+	BrandInteractor            input.BrandInteractorInterface         // Brands catalog (interface for testing)
+	LocationInteractor         input.LocationInteractorInterface      // Geographic catalogs (interface for testing)
+	ServiceInteractor          *interactor.ServiceInteractor          // Services catalog (HU63, HU75)
+	FranchiseInteractor        *interactor.FranchiseInteractor        // Franchise CRUD (HU26-29)
+	MotorcycleInteractor       input.MotorcycleInteractorInterface    // Motorcycle CRUD (interface for testing)
+	EvidenceInteractor         input.EvidenceInteractorInterface      // Evidence CRUD (HU16-19)
+	DiagnosticInteractor       *interactor.DiagnosticInteractor       // Diagnostic CRUD (HU11-14)
+	CompletedServiceInteractor *interactor.CompletedServiceInteractor // Completed Service (HU64)
+	FirebaseClient             output.CustomTokenProvider             // Firebase Auth
+	MessagingCache             *messagingCache.MessageCache
+	IDEncoder                  *idencoder.HashidsEncoder
+	Response                   *middleware.ResponseHandler
 }
 
 func New(
@@ -40,26 +41,28 @@ func New(
 	motorcycleInteractor *interactor.MotorcycleInteractor,
 	evidenceInteractor *interactor.EvidenceInteractor, // HU16-19
 	diagnosticInteractor *interactor.DiagnosticInteractor, // HU11-14
+	completedServiceInteractor *interactor.CompletedServiceInteractor, // HU64
 	firebaseClient output.CustomTokenProvider,
 	messageCache *messagingCache.MessageCache,
 	encoder *idencoder.HashidsEncoder,
 	responseHandler *middleware.ResponseHandler,
 ) *handler {
 	return &handler{
-		Interactor:           personInteractor,
-		MessageInteractor:    messageInteractor,
-		BranchInteractor:     branchInteractor,
-		BrandInteractor:      brandInteractor,
-		LocationInteractor:   locationInteractor,
-		ServiceInteractor:    serviceInteractor,
-		FranchiseInteractor:  franchiseInteractor,
-		MotorcycleInteractor: motorcycleInteractor,
-		EvidenceInteractor:   evidenceInteractor,   // HU16-19
-		DiagnosticInteractor: diagnosticInteractor, // HU11-14
-		FirebaseClient:       firebaseClient,
-		MessagingCache:       messageCache,
-		IDEncoder:            encoder,
-		Response:             responseHandler,
+		Interactor:                 personInteractor,
+		MessageInteractor:          messageInteractor,
+		BranchInteractor:           branchInteractor,
+		BrandInteractor:            brandInteractor,
+		LocationInteractor:         locationInteractor,
+		ServiceInteractor:          serviceInteractor,
+		FranchiseInteractor:        franchiseInteractor,
+		MotorcycleInteractor:       motorcycleInteractor,
+		EvidenceInteractor:         evidenceInteractor,         // HU16-19
+		DiagnosticInteractor:       diagnosticInteractor,       // HU11-14
+		CompletedServiceInteractor: completedServiceInteractor, // HU64
+		FirebaseClient:             firebaseClient,
+		MessagingCache:             messageCache,
+		IDEncoder:                  encoder,
+		Response:                   responseHandler,
 	}
 }
 

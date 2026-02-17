@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Set Diagnostic Solution",
+  "description": "Schema for setting a diagnostic solution by representative (PATCH)",
+  "type": "object",
+  "properties": {
+    "possible_solution": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000,
+      "description": "Possible solution text — TEXT"
+    }
+  },
+  "required": ["possible_solution"],
+  "additionalProperties": false
+}

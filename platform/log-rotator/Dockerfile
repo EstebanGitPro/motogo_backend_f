@@ -2,16 +2,16 @@ FROM alpine:3.19
 
 # Instalar logrotate y herramientas necesarias
 RUN apk add --no-cache \
-    logrotate \
     bash \
     dcron \
     docker-cli \
     findutils \
+    logrotate \
     tzdata
 
 # Configurar timezone
 ENV TZ=America/Bogota
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+RUN ln -snf /usr/share/zoneinfo/"$TZ" /etc/localtime && echo "$TZ" > /etc/timezone
 
 # Crear directorios necesarios
 RUN mkdir -p /var/log /var/lib/logrotate

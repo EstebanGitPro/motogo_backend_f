@@ -8,12 +8,12 @@
     "name": {
       "type": "string",
       "minLength": 2,
-      "maxLength": 100,
+      "maxLength": 200,
       "description": "Franchise name"
     },
     "description": {
       "type": "string",
-      "maxLength": 500,
+      "maxLength": 255,
       "description": "Optional franchise description"
     },
     "branch_ids": {

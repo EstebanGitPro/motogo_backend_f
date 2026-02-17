@@ -37,6 +37,7 @@ type MotorcycleLookupResponse struct {
 	Reference         *MotorcycleLookupReferenceDTO `json:"reference,omitempty"`
 	Diagnostics       []DiagnosticResponse          `json:"diagnostics,omitempty"`
 	Evidence          []EvidenceResponse            `json:"evidence,omitempty"`
+	CompletedServices []CompletedServiceResponse    `json:"completed_services,omitempty"`
 	PermittedBranches []PermittedBranchInfo         `json:"permitted_branches,omitempty"`
 	Links             []Link                        `json:"_links,omitempty"`
 }

@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Update Schedule Detail",
+  "description": "Schema for updating a schedule time slot (HU7)",
+  "type": "object",
+  "properties": {
+    "day_of_week": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 7,
+      "description": "Day of week 1=Monday to 7=Sunday — TINYINT"
+    },
+    "opening_time": {
+      "type": "string",
+      "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)$",
+      "description": "Opening time HH:MM format — TIME"
+    },
+    "closing_time": {
+      "type": "string",
+      "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)$",
+      "description": "Closing time HH:MM format — TIME"
+    },
+    "is_closed": {
+      "type": "boolean",
+      "description": "Whether the branch is closed — BOOLEAN"
+    },
+    "active": {
+      "type": "boolean",
+      "description": "Whether this detail entry is active — BOOLEAN"
+    }
+  },
+  "minProperties": 1,
+  "additionalProperties": false
+}

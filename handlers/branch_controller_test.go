@@ -123,6 +123,33 @@ func createTestMessageCache() *messagingCache.MessageCache {
 		{Code: "MOD_MOT_PLATE_REQ_ERR_00001", Type: "ERROR", Title: "Placa requerida", Content: "El parámetro de placa es requerido", Active: true},
 		{Code: "MOD_MOT_NO_PERMISSION_ERR_00001", Type: "ERROR", Title: "Sin permiso", Content: "Sin permiso para esta motocicleta", Active: true},
 		{Code: "GEN_SRV_ERR_00001", Type: "ERROR", Title: "Error de servidor", Content: "Error interno del servidor", Active: true},
+		// Completed service messages (HU64)
+		{Code: "MOD_CS_CREATE_EXI_00001", Type: "EXITO", Title: "Servicio registrado", Content: "Servicio realizado registrado exitosamente", Active: true},
+		{Code: "MOD_CS_GET_EXI_00001", Type: "EXITO", Title: "Servicio obtenido", Content: "Servicio realizado obtenido exitosamente", Active: true},
+		{Code: "MOD_CS_LIST_EXI_00001", Type: "EXITO", Title: "Servicios listados", Content: "Servicios realizados listados exitosamente", Active: true},
+		{Code: "MOD_CS_DEL_EXI_00001", Type: "EXITO", Title: "Servicio eliminado", Content: "Servicio realizado eliminado exitosamente", Active: true},
+		{Code: "MOD_CS_TRANS_EXI_00001", Type: "EXITO", Title: "Historial obtenido", Content: "Historial de transiciones obtenido exitosamente", Active: true},
+		{Code: "MOD_CS_STATUS_EXI_00001", Type: "EXITO", Title: "Estado actualizado", Content: "Estado del servicio actualizado exitosamente", Active: true},
+		{Code: "MOD_CS_NOT_FOUND_ERR_00001", Type: "ERROR", Title: "Servicio no encontrado", Content: "El servicio realizado no fue encontrado", Active: true},
+		{Code: "MOD_CS_CREATE_ERR_00001", Type: "ERROR", Title: "Error al crear", Content: "Error al crear el servicio realizado", Active: true},
+		{Code: "MOD_CS_DEL_ERR_00001", Type: "ERROR", Title: "Error al eliminar", Content: "Error al eliminar el servicio realizado", Active: true},
+		{Code: "MOD_CS_BRANCH_SVC_ERR_00001", Type: "ERROR", Title: "Servicios inválidos", Content: "Los servicios no pertenecen a la sede", Active: true},
+		{Code: "MOD_CS_DGN_MOTO_ERR_00001", Type: "ERROR", Title: "Diagnóstico inválido", Content: "El diagnóstico no corresponde a la motocicleta", Active: true},
+		{Code: "MOD_CS_ACTIVE_ERR_00001", Type: "ERROR", Title: "Servicio activo", Content: "Ya existe un servicio activo para esta motocicleta en esta sede", Active: true},
+		{Code: "MOD_CS_TRANS_ERR_00001", Type: "ERROR", Title: "Error de historial", Content: "Error al obtener historial de transiciones", Active: true},
+		{Code: "MOD_CS_STATUS_ERR_00001", Type: "ERROR", Title: "Error de estado", Content: "Error al actualizar estado del servicio", Active: true},
+		// Auth error messages
+		{Code: "GEN_AUTH_ERR_00002", Type: "ERROR", Title: "No autorizado", Content: "No tiene autorización para realizar esta acción", Active: true},
+		{Code: "MOD_DGN_NOT_FOUND_ERR_00001", Type: "ERROR", Title: "Diagnóstico no encontrado", Content: "El diagnóstico no fue encontrado", Active: true},
+		// Service catalog messages (HU63, HU68, HU75)
+		{Code: "MOD_S_TYPES_EXI_00001", Type: "EXITO", Title: "Tipos obtenidos", Content: "Tipos de servicio obtenidos exitosamente", Active: true},
+		{Code: "MOD_S_ASSOC_EXI_00001", Type: "EXITO", Title: "Servicios asociados", Content: "Servicios asociados a sede exitosamente", Active: true},
+		{Code: "MOD_S_DISSOC_EXI_00001", Type: "EXITO", Title: "Servicio desasociado", Content: "Servicio desasociado de sede exitosamente", Active: true},
+		{Code: "MOD_S_UPD_EXI_00001", Type: "EXITO", Title: "Servicio actualizado", Content: "Servicio actualizado exitosamente", Active: true},
+		{Code: "MOD_S_INVALID_TYPE_ERR_00001", Type: "ERROR", Title: "Tipo inválido", Content: "El tipo de servicio proporcionado no es válido", Active: true},
+		{Code: "MOD_S_NOT_FOUND_ERR_00001", Type: "ERROR", Title: "Servicio no encontrado", Content: "El servicio no fue encontrado", Active: true},
+		{Code: "MOD_S_RES_ERR_00001", Type: "ERROR", Title: "Servicio no existe", Content: "El servicio no existe en el catálogo", Active: true},
+		{Code: "MOD_S_TYPE_ERR_00001", Type: "ERROR", Title: "Tipo de servicio inválido", Content: "El tipo de servicio es inválido", Active: true},
 	}, nil)
 	_ = cache.LoadMessages(context.TODO())
 
@@ -163,6 +190,7 @@ func TestRegisterBranch_Integration_Success(t *testing.T) {
 		nil,              // motorcycleInteractor
 		nil,              // evidenceInteractor
 		nil,              // diagnosticInteractor
+		nil,              // completedServiceInteractor
 		nil,              // firebaseClient
 		nil,              // messageCache
 		encoder,          // IDEncoder
@@ -340,7 +368,7 @@ func TestGetNearbyBranches_Integration_Success(t *testing.T) {
 	mockBranchService := new(mocks.MockBranchService)
 	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
 
-	h := handlers.New(nil, nil, branchInteractor, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(nil, nil, branchInteractor, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
 
 	// Domain data returned by interactor
 	branchNearbyUUID := "a1234567-89ab-cdef-0123-456789abcdef"
@@ -422,7 +450,7 @@ func TestListBranches_Integration_Success(t *testing.T) {
 
 	mockBranchService := new(mocks.MockBranchService)
 	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
-	h := handlers.New(nil, nil, branchInteractor, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(nil, nil, branchInteractor, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
 
 	repID := "rep-123"
 	franchiseUUID := "f1234567-89ab-cdef-0123-456789abcdef"
@@ -482,7 +510,7 @@ func TestUpdateBranch_Integration_Success(t *testing.T) {
 	mockBranchService := new(mocks.MockBranchService)
 	mockTx := new(mocks.MockTx)
 	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
-	h := handlers.New(nil, nil, branchInteractor, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(nil, nil, branchInteractor, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
 
 	branchUUID := "a1234567-89ab-cdef-0123-456789abcdef"
 	brandUUID := "b1234567-89ab-cdef-0123-456789abcdef"
@@ -578,7 +606,7 @@ func TestDeleteBranch_Integration_Success(t *testing.T) {
 	mockBranchService := new(mocks.MockBranchService)
 	mockTx := new(mocks.MockTx)
 	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
-	h := handlers.New(nil, nil, branchInteractor, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(nil, nil, branchInteractor, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
 
 	branchUUID := "a1234567-89ab-cdef-0123-456789abcdef"
 	repID := "rep-123"
@@ -628,7 +656,7 @@ func TestGetBranchTypes_Integration_Success(t *testing.T) {
 	_ = cache.LoadMessages(context.TODO())
 	responseHandler := middleware.NewResponseHandler(cache)
 
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
 
 	router := gin.New()
 	router.GET("/branch-types", h.GetBranchTypes())
@@ -673,7 +701,7 @@ func setupNearbyHandler(t *testing.T) (*gin.Engine, *httptest.ResponseRecorder) 
 
 	mockBranchService := new(mocks.MockBranchService)
 	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
-	h := handlers.New(nil, nil, branchInteractor, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(nil, nil, branchInteractor, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
 
 	router := gin.New()
 	router.Use(func(c *gin.Context) {
@@ -755,7 +783,7 @@ func TestGetNearbyBranches_InvalidBrandFilter(t *testing.T) {
 
 	mockBranchService := new(mocks.MockBranchService)
 	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
-	h := handlers.New(nil, nil, branchInteractor, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(nil, nil, branchInteractor, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
 
 	// Expect the interactor to be called with empty brandID because the invalid brand is ignored
 	mockBranchService.On("GetBranchesNearby",
@@ -802,7 +830,7 @@ func TestDeleteBranch_Integration_CannotDelete(t *testing.T) {
 	mockBranchService := new(mocks.MockBranchService)
 	mockTx := new(mocks.MockTx)
 	branchInteractor := interactor.NewBranchInteractor(mockBranchService)
-	h := handlers.New(nil, nil, branchInteractor, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(nil, nil, branchInteractor, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
 
 	branchUUID := "a1234567-89ab-cdef-0123-456789abcdef"
 	repID := "rep-123"

@@ -13,6 +13,7 @@
       "type": "string",
       "format": "uri",
       "minLength": 1,
+      "maxLength": 255,
       "pattern": "^https://firebasestorage\\.googleapis\\.com/.*$",
       "description": "Firebase Storage URL for the uploaded image"
     },

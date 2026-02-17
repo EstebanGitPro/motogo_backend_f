@@ -2,6 +2,7 @@ package input
 
 import (
 	"context"
+	"time"
 
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/dto"
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
@@ -315,4 +316,26 @@ type EvidenceService interface {
 
 	// Storage cleanup
 	DeleteStorageFile(ctx context.Context, imageURL string)
+}
+
+// CompletedServiceService - Use Cases for Completed Service operations (HU64/HU73/HU74)
+type CompletedServiceService interface {
+	// Transactions
+	BeginTx(ctx context.Context) (output.Tx, error)
+
+	// Validations
+	ValidateBranchServices(ctx context.Context, branchID string, serviceIDs []string) error
+	ValidateDiagnosticForMotorcycle(ctx context.Context, diagnosticID, motorcycleID string) error
+	ValidateNoActiveService(ctx context.Context, branchID, motorcycleID string) error
+
+	// Completed Service CRUD
+	SaveCompletedService(ctx context.Context, tx output.Tx, service *domain.CompletedService) error
+	SaveItems(ctx context.Context, tx output.Tx, items []domain.CompletedServiceItem) error
+	SaveStatusHistory(ctx context.Context, tx output.Tx, history *domain.ServiceStatusHistory) error
+	DeleteCompletedService(ctx context.Context, tx output.Tx, serviceID string, status domain.ServiceStatus) error
+	UpdateStatus(ctx context.Context, tx output.Tx, serviceID string, status string, completionDate *time.Time) error
+	GetByID(ctx context.Context, serviceID string) (*domain.CompletedService, error)
+	GetByMotorcycleID(ctx context.Context, motorcycleID string) ([]domain.CompletedService, error)
+	GetByBranchID(ctx context.Context, branchID string) ([]domain.CompletedService, error)
+	GetStatusHistory(ctx context.Context, serviceID string) ([]domain.ServiceStatusHistory, error)
 }

@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Register Completed Service",
+  "description": "Schema for registering a completed service at a branch (HU64)",
+  "type": "object",
+  "properties": {
+    "branch_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Obfuscated branch ID (hashid)"
+    },
+    "motorcycle_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Obfuscated motorcycle ID (hashid)"
+    },
+    "service_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1,
+      "description": "Array of obfuscated service IDs (hashids)"
+    },
+    "diagnostic_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Optional obfuscated diagnostic ID (hashid)"
+    },
+    "quoted_price": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 9999999999.99,
+      "description": "Quoted price before service — DECIMAL(12,2)"
+    },
+    "final_price": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 9999999999.99,
+      "description": "Final price charged — DECIMAL(12,2)"
+    },
+    "representative_notes": {
+      "type": "string",
+      "maxLength": 2000,
+      "description": "Notes from representative — TEXT"
+    }
+  },
+  "required": ["branch_id", "motorcycle_id", "service_ids"],
+  "additionalProperties": false
+}

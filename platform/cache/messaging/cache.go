@@ -284,6 +284,7 @@ var messageCodeToHTTPStatus = map[string]int{
 	// ========================================
 	"GEN_AUTH_ERR_00002":         http.StatusUnauthorized,        // 401 - No autorizado
 	"GEN_FORBIDDEN_ERR_00003":    http.StatusForbidden,           // 403 - Acceso denegado
+	"GEN_RATE_LIMIT_ERR_00004":   http.StatusTooManyRequests,     // 429 - Demasiadas solicitudes
 	"GEN_MSG_INACTIVE_ERR_00002": http.StatusNotFound,            // 404 - Mensaje no disponible
 	"GEN_SRV_ERR_00001":          http.StatusInternalServerError, // 500 - Error del servidor
 	"GEN_OPE_EXI_00001":          http.StatusOK,                  // 200 - Operación exitosa
@@ -508,6 +509,26 @@ var messageCodeToHTTPStatus = map[string]int{
 	"MOD_DGP_SAVE_ERR_00001":      http.StatusBadRequest, // 400 - Error al guardar permiso
 	"MOD_DGP_DELETE_ERR_00001":    http.StatusBadRequest, // 400 - Error al eliminar permiso
 
+	// ========================================
+	// Completed Service Module (MOD_CS_*) - HU64
+	// ========================================
+	// Success messages
+	"MOD_CS_CREATE_EXI_00001": http.StatusCreated, // 201 - Servicio registrado
+	"MOD_CS_GET_EXI_00001":    http.StatusOK,      // 200 - Servicio consultado
+	"MOD_CS_LIST_EXI_00001":   http.StatusOK,      // 200 - Servicios listados
+	"MOD_CS_DEL_EXI_00001":    http.StatusOK,      // 200 - Servicio eliminado
+	// Error messages
+	"MOD_CS_NOT_FOUND_ERR_00001":  http.StatusNotFound,            // 404 - Servicio no encontrado
+	"MOD_CS_CREATE_ERR_00001":     http.StatusBadRequest,          // 400 - Error al registrar servicio
+	"MOD_CS_DEL_ERR_00001":        http.StatusBadRequest,          // 400 - Error al eliminar servicio
+	"MOD_CS_BRANCH_SVC_ERR_00001": http.StatusUnprocessableEntity, // 422 - Servicios no pertenecen a la sede
+	"MOD_CS_DGN_MOTO_ERR_00001":   http.StatusUnprocessableEntity, // 422 - Diagnóstico no corresponde a la moto
+	"MOD_CS_ACTIVE_ERR_00001":     http.StatusConflict,            // 409 - Ya existe servicio activo
+	// Status Transitions (HU73/HU74)
+	"MOD_CS_STATUS_EXI_00001": http.StatusOK,         // 200 - Estado actualizado
+	"MOD_CS_STATUS_ERR_00001": http.StatusBadRequest, // 400 - Transición no válida
+	"MOD_CS_TRANS_EXI_00001":  http.StatusOK,         // 200 - Transiciones consultadas
+	"MOD_CS_TRANS_ERR_00001":  http.StatusBadRequest, // 400 - Error al consultar transiciones
 }
 
 // GetHTTPStatus returns the HTTP status for a message code
