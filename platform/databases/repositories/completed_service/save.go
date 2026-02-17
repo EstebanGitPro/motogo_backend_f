@@ -95,6 +95,7 @@ func (r *repository) ValidateBranchServices(ctx context.Context, branchID string
 		args = append(args, id)
 	}
 
+	// Safe: fmt.Sprintf only injects hardcoded "?" placeholders; all values are passed as parameterized arguments via args
 	query := fmt.Sprintf(queryValidateBranchServices, strings.Join(placeholders, ", "))
 
 	var count int
