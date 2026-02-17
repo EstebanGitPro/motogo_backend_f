@@ -96,6 +96,57 @@ func ToCompletedServiceResponse(cs *domain.CompletedService) CompletedServiceRes
 // Private Helpers
 // ==========================================
 
+// decodedRegisterIDs holds all decoded IDs needed for RegisterCompletedService.
+type decodedRegisterIDs struct {
+	BranchID     string
+	MotorcycleID string
+	DiagnosticID *string
+	ServiceIDs   []string
+}
+
+// decodeRegisterIDs decodes all obfuscated IDs from a CreateCompletedServiceRequest.
+// Returns nil and sends an error response if any ID fails to decode.
+func (h *handler) decodeRegisterIDs(c *gin.Context, request *CreateCompletedServiceRequest) *decodedRegisterIDs {
+	branchID, err := h.DecodeID(request.BranchID)
+	if err != nil {
+		Logger.Error(logger.LogCSControllerCreateError, "branch_decode_error", err)
+		h.Response.Error(c, domain.MsgBranchNotFound)
+		return nil
+	}
+
+	motorcycleID, err := h.DecodeID(request.MotorcycleID)
+	if err != nil {
+		Logger.Error(logger.LogCSControllerCreateError, "motorcycle_decode_error", err)
+		h.Response.Error(c, domain.MsgMotorcycleNotFound)
+		return nil
+	}
+
+	var diagnosticID *string
+	if request.DiagnosticID != nil && *request.DiagnosticID != "" {
+		decoded, err := h.DecodeID(*request.DiagnosticID)
+		if err != nil {
+			Logger.Error(logger.LogCSControllerCreateError, "diagnostic_decode_error", err)
+			h.Response.Error(c, domain.MsgDiagnosticNotFound)
+			return nil
+		}
+		diagnosticID = &decoded
+	}
+
+	serviceIDs, err := h.decodeServiceIDs(request.ServiceIDs)
+	if err != nil {
+		Logger.Error(logger.LogCSControllerCreateError, "service_decode_error", err)
+		h.Response.Error(c, domain.MsgInvalidBranchServices)
+		return nil
+	}
+
+	return &decodedRegisterIDs{
+		BranchID:     branchID,
+		MotorcycleID: motorcycleID,
+		DiagnosticID: diagnosticID,
+		ServiceIDs:   serviceIDs,
+	}
+}
+
 // decodeServiceIDs decodes a slice of obfuscated service IDs.
 func (h *handler) decodeServiceIDs(encodedIDs []string) ([]string, error) {
 	decodedIDs := make([]string, len(encodedIDs))
@@ -199,46 +250,17 @@ func (h *handler) RegisterCompletedService() gin.HandlerFunc {
 		// Sanitize input
 		request.Sanitize()
 
-		// Step 3: Decode obfuscated IDs
-		branchID, err := h.DecodeID(request.BranchID)
-		if err != nil {
-			Logger.Error(logger.LogCSControllerCreateError, "branch_decode_error", err)
-			h.Response.Error(c, domain.MsgBranchNotFound)
-			return
-		}
-
-		motorcycleID, err := h.DecodeID(request.MotorcycleID)
-		if err != nil {
-			Logger.Error(logger.LogCSControllerCreateError, "motorcycle_decode_error", err)
-			h.Response.Error(c, domain.MsgMotorcycleNotFound)
-			return
-		}
-
-		// Decode optional diagnostic ID
-		var diagnosticID *string
-		if request.DiagnosticID != nil && *request.DiagnosticID != "" {
-			decoded, err := h.DecodeID(*request.DiagnosticID)
-			if err != nil {
-				Logger.Error(logger.LogCSControllerCreateError, "diagnostic_decode_error", err)
-				h.Response.Error(c, domain.MsgDiagnosticNotFound)
-				return
-			}
-			diagnosticID = &decoded
-		}
-
-		// Decode service IDs
-		decodedServiceIDs, err := h.decodeServiceIDs(request.ServiceIDs)
-		if err != nil {
-			Logger.Error(logger.LogCSControllerCreateError, "service_decode_error", err)
-			h.Response.Error(c, domain.MsgInvalidBranchServices)
-			return
+		// Step 3: Decode all obfuscated IDs
+		ids := h.decodeRegisterIDs(c, &request)
+		if ids == nil {
+			return // error response already sent
 		}
 
 		// Step 4: Build domain entity
 		cs := &domain.CompletedService{
-			BranchID:            branchID,
-			MotorcycleID:        motorcycleID,
-			DiagnosticID:        diagnosticID,
+			BranchID:            ids.BranchID,
+			MotorcycleID:        ids.MotorcycleID,
+			DiagnosticID:        ids.DiagnosticID,
 			QuotedPrice:         request.QuotedPrice,
 			FinalPrice:          request.FinalPrice,
 			RepresentativeNotes: request.RepresentativeNotes,
@@ -248,7 +270,7 @@ func (h *handler) RegisterCompletedService() gin.HandlerFunc {
 		result, err := h.CompletedServiceInteractor.RegisterCompletedService(
 			c.Request.Context(),
 			cs,
-			decodedServiceIDs,
+			ids.ServiceIDs,
 			person.ID,
 		)
 		if err != nil {
