@@ -5,6 +5,7 @@ import (
 	"database/sql"
 
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
+	"github.com/EstebanGitPro/motogo-backend/platform/constants"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
@@ -38,7 +39,7 @@ func (r *repository) GetServicesByBranch(ctx context.Context, branchID string) (
 			info.Service.Description = description.String
 		}
 		if createdAt.Valid {
-			info.AddedAt = createdAt.Time.Format("2006-01-02T15:04:05Z07:00")
+			info.AddedAt = createdAt.Time.Format(constants.DateTimeISO)
 		}
 		services = append(services, info)
 	}

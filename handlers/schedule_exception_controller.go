@@ -7,6 +7,7 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/core/interactor"
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/middleware"
+	"github.com/EstebanGitPro/motogo-backend/platform/constants"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 	"github.com/gin-gonic/gin"
 )
@@ -82,13 +83,13 @@ func NewScheduleExceptionResponse(
 	}
 
 	if exception.ExceptionStartDate != nil {
-		response.ExceptionStartDate = exception.ExceptionStartDate.Format("2006-01-02")
+		response.ExceptionStartDate = exception.ExceptionStartDate.Format(constants.DateFormat)
 		response.ExceptionStartDateFormatted = formatDateSpanish(*exception.ExceptionStartDate)
 		response.DayName = getDayNameSpanish(*exception.ExceptionStartDate)
 	}
 
 	if exception.ExceptionEndDate != nil {
-		response.ExceptionEndDate = exception.ExceptionEndDate.Format("2006-01-02")
+		response.ExceptionEndDate = exception.ExceptionEndDate.Format(constants.DateFormat)
 		if !exception.ExceptionEndDate.Equal(*exception.ExceptionStartDate) {
 			response.ExceptionEndDateFormatted = formatDateSpanish(*exception.ExceptionEndDate)
 		}
@@ -204,7 +205,7 @@ func (h *handler) CreateScheduleException(
 		// 5. Parse exception dates (start date required, end date optional)
 		// IMPORTANT: Use ParseInLocation with time.Local to match MySQL loc=Local config
 		// Using time.Parse creates UTC dates which cause a 1-day shift when MySQL converts them
-		exceptionStartDate, err := time.ParseInLocation("2006-01-02", req.ExceptionStartDate, time.Local)
+		exceptionStartDate, err := time.ParseInLocation(constants.DateFormat, req.ExceptionStartDate, time.Local)
 		if err != nil {
 			log.Warn(logger.LogScheduleDetailControllerBindError, "error", err, "date", req.ExceptionStartDate)
 			h.Response.Error(c, domain.MsgScheduleExceptionDatePast)
@@ -214,7 +215,7 @@ func (h *handler) CreateScheduleException(
 		// If end date not provided, use start date (single day exception)
 		exceptionEndDate := exceptionStartDate
 		if req.ExceptionEndDate != "" {
-			exceptionEndDate, err = time.ParseInLocation("2006-01-02", req.ExceptionEndDate, time.Local)
+			exceptionEndDate, err = time.ParseInLocation(constants.DateFormat, req.ExceptionEndDate, time.Local)
 			if err != nil {
 				log.Warn(logger.LogScheduleDetailControllerBindError, "error", err, "date", req.ExceptionEndDate)
 				h.Response.Error(c, domain.MsgScheduleExceptionDatePast)

@@ -7,6 +7,7 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/core/interactor"
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/middleware"
+	"github.com/EstebanGitPro/motogo-backend/platform/constants"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 	"github.com/gin-gonic/gin"
 )
@@ -534,7 +535,7 @@ type scheduleParseError struct {
 // parseScheduleDates parses start_date and end_date from the request and validates the date range.
 func parseScheduleDates(req UpdateScheduleRequest, schedule *domain.BranchSchedule, log logger.Logger) *scheduleParseError {
 	if req.StartDate != nil {
-		parsed, err := time.Parse(dateFormat, *req.StartDate)
+		parsed, err := time.Parse(constants.DateFormat, *req.StartDate)
 		if err != nil {
 			log.Warn(logger.LogScheduleControllerDateParseError, "field", "start_date", "error", err)
 			return &scheduleParseError{msgCode: domain.MsgScheduleInvalidDateFormat}
@@ -542,7 +543,7 @@ func parseScheduleDates(req UpdateScheduleRequest, schedule *domain.BranchSchedu
 		schedule.StartDate = parsed
 	}
 	if req.EndDate != nil {
-		parsed, err := time.Parse(dateFormat, *req.EndDate)
+		parsed, err := time.Parse(constants.DateFormat, *req.EndDate)
 		if err != nil {
 			log.Warn(logger.LogScheduleControllerDateParseError, "field", "end_date", "error", err)
 			return &scheduleParseError{msgCode: domain.MsgScheduleInvalidDateFormat}

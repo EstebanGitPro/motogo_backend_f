@@ -2,19 +2,16 @@ package services
 
 import (
 	"context"
-	"regexp"
 	"time"
 
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/input"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
+	"github.com/EstebanGitPro/motogo-backend/platform/constants"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
 var scheduleDetailLog logger.Logger = logger.NewSlogLogger()
-
-// timeRegex validates HH:MM or HH:MM:SS format (24-hour, optional seconds)
-var timeRegex = regexp.MustCompile(`^([01]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$`)
 
 // scheduleDetailService implements input.ScheduleDetailService
 type scheduleDetailService struct {
@@ -262,12 +259,12 @@ func (s *scheduleDetailService) DeleteDetail(
 // and that closing time is after opening time
 func (s *scheduleDetailService) ValidateTimeRange(openingTime, closingTime string) error {
 	// Validate format
-	if !timeRegex.MatchString(openingTime) {
+	if !constants.TimeRegex.MatchString(openingTime) {
 		scheduleDetailLog.Warn(logger.LogScheduleDetailServiceInvalidTime,
 			"field", "opening_time", "value", openingTime)
 		return domain.ErrScheduleDetailInvalidTime
 	}
-	if !timeRegex.MatchString(closingTime) {
+	if !constants.TimeRegex.MatchString(closingTime) {
 		scheduleDetailLog.Warn(logger.LogScheduleDetailServiceInvalidTime,
 			"field", "closing_time", "value", closingTime)
 		return domain.ErrScheduleDetailInvalidTime
@@ -289,12 +286,12 @@ func (s *scheduleDetailService) ValidateTimeRange(openingTime, closingTime strin
 // parseTime tries to parse time in HH:mm:ss format first, then HH:mm
 func parseTime(timeStr string) time.Time {
 	// Try HH:mm:ss format first (from DB)
-	t, err := time.Parse("15:04:05", timeStr)
+	t, err := time.Parse(constants.TimeFormatLong, timeStr)
 	if err == nil {
 		return t
 	}
 	// Fallback to HH:mm format (from API)
-	t, _ = time.Parse("15:04", timeStr)
+	t, _ = time.Parse(constants.TimeFormatShort, timeStr)
 	return t
 }
 
@@ -363,8 +360,8 @@ func (s *scheduleDetailService) CreateException(
 
 	scheduleDetailLog.Info(logger.LogScheduleDetailDebugExplicitCheck,
 		"schedule_id", exception.ScheduleID,
-		"new_start_date", exception.ExceptionStartDate.Format("2006-01-02"),
-		"new_end_date", exception.ExceptionEndDate.Format("2006-01-02"),
+		"new_start_date", exception.ExceptionStartDate.Format(constants.DateFormat),
+		"new_end_date", exception.ExceptionEndDate.Format(constants.DateFormat),
 		"new_is_closed", exception.IsClosed,
 		"existing_exceptions_count", len(existingExceptions))
 
@@ -573,10 +570,10 @@ func (s *scheduleDetailService) checkDateOverlap(exception domain.ScheduleDetail
 		}
 
 		// Use date-only strings to compare (YYYY-MM-DD) - avoids timezone truncation issues
-		existingStartStr := existing.ExceptionStartDate.Format("2006-01-02")
-		existingEndStr := existing.ExceptionEndDate.Format("2006-01-02")
-		newStartStr := exception.ExceptionStartDate.Format("2006-01-02")
-		newEndStr := exception.ExceptionEndDate.Format("2006-01-02")
+		existingStartStr := existing.ExceptionStartDate.Format(constants.DateFormat)
+		existingEndStr := existing.ExceptionEndDate.Format(constants.DateFormat)
+		newStartStr := exception.ExceptionStartDate.Format(constants.DateFormat)
+		newEndStr := exception.ExceptionEndDate.Format(constants.DateFormat)
 
 		// Overlap condition: existing.start <= new.end AND existing.end >= new.start
 		hasOverlap := existingStartStr <= newEndStr && existingEndStr >= newStartStr
