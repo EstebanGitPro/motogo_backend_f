@@ -44,7 +44,11 @@ func NewRateLimiter(rps float64, burst int) *RateLimiter {
 // getLimiter retrieves or creates a rate.Limiter for the given IP.
 func (rl *RateLimiter) getLimiter(ip string) *rate.Limiter {
 	if v, ok := rl.visitors.Load(ip); ok {
-		entry := v.(*ipLimiter)
+		entry, valid := v.(*ipLimiter)
+		if !valid {
+			log.Error(logger.LogMiddlewareTypeCastError, "invalid type in visitors map")
+			return rate.NewLimiter(rl.rps, rl.burst)
+		}
 		entry.lastSeen = time.Now()
 		return entry.limiter
 	}
@@ -66,7 +70,11 @@ func (rl *RateLimiter) cleanup(interval time.Duration) {
 		select {
 		case <-ticker.C:
 			rl.visitors.Range(func(key, value interface{}) bool {
-				entry := value.(*ipLimiter)
+				entry, ok := value.(*ipLimiter)
+				if !ok {
+					rl.visitors.Delete(key)
+					return true
+				}
 				if time.Since(entry.lastSeen) > interval*2 {
 					rl.visitors.Delete(key)
 				}

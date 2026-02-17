@@ -294,6 +294,7 @@ const (
 	LogMiddlewareResponseSuccess    = "Respuesta enviada exitosamente"
 	LogMiddlewareNotFound           = "Endpoint no encontrado (404)"
 	LogMiddlewareRateLimitHit       = "Rate limit excedido"
+	LogMiddlewareTypeCastError      = "Error de conversión de tipo en middleware"
 )
 
 // ============================================
@@ -1789,6 +1790,7 @@ const (
 	LogCSRepoPrepareHasActive   = "Error preparando stmtHasActiveService"
 	LogCSRepoPrepareDelete      = "Error preparando stmtDelete de completed_services"
 	LogCSRepoDeleteError        = "Error eliminando servicio realizado de BD"
+	LogCSRepoRowsCloseError     = "Error cerrando filas de resultado de BD"
 
 	// Delete (HU65) - Controller
 	LogCSControllerDeleteRequest = "Solicitud de eliminación de servicio realizado recibida"
@@ -1846,4 +1848,12 @@ const (
 	LogCSRepoUpdateStatusErr     = "Error actualizando estado en BD"
 	LogCSRepoGetHistoryErr       = "Error obteniendo historial de transiciones"
 	LogCSRepoScanHistoryErr      = "Error escaneando transición de estado"
+)
+
+// ============================================
+// TRANSACTION HELPERS (Shared)
+// ============================================
+const (
+	LogTxRollbackError = "ROLLBACK BD FALLÓ - ALERTA CRÍTICA"
+	LogTxRollbackOK    = "Rollback BD ejecutado correctamente"
 )

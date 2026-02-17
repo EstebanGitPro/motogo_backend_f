@@ -37,7 +37,11 @@ func (r *repository) GetByMotorcycleID(ctx context.Context, motorcycleID string)
 		log.Error(logger.LogCSRepoGetByMotoErr, err)
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Error(logger.LogCSRepoRowsCloseError, err)
+		}
+	}()
 
 	return r.scanMultiple(rows)
 }
@@ -49,7 +53,11 @@ func (r *repository) GetByBranchID(ctx context.Context, branchID string) ([]doma
 		log.Error(logger.LogCSRepoGetByBranchErr, err)
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Error(logger.LogCSRepoRowsCloseError, err)
+		}
+	}()
 
 	return r.scanMultiple(rows)
 }
@@ -61,7 +69,11 @@ func (r *repository) GetItemsByCompletedServiceID(ctx context.Context, completed
 		log.Error(logger.LogCSRepoGetItemsErr, err)
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Error(logger.LogCSRepoRowsCloseError, err)
+		}
+	}()
 
 	var items []domain.CompletedServiceItem
 	for rows.Next() {
