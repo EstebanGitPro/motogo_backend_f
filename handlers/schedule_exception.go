@@ -7,6 +7,11 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/constants"
 )
 
+const (
+	pathScheduleExceptions = "/schedule-exceptions/"
+	pathBranches           = "/branches/"
+)
+
 // ==========================================
 // Request DTOs
 // ==========================================
@@ -128,21 +133,23 @@ func getDayNameSpanish(date time.Time) string {
 
 // BuildScheduleExceptionLinks builds HATEOAS links for a schedule exception
 func BuildScheduleExceptionLinks(baseURL, encodedBranchID, encodedExceptionID string) []Link {
+	exceptionURL := baseURL + pathScheduleExceptions + encodedExceptionID
 	return []Link{
-		{Rel: "self", Href: baseURL + "/schedule-exceptions/" + encodedExceptionID, Method: "GET"},
-		{Rel: "update", Href: baseURL + "/schedule-exceptions/" + encodedExceptionID, Method: "PUT"},
-		{Rel: "delete", Href: baseURL + "/schedule-exceptions/" + encodedExceptionID, Method: "DELETE"},
-		{Rel: "activate", Href: baseURL + "/schedule-exceptions/" + encodedExceptionID + "/activate", Method: "PUT"},
-		{Rel: "deactivate", Href: baseURL + "/schedule-exceptions/" + encodedExceptionID + "/deactivate", Method: "PUT"},
-		{Rel: "branch", Href: baseURL + "/branches/" + encodedBranchID, Method: "GET"},
+		{Rel: "self", Href: exceptionURL, Method: "GET"},
+		{Rel: "update", Href: exceptionURL, Method: "PUT"},
+		{Rel: "delete", Href: exceptionURL, Method: "DELETE"},
+		{Rel: "activate", Href: exceptionURL + "/activate", Method: "PUT"},
+		{Rel: "deactivate", Href: exceptionURL + "/deactivate", Method: "PUT"},
+		{Rel: "branch", Href: baseURL + pathBranches + encodedBranchID, Method: "GET"},
 	}
 }
 
 // BuildScheduleExceptionListLinks builds HATEOAS links for exception list
 func BuildScheduleExceptionListLinks(baseURL, encodedBranchID string) []Link {
+	branchURL := baseURL + pathBranches + encodedBranchID
 	return []Link{
-		{Rel: "self", Href: baseURL + "/branches/" + encodedBranchID + "/schedules/exceptions", Method: "GET"},
-		{Rel: "create", Href: baseURL + "/branches/" + encodedBranchID + "/schedules/exceptions", Method: "POST"},
-		{Rel: "branch", Href: baseURL + "/branches/" + encodedBranchID, Method: "GET"},
+		{Rel: "self", Href: branchURL + "/schedules/exceptions", Method: "GET"},
+		{Rel: "create", Href: branchURL + "/schedules/exceptions", Method: "POST"},
+		{Rel: "branch", Href: branchURL, Method: "GET"},
 	}
 }
