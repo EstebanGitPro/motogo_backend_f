@@ -32,7 +32,7 @@ func (i *Interactor) RegisterPerson(ctx context.Context, person domain.Person) (
 	// PASO 1: Validaciones iniciales
 	result, err = i.service.RegisterPerson(ctx, person)
 	if err != nil {
-		return i.handleIncompleteRegistration(ctx, err, person, log)
+		return nil, i.handleIncompleteRegistration(ctx, err, person)
 	}
 	log.Success(logger.LogPersonInteractorStep1_OK)
 
@@ -57,7 +57,7 @@ func (i *Interactor) RegisterPerson(ctx context.Context, person domain.Person) (
 	var keycloakCreated bool
 
 	defer func() {
-		i.rollbackRegistration(tx, keycloakUserID, keycloakCreated, &err, ctx, log)
+		i.rollbackRegistration(tx, keycloakUserID, keycloakCreated, &err, ctx)
 	}()
 
 	// PASO 3: Guardar persona en BD
@@ -109,7 +109,7 @@ func (i *Interactor) RegisterPerson(ctx context.Context, person domain.Person) (
 	result.Message = "Usuario registrado exitosamente"
 
 	// PASO 9: Enviar email de verificación (no bloquea el registro si falla)
-	i.sendVerificationEmailBestEffort(ctx, keycloakUserID, person.Email, log)
+	i.sendVerificationEmailBestEffort(ctx, keycloakUserID, person.Email)
 
 	log.Success(logger.LogPersonInteractorRegComplete,
 		person.ToLogger(),
@@ -120,10 +120,10 @@ func (i *Interactor) RegisterPerson(ctx context.Context, person domain.Person) (
 }
 
 // handleIncompleteRegistration handles the error case when initial registration validation fails.
-func (i *Interactor) handleIncompleteRegistration(ctx context.Context, err error, person domain.Person, log logger.Logger) (*dto.RegistrationResult, error) {
+func (i *Interactor) handleIncompleteRegistration(ctx context.Context, err error, person domain.Person) error {
 	if !errors.Is(err, domain.ErrIncompleteRegistration) {
 		log.Error(logger.LogPersonInteractorStep1_Error, "error", err)
-		return nil, err
+		return err
 	}
 
 	log.Warn(logger.LogPersonInteractorIncompleteDetected, "email", person.Email)
@@ -131,15 +131,15 @@ func (i *Interactor) handleIncompleteRegistration(ctx context.Context, err error
 	// Intentar limpiar el estado inconsistente
 	if cleanErr := i.service.CheckAndCleanInconsistentState(ctx, person.Email); cleanErr != nil {
 		log.Error(logger.LogPersonInteractorCleanup_Error, "email", person.Email, "error", cleanErr)
-		return nil, cleanErr
+		return cleanErr
 	}
 
 	log.Success(logger.LogPersonInteractorCleanup_OK, "email", person.Email)
-	return nil, err
+	return err
 }
 
 // rollbackRegistration handles rollback of both DB and Keycloak on error.
-func (i *Interactor) rollbackRegistration(tx output.Tx, keycloakUserID string, keycloakCreated bool, err *error, ctx context.Context, log logger.Logger) {
+func (i *Interactor) rollbackRegistration(tx output.Tx, keycloakUserID string, keycloakCreated bool, err *error, ctx context.Context) {
 	if *err == nil {
 		return
 	}
@@ -163,7 +163,7 @@ func (i *Interactor) rollbackRegistration(tx output.Tx, keycloakUserID string, k
 }
 
 // sendVerificationEmailBestEffort sends a verification email without failing the registration.
-func (i *Interactor) sendVerificationEmailBestEffort(ctx context.Context, keycloakUserID, email string, log logger.Logger) {
+func (i *Interactor) sendVerificationEmailBestEffort(ctx context.Context, keycloakUserID, email string) {
 	if sendErr := i.service.SendVerificationEmail(ctx, keycloakUserID); sendErr != nil {
 		log.Warn(logger.LogKeycloakSendVerificationEmailError,
 			"keycloak_user_id", keycloakUserID,

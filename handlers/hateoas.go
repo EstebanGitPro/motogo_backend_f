@@ -43,7 +43,7 @@ func GetBaseURL(c *gin.Context) string {
 // Returns "localhost" if the host contains suspicious characters that could enable open redirects.
 func sanitizeHost(host string) string {
 	for _, ch := range host {
-		if !((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '.' || ch == ':' || ch == '-') {
+		if (ch < 'a' || ch > 'z') && (ch < 'A' || ch > 'Z') && (ch < '0' || ch > '9') && ch != '.' && ch != ':' && ch != '-' {
 			return "localhost"
 		}
 	}
