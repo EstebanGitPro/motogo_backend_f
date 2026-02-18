@@ -27,6 +27,7 @@ func (r *repository) Save(ctx context.Context, tx output.Tx, service *domain.Com
 		dbCS.RequestDate,
 		dbCS.Status,
 		dbCS.QuotedPrice,
+		dbCS.FinalPrice,
 		dbCS.RepresentativeNotes,
 	)
 	if err != nil {

@@ -15,8 +15,8 @@ const (
 		INSERT INTO completed_services (
 			id, branch_id, motorcycle_id, diagnostic_id,
 			request_date, status,
-			quoted_price, representative_notes
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+			quoted_price, final_price, representative_notes
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	queryInsertItem = `

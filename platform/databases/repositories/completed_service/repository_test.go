@@ -738,13 +738,14 @@ func TestSave_Success(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.ExpectExec("INSERT INTO completed_services").
-		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
+		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	sqlTx, _ := db.Begin()
 	tx := common.NewSQLTx(sqlTx)
 
 	price := 50000.0
+	finalPrice := 48000.0
 	notes := "Revisión completa"
 	cs := &domain.CompletedService{
 		ID:                  "cs-save-1",
@@ -753,6 +754,7 @@ func TestSave_Success(t *testing.T) {
 		RequestDate:         time.Now(),
 		Status:              domain.ServiceStatusPending,
 		QuotedPrice:         &price,
+		FinalPrice:          &finalPrice,
 		RepresentativeNotes: &notes,
 	}
 
@@ -784,7 +786,7 @@ func TestSave_DBError(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.ExpectExec("INSERT INTO completed_services").
-		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
+		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
 		WillReturnError(sql.ErrConnDone)
 
 	sqlTx, _ := db.Begin()
