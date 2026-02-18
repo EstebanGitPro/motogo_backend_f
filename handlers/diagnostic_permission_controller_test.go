@@ -68,6 +68,56 @@ func TestGrantDiagnosticPermission_Success(t *testing.T) {
 	mockMotoInteractor.AssertExpectations(t)
 }
 
+func TestGrantDiagnosticPermission_DeactivateSuccess(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	encoder := createTestEncoder()
+	msgCache := createTestMessageCache()
+	responseHandler := middleware.NewResponseHandler(msgCache)
+	mockMotoInteractor := new(mocks.MockMotorcycleInteractor)
+
+	h := handlers.NewForTest(nil, nil, mockMotoInteractor, nil, msgCache, encoder, responseHandler)
+
+	motoUUID := "a1234567-89ab-cdef-0123-456789abcdef"
+	branchUUID := "b1234567-89ab-cdef-0123-456789abcdef"
+	ownerID := "owner-123"
+	encodedMotoID, _ := encoder.Encode(motoUUID)
+	encodedBranchID, _ := encoder.Encode(branchUUID)
+
+	mockMotoInteractor.On("GrantDiagnosticPermission",
+		mock.Anything, motoUUID, branchUUID, ownerID, false).
+		Return(&domain.DiagnosticPermission{
+			ID:           "perm-1",
+			MotorcycleID: motoUUID,
+			BranchID:     branchUUID,
+			Active:       false,
+		}, nil)
+
+	active := false
+	body, _ := json.Marshal(map[string]interface{}{
+		"branch_id": encodedBranchID,
+		"active":    active,
+	})
+
+	router := gin.New()
+	router.Use(func(c *gin.Context) {
+		c.Set("authenticated_user", &domain.Person{ID: ownerID, Role: domain.Role("USUARIO")})
+		c.Next()
+	})
+	router.POST("/motorcycles/:id/permissions", h.GrantDiagnosticPermission())
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/motorcycles/"+encodedMotoID+"/permissions", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp2 map[string]interface{}
+	_ = json.Unmarshal(w.Body.Bytes(), &resp2)
+	assert.True(t, resp2["success"].(bool))
+	assert.Equal(t, "MOD_DGP_REVOKE_EXI_00001", resp2["code"])
+	mockMotoInteractor.AssertExpectations(t)
+}
+
 func TestGrantDiagnosticPermission_InvalidMotoID(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	encoder := createTestEncoder()

@@ -32,7 +32,7 @@ func TestRegisterCompletedService_Success(t *testing.T) {
 	mockTx := new(mocks.MockTx)
 	csInteractor := interactor.NewCompletedServiceInteractor(mockCSSvc)
 
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, csInteractor, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{CompletedServiceInteractor: csInteractor, IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	branchUUID := "a1111111-1111-4000-8000-111111111111"
 	motorcycleUUID := "a2222222-2222-4000-8000-222222222222"
@@ -80,7 +80,7 @@ func TestRegisterCompletedService_NoAuth(t *testing.T) {
 	encoder := createTestEncoder()
 	msgCache := createTestMessageCache()
 	responseHandler := middleware.NewResponseHandler(msgCache)
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	router := gin.New()
 	router.POST("/completed-services", h.RegisterCompletedService())
@@ -98,7 +98,7 @@ func TestRegisterCompletedService_InvalidBody(t *testing.T) {
 	encoder := createTestEncoder()
 	msgCache := createTestMessageCache()
 	responseHandler := middleware.NewResponseHandler(msgCache)
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	router := gin.New()
 	router.Use(func(c *gin.Context) {
@@ -121,7 +121,7 @@ func TestRegisterCompletedService_InvalidBranchID(t *testing.T) {
 	msgCache := createTestMessageCache()
 	responseHandler := middleware.NewResponseHandler(msgCache)
 	csInteractor := interactor.NewCompletedServiceInteractor(new(mocks.MockCompletedServiceService))
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, csInteractor, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{CompletedServiceInteractor: csInteractor, IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	encodedMoto, _ := encoder.Encode("a2222222-2222-4000-8000-222222222222")
 	encodedSvc, _ := encoder.Encode("a3333333-3333-4000-8000-333333333333")
@@ -154,7 +154,7 @@ func TestRegisterCompletedService_InvalidMotorcycleID(t *testing.T) {
 	msgCache := createTestMessageCache()
 	responseHandler := middleware.NewResponseHandler(msgCache)
 	csInteractor := interactor.NewCompletedServiceInteractor(new(mocks.MockCompletedServiceService))
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, csInteractor, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{CompletedServiceInteractor: csInteractor, IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	encodedBranch, _ := encoder.Encode("a1111111-1111-4000-8000-111111111111")
 	encodedSvc, _ := encoder.Encode("a3333333-3333-4000-8000-333333333333")
@@ -187,7 +187,7 @@ func TestRegisterCompletedService_InvalidServiceIDs(t *testing.T) {
 	msgCache := createTestMessageCache()
 	responseHandler := middleware.NewResponseHandler(msgCache)
 	csInteractor := interactor.NewCompletedServiceInteractor(new(mocks.MockCompletedServiceService))
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, csInteractor, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{CompletedServiceInteractor: csInteractor, IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	encodedBranch, _ := encoder.Encode("a1111111-1111-4000-8000-111111111111")
 	encodedMoto, _ := encoder.Encode("a2222222-2222-4000-8000-222222222222")
@@ -220,7 +220,7 @@ func TestRegisterCompletedService_InvalidDiagnosticID(t *testing.T) {
 	msgCache := createTestMessageCache()
 	responseHandler := middleware.NewResponseHandler(msgCache)
 	csInteractor := interactor.NewCompletedServiceInteractor(new(mocks.MockCompletedServiceService))
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, csInteractor, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{CompletedServiceInteractor: csInteractor, IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	encodedBranch, _ := encoder.Encode("a1111111-1111-4000-8000-111111111111")
 	encodedMoto, _ := encoder.Encode("a2222222-2222-4000-8000-222222222222")
@@ -258,7 +258,7 @@ func TestRegisterCompletedService_InteractorError(t *testing.T) {
 
 	mockCSSvc := new(mocks.MockCompletedServiceService)
 	csInteractor := interactor.NewCompletedServiceInteractor(mockCSSvc)
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, csInteractor, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{CompletedServiceInteractor: csInteractor, IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	branchUUID := "a1111111-1111-4000-8000-111111111111"
 	motorcycleUUID := "a2222222-2222-4000-8000-222222222222"
@@ -304,7 +304,7 @@ func TestGetCompletedServicesByBranch_Success(t *testing.T) {
 
 	mockCSSvc := new(mocks.MockCompletedServiceService)
 	csInteractor := interactor.NewCompletedServiceInteractor(mockCSSvc)
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, csInteractor, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{CompletedServiceInteractor: csInteractor, IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	branchUUID := "a1111111-1111-4000-8000-111111111111"
 	encodedBranch, _ := encoder.Encode(branchUUID)
@@ -339,7 +339,7 @@ func TestGetCompletedServicesByBranch_InvalidID(t *testing.T) {
 	encoder := createTestEncoder()
 	msgCache := createTestMessageCache()
 	responseHandler := middleware.NewResponseHandler(msgCache)
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	router := gin.New()
 	router.GET("/branches/:id/completed-services", h.GetCompletedServicesByBranch())
@@ -359,7 +359,7 @@ func TestGetCompletedServicesByBranch_ServiceError(t *testing.T) {
 
 	mockCSSvc := new(mocks.MockCompletedServiceService)
 	csInteractor := interactor.NewCompletedServiceInteractor(mockCSSvc)
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, csInteractor, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{CompletedServiceInteractor: csInteractor, IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	branchUUID := "a1111111-1111-4000-8000-111111111111"
 	encodedBranch, _ := encoder.Encode(branchUUID)
@@ -385,7 +385,7 @@ func TestGetCompletedServicesByMotorcycle_NoAuth(t *testing.T) {
 	encoder := createTestEncoder()
 	msgCache := createTestMessageCache()
 	responseHandler := middleware.NewResponseHandler(msgCache)
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	router := gin.New()
 	router.GET("/motorcycles/:id/completed-services", h.GetCompletedServicesByMotorcycle())
@@ -410,7 +410,7 @@ func TestDeleteCompletedService_Success(t *testing.T) {
 	mockCSSvc := new(mocks.MockCompletedServiceService)
 	mockTx := new(mocks.MockTx)
 	csInteractor := interactor.NewCompletedServiceInteractor(mockCSSvc)
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, csInteractor, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{CompletedServiceInteractor: csInteractor, IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	csUUID := "a4444444-4444-4000-8000-444444444444"
 	encodedCS, _ := encoder.Encode(csUUID)
@@ -437,7 +437,7 @@ func TestDeleteCompletedService_InvalidID(t *testing.T) {
 	encoder := createTestEncoder()
 	msgCache := createTestMessageCache()
 	responseHandler := middleware.NewResponseHandler(msgCache)
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	router := gin.New()
 	router.DELETE("/completed-services/:id", h.DeleteCompletedService())
@@ -458,7 +458,7 @@ func TestDeleteCompletedService_NotFound(t *testing.T) {
 	mockCSSvc := new(mocks.MockCompletedServiceService)
 	mockTx := new(mocks.MockTx)
 	csInteractor := interactor.NewCompletedServiceInteractor(mockCSSvc)
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, csInteractor, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{CompletedServiceInteractor: csInteractor, IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	csUUID := "a4444444-4444-4000-8000-444444444444"
 	encodedCS, _ := encoder.Encode(csUUID)
@@ -491,7 +491,7 @@ func TestGetCompletedServiceTransitions_Success(t *testing.T) {
 
 	mockCSSvc := new(mocks.MockCompletedServiceService)
 	csInteractor := interactor.NewCompletedServiceInteractor(mockCSSvc)
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, csInteractor, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{CompletedServiceInteractor: csInteractor, IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	csUUID := "a4444444-4444-4000-8000-444444444444"
 	encodedCS, _ := encoder.Encode(csUUID)
@@ -526,7 +526,7 @@ func TestGetCompletedServiceTransitions_InvalidID(t *testing.T) {
 	encoder := createTestEncoder()
 	msgCache := createTestMessageCache()
 	responseHandler := middleware.NewResponseHandler(msgCache)
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	router := gin.New()
 	router.GET("/completed-services/:id/transitions", h.GetCompletedServiceTransitions())
@@ -546,7 +546,7 @@ func TestGetCompletedServiceTransitions_ServiceError(t *testing.T) {
 
 	mockCSSvc := new(mocks.MockCompletedServiceService)
 	csInteractor := interactor.NewCompletedServiceInteractor(mockCSSvc)
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, csInteractor, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{CompletedServiceInteractor: csInteractor, IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	csUUID := "a4444444-4444-4000-8000-444444444444"
 	encodedCS, _ := encoder.Encode(csUUID)
@@ -573,7 +573,7 @@ func TestGetCompletedServiceTransitions_NotFound(t *testing.T) {
 
 	mockCSSvc := new(mocks.MockCompletedServiceService)
 	csInteractor := interactor.NewCompletedServiceInteractor(mockCSSvc)
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, csInteractor, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{CompletedServiceInteractor: csInteractor, IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	csUUID := "a4444444-4444-4000-8000-444444444444"
 	encodedCS, _ := encoder.Encode(csUUID)
@@ -601,7 +601,7 @@ func TestUpdateCompletedServiceStatus_NoAuth(t *testing.T) {
 	encoder := createTestEncoder()
 	msgCache := createTestMessageCache()
 	responseHandler := middleware.NewResponseHandler(msgCache)
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	encodedCS, _ := encoder.Encode("a4444444-4444-4000-8000-444444444444")
 
@@ -622,7 +622,7 @@ func TestUpdateCompletedServiceStatus_InvalidID(t *testing.T) {
 	encoder := createTestEncoder()
 	msgCache := createTestMessageCache()
 	responseHandler := middleware.NewResponseHandler(msgCache)
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	router := gin.New()
 	router.Use(func(c *gin.Context) {
@@ -645,7 +645,7 @@ func TestUpdateCompletedServiceStatus_InvalidBody(t *testing.T) {
 	encoder := createTestEncoder()
 	msgCache := createTestMessageCache()
 	responseHandler := middleware.NewResponseHandler(msgCache)
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	encodedCS, _ := encoder.Encode("a4444444-4444-4000-8000-444444444444")
 
@@ -670,7 +670,7 @@ func TestUpdateCompletedServiceStatus_InvalidStatusValue(t *testing.T) {
 	encoder := createTestEncoder()
 	msgCache := createTestMessageCache()
 	responseHandler := middleware.NewResponseHandler(msgCache)
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	encodedCS, _ := encoder.Encode("a4444444-4444-4000-8000-444444444444")
 
@@ -699,7 +699,7 @@ func TestUpdateCompletedServiceStatus_Success(t *testing.T) {
 	mockCSSvc := new(mocks.MockCompletedServiceService)
 	mockTx := new(mocks.MockTx)
 	csInteractor := interactor.NewCompletedServiceInteractor(mockCSSvc)
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, csInteractor, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{CompletedServiceInteractor: csInteractor, IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	csUUID := "a4444444-4444-4000-8000-444444444444"
 	encodedCS, _ := encoder.Encode(csUUID)
@@ -737,7 +737,7 @@ func TestGetServiceStatuses_Success(t *testing.T) {
 	encoder := createTestEncoder()
 	msgCache := createTestMessageCache()
 	responseHandler := middleware.NewResponseHandler(msgCache)
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	router := gin.New()
 	router.GET("/completed-services/statuses", h.GetServiceStatuses())

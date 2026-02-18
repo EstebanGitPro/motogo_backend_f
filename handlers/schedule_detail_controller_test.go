@@ -31,7 +31,7 @@ func TestCreateScheduleDetail_Success(t *testing.T) {
 	mockBranchSvc := new(mocks.MockBranchService)
 	detailInteractor := interactor.NewScheduleDetailInteractor(mockDetailSvc, mockSchedSvc, mockBranchSvc)
 	schedInteractor := interactor.NewScheduleInteractor(mockSchedSvc, mockBranchSvc)
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	branchUUID := "a1234567-89ab-cdef-0123-456789abcdef"
 	schedUUID := "b1234567-89ab-cdef-0123-456789abcdef"
@@ -91,7 +91,7 @@ func TestCreateScheduleDetail_InvalidBranchID(t *testing.T) {
 	responseHandler := middleware.NewResponseHandler(msgCache)
 	detailInteractor := interactor.NewScheduleDetailInteractor(new(mocks.MockScheduleDetailService), new(mocks.MockScheduleService), new(mocks.MockBranchService))
 	schedInteractor := interactor.NewScheduleInteractor(new(mocks.MockScheduleService), new(mocks.MockBranchService))
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	router := gin.New()
 	router.Use(func(c *gin.Context) {
@@ -124,7 +124,7 @@ func TestCreateScheduleDetail_ScheduleNotFound(t *testing.T) {
 	mockBranchSvc := new(mocks.MockBranchService)
 	detailInteractor := interactor.NewScheduleDetailInteractor(new(mocks.MockScheduleDetailService), mockSchedSvc, mockBranchSvc)
 	schedInteractor := interactor.NewScheduleInteractor(mockSchedSvc, mockBranchSvc)
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	branchUUID := "a1234567-89ab-cdef-0123-456789abcdef"
 	repID := "rep-123"
@@ -167,7 +167,7 @@ func TestListScheduleDetails_Success(t *testing.T) {
 	mockSchedSvc := new(mocks.MockScheduleService)
 	detailInteractor := interactor.NewScheduleDetailInteractor(mockDetailSvc, mockSchedSvc, new(mocks.MockBranchService))
 	schedInteractor := interactor.NewScheduleInteractor(mockSchedSvc, new(mocks.MockBranchService))
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	branchUUID := "a1234567-89ab-cdef-0123-456789abcdef"
 	schedUUID := "b1234567-89ab-cdef-0123-456789abcdef"
@@ -206,7 +206,7 @@ func TestListScheduleDetails_ScheduleNotFound(t *testing.T) {
 	mockSchedSvc := new(mocks.MockScheduleService)
 	detailInteractor := interactor.NewScheduleDetailInteractor(new(mocks.MockScheduleDetailService), mockSchedSvc, new(mocks.MockBranchService))
 	schedInteractor := interactor.NewScheduleInteractor(mockSchedSvc, new(mocks.MockBranchService))
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	branchUUID := "a1234567-89ab-cdef-0123-456789abcdef"
 	encodedBranchID, _ := encoder.Encode(branchUUID)
@@ -237,7 +237,7 @@ func TestUpdateScheduleDetail_Success(t *testing.T) {
 	mockSchedSvc := new(mocks.MockScheduleService)
 	mockBranchSvc := new(mocks.MockBranchService)
 	detailInteractor := interactor.NewScheduleDetailInteractor(mockDetailSvc, mockSchedSvc, mockBranchSvc)
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	detailUUID := "d1234567-89ab-cdef-0123-456789abcdef"
 	schedUUID := "b1234567-89ab-cdef-0123-456789abcdef"
@@ -290,7 +290,7 @@ func TestUpdateScheduleDetail_NotFound(t *testing.T) {
 	responseHandler := middleware.NewResponseHandler(msgCache)
 	mockDetailSvc := new(mocks.MockScheduleDetailService)
 	detailInteractor := interactor.NewScheduleDetailInteractor(mockDetailSvc, new(mocks.MockScheduleService), new(mocks.MockBranchService))
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	detailUUID := "d1234567-89ab-cdef-0123-456789abcdef"
 	encodedDetailID, _ := encoder.Encode(detailUUID)
@@ -328,7 +328,7 @@ func TestDeleteScheduleDetail_Success(t *testing.T) {
 	mockSchedSvc := new(mocks.MockScheduleService)
 	mockBranchSvc := new(mocks.MockBranchService)
 	detailInteractor := interactor.NewScheduleDetailInteractor(mockDetailSvc, mockSchedSvc, mockBranchSvc)
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	detailUUID := "d1234567-89ab-cdef-0123-456789abcdef"
 	schedUUID := "b1234567-89ab-cdef-0123-456789abcdef"
@@ -372,7 +372,7 @@ func TestDeleteScheduleDetail_NotFound(t *testing.T) {
 	responseHandler := middleware.NewResponseHandler(msgCache)
 	mockDetailSvc := new(mocks.MockScheduleDetailService)
 	detailInteractor := interactor.NewScheduleDetailInteractor(mockDetailSvc, new(mocks.MockScheduleService), new(mocks.MockBranchService))
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	detailUUID := "d1234567-89ab-cdef-0123-456789abcdef"
 	encodedDetailID, _ := encoder.Encode(detailUUID)
@@ -400,7 +400,7 @@ func TestDeleteScheduleDetail_InvalidID(t *testing.T) {
 	msgCache := createTestMessageCache()
 	responseHandler := middleware.NewResponseHandler(msgCache)
 	detailInteractor := interactor.NewScheduleDetailInteractor(new(mocks.MockScheduleDetailService), new(mocks.MockScheduleService), new(mocks.MockBranchService))
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	router := gin.New()
 	router.Use(func(c *gin.Context) {
