@@ -73,7 +73,7 @@ type BranchRepository interface {
 	ValidateBrands(ctx context.Context, brands []string) error
 
 	// GetBranchesNearby retrieves branches within radius of given coordinates (HU89)
-	GetBranchesNearby(ctx context.Context, lat, lng, radiusKm float64, establishmentType string, latMin, latMax, lngMin, lngMax float64, brandID, displacementRange string) ([]domain.NearbyBranch, error)
+	GetBranchesNearby(ctx context.Context, params domain.NearbySearchParams) ([]domain.NearbyBranch, error)
 }
 
 // BrandRepository interface for Brand catalog operations

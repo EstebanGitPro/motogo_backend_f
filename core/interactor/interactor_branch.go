@@ -13,7 +13,7 @@ import (
 // BranchInteractor handles branch-related use cases (HU59)
 type BranchInteractor struct {
 	branchService input.BranchService
-	storageClient output.StorageClient // Optional: Firebase Storage for image deletion
+	storageClient output.StorageFileDeleter // Optional: Firebase Storage for image deletion
 }
 
 // NewBranchInteractor creates a new BranchInteractor instance
@@ -24,7 +24,7 @@ func NewBranchInteractor(branchService input.BranchService) *BranchInteractor {
 }
 
 // WithStorageClient sets the storage client for image deletion (optional)
-func (i *BranchInteractor) WithStorageClient(client output.StorageClient) *BranchInteractor {
+func (i *BranchInteractor) WithStorageClient(client output.StorageFileDeleter) *BranchInteractor {
 	i.storageClient = client
 	return i
 }
@@ -44,45 +44,14 @@ func (i *BranchInteractor) RegisterBranch(ctx context.Context, branch domain.Bra
 		"representative_id", branch.RepresentativeID,
 		"establishment_type", branch.EstablishmentType)
 
-	// STEP 1: Validate brands if provided (before starting transaction)
-	if len(branch.Brands) > 0 {
-		if err := i.branchService.ValidateBrands(ctx, branch.Brands); err != nil {
-			log.Warn(logger.LogBranchInteractorValidationError, "error", err, "brands", branch.Brands)
-			return nil, false, err
-		}
-		log.Debug(logger.LogBranchInteractorBrandsValidated, "brands_count", len(branch.Brands))
+	// STEP 1: Pre-transaction validation and geocoding
+	if err := i.validateBranchInputs(ctx, branch, log); err != nil {
+		return nil, false, err
 	}
 
-	// STEP 1.5: Validate displacement ranges if provided (in-memory validation)
-	if len(branch.DisplacementRanges) > 0 {
-		rangeStrs := make([]string, len(branch.DisplacementRanges))
-		for j, r := range branch.DisplacementRanges {
-			rangeStrs[j] = string(r)
-		}
-		if err := i.branchService.ValidateDisplacementRanges(rangeStrs); err != nil {
-			log.Warn(logger.LogBranchInteractorValidationError, "error", err, "displacement_ranges", branch.DisplacementRanges)
-			return nil, false, err
-		}
-	}
+	geocodingSucceeded := i.geocodeBranchLocation(ctx, branch.Location, log)
 
-	// STEP 2: Geocode location if coordinates not provided
-	// This is done before the transaction to avoid holding it open during external API call
-	var geocodingSucceeded bool
-	var err error
-	if branch.Location != nil {
-		geocodingSucceeded, err = i.branchService.GeocodeLocation(ctx, branch.Location)
-		if err != nil {
-			// Log but don't fail - geocoding errors are non-fatal
-			log.Warn(logger.LogBranchGeocodingFailed, "error", err)
-		}
-		if geocodingSucceeded {
-			log.Info(logger.LogBranchGeocodingGenerated,
-				"lat", *branch.Location.Latitude,
-				"lng", *branch.Location.Longitude)
-		}
-	}
-
-	// STEP 3: Begin transaction
+	// STEP 2: Begin transaction
 	tx, err := i.branchService.BeginTx(ctx)
 	if err != nil {
 		log.Error(logger.LogBranchInteractorTxError, "error", err)
@@ -90,19 +59,9 @@ func (i *BranchInteractor) RegisterBranch(ctx context.Context, branch domain.Bra
 	}
 	log.Debug(logger.LogBranchInteractorTxStarted)
 
-	defer func() {
-		if err != nil {
-			if rbErr := tx.Rollback(); rbErr != nil {
-				log.Error(logger.LogBranchInteractorRollbackError,
-					"rollback_error", rbErr,
-					"original_error", err)
-			} else {
-				log.Warn(logger.LogBranchInteractorRollbackOK)
-			}
-		}
-	}()
+	defer i.rollbackOnError(tx, &err, log)
 
-	// STEP 4: Delegate to service (handles ID generation, defaults, save operations)
+	// STEP 3: Delegate to service (handles ID generation, defaults, save operations)
 	savedBranch, err := i.branchService.RegisterBranch(ctx, tx, branch)
 	if err != nil {
 		log.Error(logger.LogBranchInteractorRegError, "error", err)
@@ -110,7 +69,7 @@ func (i *BranchInteractor) RegisterBranch(ctx context.Context, branch domain.Bra
 	}
 	log.Debug(logger.LogBranchInteractorRegSaved, "branch_id", savedBranch.ID)
 
-	// STEP 5: Commit transaction
+	// STEP 4: Commit transaction
 	if err = tx.Commit(); err != nil {
 		log.Error(logger.LogBranchInteractorCommitError, "error", err)
 		return nil, false, err
@@ -173,49 +132,28 @@ func (i *BranchInteractor) UpdateBranch(ctx context.Context, branchID string, br
 
 	log.Info(logger.LogBranchInteractorUpdateStart, "branch_id", branchID, "person_id", personID)
 
-	// 1. Get existing branch to validate ownership
-	existingBranch, err := i.branchService.GetBranchByID(ctx, branchID)
+	// 1. Get existing branch and validate ownership
+	existingBranch, err := i.getOwnedBranch(ctx, branchID, personID, log)
 	if err != nil {
-		log.Error(logger.LogBranchInteractorGetByIDError, "error", err, "branch_id", branchID)
 		return nil, false, err
 	}
 
-	// 2. Validate ownership
-	if existingBranch.RepresentativeID != personID {
-		log.Warn(logger.LogBranchInteractorOwnershipError, "branch_id", branchID, "owner_id", existingBranch.RepresentativeID, "person_id", personID)
-		return nil, false, domain.ErrForbidden
-	}
-
-	// 3. Validate input constraints (brands and displacement ranges)
+	// 2. Validate input constraints (brands and displacement ranges)
 	if err := i.validateBranchInputs(ctx, branch, log); err != nil {
 		return nil, false, err
 	}
 
-	// 4. Geocode location if address changed and no coordinates provided
-	var geocodingSucceeded bool
-	if branch.Location != nil {
-		geocodingSucceeded, err = i.branchService.GeocodeLocation(ctx, branch.Location)
-		if err != nil {
-			log.Warn(logger.LogBranchGeocodingFailed, "error", err)
-		}
-	}
+	// 3. Geocode location if address changed and no coordinates provided
+	geocodingSucceeded := i.geocodeBranchLocation(ctx, branch.Location, log)
 
-	// 5. Begin transaction
+	// 4. Begin transaction
 	tx, err := i.branchService.BeginTx(ctx)
 	if err != nil {
 		log.Error(logger.LogBranchInteractorTxError, "error", err)
 		return nil, false, err
 	}
 
-	defer func() {
-		if err != nil {
-			if rbErr := tx.Rollback(); rbErr != nil {
-				log.Error(logger.LogBranchInteractorRollbackError, "rollback_error", rbErr, "original_error", err)
-			} else {
-				log.Warn(logger.LogBranchInteractorRollbackOK)
-			}
-		}
-	}()
+	defer i.rollbackOnError(tx, &err, log)
 
 	// 6. Set branch ID, representative ID, and status (preserve from existing)
 	branch.ID = branchID
@@ -258,35 +196,20 @@ func (i *BranchInteractor) DeleteBranch(ctx context.Context, branchID string, pe
 
 	log.Info(logger.LogBranchInteractorDeleteStart, "branch_id", branchID, "person_id", personID)
 
-	// 1. Get existing branch to validate ownership
-	existingBranch, err := i.branchService.GetBranchByID(ctx, branchID)
+	// 1. Get existing branch and validate ownership
+	existingBranch, err := i.getOwnedBranch(ctx, branchID, personID, log)
 	if err != nil {
-		log.Error(logger.LogBranchInteractorGetByIDError, "error", err, "branch_id", branchID)
 		return err
 	}
 
-	// 2. Validate ownership
-	if existingBranch.RepresentativeID != personID {
-		log.Warn(logger.LogBranchInteractorOwnershipError, "branch_id", branchID, "owner_id", existingBranch.RepresentativeID, "person_id", personID)
-		return domain.ErrForbidden
-	}
-
-	// 3. Begin transaction
+	// 2. Begin transaction
 	tx, err := i.branchService.BeginTx(ctx)
 	if err != nil {
 		log.Error(logger.LogBranchInteractorTxError, "error", err)
 		return err
 	}
 
-	defer func() {
-		if err != nil {
-			if rbErr := tx.Rollback(); rbErr != nil {
-				log.Error(logger.LogBranchInteractorRollbackError, "rollback_error", rbErr, "original_error", err)
-			} else {
-				log.Warn(logger.LogBranchInteractorRollbackOK)
-			}
-		}
-	}()
+	defer i.rollbackOnError(tx, &err, log)
 
 	// 4. Delete branch via service
 	// NOTE: FK RESTRICT on diagnostics/completed_services is interpreted by service layer
@@ -339,6 +262,46 @@ func (i *BranchInteractor) GetBranchesNearby(ctx context.Context, lat, lng, radi
 
 	log.Success(logger.LogBranchInteractorNearbyComplete, "count", len(branches))
 	return branches, nil
+}
+
+// geocodeBranchLocation geocodes the branch location if provided (non-fatal on error).
+func (i *BranchInteractor) geocodeBranchLocation(ctx context.Context, location *domain.Location, log logger.Logger) bool {
+	if location == nil {
+		return false
+	}
+	succeeded, err := i.branchService.GeocodeLocation(ctx, location)
+	if err != nil {
+		log.Warn(logger.LogBranchGeocodingFailed, "error", err)
+	}
+	if succeeded && location.Latitude != nil && location.Longitude != nil {
+		log.Info(logger.LogBranchGeocodingGenerated, "lat", *location.Latitude, "lng", *location.Longitude)
+	}
+	return succeeded
+}
+
+// rollbackOnError rolls back the transaction if an error occurred.
+func (i *BranchInteractor) rollbackOnError(tx output.Tx, err *error, log logger.Logger) {
+	if *err != nil {
+		if rbErr := tx.Rollback(); rbErr != nil {
+			log.Error(logger.LogBranchInteractorRollbackError, "rollback_error", rbErr, "original_error", *err)
+		} else {
+			log.Warn(logger.LogBranchInteractorRollbackOK)
+		}
+	}
+}
+
+// getOwnedBranch retrieves a branch and validates that it belongs to the given person.
+func (i *BranchInteractor) getOwnedBranch(ctx context.Context, branchID, personID string, log logger.Logger) (*domain.Branch, error) {
+	branch, err := i.branchService.GetBranchByID(ctx, branchID)
+	if err != nil {
+		log.Error(logger.LogBranchInteractorGetByIDError, "error", err, "branch_id", branchID)
+		return nil, err
+	}
+	if branch.RepresentativeID != personID {
+		log.Warn(logger.LogBranchInteractorOwnershipError, "branch_id", branchID, "owner_id", branch.RepresentativeID, "person_id", personID)
+		return nil, domain.ErrForbidden
+	}
+	return branch, nil
 }
 
 // validateBranchInputs validates brands and displacement ranges if provided.

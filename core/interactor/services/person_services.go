@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"strings"
 
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/dto"
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
@@ -67,64 +68,21 @@ func (s service) RegisterPerson(ctx context.Context, person domain.Person) (*dto
 
 	// Check in business database - IMPORTANTE: detectar indisponibilidad
 	existingPerson, errDB := s.repository.GetPersonByEmail(ctx, person.Email)
-
-	// CRÍTICO: Si hay error de conexión/timeout, la base de datos está caída
-	if errDB != nil {
-		if isConnectionError(errDB) || isTimeoutError(errDB) {
-			//TODO: Agregar mensaje de log aquí
-			log.Error(logger.LogDatabaseUnavailable,
-				"email", person.Email,
-				"error", errDB,
-				"error_type", "connection")
-			return nil, domain.ErrDatabaseUnavailable
-		}
-		// Si el error NO es de conexión, asumimos que el usuario no existe
-		// (errores como "record not found" son normales)
+	if err := checkDBAvailability(errDB, person.Email); err != nil {
+		return nil, err
 	}
-
 	dbExists := errDB == nil && existingPerson != nil
 
-	//TODO: CRÍTICO: Si hay error de conexión/timeout, Keycloak está caído
 	// Check in Keycloak - IMPORTANTE: detectar indisponibilidad
 	keycloakUser, errKC := s.keycloak.GetUserByEmail(ctx, person.Email)
-
-	// CRÍTICO: Si hay error de conexión/timeout, Keycloak está caído
-	if errKC != nil {
-		if isConnectionError(errKC) || isTimeoutError(errKC) {
-			log.Error(logger.LogKeycloakUnavailable,
-				"email", person.Email,
-				"error", errKC,
-				"error_type", "connection")
-			return nil, domain.ErrKeycloakUnavailable
-		}
-		// Si el error NO es de conexión, asumimos que el usuario no existe
-		// (errores como 404 Not Found son normales)
+	if err := checkKeycloakAvailability(errKC, person.Email); err != nil {
+		return nil, err
 	}
-
 	kcExists := errKC == nil && keycloakUser != nil
 
-	// Log where the user exists
-	if dbExists && kcExists {
-		log.Warn(logger.LogUserExistsInBoth, "email", person.Email)
-		return nil, domain.ErrDuplicateUser // Usuario ya registrado completamente
-	}
-
-	if dbExists && !kcExists {
-		log.Warn(logger.LogUserExistsOnlyInDB,
-			"email", person.Email,
-			"person_id", existingPerson.ID,
-			"action", "will be cleaned")
-		// Retornar error de registro incompleto (mensaje: intente más tarde)
-		return nil, domain.ErrIncompleteRegistration
-	}
-
-	if !dbExists && kcExists {
-		log.Warn(logger.LogUserExistsOnlyInKeycloak,
-			"email", person.Email,
-			"keycloak_id", *keycloakUser.ID,
-			"action", "will be cleaned")
-		// Retornar error de registro incompleto (mensaje: intente más tarde)
-		return nil, domain.ErrIncompleteRegistration
+	// Evaluate dual-system state
+	if err := evaluateDualSystemState(dbExists, kcExists, person.Email, existingPerson, keycloakUser); err != nil {
+		return nil, err
 	}
 
 	log.Debug(logger.LogUserNotFoundInEither, "email", person.Email)
@@ -133,6 +91,59 @@ func (s service) RegisterPerson(ctx context.Context, person domain.Person) (*dto
 		Person:  person,
 		Message: "Validaciones exitosas",
 	}, nil
+}
+
+// checkDBAvailability verifies the database is reachable during registration.
+func checkDBAvailability(errDB error, email string) error {
+	if errDB == nil {
+		return nil
+	}
+	if isConnectionError(errDB) || isTimeoutError(errDB) {
+		log.Error(logger.LogDatabaseUnavailable,
+			"email", email,
+			"error", errDB,
+			"error_type", "connection")
+		return domain.ErrDatabaseUnavailable
+	}
+	return nil
+}
+
+// checkKeycloakAvailability verifies Keycloak is reachable during registration.
+func checkKeycloakAvailability(errKC error, email string) error {
+	if errKC == nil {
+		return nil
+	}
+	if isConnectionError(errKC) || isTimeoutError(errKC) {
+		log.Error(logger.LogKeycloakUnavailable,
+			"email", email,
+			"error", errKC,
+			"error_type", "connection")
+		return domain.ErrKeycloakUnavailable
+	}
+	return nil
+}
+
+// evaluateDualSystemState checks the consistency of user existence across DB and Keycloak.
+func evaluateDualSystemState(dbExists, kcExists bool, email string, existingPerson *domain.Person, keycloakUser *gocloak.User) error {
+	if dbExists && kcExists {
+		log.Warn(logger.LogUserExistsInBoth, "email", email)
+		return domain.ErrDuplicateUser
+	}
+	if dbExists && !kcExists {
+		log.Warn(logger.LogUserExistsOnlyInDB,
+			"email", email,
+			"person_id", existingPerson.ID,
+			"action", "will be cleaned")
+		return domain.ErrIncompleteRegistration
+	}
+	if !dbExists && kcExists {
+		log.Warn(logger.LogUserExistsOnlyInKeycloak,
+			"email", email,
+			"keycloak_id", *keycloakUser.ID,
+			"action", "will be cleaned")
+		return domain.ErrIncompleteRegistration
+	}
+	return nil
 }
 
 func (s service) SavePersonToDB(ctx context.Context, tx output.Tx, person domain.Person) error {
@@ -235,81 +246,103 @@ func (s service) CheckAndCleanInconsistentState(ctx context.Context, email strin
 	kcExists := errKC == nil && keycloakUser != nil
 
 	// Both exist or neither exist - consistent state
-	if (dbExists && kcExists) || (!dbExists && !kcExists) {
-		if dbExists && kcExists {
-			log.Debug(logger.LogUserExistsInBoth, "email", email)
-		} else {
-			log.Debug(logger.LogUserNotFoundInEither, "email", email)
-		}
+	if dbExists == kcExists {
+		logConsistentState(dbExists, email)
 		return nil
 	}
 
-	// Log inconsistent state with details
+	// Log and clean inconsistent state
+	logInconsistentState(email, dbExists, kcExists, personInDB, keycloakUser)
+	return s.cleanInconsistentOrphan(ctx, email, dbExists, kcExists, personInDB, keycloakUser)
+}
+
+// logConsistentState logs when user state is consistent across both systems.
+func logConsistentState(dbExists bool, email string) {
+	if dbExists {
+		log.Debug(logger.LogUserExistsInBoth, "email", email)
+	} else {
+		log.Debug(logger.LogUserNotFoundInEither, "email", email)
+	}
+}
+
+// logInconsistentState logs details about the inconsistent user state between DB and Keycloak.
+func logInconsistentState(email string, dbExists, kcExists bool, personInDB *domain.Person, keycloakUser *gocloak.User) {
+	dbPersonID := "N/A"
+	if dbExists {
+		dbPersonID = personInDB.ID
+	}
+	kcUserID := "N/A"
+	if kcExists {
+		kcUserID = *keycloakUser.ID
+	}
 	log.Warn(logger.LogInconsistentStateDetect,
 		"email", email,
 		"in_database", dbExists,
 		"in_keycloak", kcExists,
-		"db_person_id", func() string {
-			if dbExists {
-				return personInDB.ID
-			}
-			return "N/A"
-		}(),
-		"kc_user_id", func() string {
-			if kcExists {
-				return *keycloakUser.ID
-			}
-			return "N/A"
-		}())
+		"db_person_id", dbPersonID,
+		"kc_user_id", kcUserID)
+}
 
-	// User exists only in Keycloak - clean it
+// cleanInconsistentOrphan dispatches cleanup based on which system has the orphan.
+func (s service) cleanInconsistentOrphan(
+	ctx context.Context, email string,
+	dbExists, kcExists bool,
+	personInDB *domain.Person, keycloakUser *gocloak.User,
+) error {
 	if !dbExists && kcExists {
-		log.Info(logger.LogPersonServiceCleaningOrphan,
-			"email", email,
-			"source", "keycloak",
-			"keycloak_user_id", *keycloakUser.ID,
-			"reason", "missing in business database")
-
-		if err := s.keycloak.DeleteUser(ctx, *keycloakUser.ID); err != nil {
-			log.Error(logger.LogPersonServiceOrphanCleanError,
-				"email", email,
-				"source", "keycloak",
-				"keycloak_user_id", *keycloakUser.ID,
-				"error", err)
-			return domain.ErrKeycloakCleanupFailed
-		}
-
-		log.Success(logger.LogPersonServiceOrphanCleaned,
-			"email", email,
-			"source", "keycloak",
-			"action", "deleted from Keycloak")
-		return nil // Limpiado exitosamente, puede reintentar
+		return s.cleanKeycloakOrphan(ctx, email, *keycloakUser.ID)
 	}
-
-	// User exists only in DB - clean it
 	if dbExists && !kcExists {
-		log.Info(logger.LogPersonServiceCleaningOrphan,
-			"email", email,
-			"source", "database",
-			"person_id", personInDB.ID,
-			"reason", "missing in Keycloak")
+		return s.cleanDBOrphan(ctx, email, personInDB.ID)
+	}
+	return nil
+}
 
-		if err := s.repository.DeletePerson(ctx, nil, personInDB.ID); err != nil {
-			log.Error(logger.LogPersonServiceOrphanCleanError,
-				"email", email,
-				"source", "database",
-				"person_id", personInDB.ID,
-				"error", err)
-			return domain.ErrKeycloakCleanupFailed
-		}
+// cleanKeycloakOrphan removes a user that exists only in Keycloak (missing in DB).
+func (s service) cleanKeycloakOrphan(ctx context.Context, email, keycloakUserID string) error {
+	log.Info(logger.LogPersonServiceCleaningOrphan,
+		"email", email,
+		"source", "keycloak",
+		"keycloak_user_id", keycloakUserID,
+		"reason", "missing in business database")
 
-		log.Success(logger.LogPersonServiceOrphanCleaned,
+	if err := s.keycloak.DeleteUser(ctx, keycloakUserID); err != nil {
+		log.Error(logger.LogPersonServiceOrphanCleanError,
 			"email", email,
-			"source", "database",
-			"action", "deleted from business database")
-		return nil // Limpiado exitosamente, puede reintentar
+			"source", "keycloak",
+			"keycloak_user_id", keycloakUserID,
+			"error", err)
+		return domain.ErrKeycloakCleanupFailed
 	}
 
+	log.Success(logger.LogPersonServiceOrphanCleaned,
+		"email", email,
+		"source", "keycloak",
+		"action", "deleted from Keycloak")
+	return nil
+}
+
+// cleanDBOrphan removes a user that exists only in DB (missing in Keycloak).
+func (s service) cleanDBOrphan(ctx context.Context, email, personID string) error {
+	log.Info(logger.LogPersonServiceCleaningOrphan,
+		"email", email,
+		"source", "database",
+		"person_id", personID,
+		"reason", "missing in Keycloak")
+
+	if err := s.repository.DeletePerson(ctx, nil, personID); err != nil {
+		log.Error(logger.LogPersonServiceOrphanCleanError,
+			"email", email,
+			"source", "database",
+			"person_id", personID,
+			"error", err)
+		return domain.ErrKeycloakCleanupFailed
+	}
+
+	log.Success(logger.LogPersonServiceOrphanCleaned,
+		"email", email,
+		"source", "database",
+		"action", "deleted from business database")
 	return nil
 }
 
@@ -342,29 +375,7 @@ func isTimeoutError(err error) bool {
 
 // contains is a case-insensitive substring check
 func contains(s, substr string) bool {
-	// Simple case-insensitive check
-	for i := 0; i+len(substr) <= len(s); i++ {
-		match := true
-		for j := 0; j < len(substr); j++ {
-			c1 := s[i+j]
-			c2 := substr[j]
-			// Convert to lowercase for comparison
-			if c1 >= 'A' && c1 <= 'Z' {
-				c1 += 32
-			}
-			if c2 >= 'A' && c2 <= 'Z' {
-				c2 += 32
-			}
-			if c1 != c2 {
-				match = false
-				break
-			}
-		}
-		if match {
-			return true
-		}
-	}
-	return false
+	return strings.Contains(strings.ToLower(s), strings.ToLower(substr))
 }
 
 // isPasswordPolicyError checks if an error is related to Keycloak password policy violation

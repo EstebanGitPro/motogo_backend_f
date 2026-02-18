@@ -25,11 +25,11 @@ func displacementRangesToStrings(ranges []domain.DisplacementRange) []string {
 type branchService struct {
 	repository      output.BranchRepository
 	locationRepo    output.LocationRepository
-	geocodingClient geocoding.Client
+	geocodingClient geocoding.Geocoder
 }
 
 // NewBranchService creates a new BranchService instance
-func NewBranchService(repo output.BranchRepository, locationRepo output.LocationRepository, geocodingClient geocoding.Client) input.BranchService {
+func NewBranchService(repo output.BranchRepository, locationRepo output.LocationRepository, geocodingClient geocoding.Geocoder) input.BranchService {
 	return &branchService{
 		repository:      repo,
 		locationRepo:    locationRepo,
@@ -114,17 +114,9 @@ func (s *branchService) RegisterBranch(ctx context.Context, tx output.Tx, branch
 		return nil, domain.ErrInvalidBranchType
 	}
 
-	// 2. Check for duplicate name within franchise (only if franchise is set)
-	if branch.FranchiseID != nil && *branch.FranchiseID != "" {
-		existingBranch, err := s.repository.GetBranchByFranchiseAndName(ctx, *branch.FranchiseID, branch.Name)
-		if err != nil && !errors.Is(err, domain.ErrBranchNotFound) {
-			log.Error(logger.LogBranchServiceDupNameCheck, "error", err)
-			return nil, err
-		}
-		if existingBranch != nil {
-			log.Warn(logger.LogBranchServiceDupName, "name", branch.Name, "franchise_id", *branch.FranchiseID)
-			return nil, domain.ErrDuplicateBranchName
-		}
+	// 2. Check for duplicate name within franchise
+	if err := s.checkDuplicateName(ctx, branch); err != nil {
+		return nil, err
 	}
 
 	// 3. Generate UUID if not set
@@ -144,43 +136,85 @@ func (s *branchService) RegisterBranch(ctx context.Context, tx output.Tx, branch
 	}
 
 	// 6. Save location if provided
-	if branch.Location != nil {
-		// 6.1 Check for duplicate address
-		addressExists, err := s.locationRepo.CheckAddressExists(ctx, branch.Location.Address)
-		if err != nil {
-			log.Error(logger.LogBranchServiceLocSaveError, "error", err, "address", branch.Location.Address)
-			return nil, err
-		}
-		if addressExists {
-			log.Warn(logger.LogBranchServiceLocSaveError, "duplicate_address", branch.Location.Address)
-			return nil, domain.ErrDuplicateAddress
-		}
-
-		branch.Location.BranchID = branch.ID
-		if err := s.locationRepo.SaveLocation(ctx, tx, *branch.Location); err != nil {
-			log.Error(logger.LogBranchServiceLocSaveError, "error", err, "branch_id", branch.ID)
-			return nil, err
-		}
+	if err := s.saveBranchLocation(ctx, tx, branch); err != nil {
+		return nil, err
 	}
 
 	// 7. Save brands if provided
-	if len(branch.Brands) > 0 {
-		if err := s.repository.SaveBranchBrands(ctx, tx, branch.ID, branch.Brands); err != nil {
-			log.Error(logger.LogBranchServiceBrandSaveErr, "error", err, "branch_id", branch.ID)
-			return nil, err
-		}
+	if err := s.saveBranchBrands(ctx, tx, branch); err != nil {
+		return nil, err
 	}
 
 	// 8. Save displacement ranges if provided
-	if len(branch.DisplacementRanges) > 0 {
-		if err := s.repository.SaveBranchDisplacementRanges(ctx, tx, branch.ID, displacementRangesToStrings(branch.DisplacementRanges)); err != nil {
-			log.Error(logger.LogBranchRepoDisplRangeSaveError, "error", err, "branch_id", branch.ID)
-			return nil, err
-		}
+	if err := s.saveBranchDisplacementRanges(ctx, tx, branch); err != nil {
+		return nil, err
 	}
 
 	log.Info(logger.LogBranchServiceRegComplete, "branch_id", branch.ID, "name", branch.Name)
 	return &branch, nil
+}
+
+// checkDuplicateName verifies branch name uniqueness within a franchise.
+func (s *branchService) checkDuplicateName(ctx context.Context, branch domain.Branch) error {
+	if branch.FranchiseID == nil || *branch.FranchiseID == "" {
+		return nil
+	}
+	existingBranch, err := s.repository.GetBranchByFranchiseAndName(ctx, *branch.FranchiseID, branch.Name)
+	if err != nil && !errors.Is(err, domain.ErrBranchNotFound) {
+		log.Error(logger.LogBranchServiceDupNameCheck, "error", err)
+		return err
+	}
+	if existingBranch != nil {
+		log.Warn(logger.LogBranchServiceDupName, "name", branch.Name, "franchise_id", *branch.FranchiseID)
+		return domain.ErrDuplicateBranchName
+	}
+	return nil
+}
+
+// saveBranchLocation saves the branch location with duplicate address check.
+func (s *branchService) saveBranchLocation(ctx context.Context, tx output.Tx, branch domain.Branch) error {
+	if branch.Location == nil {
+		return nil
+	}
+	addressExists, err := s.locationRepo.CheckAddressExists(ctx, branch.Location.Address)
+	if err != nil {
+		log.Error(logger.LogBranchServiceLocSaveError, "error", err, "address", branch.Location.Address)
+		return err
+	}
+	if addressExists {
+		log.Warn(logger.LogBranchServiceLocSaveError, "duplicate_address", branch.Location.Address)
+		return domain.ErrDuplicateAddress
+	}
+	branch.Location.BranchID = branch.ID
+	if err := s.locationRepo.SaveLocation(ctx, tx, *branch.Location); err != nil {
+		log.Error(logger.LogBranchServiceLocSaveError, "error", err, "branch_id", branch.ID)
+		return err
+	}
+	return nil
+}
+
+// saveBranchBrands saves brand associations for a branch.
+func (s *branchService) saveBranchBrands(ctx context.Context, tx output.Tx, branch domain.Branch) error {
+	if len(branch.Brands) == 0 {
+		return nil
+	}
+	if err := s.repository.SaveBranchBrands(ctx, tx, branch.ID, branch.Brands); err != nil {
+		log.Error(logger.LogBranchServiceBrandSaveErr, "error", err, "branch_id", branch.ID)
+		return err
+	}
+	return nil
+}
+
+// saveBranchDisplacementRanges saves displacement range associations for a branch.
+func (s *branchService) saveBranchDisplacementRanges(ctx context.Context, tx output.Tx, branch domain.Branch) error {
+	if len(branch.DisplacementRanges) == 0 {
+		return nil
+	}
+	if err := s.repository.SaveBranchDisplacementRanges(ctx, tx, branch.ID, displacementRangesToStrings(branch.DisplacementRanges)); err != nil {
+		log.Error(logger.LogBranchRepoDisplRangeSaveError, "error", err, "branch_id", branch.ID)
+		return err
+	}
+	return nil
 }
 
 // GetBranchByID retrieves a branch by its ID
@@ -329,7 +363,18 @@ func (s *branchService) GetBranchesNearby(ctx context.Context, lat, lng, radiusK
 	lngMin := lng - lngDelta
 	lngMax := lng + lngDelta
 
-	return s.repository.GetBranchesNearby(ctx, lat, lng, radiusKm, establishmentType, latMin, latMax, lngMin, lngMax, brandID, displacementRange)
+	return s.repository.GetBranchesNearby(ctx, domain.NearbySearchParams{
+		Lat:               lat,
+		Lng:               lng,
+		RadiusKm:          radiusKm,
+		EstablishmentType: establishmentType,
+		LatMin:            latMin,
+		LatMax:            latMax,
+		LngMin:            lngMin,
+		LngMax:            lngMax,
+		BrandID:           brandID,
+		DisplacementRange: displacementRange,
+	})
 }
 
 // cosine calculates cosine using Taylor series (avoids math import)

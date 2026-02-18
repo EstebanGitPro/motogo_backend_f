@@ -80,8 +80,8 @@ func (m *MockBranchRepository) ValidateBrands(ctx context.Context, brands []stri
 	return args.Error(0)
 }
 
-func (m *MockBranchRepository) GetBranchesNearby(ctx context.Context, lat, lng, radiusKm float64, establishmentType string, latMin, latMax, lngMin, lngMax float64, brandID, displacementRange string) ([]domain.NearbyBranch, error) {
-	args := m.Called(ctx, lat, lng, radiusKm, establishmentType, latMin, latMax, lngMin, lngMax, brandID, displacementRange)
+func (m *MockBranchRepository) GetBranchesNearby(ctx context.Context, params domain.NearbySearchParams) ([]domain.NearbyBranch, error) {
+	args := m.Called(ctx, params)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}

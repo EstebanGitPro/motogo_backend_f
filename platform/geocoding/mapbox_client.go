@@ -62,7 +62,7 @@ type MapboxMatchCode struct {
 }
 
 // NewMapboxClient creates a new Mapbox geocoding client
-func NewMapboxClient(accessToken, baseURL, countryCode string, timeout time.Duration) Client {
+func NewMapboxClient(accessToken, baseURL, countryCode string, timeout time.Duration) Geocoder {
 	return &mapboxClient{
 		accessToken: accessToken,
 		baseURL:     baseURL,

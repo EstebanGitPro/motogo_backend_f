@@ -816,10 +816,7 @@ func TestGetBranchesNearby_Success(t *testing.T) {
 	}
 
 	branchRepo.On("GetBranchesNearby", mock.Anything,
-		6.2518, -75.5636, 5.0, "WORKSHOP",
-		mock.AnythingOfType("float64"), mock.AnythingOfType("float64"),
-		mock.AnythingOfType("float64"), mock.AnythingOfType("float64"),
-		"", "").
+		mock.AnythingOfType("domain.NearbySearchParams")).
 		Return(expectedBranches, nil)
 
 	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
@@ -839,11 +836,7 @@ func TestGetBranchesNearby_Empty(t *testing.T) {
 	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
 
 	branchRepo.On("GetBranchesNearby", mock.Anything,
-		mock.AnythingOfType("float64"), mock.AnythingOfType("float64"),
-		mock.AnythingOfType("float64"), mock.AnythingOfType("string"),
-		mock.AnythingOfType("float64"), mock.AnythingOfType("float64"),
-		mock.AnythingOfType("float64"), mock.AnythingOfType("float64"),
-		mock.AnythingOfType("string"), mock.AnythingOfType("string")).
+		mock.AnythingOfType("domain.NearbySearchParams")).
 		Return([]domain.NearbyBranch{}, nil)
 
 	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)
@@ -1080,11 +1073,7 @@ func TestGetBranchesNearby_LargeAngleNormalization(t *testing.T) {
 	branchRepo, locationRepo, geocodingClient := setupBranchServiceMocks()
 
 	branchRepo.On("GetBranchesNearby", mock.Anything,
-		mock.AnythingOfType("float64"), mock.AnythingOfType("float64"),
-		mock.AnythingOfType("float64"), mock.AnythingOfType("string"),
-		mock.AnythingOfType("float64"), mock.AnythingOfType("float64"),
-		mock.AnythingOfType("float64"), mock.AnythingOfType("float64"),
-		mock.AnythingOfType("string"), mock.AnythingOfType("string")).
+		mock.AnythingOfType("domain.NearbySearchParams")).
 		Return([]domain.NearbyBranch{}, nil)
 
 	service := services.NewBranchService(branchRepo, locationRepo, geocodingClient)

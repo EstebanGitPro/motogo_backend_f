@@ -8,7 +8,7 @@ import (
 
 	"github.com/EstebanGitPro/motogo-backend/config"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
-	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/go-sql-driver/mysql" // MySQL driver registration for database/sql
 )
 
 var log logger.Logger = logger.NewSlogLogger()

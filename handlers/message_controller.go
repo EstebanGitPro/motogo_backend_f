@@ -324,25 +324,8 @@ func (h handler) ListMessages() func(c *gin.Context) {
 			"path", c.Request.URL.Path,
 			"client_ip", c.ClientIP())
 
-		// Parse query parameters for filters
-		filters := make(map[string]interface{})
-		if module := c.Query("module"); module != "" {
-			filters["module"] = module
-		}
-		if msgType := c.Query("type"); msgType != "" {
-			filters["type"] = msgType
-		}
-		if category := c.Query("category"); category != "" {
-			filters["category"] = category
-		}
-		if active := c.Query("active"); active != "" {
-			switch active {
-			case "true", "1":
-				filters["active"] = true
-			case "false", "0":
-				filters["active"] = false
-			}
-		}
+		// Parse query parameters for filters (extracted to reduce cognitive complexity)
+		filters := parseMessageFilters(c)
 
 		messages, err := h.MessageInteractor.ListMessages(c, filters)
 		if err != nil {
@@ -373,6 +356,29 @@ func (h handler) ListMessages() func(c *gin.Context) {
 
 		h.Response.DataOnly(c, response)
 	}
+}
+
+// parseMessageFilters extracts filter parameters from query string for message listing.
+func parseMessageFilters(c *gin.Context) map[string]interface{} {
+	filters := make(map[string]interface{})
+	if module := c.Query("module"); module != "" {
+		filters["module"] = module
+	}
+	if msgType := c.Query("type"); msgType != "" {
+		filters["type"] = msgType
+	}
+	if category := c.Query("category"); category != "" {
+		filters["category"] = category
+	}
+	if active := c.Query("active"); active != "" {
+		switch active {
+		case "true", "1":
+			filters["active"] = true
+		case "false", "0":
+			filters["active"] = false
+		}
+	}
+	return filters
 }
 
 // ReloadMessageCache godoc

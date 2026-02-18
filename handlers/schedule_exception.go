@@ -10,6 +10,7 @@ import (
 const (
 	pathScheduleExceptions = "/schedule-exceptions/"
 	pathBranches           = "/branches/"
+	pathServices           = "/services"
 )
 
 // ==========================================

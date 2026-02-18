@@ -64,7 +64,7 @@ func (m *MockDiagnosticService) GetByMotorcycleID(ctx context.Context, motorcycl
 	return args.Get(0).([]domain.Diagnostic), args.Error(1)
 }
 
-func (m *MockDiagnosticService) ApplyDiagnosticUpdates(existing *domain.Diagnostic, updates *domain.Diagnostic) {
+func (m *MockDiagnosticService) ApplyDiagnosticUpdates(existing, updates *domain.Diagnostic) {
 	m.Called(existing, updates)
 }
 

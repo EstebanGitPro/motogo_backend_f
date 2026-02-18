@@ -20,7 +20,7 @@ export const options = {
 
 const BASE_URL = 'http://host.docker.internal:8085/motogo/api/v1';
 
-export default function () {
+export default function stressTest() {
   const responses = http.batch([
     ['GET', `${BASE_URL}/messages`, null, { tags: { name: 'GetMessages' } }],
     ['GET', `${BASE_URL}/messages/1`, null, { tags: { name: 'GetMessageById' } }],

@@ -2,6 +2,7 @@ package keycloak
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -14,6 +15,8 @@ import (
 )
 
 var log logger.Logger = logger.NewSlogLogger()
+
+const errUserIDEmpty = "userID cannot be empty"
 
 type client struct {
 	gocloak        *gocloak.GoCloak
@@ -105,7 +108,7 @@ func (c *client) LoginUser(ctx context.Context, username, password string) (*goc
 
 	log.Info(logger.LogKeycloakUserLogin, "username", username, "realm", c.config.Realm)
 
-	//TODO: Me dice que no he compeltado los campos y yo le he mandado todo lo necesario.
+	// NOTE: Keycloak requiere ClientID + ClientSecret + Realm + username + password.
 	token, err := c.gocloak.Login(
 		ctx,
 		c.config.ClientID,
@@ -194,7 +197,7 @@ func (c *client) GetUserByEmail(ctx context.Context, email string) (*gocloak.Use
 
 func (c *client) GetUserByID(ctx context.Context, userID string) (*gocloak.User, error) {
 	if userID == "" {
-		return nil, fmt.Errorf("userID cannot be empty")
+		return nil, errors.New(errUserIDEmpty)
 	}
 
 	token, err := c.ensureValidToken(ctx)
@@ -240,7 +243,7 @@ func (c *client) UpdateUser(ctx context.Context, user *gocloak.User) error {
 
 func (c *client) DeleteUser(ctx context.Context, userID string) error {
 	if userID == "" {
-		return fmt.Errorf("userID cannot be empty")
+		return errors.New(errUserIDEmpty)
 	}
 
 	token, err := c.ensureValidToken(ctx)
@@ -371,7 +374,7 @@ func (c *client) RemoveRole(ctx context.Context, userID string, roleName string)
 
 func (c *client) GetUserRoles(ctx context.Context, userID string) ([]*gocloak.Role, error) {
 	if userID == "" {
-		return nil, fmt.Errorf("userID cannot be empty")
+		return nil, errors.New(errUserIDEmpty)
 	}
 
 	token, err := c.ensureValidToken(ctx)
@@ -394,7 +397,7 @@ func (c *client) GetUserRoles(ctx context.Context, userID string) ([]*gocloak.Ro
 
 func (c *client) SendVerificationEmail(ctx context.Context, userID string) error {
 	if userID == "" {
-		return fmt.Errorf("userID cannot be empty")
+		return errors.New(errUserIDEmpty)
 	}
 
 	token, err := c.ensureValidToken(ctx)
@@ -487,7 +490,7 @@ func (c *client) SendPasswordResetEmail(ctx context.Context, email string) error
 
 func (c *client) VerifyEmail(ctx context.Context, userID string) error {
 	if userID == "" {
-		return fmt.Errorf("userID cannot be empty")
+		return errors.New(errUserIDEmpty)
 	}
 
 	user, err := c.GetUserByID(ctx, userID)

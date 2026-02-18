@@ -67,16 +67,7 @@ func (h *handler) CreateScheduleDetail(
 		schedule, err := scheduleInteractor.GetScheduleByBranchID(c.Request.Context(), branchID, person.ID)
 		if err != nil {
 			log.Error(logger.LogScheduleDetailControllerCreateError, "error", err, "branch_id", branchID)
-			switch {
-			case errors.Is(err, domain.ErrScheduleNotFound):
-				h.Response.Error(c, domain.MsgScheduleNotFound)
-			case errors.Is(err, domain.ErrBranchNotFound):
-				h.Response.Error(c, domain.MsgBranchNotFound)
-			case errors.Is(err, domain.ErrForbidden):
-				h.Response.Error(c, domain.MsgForbidden)
-			default:
-				h.Response.Error(c, domain.MsgServerError)
-			}
+			h.mapScheduleError(c, err)
 			return
 		}
 
@@ -93,26 +84,7 @@ func (h *handler) CreateScheduleDetail(
 		createdDetail, err := scheduleDetailInteractor.CreateDetail(c.Request.Context(), detail, person.ID, branchID)
 		if err != nil {
 			log.Error(logger.LogScheduleDetailControllerCreateError, "error", err, "schedule_id", schedule.ID)
-			switch {
-			case errors.Is(err, domain.ErrScheduleNotFound):
-				h.Response.Error(c, domain.MsgScheduleNotFound)
-			case errors.Is(err, domain.ErrScheduleDetailInvalidDay):
-				h.Response.Error(c, domain.MsgScheduleDetailInvalidDay)
-			case errors.Is(err, domain.ErrScheduleDetailInvalidTime):
-				h.Response.Error(c, domain.MsgScheduleDetailInvalidTime)
-			case errors.Is(err, domain.ErrScheduleDetailTimeConflict):
-				h.Response.Error(c, domain.MsgScheduleDetailTimeConflict)
-			case errors.Is(err, domain.ErrScheduleDetailDayAlreadyClosed):
-				h.Response.Error(c, domain.MsgScheduleDetailDayAlreadyClosed)
-			case errors.Is(err, domain.ErrScheduleDetailDayHasSlots):
-				h.Response.Error(c, domain.MsgScheduleDetailDayHasSlots)
-			case errors.Is(err, domain.ErrBranchNotFound):
-				h.Response.Error(c, domain.MsgBranchNotFound)
-			case errors.Is(err, domain.ErrForbidden):
-				h.Response.Error(c, domain.MsgForbidden)
-			default:
-				h.Response.Error(c, domain.MsgServerError)
-			}
+			h.mapDetailCreationError(c, err)
 			return
 		}
 
@@ -142,6 +114,44 @@ func (h *handler) CreateScheduleDetail(
 			"day_of_week", req.DayOfWeek)
 
 		h.Response.SuccessWithData(c, domain.MsgScheduleDetailCreated, response)
+	}
+}
+
+// mapScheduleError maps schedule lookup errors to API responses.
+func (h *handler) mapScheduleError(c *gin.Context, err error) {
+	switch {
+	case errors.Is(err, domain.ErrScheduleNotFound):
+		h.Response.Error(c, domain.MsgScheduleNotFound)
+	case errors.Is(err, domain.ErrBranchNotFound):
+		h.Response.Error(c, domain.MsgBranchNotFound)
+	case errors.Is(err, domain.ErrForbidden):
+		h.Response.Error(c, domain.MsgForbidden)
+	default:
+		h.Response.Error(c, domain.MsgServerError)
+	}
+}
+
+// mapDetailCreationError maps detail creation errors to API responses.
+func (h *handler) mapDetailCreationError(c *gin.Context, err error) {
+	switch {
+	case errors.Is(err, domain.ErrScheduleNotFound):
+		h.Response.Error(c, domain.MsgScheduleNotFound)
+	case errors.Is(err, domain.ErrScheduleDetailInvalidDay):
+		h.Response.Error(c, domain.MsgScheduleDetailInvalidDay)
+	case errors.Is(err, domain.ErrScheduleDetailInvalidTime):
+		h.Response.Error(c, domain.MsgScheduleDetailInvalidTime)
+	case errors.Is(err, domain.ErrScheduleDetailTimeConflict):
+		h.Response.Error(c, domain.MsgScheduleDetailTimeConflict)
+	case errors.Is(err, domain.ErrScheduleDetailDayAlreadyClosed):
+		h.Response.Error(c, domain.MsgScheduleDetailDayAlreadyClosed)
+	case errors.Is(err, domain.ErrScheduleDetailDayHasSlots):
+		h.Response.Error(c, domain.MsgScheduleDetailDayHasSlots)
+	case errors.Is(err, domain.ErrBranchNotFound):
+		h.Response.Error(c, domain.MsgBranchNotFound)
+	case errors.Is(err, domain.ErrForbidden):
+		h.Response.Error(c, domain.MsgForbidden)
+	default:
+		h.Response.Error(c, domain.MsgServerError)
 	}
 }
 

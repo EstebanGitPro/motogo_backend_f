@@ -14,50 +14,16 @@ import (
 
 func RequireAuth(personService input.Service, msgCache *messaging.MessageCache, jwtValidator output.JWTValidator) gin.HandlerFunc {
 	tokenParser := jwt.NewTokenParser()
-	_ = tokenParser
 
 	return func(c *gin.Context) {
-		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
-			_ = c.Error(domain.ErrInvalidToken)
-			c.Abort()
+		token, ok := extractBearerToken(c)
+		if !ok {
 			return
 		}
 
-		parts := strings.Split(authHeader, " ")
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			_ = c.Error(domain.ErrInvalidToken)
-			c.Abort()
+		claims, err := resolveTokenClaims(c, token, jwtValidator, tokenParser)
+		if err != nil {
 			return
-		}
-
-		token := parts[1]
-		var claims map[string]interface{}
-		var err error
-
-		if jwtValidator != nil {
-			claims, err = jwtValidator.ValidateToken(token)
-			if err != nil {
-				switch {
-				case errors.Is(err, jwt.ErrTokenExpired):
-					_ = c.Error(domain.ErrTokenExpired)
-				case errors.Is(err, jwt.ErrInvalidSignature):
-					_ = c.Error(domain.ErrInvalidToken)
-				case errors.Is(err, jwt.ErrInvalidIssuer):
-					_ = c.Error(domain.ErrInvalidToken)
-				default:
-					_ = c.Error(domain.ErrInvalidToken)
-				}
-				c.Abort()
-				return
-			}
-		} else {
-			claims, err = tokenParser.ExtractClaimsFromToken(token)
-			if err != nil {
-				_ = c.Error(domain.ErrInvalidToken)
-				c.Abort()
-				return
-			}
 		}
 
 		keycloakUserID, ok := claims["sub"].(string)
@@ -77,6 +43,58 @@ func RequireAuth(personService input.Service, msgCache *messaging.MessageCache, 
 		c.Set("authenticated_user", person)
 
 		c.Next()
+	}
+}
+
+// extractBearerToken parses the Authorization header and returns the raw token.
+// Returns false and aborts if the header is missing or malformed.
+func extractBearerToken(c *gin.Context) (string, bool) {
+	authHeader := c.GetHeader("Authorization")
+	if authHeader == "" {
+		_ = c.Error(domain.ErrInvalidToken)
+		c.Abort()
+		return "", false
+	}
+
+	parts := strings.Split(authHeader, " ")
+	if len(parts) != 2 || parts[0] != "Bearer" {
+		_ = c.Error(domain.ErrInvalidToken)
+		c.Abort()
+		return "", false
+	}
+
+	return parts[1], true
+}
+
+// resolveTokenClaims validates the token and extracts claims using either the JWKS validator
+// or the fallback token parser. Aborts and returns an error if validation fails.
+func resolveTokenClaims(c *gin.Context, token string, jwtValidator output.JWTValidator, tokenParser *jwt.TokenParser) (map[string]interface{}, error) {
+	if jwtValidator == nil {
+		claims, err := tokenParser.ExtractClaimsFromToken(token)
+		if err != nil {
+			_ = c.Error(domain.ErrInvalidToken)
+			c.Abort()
+			return nil, err
+		}
+		return claims, nil
+	}
+
+	claims, err := jwtValidator.ValidateToken(token)
+	if err != nil {
+		_ = c.Error(mapJWTError(err))
+		c.Abort()
+		return nil, err
+	}
+	return claims, nil
+}
+
+// mapJWTError converts JWT validation errors to the appropriate domain error.
+func mapJWTError(err error) error {
+	switch {
+	case errors.Is(err, jwt.ErrTokenExpired):
+		return domain.ErrTokenExpired
+	default:
+		return domain.ErrInvalidToken
 	}
 }
 

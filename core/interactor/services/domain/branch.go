@@ -125,6 +125,20 @@ func (b *Branch) ToLogger() []string {
 	}
 }
 
+// NearbySearchParams encapsulates all parameters for proximity branch search (HU89)
+type NearbySearchParams struct {
+	Lat               float64
+	Lng               float64
+	RadiusKm          float64
+	EstablishmentType string
+	LatMin            float64
+	LatMax            float64
+	LngMin            float64
+	LngMax            float64
+	BrandID           string
+	DisplacementRange string
+}
+
 // NearbyBranch represents a branch with distance information for proximity search (HU89)
 type NearbyBranch struct {
 	ID                 string              `json:"id"`

@@ -9,17 +9,17 @@ import (
 
 var log logger.Logger = logger.NewSlogLogger()
 
-// fallbackClient implements Client with automatic failover between providers
+// fallbackClient implements Geocoder with automatic failover between providers
 // Primary: Google Maps (more accurate, 10k free/month)
 // Fallback: Mapbox (100k free/month)
 type fallbackClient struct {
-	primary  Client
-	fallback Client
+	primary  Geocoder
+	fallback Geocoder
 }
 
 // NewFallbackClient creates a geocoding client with automatic failover
 // When the primary provider returns a quota error, it automatically tries the fallback
-func NewFallbackClient(primary, fallback Client) Client {
+func NewFallbackClient(primary, fallback Geocoder) Geocoder {
 	return &fallbackClient{
 		primary:  primary,
 		fallback: fallback,

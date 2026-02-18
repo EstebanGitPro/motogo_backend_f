@@ -16,7 +16,7 @@ type handler struct {
 	Interactor                 *interactor.Interactor
 	MessageInteractor          *interactor.MessageInteractor
 	BranchInteractor           *interactor.BranchInteractor           // HU59
-	BrandInteractor            input.BrandInteractorInterface         // Brands catalog (interface for testing)
+	BrandInteractor            input.BrandLister                      // Brands catalog (interface for testing)
 	LocationInteractor         input.LocationInteractorInterface      // Geographic catalogs (interface for testing)
 	ServiceInteractor          *interactor.ServiceInteractor          // Services catalog (HU63, HU75)
 	FranchiseInteractor        *interactor.FranchiseInteractor        // Franchise CRUD (HU26-29)
@@ -30,39 +30,42 @@ type handler struct {
 	Response                   *middleware.ResponseHandler
 }
 
-func New(
-	personInteractor *interactor.Interactor,
-	messageInteractor *interactor.MessageInteractor,
-	branchInteractor *interactor.BranchInteractor,
-	brandInteractor *interactor.BrandInteractor,
-	locationInteractor *interactor.LocationInteractor,
-	serviceInteractor *interactor.ServiceInteractor,
-	franchiseInteractor *interactor.FranchiseInteractor,
-	motorcycleInteractor *interactor.MotorcycleInteractor,
-	evidenceInteractor *interactor.EvidenceInteractor, // HU16-19
-	diagnosticInteractor *interactor.DiagnosticInteractor, // HU11-14
-	completedServiceInteractor *interactor.CompletedServiceInteractor, // HU64
-	firebaseClient output.CustomTokenProvider,
-	messageCache *messagingCache.MessageCache,
-	encoder *idencoder.HashidsEncoder,
-	responseHandler *middleware.ResponseHandler,
-) *handler {
+// HandlerConfig groups all dependencies required by the handler (SonarCloud S107: max 7 params).
+type HandlerConfig struct {
+	PersonInteractor           *interactor.Interactor
+	MessageInteractor          *interactor.MessageInteractor
+	BranchInteractor           *interactor.BranchInteractor
+	BrandInteractor            input.BrandLister
+	LocationInteractor         input.LocationInteractorInterface
+	ServiceInteractor          *interactor.ServiceInteractor
+	FranchiseInteractor        *interactor.FranchiseInteractor
+	MotorcycleInteractor       input.MotorcycleInteractorInterface
+	EvidenceInteractor         input.EvidenceInteractorInterface
+	DiagnosticInteractor       *interactor.DiagnosticInteractor
+	CompletedServiceInteractor *interactor.CompletedServiceInteractor
+	FirebaseClient             output.CustomTokenProvider
+	MessagingCache             *messagingCache.MessageCache
+	IDEncoder                  *idencoder.HashidsEncoder
+	ResponseHandler            *middleware.ResponseHandler
+}
+
+func New(cfg HandlerConfig) *handler {
 	return &handler{
-		Interactor:                 personInteractor,
-		MessageInteractor:          messageInteractor,
-		BranchInteractor:           branchInteractor,
-		BrandInteractor:            brandInteractor,
-		LocationInteractor:         locationInteractor,
-		ServiceInteractor:          serviceInteractor,
-		FranchiseInteractor:        franchiseInteractor,
-		MotorcycleInteractor:       motorcycleInteractor,
-		EvidenceInteractor:         evidenceInteractor,         // HU16-19
-		DiagnosticInteractor:       diagnosticInteractor,       // HU11-14
-		CompletedServiceInteractor: completedServiceInteractor, // HU64
-		FirebaseClient:             firebaseClient,
-		MessagingCache:             messageCache,
-		IDEncoder:                  encoder,
-		Response:                   responseHandler,
+		Interactor:                 cfg.PersonInteractor,
+		MessageInteractor:          cfg.MessageInteractor,
+		BranchInteractor:           cfg.BranchInteractor,
+		BrandInteractor:            cfg.BrandInteractor,
+		LocationInteractor:         cfg.LocationInteractor,
+		ServiceInteractor:          cfg.ServiceInteractor,
+		FranchiseInteractor:        cfg.FranchiseInteractor,
+		MotorcycleInteractor:       cfg.MotorcycleInteractor,
+		EvidenceInteractor:         cfg.EvidenceInteractor,
+		DiagnosticInteractor:       cfg.DiagnosticInteractor,
+		CompletedServiceInteractor: cfg.CompletedServiceInteractor,
+		FirebaseClient:             cfg.FirebaseClient,
+		MessagingCache:             cfg.MessagingCache,
+		IDEncoder:                  cfg.IDEncoder,
+		Response:                   cfg.ResponseHandler,
 	}
 }
 
