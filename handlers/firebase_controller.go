@@ -7,11 +7,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// FirebaseTokenResponse represents the response for GET /auth/firebase-token
-type FirebaseTokenResponse struct {
-	FirebaseToken string `json:"firebase_token"`
-}
-
 // GetFirebaseToken generates a Firebase custom token for authenticated users
 // @Summary Get Firebase custom token
 // @Description Generates a Firebase custom token using the authenticated user's Keycloak ID

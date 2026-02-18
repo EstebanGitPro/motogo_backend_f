@@ -16,7 +16,7 @@ type SlogLogger struct {
 func NewSlogLogger() Logger {
 	// Create log directory if it doesn't exist
 	logDir := "/tmp/motogo-logs"
-	if err := os.MkdirAll(logDir, 0755); err != nil {
+	if os.MkdirAll(logDir, 0755) != nil {
 		// If we can't create the directory, just log to stdout
 		handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 			Level:     slog.LevelDebug,
@@ -93,6 +93,7 @@ func (s *SlogLogger) Debug(msg string, args ...any) {
 
 func (s *SlogLogger) Success(msg string, args ...any) {
 	enrichedArgs := s.enrichWithContext(args...)
+	enrichedArgs = append(enrichedArgs, "log_level", "SUCCESS")
 	slog.Info(msg, enrichedArgs...)
 }
 
@@ -103,10 +104,12 @@ func (s *SlogLogger) Warn(msg string, args ...any) {
 
 func (s *SlogLogger) Fatal(msg string, args ...any) {
 	enrichedArgs := s.enrichWithContext(args...)
+	enrichedArgs = append(enrichedArgs, "log_level", "FATAL")
 	slog.Error(msg, enrichedArgs...)
 }
 
 func (s *SlogLogger) Panic(msg string, args ...any) {
 	enrichedArgs := s.enrichWithContext(args...)
+	enrichedArgs = append(enrichedArgs, "log_level", "PANIC")
 	slog.Error(msg, enrichedArgs...)
 }

@@ -2,6 +2,7 @@ package input
 
 import (
 	"context"
+	"time"
 
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/dto"
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
@@ -246,7 +247,7 @@ type MotorcycleService interface {
 	GetByID(ctx context.Context, motorcycleID string) (*domain.Motorcycle, error)
 	GetByOwnerID(ctx context.Context, ownerID string) ([]domain.Motorcycle, error)
 	GetByLicensePlate(ctx context.Context, licensePlate string) (*domain.Motorcycle, error)
-	ApplyUpdates(existing *domain.Motorcycle, updates *domain.Motorcycle) error
+	ApplyUpdates(existing, updates *domain.Motorcycle) error
 	UpdateMotorcycle(ctx context.Context, tx output.Tx, motorcycle *domain.Motorcycle) error
 	DeleteMotorcycle(ctx context.Context, tx output.Tx, motorcycleID string) error
 	ClearProfileImageURL(ctx context.Context, tx output.Tx, motorcycleID string) error
@@ -286,10 +287,10 @@ type DiagnosticService interface {
 	RegisterOrUpdateDiagnostic(ctx context.Context, tx output.Tx, motorcycleID, branchID string, problemDescription *string, evidenceURLs []string) (*domain.Diagnostic, error)
 	GetByID(ctx context.Context, diagnosticID string) (*domain.Diagnostic, error)
 	GetByMotorcycleID(ctx context.Context, motorcycleID string) ([]domain.Diagnostic, error)
-	ApplyDiagnosticUpdates(existing *domain.Diagnostic, updates *domain.Diagnostic)
+	ApplyDiagnosticUpdates(existing, updates *domain.Diagnostic)
 	UpdateDiagnostic(ctx context.Context, tx output.Tx, diagnostic *domain.Diagnostic) error
 	DeleteDiagnostic(ctx context.Context, tx output.Tx, diagnosticID string) error
-	SetSolution(ctx context.Context, tx output.Tx, diagnosticID string, solution string) error
+	SetSolution(ctx context.Context, tx output.Tx, diagnosticID, solution string) error
 
 	// Evidence
 	LoadEvidence(ctx context.Context, diagnosticID string) ([]domain.DiagnosticEvidence, error)
@@ -309,10 +310,32 @@ type EvidenceService interface {
 	CreateEvidence(ctx context.Context, tx output.Tx, motorcycleID string, evidence *domain.MotorcycleEvidence) (*domain.MotorcycleEvidence, error)
 	GetByID(ctx context.Context, evidenceID string) (*domain.MotorcycleEvidence, error)
 	GetByMotorcycleID(ctx context.Context, motorcycleID string) ([]domain.MotorcycleEvidence, error)
-	ApplyUpdatesAndCleanup(ctx context.Context, existing *domain.MotorcycleEvidence, updates *domain.MotorcycleEvidence)
+	ApplyUpdatesAndCleanup(ctx context.Context, existing, updates *domain.MotorcycleEvidence)
 	UpdateEvidence(ctx context.Context, tx output.Tx, evidence *domain.MotorcycleEvidence) error
 	DeleteEvidence(ctx context.Context, tx output.Tx, evidenceID string) error
 
 	// Storage cleanup
 	DeleteStorageFile(ctx context.Context, imageURL string)
+}
+
+// CompletedServiceService - Use Cases for Completed Service operations (HU64/HU73/HU74)
+type CompletedServiceService interface {
+	// Transactions
+	BeginTx(ctx context.Context) (output.Tx, error)
+
+	// Validations
+	ValidateBranchServices(ctx context.Context, branchID string, serviceIDs []string) error
+	ValidateDiagnosticForMotorcycle(ctx context.Context, diagnosticID, motorcycleID string) error
+	ValidateNoActiveService(ctx context.Context, branchID, motorcycleID string) error
+
+	// Completed Service CRUD
+	SaveCompletedService(ctx context.Context, tx output.Tx, service *domain.CompletedService) error
+	SaveItems(ctx context.Context, tx output.Tx, items []domain.CompletedServiceItem) error
+	SaveStatusHistory(ctx context.Context, tx output.Tx, history *domain.ServiceStatusHistory) error
+	DeleteCompletedService(ctx context.Context, tx output.Tx, serviceID string, status domain.ServiceStatus) error
+	UpdateStatus(ctx context.Context, tx output.Tx, serviceID string, status string, completionDate *time.Time) error
+	GetByID(ctx context.Context, serviceID string) (*domain.CompletedService, error)
+	GetByMotorcycleID(ctx context.Context, motorcycleID string) ([]domain.CompletedService, error)
+	GetByBranchID(ctx context.Context, branchID string) ([]domain.CompletedService, error)
+	GetStatusHistory(ctx context.Context, serviceID string) ([]domain.ServiceStatusHistory, error)
 }

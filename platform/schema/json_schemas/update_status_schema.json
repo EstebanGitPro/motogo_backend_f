@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Update Completed Service Status",
+  "description": "Schema for updating the status of a completed service (HU74)",
+  "type": "object",
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["PENDIENTE", "EN_PROCESO", "FINALIZADO", "CANCELADO"],
+      "description": "New status for the completed service"
+    }
+  },
+  "required": ["status"],
+  "additionalProperties": false
+}

@@ -280,11 +280,10 @@ func TestPersonResponse_JSONSerialization(t *testing.T) {
 func TestLoginResponse_JSONSerialization(t *testing.T) {
 	// Arrange
 	response := handlers.LoginResponse{
-		AccessToken:  "access-token-123",
-		RefreshToken: "refresh-token-456",
-		ExpiresIn:    3600,
-		TokenType:    "Bearer",
-		Links:        []handlers.Link{{Rel: "self", Href: "/auth/me", Method: http.MethodGet}},
+		AccessToken: "access-token-123",
+		ExpiresIn:   3600,
+		TokenType:   "Bearer",
+		Links:       []handlers.Link{{Rel: "self", Href: "/auth/me", Method: http.MethodGet}},
 	}
 
 	// Act
@@ -297,7 +296,6 @@ func TestLoginResponse_JSONSerialization(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, "access-token-123", result["access_token"])
-	assert.Equal(t, "refresh-token-456", result["refresh_token"])
 	assert.Equal(t, float64(3600), result["expires_in"])
 	assert.Equal(t, "Bearer", result["token_type"])
 }

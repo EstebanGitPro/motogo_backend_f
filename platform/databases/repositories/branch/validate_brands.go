@@ -34,7 +34,7 @@ func (r *repository) ValidateBrands(ctx context.Context, brands []string) error 
 	foundBrands := make(map[string]bool)
 	for rows.Next() {
 		var brand string
-		if err := rows.Scan(&brand); err != nil {
+		if rows.Scan(&brand) != nil {
 			continue
 		}
 		foundBrands[brand] = true

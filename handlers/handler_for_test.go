@@ -7,12 +7,13 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/middleware"
 	messagingCache "github.com/EstebanGitPro/motogo-backend/platform/cache/messaging"
 	"github.com/EstebanGitPro/motogo-backend/tools/idencoder"
+	"github.com/gin-gonic/gin"
 )
 
 // NewForTest creates a handler with interface-based interactors for integration testing.
 // This allows passing mock implementations directly without wrapping in concrete types.
 func NewForTest(
-	brandInteractor input.BrandInteractorInterface,
+	brandInteractor input.BrandLister,
 	locationInteractor input.LocationInteractorInterface,
 	motorcycleInteractor input.MotorcycleInteractorInterface,
 	evidenceInteractor input.EvidenceInteractorInterface,
@@ -113,4 +114,46 @@ func NewForTestWithLookup(
 		IDEncoder:            encoder,
 		Response:             responseHandler,
 	}
+}
+
+// === Exported wrappers for error mapper testing ===
+
+// MapRegisterBranchError exposes mapRegisterBranchError for testing.
+func (h *handler) MapRegisterBranchError(c *gin.Context, err error) {
+	h.mapRegisterBranchError(c, err)
+}
+
+// MapUpdateBranchError exposes mapUpdateBranchError for testing.
+func (h *handler) MapUpdateBranchError(c *gin.Context, err error) {
+	h.mapUpdateBranchError(c, err)
+}
+
+// MapMotorcycleRegError exposes mapMotorcycleRegError for testing.
+func (h *handler) MapMotorcycleRegError(c *gin.Context, err error) {
+	h.mapMotorcycleRegError(c, err)
+}
+
+// MapMotorcycleUpdateError exposes mapMotorcycleUpdateError for testing.
+func (h *handler) MapMotorcycleUpdateError(c *gin.Context, err error) {
+	h.mapMotorcycleUpdateError(c, err)
+}
+
+// MapUpdateProfileError exposes mapUpdateProfileError for testing.
+func (h *handler) MapUpdateProfileError(c *gin.Context, err error) {
+	h.mapUpdateProfileError(c, err)
+}
+
+// MapScheduleUpdateError exposes mapScheduleUpdateError for testing.
+func (h *handler) MapScheduleUpdateError(c *gin.Context, err error) {
+	h.mapScheduleUpdateError(c, err)
+}
+
+// MapDetailCreationError exposes mapDetailCreationError for testing.
+func (h *handler) MapDetailCreationError(c *gin.Context, err error) {
+	h.mapDetailCreationError(c, err)
+}
+
+// MapExceptionCreationError exposes mapExceptionCreationError for testing.
+func (h *handler) MapExceptionCreationError(c *gin.Context, err error) {
+	h.mapExceptionCreationError(c, err)
 }

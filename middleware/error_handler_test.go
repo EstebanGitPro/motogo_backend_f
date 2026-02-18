@@ -124,6 +124,24 @@ func TestErrorToMessageCode_ContainsMotorcycleErrors(t *testing.T) {
 	}
 }
 
+func TestErrorToMessageCode_ContainsCompletedServiceErrors(t *testing.T) {
+	testCases := []struct {
+		err      error
+		expected string
+	}{
+		{domain.ErrCompletedServiceCannotDelete, domain.MsgCompletedServiceDeleteError},
+		{domain.ErrInvalidStatusTransition, domain.MsgStatusTransitionError},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.err.Error(), func(t *testing.T) {
+			code, exists := errorToMessageCode[tc.err]
+			assert.True(t, exists, "Error should be mapped: %v", tc.err)
+			assert.Equal(t, tc.expected, code)
+		})
+	}
+}
+
 func TestErrorToMessageCode_ContainsInternalServerError(t *testing.T) {
 	code, exists := errorToMessageCode[domain.ErrInternalServer]
 	assert.True(t, exists)

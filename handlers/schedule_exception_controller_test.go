@@ -13,6 +13,7 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/handlers"
 	"github.com/EstebanGitPro/motogo-backend/middleware"
 	"github.com/EstebanGitPro/motogo-backend/mocks"
+	"github.com/EstebanGitPro/motogo-backend/platform/constants"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -32,7 +33,7 @@ func TestCreateScheduleException_Success(t *testing.T) {
 	mockBranchSvc := new(mocks.MockBranchService)
 	excInteractor := interactor.NewScheduleExceptionInteractor(mockDetailSvc, mockSchedSvc, mockBranchSvc)
 	schedInteractor := interactor.NewScheduleInteractor(mockSchedSvc, mockBranchSvc)
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	branchUUID := "a1234567-89ab-cdef-0123-456789abcdef"
 	schedUUID := "b1234567-89ab-cdef-0123-456789abcdef"
@@ -64,7 +65,7 @@ func TestCreateScheduleException_Success(t *testing.T) {
 	mockTx.On("Rollback").Return(nil)
 
 	body, _ := json.Marshal(map[string]interface{}{
-		"exception_start_date": futureDate.Format("2006-01-02"),
+		"exception_start_date": futureDate.Format(constants.DateFormat),
 		"is_closed":            true,
 	})
 
@@ -90,7 +91,7 @@ func TestCreateScheduleException_InvalidBranchID(t *testing.T) {
 	responseHandler := middleware.NewResponseHandler(msgCache)
 	excInteractor := interactor.NewScheduleExceptionInteractor(new(mocks.MockScheduleDetailService), new(mocks.MockScheduleService), new(mocks.MockBranchService))
 	schedInteractor := interactor.NewScheduleInteractor(new(mocks.MockScheduleService), new(mocks.MockBranchService))
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	router := gin.New()
 	router.Use(func(c *gin.Context) {
@@ -120,7 +121,7 @@ func TestListScheduleExceptions_Success(t *testing.T) {
 	mockSchedSvc := new(mocks.MockScheduleService)
 	excInteractor := interactor.NewScheduleExceptionInteractor(mockDetailSvc, mockSchedSvc, new(mocks.MockBranchService))
 	schedInteractor := interactor.NewScheduleInteractor(mockSchedSvc, new(mocks.MockBranchService))
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	branchUUID := "a1234567-89ab-cdef-0123-456789abcdef"
 	schedUUID := "b1234567-89ab-cdef-0123-456789abcdef"
@@ -159,7 +160,7 @@ func TestListScheduleExceptions_ScheduleNotFound(t *testing.T) {
 	mockSchedSvc := new(mocks.MockScheduleService)
 	excInteractor := interactor.NewScheduleExceptionInteractor(new(mocks.MockScheduleDetailService), mockSchedSvc, new(mocks.MockBranchService))
 	schedInteractor := interactor.NewScheduleInteractor(mockSchedSvc, new(mocks.MockBranchService))
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	branchUUID := "a1234567-89ab-cdef-0123-456789abcdef"
 	encodedBranchID, _ := encoder.Encode(branchUUID)
@@ -190,7 +191,7 @@ func TestUpdateScheduleException_Success(t *testing.T) {
 	mockSchedSvc := new(mocks.MockScheduleService)
 	mockBranchSvc := new(mocks.MockBranchService)
 	excInteractor := interactor.NewScheduleExceptionInteractor(mockDetailSvc, mockSchedSvc, mockBranchSvc)
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	excUUID := "c1234567-89ab-cdef-0123-456789abcdef"
 	schedUUID := "b1234567-89ab-cdef-0123-456789abcdef"
@@ -244,7 +245,7 @@ func TestUpdateScheduleException_NotFound(t *testing.T) {
 	responseHandler := middleware.NewResponseHandler(msgCache)
 	mockDetailSvc := new(mocks.MockScheduleDetailService)
 	excInteractor := interactor.NewScheduleExceptionInteractor(mockDetailSvc, new(mocks.MockScheduleService), new(mocks.MockBranchService))
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	excUUID := "c1234567-89ab-cdef-0123-456789abcdef"
 	encodedExcID, _ := encoder.Encode(excUUID)
@@ -282,7 +283,7 @@ func TestDeleteScheduleException_Success(t *testing.T) {
 	mockSchedSvc := new(mocks.MockScheduleService)
 	mockBranchSvc := new(mocks.MockBranchService)
 	excInteractor := interactor.NewScheduleExceptionInteractor(mockDetailSvc, mockSchedSvc, mockBranchSvc)
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	excUUID := "c1234567-89ab-cdef-0123-456789abcdef"
 	schedUUID := "b1234567-89ab-cdef-0123-456789abcdef"
@@ -325,7 +326,7 @@ func TestDeleteScheduleException_NotFound(t *testing.T) {
 	responseHandler := middleware.NewResponseHandler(msgCache)
 	mockDetailSvc := new(mocks.MockScheduleDetailService)
 	excInteractor := interactor.NewScheduleExceptionInteractor(mockDetailSvc, new(mocks.MockScheduleService), new(mocks.MockBranchService))
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	excUUID := "c1234567-89ab-cdef-0123-456789abcdef"
 	encodedExcID, _ := encoder.Encode(excUUID)
@@ -360,7 +361,7 @@ func TestActivateScheduleException_Success(t *testing.T) {
 	mockSchedSvc := new(mocks.MockScheduleService)
 	mockBranchSvc := new(mocks.MockBranchService)
 	excInteractor := interactor.NewScheduleExceptionInteractor(mockDetailSvc, mockSchedSvc, mockBranchSvc)
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	excUUID := "c1234567-89ab-cdef-0123-456789abcdef"
 	schedUUID := "b1234567-89ab-cdef-0123-456789abcdef"
@@ -402,7 +403,7 @@ func TestActivateScheduleException_InvalidID(t *testing.T) {
 	msgCache := createTestMessageCache()
 	responseHandler := middleware.NewResponseHandler(msgCache)
 	excInteractor := interactor.NewScheduleExceptionInteractor(new(mocks.MockScheduleDetailService), new(mocks.MockScheduleService), new(mocks.MockBranchService))
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	router := gin.New()
 	router.Use(func(c *gin.Context) {
@@ -431,7 +432,7 @@ func TestDeactivateScheduleException_Success(t *testing.T) {
 	mockSchedSvc := new(mocks.MockScheduleService)
 	mockBranchSvc := new(mocks.MockBranchService)
 	excInteractor := interactor.NewScheduleExceptionInteractor(mockDetailSvc, mockSchedSvc, mockBranchSvc)
-	h := handlers.New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, encoder, responseHandler)
+	h := handlers.New(handlers.HandlerConfig{IDEncoder: encoder, ResponseHandler: responseHandler})
 
 	excUUID := "c1234567-89ab-cdef-0123-456789abcdef"
 	schedUUID := "b1234567-89ab-cdef-0123-456789abcdef"

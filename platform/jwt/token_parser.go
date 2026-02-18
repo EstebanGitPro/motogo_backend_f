@@ -47,8 +47,8 @@ func (tp *TokenParser) ExtractEmailFromToken(token string) (string, error) {
 	}
 
 	// Parse as JSON
-	var claims map[string]interface{}
-	if err := json.Unmarshal(payload, &claims); err != nil {
+	claims := make(map[string]interface{})
+	if json.Unmarshal(payload, &claims) != nil {
 		return "", ErrClaimsParse
 	}
 
@@ -88,8 +88,8 @@ func (tp *TokenParser) ExtractClaimsFromToken(token string) (map[string]interfac
 	}
 
 	// Parse as JSON
-	var claims map[string]interface{}
-	if err := json.Unmarshal(payload, &claims); err != nil {
+	claims := make(map[string]interface{})
+	if json.Unmarshal(payload, &claims) != nil {
 		return nil, ErrClaimsParse
 	}
 

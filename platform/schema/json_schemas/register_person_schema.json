@@ -54,7 +54,7 @@
     "role": {
       "type": "string",
       "description": "Role of the person in the system",
-      "enum": ["user", "representative", "admin"],
+      "enum": ["user", "representative"],
       "maxLength": 20
 }
   },

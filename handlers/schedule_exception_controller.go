@@ -7,141 +7,10 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/core/interactor"
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/middleware"
+	"github.com/EstebanGitPro/motogo-backend/platform/constants"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 	"github.com/gin-gonic/gin"
 )
-
-// ============================================
-// Schedule Exception DTOs (HU20-25)
-// ============================================
-
-// CreateScheduleExceptionRequest represents the request body for creating an exception
-type CreateScheduleExceptionRequest struct {
-	ExceptionStartDate string  `json:"exception_start_date" binding:"required"` // YYYY-MM-DD
-	ExceptionEndDate   string  `json:"exception_end_date"`                      // YYYY-MM-DD (optional, defaults to start date)
-	OpeningTime        *string `json:"opening_time"`                            // HH:mm
-	ClosingTime        *string `json:"closing_time"`                            // HH:mm
-	IsClosed           bool    `json:"is_closed"`
-}
-
-// Sanitize trims whitespace from all string fields
-func (r *CreateScheduleExceptionRequest) Sanitize() {
-	r.ExceptionStartDate = TrimString(r.ExceptionStartDate)
-	r.ExceptionEndDate = TrimString(r.ExceptionEndDate)
-	r.OpeningTime = TrimStringPtr(r.OpeningTime)
-	r.ClosingTime = TrimStringPtr(r.ClosingTime)
-}
-
-// UpdateScheduleExceptionRequest represents the request body for updating an exception
-type UpdateScheduleExceptionRequest struct {
-	OpeningTime *string `json:"opening_time"` // HH:mm
-	ClosingTime *string `json:"closing_time"` // HH:mm
-	IsClosed    bool    `json:"is_closed"`
-}
-
-// Sanitize trims whitespace from all string fields
-func (r *UpdateScheduleExceptionRequest) Sanitize() {
-	r.OpeningTime = TrimStringPtr(r.OpeningTime)
-	r.ClosingTime = TrimStringPtr(r.ClosingTime)
-}
-
-// ScheduleExceptionResponse represents the response for a schedule exception
-type ScheduleExceptionResponse struct {
-	ID                          string `json:"id"`
-	ScheduleID                  string `json:"schedule_id"`
-	ExceptionStartDate          string `json:"exception_start_date"`
-	ExceptionEndDate            string `json:"exception_end_date"`
-	ExceptionStartDateFormatted string `json:"exception_start_date_formatted"`
-	ExceptionEndDateFormatted   string `json:"exception_end_date_formatted,omitempty"`
-	DayName                     string `json:"day_name"`
-	OpeningTime                 string `json:"opening_time,omitempty"`
-	ClosingTime                 string `json:"closing_time,omitempty"`
-	IsClosed                    bool   `json:"is_closed"`
-	Active                      bool   `json:"active"`
-	Links                       []Link `json:"_links"`
-}
-
-// ScheduleExceptionListResponse represents the list response
-type ScheduleExceptionListResponse struct {
-	Exceptions []ScheduleExceptionResponse `json:"exceptions"`
-	Links      []Link                      `json:"_links"`
-}
-
-// NewScheduleExceptionResponse creates a response from domain entity
-func NewScheduleExceptionResponse(
-	exception *domain.ScheduleDetail,
-	encodedExceptionID, encodedScheduleID string,
-	links []Link,
-) ScheduleExceptionResponse {
-	response := ScheduleExceptionResponse{
-		ID:         encodedExceptionID,
-		ScheduleID: encodedScheduleID,
-		IsClosed:   exception.IsClosed,
-		Active:     exception.Active,
-		Links:      links,
-	}
-
-	if exception.ExceptionStartDate != nil {
-		response.ExceptionStartDate = exception.ExceptionStartDate.Format("2006-01-02")
-		response.ExceptionStartDateFormatted = formatDateSpanish(*exception.ExceptionStartDate)
-		response.DayName = getDayNameSpanish(*exception.ExceptionStartDate)
-	}
-
-	if exception.ExceptionEndDate != nil {
-		response.ExceptionEndDate = exception.ExceptionEndDate.Format("2006-01-02")
-		if !exception.ExceptionEndDate.Equal(*exception.ExceptionStartDate) {
-			response.ExceptionEndDateFormatted = formatDateSpanish(*exception.ExceptionEndDate)
-		}
-	}
-
-	if exception.OpeningTime != nil {
-		response.OpeningTime = *exception.OpeningTime
-	}
-	if exception.ClosingTime != nil {
-		response.ClosingTime = *exception.ClosingTime
-	}
-
-	return response
-}
-
-// formatDateSpanish formats a date in Spanish (e.g., "24 de Diciembre, 2026")
-func formatDateSpanish(date time.Time) string {
-	months := []string{
-		"Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-		"Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
-	}
-	return date.Format("2") + " de " + months[date.Month()-1] + ", " + date.Format("2006")
-}
-
-// getDayNameSpanish returns the Spanish day name for a date
-func getDayNameSpanish(date time.Time) string {
-	days := []string{
-		"Domingo", "Lunes", "Martes", "Miércoles",
-		"Jueves", "Viernes", "Sábado",
-	}
-	return days[date.Weekday()]
-}
-
-// BuildScheduleExceptionLinks builds HATEOAS links for a schedule exception
-func BuildScheduleExceptionLinks(baseURL, encodedBranchID, encodedExceptionID string) []Link {
-	return []Link{
-		{Rel: "self", Href: baseURL + "/schedule-exceptions/" + encodedExceptionID, Method: "GET"},
-		{Rel: "update", Href: baseURL + "/schedule-exceptions/" + encodedExceptionID, Method: "PUT"},
-		{Rel: "delete", Href: baseURL + "/schedule-exceptions/" + encodedExceptionID, Method: "DELETE"},
-		{Rel: "activate", Href: baseURL + "/schedule-exceptions/" + encodedExceptionID + "/activate", Method: "PUT"},
-		{Rel: "deactivate", Href: baseURL + "/schedule-exceptions/" + encodedExceptionID + "/deactivate", Method: "PUT"},
-		{Rel: "branch", Href: baseURL + "/branches/" + encodedBranchID, Method: "GET"},
-	}
-}
-
-// BuildScheduleExceptionListLinks builds HATEOAS links for exception list
-func BuildScheduleExceptionListLinks(baseURL, encodedBranchID string) []Link {
-	return []Link{
-		{Rel: "self", Href: baseURL + "/branches/" + encodedBranchID + "/schedules/exceptions", Method: "GET"},
-		{Rel: "create", Href: baseURL + "/branches/" + encodedBranchID + "/schedules/exceptions", Method: "POST"},
-		{Rel: "branch", Href: baseURL + "/branches/" + encodedBranchID, Method: "GET"},
-	}
-}
 
 // ============================================
 // Schedule Exception Controller Endpoints (HU20-25)
@@ -188,45 +57,23 @@ func (h *handler) CreateScheduleException(
 		schedule, err := scheduleInteractor.GetScheduleByBranchID(c.Request.Context(), branchID, person.ID)
 		if err != nil {
 			log.Error(logger.LogScheduleDetailControllerCreateError, "error", err, "branch_id", branchID)
-			switch {
-			case errors.Is(err, domain.ErrScheduleNotFound):
-				h.Response.Error(c, domain.MsgScheduleNotFound)
-			case errors.Is(err, domain.ErrBranchNotFound):
-				h.Response.Error(c, domain.MsgBranchNotFound)
-			case errors.Is(err, domain.ErrForbidden):
-				h.Response.Error(c, domain.MsgForbidden)
-			default:
-				h.Response.Error(c, domain.MsgServerError)
-			}
+			h.mapScheduleError(c, err)
 			return
 		}
 
-		// 5. Parse exception dates (start date required, end date optional)
-		// IMPORTANT: Use ParseInLocation with time.Local to match MySQL loc=Local config
-		// Using time.Parse creates UTC dates which cause a 1-day shift when MySQL converts them
-		exceptionStartDate, err := time.ParseInLocation("2006-01-02", req.ExceptionStartDate, time.Local)
+		// 5. Parse exception dates
+		startDate, endDate, err := parseExceptionDates(req)
 		if err != nil {
-			log.Warn(logger.LogScheduleDetailControllerBindError, "error", err, "date", req.ExceptionStartDate)
+			log.Warn(logger.LogScheduleDetailControllerBindError, "error", err)
 			h.Response.Error(c, domain.MsgScheduleExceptionDatePast)
 			return
-		}
-
-		// If end date not provided, use start date (single day exception)
-		exceptionEndDate := exceptionStartDate
-		if req.ExceptionEndDate != "" {
-			exceptionEndDate, err = time.ParseInLocation("2006-01-02", req.ExceptionEndDate, time.Local)
-			if err != nil {
-				log.Warn(logger.LogScheduleDetailControllerBindError, "error", err, "date", req.ExceptionEndDate)
-				h.Response.Error(c, domain.MsgScheduleExceptionDatePast)
-				return
-			}
 		}
 
 		// 6. Build domain object
 		exception := domain.ScheduleDetail{
 			ScheduleID:         schedule.ID,
-			ExceptionStartDate: &exceptionStartDate,
-			ExceptionEndDate:   &exceptionEndDate,
+			ExceptionStartDate: &startDate,
+			ExceptionEndDate:   &endDate,
 			OpeningTime:        req.OpeningTime,
 			ClosingTime:        req.ClosingTime,
 			IsClosed:           req.IsClosed,
@@ -236,22 +83,7 @@ func (h *handler) CreateScheduleException(
 		createdException, err := exceptionInteractor.CreateException(c.Request.Context(), exception, person.ID, branchID)
 		if err != nil {
 			log.Error(logger.LogScheduleDetailControllerCreateError, "error", err, "schedule_id", schedule.ID)
-			switch {
-			case errors.Is(err, domain.ErrScheduleNotFound):
-				h.Response.Error(c, domain.MsgScheduleNotFound)
-			case errors.Is(err, domain.ErrScheduleExceptionDatePast):
-				h.Response.Error(c, domain.MsgScheduleExceptionDatePast)
-			case errors.Is(err, domain.ErrScheduleExceptionDateConflict):
-				h.Response.Error(c, domain.MsgScheduleExceptionDateConflict)
-			case errors.Is(err, domain.ErrScheduleExceptionInvalidTime):
-				h.Response.Error(c, domain.MsgScheduleExceptionInvalidTime)
-			case errors.Is(err, domain.ErrScheduleExceptionRedundant):
-				h.Response.Error(c, domain.MsgScheduleExceptionRedundant)
-			case errors.Is(err, domain.ErrForbidden):
-				h.Response.Error(c, domain.MsgForbidden)
-			default:
-				h.Response.Error(c, domain.MsgServerError)
-			}
+			h.mapExceptionCreationError(c, err)
 			return
 		}
 
@@ -281,6 +113,46 @@ func (h *handler) CreateScheduleException(
 			"exception_start_date", req.ExceptionStartDate)
 
 		h.Response.SuccessWithData(c, domain.MsgScheduleExceptionCreated, response)
+	}
+}
+
+// parseExceptionDates parses start and optional end date from the request.
+// If end date is empty, it defaults to the start date (single-day exception).
+func parseExceptionDates(req CreateScheduleExceptionRequest) (time.Time, time.Time, error) {
+	// IMPORTANT: Use ParseInLocation with time.Local to match MySQL loc=Local config
+	startDate, err := time.ParseInLocation(constants.DateFormat, req.ExceptionStartDate, time.Local)
+	if err != nil {
+		return time.Time{}, time.Time{}, err
+	}
+
+	endDate := startDate
+	if req.ExceptionEndDate != "" {
+		endDate, err = time.ParseInLocation(constants.DateFormat, req.ExceptionEndDate, time.Local)
+		if err != nil {
+			return time.Time{}, time.Time{}, err
+		}
+	}
+
+	return startDate, endDate, nil
+}
+
+// mapExceptionCreationError maps exception creation errors to API responses.
+func (h *handler) mapExceptionCreationError(c *gin.Context, err error) {
+	switch {
+	case errors.Is(err, domain.ErrScheduleNotFound):
+		h.Response.Error(c, domain.MsgScheduleNotFound)
+	case errors.Is(err, domain.ErrScheduleExceptionDatePast):
+		h.Response.Error(c, domain.MsgScheduleExceptionDatePast)
+	case errors.Is(err, domain.ErrScheduleExceptionDateConflict):
+		h.Response.Error(c, domain.MsgScheduleExceptionDateConflict)
+	case errors.Is(err, domain.ErrScheduleExceptionInvalidTime):
+		h.Response.Error(c, domain.MsgScheduleExceptionInvalidTime)
+	case errors.Is(err, domain.ErrScheduleExceptionRedundant):
+		h.Response.Error(c, domain.MsgScheduleExceptionRedundant)
+	case errors.Is(err, domain.ErrForbidden):
+		h.Response.Error(c, domain.MsgForbidden)
+	default:
+		h.Response.Error(c, domain.MsgServerError)
 	}
 }
 
@@ -471,53 +343,28 @@ func (h *handler) DeleteScheduleException(
 func (h *handler) ActivateScheduleException(
 	exceptionInteractor *interactor.ScheduleExceptionInteractor,
 ) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		traceID := middleware.GetRequestID(c)
-		log := Logger.WithTraceID(traceID)
-
-		log.Info(logger.LogScheduleDetailControllerUpdateRequest,
-			"method", c.Request.Method,
-			"path", c.Request.URL.Path,
-			"client_ip", c.ClientIP())
-
-		// 1. Get authenticated person from context
-		person, _ := middleware.GetAuthenticatedUser(c)
-
-		// 2. Decode exception ID
-		encodedExceptionID := c.Param("id")
-		exceptionID, err := h.DecodeID(encodedExceptionID)
-		if err != nil {
-			log.Warn(logger.LogScheduleDetailControllerIDDecodeError, "encoded_id", encodedExceptionID, "error", err)
-			h.Response.Error(c, domain.MsgScheduleExceptionNotFound)
-			return
-		}
-
-		// 3. Activate exception
-		if err := exceptionInteractor.ActivateException(c.Request.Context(), exceptionID, person.ID); err != nil {
-			log.Error(logger.LogScheduleDetailControllerUpdateError, "error", err, "exception_id", exceptionID)
-			switch {
-			case errors.Is(err, domain.ErrScheduleExceptionNotFound):
-				h.Response.Error(c, domain.MsgScheduleExceptionNotFound)
-			case errors.Is(err, domain.ErrForbidden):
-				h.Response.Error(c, domain.MsgForbidden)
-			default:
-				h.Response.Error(c, domain.MsgServerError)
-			}
-			return
-		}
-
-		log.Success(logger.LogScheduleDetailControllerUpdateOK, "exception_id", exceptionID)
-		h.Response.Success(c, domain.MsgScheduleExceptionActivated)
-	}
+	return h.toggleExceptionActive(exceptionInteractor, true)
 }
 
 // DeactivateScheduleException handles PUT /schedule-exceptions/:id/deactivate (HU25)
 func (h *handler) DeactivateScheduleException(
 	exceptionInteractor *interactor.ScheduleExceptionInteractor,
 ) gin.HandlerFunc {
+	return h.toggleExceptionActive(exceptionInteractor, false)
+}
+
+// toggleExceptionActive is a shared helper for activate/deactivate exception handlers.
+func (h *handler) toggleExceptionActive(
+	exceptionInteractor *interactor.ScheduleExceptionInteractor, activate bool,
+) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		traceID := middleware.GetRequestID(c)
 		log := Logger.WithTraceID(traceID)
+
+		successMsg := domain.MsgScheduleExceptionActivated
+		if !activate {
+			successMsg = domain.MsgScheduleExceptionDeactivated
+		}
 
 		log.Info(logger.LogScheduleDetailControllerUpdateRequest,
 			"method", c.Request.Method,
@@ -536,13 +383,19 @@ func (h *handler) DeactivateScheduleException(
 			return
 		}
 
-		// 3. Deactivate exception
-		if err := exceptionInteractor.DeactivateException(c.Request.Context(), exceptionID, person.ID); err != nil {
-			log.Error(logger.LogScheduleDetailControllerUpdateError, "error", err, "exception_id", exceptionID)
+		// 3. Toggle exception active status
+		var toggleErr error
+		if activate {
+			toggleErr = exceptionInteractor.ActivateException(c.Request.Context(), exceptionID, person.ID)
+		} else {
+			toggleErr = exceptionInteractor.DeactivateException(c.Request.Context(), exceptionID, person.ID)
+		}
+		if toggleErr != nil {
+			log.Error(logger.LogScheduleDetailControllerUpdateError, "error", toggleErr, "exception_id", exceptionID)
 			switch {
-			case errors.Is(err, domain.ErrScheduleExceptionNotFound):
+			case errors.Is(toggleErr, domain.ErrScheduleExceptionNotFound):
 				h.Response.Error(c, domain.MsgScheduleExceptionNotFound)
-			case errors.Is(err, domain.ErrForbidden):
+			case errors.Is(toggleErr, domain.ErrForbidden):
 				h.Response.Error(c, domain.MsgForbidden)
 			default:
 				h.Response.Error(c, domain.MsgServerError)
@@ -551,6 +404,6 @@ func (h *handler) DeactivateScheduleException(
 		}
 
 		log.Success(logger.LogScheduleDetailControllerUpdateOK, "exception_id", exceptionID)
-		h.Response.Success(c, domain.MsgScheduleExceptionDeactivated)
+		h.Response.Success(c, successMsg)
 	}
 }

@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Diagnostic Permission",
+  "description": "Schema for granting diagnostic permission to a branch",
+  "type": "object",
+  "required": ["branch_id"],
+  "properties": {
+    "branch_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Encoded branch ID — CHAR(36) hashid"
+    },
+    "active": {
+      "type": "boolean",
+      "description": "Whether the permission is active — BOOLEAN"
+    }
+  },
+  "additionalProperties": false
+}

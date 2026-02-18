@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// MockBrandInteractor is a mock implementation of input.BrandInteractorInterface
+// MockBrandInteractor is a mock implementation of input.BrandLister
 type MockBrandInteractor struct {
 	mock.Mock
 }

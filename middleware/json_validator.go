@@ -37,11 +37,13 @@ var fieldNameMapping = map[string]string{
 	"entry_type":  "Tipo de entrada",
 
 	// Person/Register
+	"identity_number":  "Número de identificación",
 	"email":            "Correo electrónico",
 	"password":         "Contraseña",
 	"first_name":       "Nombre",
 	"last_name":        "Apellido",
-	"phone":            "Teléfono",
+	"second_last_name": "Segundo apellido",
+	"phone_number":     "Número de teléfono",
 	"role":             "Rol",
 	"current_password": "Contraseña actual",
 	"new_password":     "Nueva contraseña",
@@ -85,6 +87,23 @@ var fieldNameMapping = map[string]string{
 	"angle":       "Ángulo de la foto",
 	"image_url":   "URL de imagen",
 	"description": "Descripción",
+
+	// Completed Services (HU64)
+	"motorcycle_id":        "Motocicleta",
+	"service_ids":          "Servicios",
+	"diagnostic_id":        "Diagnóstico",
+	"quoted_price":         "Precio cotizado",
+	"final_price":          "Precio final",
+	"representative_notes": "Notas del representante",
+
+	// Status Transitions (HU74)
+	"status": "Estado del servicio",
+
+	// Diagnostics (HU11-12)
+	"branch_id":           "Sede",
+	"problem_description": "Descripción del problema",
+	"possible_solution":   "Posible solución",
+	"evidence_urls":       "URLs de evidencia",
 }
 
 // translateFieldNames converts technical field names to Spanish labels
@@ -168,9 +187,59 @@ func (b *Builder) WithValidateRegisterMotorcycle() gin.HandlerFunc {
 	return b.jsonValidator(b.Validators.RegisterMotorcycleValidator)
 }
 
+// WithValidateUpdateMotorcycle validates motorcycle update request (HU44)
+func (b *Builder) WithValidateUpdateMotorcycle() gin.HandlerFunc {
+	return b.jsonValidator(b.Validators.UpdateMotorcycleValidator)
+}
+
 // WithValidateEvidence validates evidence creation request (HU16)
 func (b *Builder) WithValidateEvidence() gin.HandlerFunc {
 	return b.jsonValidator(b.Validators.CreateEvidenceValidator)
+}
+
+// WithValidateCompletedService validates completed service registration request (HU64)
+func (b *Builder) WithValidateCompletedService() gin.HandlerFunc {
+	return b.jsonValidator(b.Validators.CompletedServiceValidator)
+}
+
+// WithValidateDiagnostic validates diagnostic creation request (HU11)
+func (b *Builder) WithValidateDiagnostic() gin.HandlerFunc {
+	return b.jsonValidator(b.Validators.DiagnosticValidator)
+}
+
+// WithValidateUpdateDiagnostic validates diagnostic update request (HU12)
+func (b *Builder) WithValidateUpdateDiagnostic() gin.HandlerFunc {
+	return b.jsonValidator(b.Validators.UpdateDiagnosticValidator)
+}
+
+// WithValidateDiagnosticSolution validates diagnostic solution patch request
+func (b *Builder) WithValidateDiagnosticSolution() gin.HandlerFunc {
+	return b.jsonValidator(b.Validators.DiagnosticSolutionValidator)
+}
+
+// WithValidateUpdateScheduleDetail validates schedule detail update request (HU7)
+func (b *Builder) WithValidateUpdateScheduleDetail() gin.HandlerFunc {
+	return b.jsonValidator(b.Validators.UpdateScheduleDetailValidator)
+}
+
+// WithValidateDiagnosticPermission validates diagnostic permission grant request
+func (b *Builder) WithValidateDiagnosticPermission() gin.HandlerFunc {
+	return b.jsonValidator(b.Validators.DiagnosticPermissionValidator)
+}
+
+// WithValidateBranchServices validates branch services association request
+func (b *Builder) WithValidateBranchServices() gin.HandlerFunc {
+	return b.jsonValidator(b.Validators.BranchServicesValidator)
+}
+
+// WithValidateFranchiseBranch validates franchise branch association request
+func (b *Builder) WithValidateFranchiseBranch() gin.HandlerFunc {
+	return b.jsonValidator(b.Validators.FranchiseBranchValidator)
+}
+
+// WithValidateUpdateStatus validates status update request (HU74)
+func (b *Builder) WithValidateUpdateStatus() gin.HandlerFunc {
+	return b.jsonValidator(b.Validators.UpdateStatusValidator)
 }
 
 func (b *Builder) jsonValidator(schema *jsonschema.Schema) gin.HandlerFunc {
@@ -179,47 +248,14 @@ func (b *Builder) jsonValidator(schema *jsonschema.Schema) gin.HandlerFunc {
 		traceID := GetRequestID(c)
 		log := log.WithTraceID(traceID)
 
-		bodyBytes, err := io.ReadAll(c.Request.Body)
-		if err != nil {
-			if log != nil {
-				log.Error(logger.LogMiddlewareBodyReadError, "error", err, "path", c.Request.URL.Path)
-			}
-			_ = c.Error(json_schema.ErrBodyReadFailed)
-			c.Abort()
-			return
-		}
-
-		c.Request.Body = io.NopCloser(bytes.NewReader(bodyBytes))
-
-		var data map[string]interface{}
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			if log != nil {
-				log.Error(logger.LogMiddlewareJSONParseError, "error", err, "path", c.Request.URL.Path)
-			}
-			_ = c.Error(json_schema.ErrBadRequest)
-			c.Abort()
+		data, ok := readRequestBody(c, log)
+		if !ok {
 			return
 		}
 
 		result := schema.Validate(data)
 		if !result.IsValid() {
-			// Extract field names from validation errors
-			fieldNames := extractFieldNames(result.Errors)
-
-			// Classify the validation error
-			validationError := classifyValidationError(fieldNames, result.Errors)
-
-			// Store field names in context for error_handler to use in message parameters
-			// Translate technical names to Spanish labels
-			if len(fieldNames) > 0 {
-				c.Set("validation_fields", translateFieldNames(fieldNames))
-			}
-
-			if log != nil {
-				log.Warn(logger.LogMiddlewareValidationFailed, "path", c.Request.URL.Path, "fields", fieldNames)
-			}
-			_ = c.Error(validationError)
-			c.Abort()
+			handleValidationResult(c, log, result)
 			return
 		}
 
@@ -228,6 +264,51 @@ func (b *Builder) jsonValidator(schema *jsonschema.Schema) gin.HandlerFunc {
 		}
 		c.Next()
 	}
+}
+
+// readRequestBody reads and parses the JSON request body.
+// Returns false and aborts if reading or parsing fails.
+func readRequestBody(c *gin.Context, log logger.Logger) (map[string]interface{}, bool) {
+	bodyBytes, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		if log != nil {
+			log.Error(logger.LogMiddlewareBodyReadError, "error", err, "path", c.Request.URL.Path)
+		}
+		_ = c.Error(json_schema.ErrBodyReadFailed)
+		c.Abort()
+		return nil, false
+	}
+
+	c.Request.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+
+	var data map[string]interface{}
+	if err := json.Unmarshal(bodyBytes, &data); err != nil {
+		if log != nil {
+			log.Error(logger.LogMiddlewareJSONParseError, "error", err, "path", c.Request.URL.Path)
+		}
+		_ = c.Error(json_schema.ErrBadRequest)
+		c.Abort()
+		return nil, false
+	}
+
+	return data, true
+}
+
+// handleValidationResult processes a failed schema validation: extracts field names,
+// classifies the error, stores translated fields in context, and aborts.
+func handleValidationResult(c *gin.Context, log logger.Logger, result *jsonschema.EvaluationResult) {
+	fieldNames := extractFieldNames(result.Errors)
+	validationError := classifyValidationError(fieldNames, result.Errors)
+
+	if len(fieldNames) > 0 {
+		c.Set("validation_fields", translateFieldNames(fieldNames))
+	}
+
+	if log != nil {
+		log.Warn(logger.LogMiddlewareValidationFailed, "path", c.Request.URL.Path, "fields", fieldNames)
+	}
+	_ = c.Error(validationError)
+	c.Abort()
 }
 
 // ============================================

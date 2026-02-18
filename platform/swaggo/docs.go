@@ -1368,6 +1368,70 @@ const docTemplate = `{
                 }
             }
         },
+        "/branches/{id}/completed-services": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Lists all completed services registered at a branch",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "List completed services for a branch",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Branch ID (obfuscated)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Completed services list",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/handlers.CompletedServiceResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Branch not found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/branches/{id}/schedules": {
             "get": {
                 "security": [
@@ -2001,6 +2065,264 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/completed-services": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Registers a new performed service for a motorcycle at a branch. Creates the service record, pivot items, and initial status history.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Register performed service",
+                "parameters": [
+                    {
+                        "description": "Completed service data",
+                        "name": "completedService",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.CreateCompletedServiceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Service registered successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.CompletedServiceResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Branch or motorcycle not found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/completed-services/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Deletes a completed service record and its associated items and status history (via DB cascade).",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Delete a completed service",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Completed service ID (obfuscated)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Service deleted successfully",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Completed service not found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/completed-services/{id}/status": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Updates the status of a completed service, validating the transition is allowed",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Completed Services"
+                ],
+                "summary": "Update the status of a completed service",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Completed service ID (obfuscated)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "New status",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.UpdateStatusRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Status updated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid status transition",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Completed service not found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/completed-services/{id}/transitions": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves the full status transition history for a completed service",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Completed Services"
+                ],
+                "summary": "Get status transition history for a completed service",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Completed service ID (obfuscated)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Transitions list",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/handlers.StatusTransitionResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Completed service not found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
                         "schema": {
                             "$ref": "#/definitions/handlers.StandardResponse"
                         }
@@ -3114,6 +3436,73 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Motorcycle not found or not owner",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/motorcycles/{id}/completed-services": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Lists all completed services associated with a motorcycle. Only the owner can access.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Completed Services"
+                ],
+                "summary": "List completed services for a motorcycle",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Motorcycle ID (hashid encoded)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Completed services list",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/handlers.CompletedServiceResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Motorcycle not found",
                         "schema": {
                             "$ref": "#/definitions/handlers.StandardResponse"
                         }
@@ -5210,6 +5599,93 @@ const docTemplate = `{
                 }
             }
         },
+        "handlers.CompletedServiceItemResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "service_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.CompletedServiceResponse": {
+            "type": "object",
+            "properties": {
+                "branch_id": {
+                    "type": "string"
+                },
+                "branch_name": {
+                    "type": "string"
+                },
+                "diagnostic_id": {
+                    "type": "string"
+                },
+                "final_price": {
+                    "type": "number"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "motorcycle_id": {
+                    "type": "string"
+                },
+                "quoted_price": {
+                    "type": "number"
+                },
+                "representative_notes": {
+                    "type": "string"
+                },
+                "request_date": {
+                    "type": "string"
+                },
+                "services": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.CompletedServiceItemResponse"
+                    }
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.CreateCompletedServiceRequest": {
+            "type": "object",
+            "required": [
+                "branch_id",
+                "motorcycle_id",
+                "service_ids"
+            ],
+            "properties": {
+                "branch_id": {
+                    "type": "string"
+                },
+                "diagnostic_id": {
+                    "type": "string"
+                },
+                "final_price": {
+                    "type": "number"
+                },
+                "motorcycle_id": {
+                    "type": "string"
+                },
+                "quoted_price": {
+                    "type": "number"
+                },
+                "representative_notes": {
+                    "type": "string"
+                },
+                "service_ids": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "handlers.CreateDiagnosticRequest": {
             "type": "object",
             "required": [
@@ -5749,6 +6225,12 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/handlers.Link"
+                    }
+                },
+                "completed_services": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.CompletedServiceResponse"
                     }
                 },
                 "current_mileage": {
@@ -6320,6 +6802,26 @@ const docTemplate = `{
                 }
             }
         },
+        "handlers.StatusTransitionResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "created_by": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "new_status": {
+                    "type": "string"
+                },
+                "previous_status": {
+                    "type": "string"
+                }
+            }
+        },
         "handlers.UpdateDiagnosticRequest": {
             "type": "object",
             "properties": {
@@ -6480,6 +6982,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "service_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.UpdateStatusRequest": {
+            "type": "object",
+            "required": [
+                "status"
+            ],
+            "properties": {
+                "status": {
                     "type": "string"
                 }
             }

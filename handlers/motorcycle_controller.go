@@ -23,7 +23,6 @@ import (
 // @Router /motorcycles/{id} [get]
 func (h *handler) GetMotorcycle() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Create logger with trace ID for this request
 		traceID := middleware.GetRequestID(c)
 		log := Logger.WithTraceID(traceID)
 
@@ -39,85 +38,44 @@ func (h *handler) GetMotorcycle() gin.HandlerFunc {
 		encodedID := c.Param("id")
 		motorcycleID, err := h.DecodeID(encodedID)
 		if err != nil {
-			log.Warn(logger.LogMotorcycleControllerIDDecodeError,
-				"encoded_id", encodedID,
-				"error", err)
+			log.Warn(logger.LogMotorcycleControllerIDDecodeError, "encoded_id", encodedID, "error", err)
 			h.Response.Error(c, domain.MsgMotorcycleNotFound)
 			return
 		}
 
-		log.Debug(logger.LogMotorcycleControllerGetByID,
-			"encoded_id", encodedID,
-			"motorcycle_id", motorcycleID)
+		log.Debug(logger.LogMotorcycleControllerGetByID, "encoded_id", encodedID, "motorcycle_id", motorcycleID)
 
 		// 3. Call interactor to get motorcycle
 		motorcycle, err := h.MotorcycleInteractor.GetMotorcycleByID(c.Request.Context(), motorcycleID)
 		if err != nil {
-			log.Error(logger.LogMotorcycleControllerGetError,
-				"error", err,
-				"motorcycle_id", motorcycleID,
-				"client_ip", c.ClientIP())
-			if errors.Is(err, domain.ErrMotorcycleNotFound) {
-				h.Response.Error(c, domain.MsgMotorcycleNotFound)
-			} else {
-				h.Response.Error(c, domain.MsgServerError)
-			}
+			log.Error(logger.LogMotorcycleControllerGetError, "error", err, "motorcycle_id", motorcycleID, "client_ip", c.ClientIP())
+			h.mapMotorcycleGetError(c, err)
 			return
 		}
 
-		// 4. Validate ownership - only owner can view their motorcycle (security)
-		// Returns 404 to not reveal existence to non-owners (security by obscurity)
-		// DEBUG: Log both IDs to compare
-		log.Debug(logger.LogMotorcycleControllerOwnershipDebug,
-			"person_id", func() string {
-				if person != nil {
-					return person.ID
-				}
-				return "nil"
-			}(),
-			"motorcycle_owner_id", motorcycle.OwnerID)
+		// 4. Validate ownership (returns 404 to not reveal existence - security by obscurity)
+		log.Debug(logger.LogMotorcycleControllerOwnershipDebug, "person_id", safePersonID(person), "motorcycle_owner_id", motorcycle.OwnerID)
 		if person == nil || person.ID != motorcycle.OwnerID {
 			log.Warn(logger.LogMotorcycleControllerOwnershipDenied,
-				"motorcycle_id", motorcycleID,
-				"requested_by", func() string {
-					if person != nil {
-						return person.ID
-					}
-					return "anonymous"
-				}(),
-				"owner_id", motorcycle.OwnerID,
-				"client_ip", c.ClientIP())
+				"motorcycle_id", motorcycleID, "requested_by", safePersonID(person),
+				"owner_id", motorcycle.OwnerID, "client_ip", c.ClientIP())
 			h.Response.Error(c, domain.MsgMotorcycleNotFound)
 			return
 		}
 
 		// 5. Build response DTO
 		response := ToMotorcycleResponse(motorcycle)
-
-		// 6. Override IDs with encoded versions
 		response.ID = encodedID
-		if response.Reference != nil {
-			encodedRefID, err := h.EncodeID(motorcycle.Reference.ID)
-			if err == nil {
-				response.Reference.ID = encodedRefID
-			}
-			encodedBrandID, err := h.EncodeID(motorcycle.Reference.BrandID)
-			if err == nil {
-				response.Reference.BrandID = encodedBrandID
-			}
-		}
+		h.encodeReferenceIDs(&response, motorcycle)
 
-		// 7. Build HATEOAS links (owner sees edit/delete, others only see self)
+		// 6. Build HATEOAS links
 		baseURL := GetBaseURL(c)
-		response.Links = BuildMotorcycleDetailLinks(baseURL, encodedID, true) // Owner validated above
+		response.Links = BuildMotorcycleDetailLinks(baseURL, encodedID, true)
 
 		log.Success(logger.LogMotorcycleControllerGetSuccess,
-			"motorcycle_id", motorcycle.ID,
-			"encoded_id", encodedID,
-			"is_owner", true,
-			"client_ip", c.ClientIP())
+			"motorcycle_id", motorcycle.ID, "encoded_id", encodedID,
+			"is_owner", true, "client_ip", c.ClientIP())
 
-		// 7. Send success response (200 OK)
 		h.Response.SuccessWithData(c, domain.MsgMotorcycleRetrieved, response)
 	}
 }
@@ -139,14 +97,11 @@ func (h *handler) GetMotorcycle() gin.HandlerFunc {
 // @Router /motorcycles [post]
 func (h *handler) RegisterMotorcycle() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Create logger with trace ID for this request
 		traceID := middleware.GetRequestID(c)
 		log := Logger.WithTraceID(traceID)
 
 		log.Info(logger.LogMotorcycleControllerRegRequest,
-			"method", c.Request.Method,
-			"path", c.Request.URL.Path,
-			"client_ip", c.ClientIP())
+			"method", c.Request.Method, "path", c.Request.URL.Path, "client_ip", c.ClientIP())
 
 		// 1. Get authenticated user from context
 		person, exists := middleware.GetAuthenticatedUser(c)
@@ -159,27 +114,20 @@ func (h *handler) RegisterMotorcycle() gin.HandlerFunc {
 		// 2. Parse request body
 		var req RegisterMotorcycleRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
-			log.Warn(logger.LogMotorcycleControllerBindError,
-				"error", err,
-				"client_ip", c.ClientIP())
+			log.Warn(logger.LogMotorcycleControllerBindError, "error", err, "client_ip", c.ClientIP())
 			h.Response.Error(c, domain.MsgServerError)
 			return
 		}
-
-		// Sanitize input
 		req.Sanitize()
 
 		// 3. Convert to domain object
 		motorcycle := req.ToDomain(person.ID)
 
-		// 4. Decode reference ID if provided (optional until Release 11)
+		// 4. Decode reference ID if provided
 		if req.ReferenceID != nil && *req.ReferenceID != "" {
 			referenceID, err := h.DecodeID(*req.ReferenceID)
 			if err != nil {
-				log.Warn(logger.LogMotorcycleControllerRefDecError,
-					"encoded_id", *req.ReferenceID,
-					"error", err,
-					"client_ip", c.ClientIP())
+				log.Warn(logger.LogMotorcycleControllerRefDecError, "encoded_id", *req.ReferenceID, "error", err, "client_ip", c.ClientIP())
 				h.Response.Error(c, domain.MsgMotorcycleReferenceNotFound)
 				return
 			}
@@ -187,69 +135,37 @@ func (h *handler) RegisterMotorcycle() gin.HandlerFunc {
 		}
 
 		log.Debug(logger.LogMotorcycleControllerRegBody,
-			"license_plate", motorcycle.LicensePlate,
-			"reference_id", motorcycle.ReferenceID,
-			"owner_id", person.ID)
+			"license_plate", motorcycle.LicensePlate, "reference_id", motorcycle.ReferenceID, "owner_id", person.ID)
 
 		// 5. Call interactor to register motorcycle
 		createdMotorcycle, err := h.MotorcycleInteractor.RegisterMotorcycle(c.Request.Context(), motorcycle)
 		if err != nil {
-			log.Error(logger.LogMotorcycleControllerRegError,
-				"error", err,
-				"license_plate", motorcycle.LicensePlate,
-				"client_ip", c.ClientIP())
-
-			switch {
-			case errors.Is(err, domain.ErrReferenceNotFound):
-				h.Response.Error(c, domain.MsgMotorcycleReferenceNotFound)
-			case errors.Is(err, domain.ErrReferenceRequired):
-				h.Response.Error(c, domain.MsgReferenceRequired)
-			case errors.Is(err, domain.ErrDuplicateLicensePlate):
-				h.Response.Error(c, domain.MsgDuplicateLicensePlate)
-			case errors.Is(err, domain.ErrMotorcycleCannotSave):
-				h.Response.Error(c, domain.MsgMotorcycleCannotSave)
-			default:
-				h.Response.Error(c, domain.MsgServerError)
-			}
+			log.Error(logger.LogMotorcycleControllerRegError, "error", err, "license_plate", motorcycle.LicensePlate, "client_ip", c.ClientIP())
+			h.mapMotorcycleRegError(c, err)
 			return
 		}
 
 		// 6. Encode the new motorcycle ID for response
 		encodedID, err := h.EncodeID(createdMotorcycle.ID)
 		if err != nil {
-			log.Error(logger.LogMotorcycleControllerIDEncError,
-				"motorcycle_id", createdMotorcycle.ID,
-				"error", err,
-				"client_ip", c.ClientIP())
+			log.Error(logger.LogMotorcycleControllerIDEncError, "motorcycle_id", createdMotorcycle.ID, "error", err, "client_ip", c.ClientIP())
 			h.Response.Error(c, domain.MsgServerError)
 			return
 		}
 
-		// 7. Build response DTO (owner always sees all links on creation)
+		// 7. Build response DTO
 		response := ToMotorcycleResponse(createdMotorcycle)
 		response.ID = encodedID
+		h.encodeReferenceIDs(&response, createdMotorcycle)
 
-		// 7.1 Encode Reference IDs if present
-		if response.Reference != nil && createdMotorcycle.Reference != nil {
-			if encodedRefID, err := h.EncodeID(createdMotorcycle.Reference.ID); err == nil {
-				response.Reference.ID = encodedRefID
-			}
-			if encodedBrandID, err := h.EncodeID(createdMotorcycle.Reference.BrandID); err == nil {
-				response.Reference.BrandID = encodedBrandID
-			}
-		}
-
-		// 8. Build HATEOAS links (Richardson Maturity Level 3)
+		// 8. Build HATEOAS links
 		baseURL := GetBaseURL(c)
 		response.Links = BuildMotorcycleDetailLinks(baseURL, encodedID, true)
 
 		log.Success(logger.LogMotorcycleControllerRegSuccess,
-			"motorcycle_id", createdMotorcycle.ID,
-			"encoded_id", encodedID,
-			"license_plate", createdMotorcycle.LicensePlate,
-			"client_ip", c.ClientIP())
+			"motorcycle_id", createdMotorcycle.ID, "encoded_id", encodedID,
+			"license_plate", createdMotorcycle.LicensePlate, "client_ip", c.ClientIP())
 
-		// 9. Send success response (201 Created)
 		h.Response.SuccessWithData(c, domain.MsgMotorcycleCreated, response)
 	}
 }
@@ -266,14 +182,11 @@ func (h *handler) RegisterMotorcycle() gin.HandlerFunc {
 // @Router /motorcycles [get]
 func (h *handler) ListMotorcycles() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Create logger with trace ID for this request
 		traceID := middleware.GetRequestID(c)
 		log := Logger.WithTraceID(traceID)
 
 		log.Info(logger.LogMotorcycleControllerListRequest,
-			"method", c.Request.Method,
-			"path", c.Request.URL.Path,
-			"client_ip", c.ClientIP())
+			"method", c.Request.Method, "path", c.Request.URL.Path, "client_ip", c.ClientIP())
 
 		// 1. Get authenticated user from context
 		person, _ := middleware.GetAuthenticatedUser(c)
@@ -286,49 +199,18 @@ func (h *handler) ListMotorcycles() gin.HandlerFunc {
 		// 2. Get all motorcycles for this owner
 		motorcycles, err := h.MotorcycleInteractor.GetMotorcyclesByOwner(c.Request.Context(), person.ID)
 		if err != nil {
-			log.Error(logger.LogMotorcycleControllerListError,
-				"error", err,
-				"owner_id", person.ID,
-				"client_ip", c.ClientIP())
+			log.Error(logger.LogMotorcycleControllerListError, "error", err, "owner_id", person.ID, "client_ip", c.ClientIP())
 			h.Response.Error(c, domain.MsgServerError)
 			return
 		}
 
 		// 3. Build response DTOs with HATEOAS links
 		baseURL := GetBaseURL(c)
-		var responses []MotorcycleResponse
-		for _, moto := range motorcycles {
-			encodedID, err := h.EncodeID(moto.ID)
-			if err != nil {
-				log.Warn(logger.LogMotorcycleControllerIDEncError,
-					"motorcycle_id", moto.ID,
-					"error", err)
-				continue // Skip this motorcycle if encoding fails
-			}
-
-			response := ToMotorcycleResponse(&moto)
-			response.ID = encodedID
-
-			// Encode Reference IDs if present
-			if response.Reference != nil && moto.Reference != nil {
-				if encodedRefID, err := h.EncodeID(moto.Reference.ID); err == nil {
-					response.Reference.ID = encodedRefID
-				}
-				if encodedBrandID, err := h.EncodeID(moto.Reference.BrandID); err == nil {
-					response.Reference.BrandID = encodedBrandID
-				}
-			}
-
-			response.Links = BuildMotorcycleDetailLinks(baseURL, encodedID, true) // Owner always true
-			responses = append(responses, response)
-		}
+		responses := h.buildMotorcycleListResponses(motorcycles, baseURL, log)
 
 		log.Success(logger.LogMotorcycleControllerListSuccess,
-			"owner_id", person.ID,
-			"count", len(responses),
-			"client_ip", c.ClientIP())
+			"owner_id", person.ID, "count", len(responses), "client_ip", c.ClientIP())
 
-		// 4. Send success response (200 OK)
 		h.Response.SuccessWithData(c, domain.MsgMotorcyclesListed, responses)
 	}
 }
@@ -349,14 +231,11 @@ func (h *handler) ListMotorcycles() gin.HandlerFunc {
 // @Router /motorcycles/lookup [get]
 func (h *handler) LookupMotorcycleByPlate() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Create logger with trace ID for this request
 		traceID := middleware.GetRequestID(c)
 		log := Logger.WithTraceID(traceID)
 
 		log.Info(logger.LogMotorcycleControllerPlateRequest,
-			"method", c.Request.Method,
-			"path", c.Request.URL.Path,
-			"client_ip", c.ClientIP())
+			"method", c.Request.Method, "path", c.Request.URL.Path, "client_ip", c.ClientIP())
 
 		// 1. Get authenticated representative from context
 		person, _ := middleware.GetAuthenticatedUser(c)
@@ -379,94 +258,60 @@ func (h *handler) LookupMotorcycleByPlate() gin.HandlerFunc {
 		// 3. Get representative's branches
 		repBranches, err := h.BranchInteractor.GetBranchesByRepresentative(c.Request.Context(), person.ID)
 		if err != nil {
-			log.Error("Error obteniendo sedes del representante",
-				"error", err,
-				"person_id", person.ID,
-				"client_ip", c.ClientIP())
+			log.Error(logger.LogMotorcycleControllerRepBranchErr, "error", err, "person_id", person.ID, "client_ip", c.ClientIP())
 			h.Response.Error(c, domain.MsgServerError)
 			return
 		}
 
-		// Build a set of rep branch IDs for fast lookup
-		repBranchSet := make(map[string]domain.Branch, len(repBranches))
-		for _, b := range repBranches {
-			repBranchSet[b.ID] = b
-		}
+		repBranchSet := buildBranchSetByID(repBranches)
 
 		// 4. Call interactor to get motorcycle by plate
 		motorcycle, err := h.MotorcycleInteractor.GetMotorcycleByLicensePlate(c.Request.Context(), plate)
 		if err != nil {
-			log.Error(logger.LogMotorcycleControllerPlateError,
-				"error", err,
-				"license_plate", plate,
-				"client_ip", c.ClientIP())
-			if errors.Is(err, domain.ErrMotorcycleNotFound) {
-				h.Response.Error(c, domain.MsgMotorcycleNotFound)
-			} else {
-				h.Response.Error(c, domain.MsgServerError)
-			}
+			log.Error(logger.LogMotorcycleControllerPlateError, "error", err, "license_plate", plate, "client_ip", c.ClientIP())
+			h.mapMotorcycleGetError(c, err)
 			return
 		}
 
-		// 5. Get active permissions for this motorcycle (no ownership check)
+		// 5. Get active permissions for this motorcycle
 		permissions, err := h.MotorcycleInteractor.LookupPermissions(c.Request.Context(), motorcycle.ID)
 		if err != nil {
-			log.Error("Error consultando permisos de la motocicleta",
-				"error", err,
-				"motorcycle_id", motorcycle.ID,
-				"client_ip", c.ClientIP())
+			log.Error(logger.LogMotorcycleControllerPermErr, "error", err, "motorcycle_id", motorcycle.ID, "client_ip", c.ClientIP())
 			h.Response.Error(c, domain.MsgServerError)
 			return
 		}
 
 		// 6. Intersect: find branches where rep has access AND motorcycle has active permission
 		permittedBranches, permittedBranchIDs := h.buildPermittedBranches(permissions, repBranchSet, log, c.ClientIP())
-
-		// 7. If no intersection → 403 Forbidden
 		if len(permittedBranches) == 0 {
-			log.Warn("Representante sin permisos para esta motocicleta",
-				"person_id", person.ID,
-				"motorcycle_id", motorcycle.ID,
-				"license_plate", plate,
-				"rep_branches_count", len(repBranches),
-				"permissions_count", len(permissions),
-				"client_ip", c.ClientIP())
+			log.Warn(logger.LogMotorcycleControllerNoPerm,
+				"person_id", person.ID, "motorcycle_id", motorcycle.ID,
+				"license_plate", plate, "client_ip", c.ClientIP())
 			h.Response.Error(c, domain.MsgMotorcycleNoPermission)
 			return
 		}
 
-		// 8. Build response DTO (workshop view - excludes private owner data)
+		// 7. Build response DTO
 		response := ToMotorcycleLookupResponse(motorcycle)
-
-		// Encode motorcycle ID for response
 		encodedID, err := h.EncodeID(motorcycle.ID)
 		if err != nil {
-			log.Error(logger.LogMotorcycleControllerIDEncError,
-				"motorcycle_id", motorcycle.ID,
-				"error", err,
-				"client_ip", c.ClientIP())
+			log.Error(logger.LogMotorcycleControllerIDEncError, "motorcycle_id", motorcycle.ID, "error", err, "client_ip", c.ClientIP())
 			h.Response.Error(c, domain.MsgServerError)
 			return
 		}
 		response.ID = encodedID
 
-		// 9. Fetch diagnostics and filter by permitted branches
+		// 8. Hydrate sub-resources
 		response.Diagnostics = h.fetchAndEncodeDiagnostics(c, motorcycle.ID, encodedID, permittedBranchIDs, log)
-
-		// 10. Fetch motorcycle evidence (HU16-19)
 		response.Evidence = h.fetchAndEncodeEvidence(c, motorcycle.ID, encodedID, log)
-
-		// 11. Set permitted branches in response
+		response.CompletedServices = h.fetchAndEncodeCompletedServices(c, motorcycle.ID, encodedID, log)
 		response.PermittedBranches = permittedBranches
 
 		log.Success(logger.LogMotorcycleControllerPlateSuccess,
-			"motorcycle_id", motorcycle.ID,
-			"license_plate", plate,
+			"motorcycle_id", motorcycle.ID, "license_plate", plate,
 			"diagnostics_count", len(response.Diagnostics),
-			"permitted_branches_count", len(permittedBranches),
-			"client_ip", c.ClientIP())
+			"permitted_branches_count", len(permittedBranches), "client_ip", c.ClientIP())
 
-		// 11. Send success response (200 OK)
 		h.Response.SuccessWithData(c, domain.MsgMotorcycleRetrieved, response)
 	}
 }
@@ -488,14 +333,11 @@ func (h *handler) LookupMotorcycleByPlate() gin.HandlerFunc {
 // @Router /motorcycles/{id} [put]
 func (h *handler) UpdateMotorcycle() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Create logger with trace ID for this request
 		traceID := middleware.GetRequestID(c)
 		log := Logger.WithTraceID(traceID)
 
 		log.Info(logger.LogMotorcycleControllerUpdateRequest,
-			"method", c.Request.Method,
-			"path", c.Request.URL.Path,
-			"client_ip", c.ClientIP())
+			"method", c.Request.Method, "path", c.Request.URL.Path, "client_ip", c.ClientIP())
 
 		// 1. Get authenticated user from context
 		person, exists := middleware.GetAuthenticatedUser(c)
@@ -509,9 +351,7 @@ func (h *handler) UpdateMotorcycle() gin.HandlerFunc {
 		encodedID := c.Param("id")
 		motorcycleID, err := h.DecodeID(encodedID)
 		if err != nil {
-			log.Warn(logger.LogMotorcycleControllerIDDecodeError,
-				"encoded_id", encodedID,
-				"error", err)
+			log.Warn(logger.LogMotorcycleControllerIDDecodeError, "encoded_id", encodedID, "error", err)
 			h.Response.Error(c, domain.MsgMotorcycleNotFound)
 			return
 		}
@@ -519,66 +359,35 @@ func (h *handler) UpdateMotorcycle() gin.HandlerFunc {
 		// 3. Parse request body
 		var req UpdateMotorcycleRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
-			log.Warn(logger.LogMotorcycleControllerBindError,
-				"error", err,
-				"client_ip", c.ClientIP())
+			log.Warn(logger.LogMotorcycleControllerBindError, "error", err, "client_ip", c.ClientIP())
 			h.Response.Error(c, domain.MsgMotorcycleCannotUpdate)
 			return
 		}
-
-		// Sanitize input
 		req.Sanitize()
 
 		log.Debug(logger.LogMotorcycleControllerUpdateDebug,
-			"motorcycle_id", motorcycleID,
-			"encoded_id", encodedID,
-			"owner_id", person.ID)
+			"motorcycle_id", motorcycleID, "encoded_id", encodedID, "owner_id", person.ID)
 
 		// 4. Call interactor to update motorcycle
 		updates := req.ToDomain()
 		motorcycle, err := h.MotorcycleInteractor.UpdateMotorcycle(c.Request.Context(), motorcycleID, person.ID, updates)
 		if err != nil {
-			log.Error(logger.LogMotorcycleControllerUpdateError,
-				"error", err,
-				"motorcycle_id", motorcycleID,
-				"client_ip", c.ClientIP())
-			switch {
-			case errors.Is(err, domain.ErrMotorcycleNotFound):
-				h.Response.Error(c, domain.MsgMotorcycleNotFound)
-			case errors.Is(err, domain.ErrReferenceNotFound):
-				h.Response.Error(c, domain.MsgMotorcycleReferenceNotFound)
-			case errors.Is(err, domain.ErrMotorcycleCannotUpdate):
-				h.Response.Error(c, domain.MsgMotorcycleCannotUpdate)
-			default:
-				h.Response.Error(c, domain.MsgServerError)
-			}
+			log.Error(logger.LogMotorcycleControllerUpdateError, "error", err, "motorcycle_id", motorcycleID, "client_ip", c.ClientIP())
+			h.mapMotorcycleUpdateError(c, err)
 			return
 		}
 
 		// 5. Build response DTO with HATEOAS links
 		response := ToMotorcycleResponse(motorcycle)
 		response.ID = encodedID
+		h.encodeReferenceIDs(&response, motorcycle)
 
-		// 5.1 Encode Reference IDs if present
-		if response.Reference != nil && motorcycle.Reference != nil {
-			if encodedRefID, err := h.EncodeID(motorcycle.Reference.ID); err == nil {
-				response.Reference.ID = encodedRefID
-			}
-			if encodedBrandID, err := h.EncodeID(motorcycle.Reference.BrandID); err == nil {
-				response.Reference.BrandID = encodedBrandID
-			}
-		}
-
-		// 6. Build HATEOAS links (only implemented: self, update, list)
 		baseURL := GetBaseURL(c)
 		response.Links = BuildMotorcycleDetailLinks(baseURL, encodedID, true)
 
 		log.Success(logger.LogMotorcycleControllerUpdateSuccess,
-			"motorcycle_id", motorcycle.ID,
-			"encoded_id", encodedID,
-			"client_ip", c.ClientIP())
+			"motorcycle_id", motorcycle.ID, "encoded_id", encodedID, "client_ip", c.ClientIP())
 
-		// 7. Send success response (200 OK)
 		h.Response.SuccessWithData(c, domain.MsgMotorcycleUpdated, response)
 	}
 }
@@ -824,9 +633,96 @@ func (h *handler) GetBrandLines() gin.HandlerFunc {
 	}
 }
 
+// buildBranchSetByID creates a map of branches indexed by their ID.
+func buildBranchSetByID(branches []domain.Branch) map[string]domain.Branch {
+	result := make(map[string]domain.Branch, len(branches))
+	for _, b := range branches {
+		result[b.ID] = b
+	}
+	return result
+}
+
 // ============================================
-// LookupMotorcycleByPlate helpers (extracted to reduce cognitive complexity)
+// Motorcycle Controller Helpers (extracted to reduce cognitive complexity)
 // ============================================
+
+// safePersonID returns the person ID or a fallback string for logging.
+func safePersonID(person *domain.Person) string {
+	if person != nil {
+		return person.ID
+	}
+	return "anonymous"
+}
+
+// encodeReferenceIDs encodes Reference.ID and Reference.BrandID in a MotorcycleResponse.
+func (h *handler) encodeReferenceIDs(response *MotorcycleResponse, motorcycle *domain.Motorcycle) {
+	if response.Reference == nil || motorcycle.Reference == nil {
+		return
+	}
+	if encodedRefID, err := h.EncodeID(motorcycle.Reference.ID); err == nil {
+		response.Reference.ID = encodedRefID
+	}
+	if encodedBrandID, err := h.EncodeID(motorcycle.Reference.BrandID); err == nil {
+		response.Reference.BrandID = encodedBrandID
+	}
+}
+
+// buildMotorcycleListResponses builds encoded MotorcycleResponse list from domain objects.
+func (h *handler) buildMotorcycleListResponses(motorcycles []domain.Motorcycle, baseURL string, log logger.Logger) []MotorcycleResponse {
+	var responses []MotorcycleResponse
+	for _, moto := range motorcycles {
+		encodedID, err := h.EncodeID(moto.ID)
+		if err != nil {
+			log.Warn(logger.LogMotorcycleControllerIDEncError, "motorcycle_id", moto.ID, "error", err)
+			continue
+		}
+		response := ToMotorcycleResponse(&moto)
+		response.ID = encodedID
+		h.encodeReferenceIDs(&response, &moto)
+		response.Links = BuildMotorcycleDetailLinks(baseURL, encodedID, true)
+		responses = append(responses, response)
+	}
+	return responses
+}
+
+// mapMotorcycleGetError maps motorcycle get/lookup errors to API responses.
+func (h *handler) mapMotorcycleGetError(c *gin.Context, err error) {
+	if errors.Is(err, domain.ErrMotorcycleNotFound) {
+		h.Response.Error(c, domain.MsgMotorcycleNotFound)
+	} else {
+		h.Response.Error(c, domain.MsgServerError)
+	}
+}
+
+// mapMotorcycleRegError maps motorcycle registration errors to API responses.
+func (h *handler) mapMotorcycleRegError(c *gin.Context, err error) {
+	switch {
+	case errors.Is(err, domain.ErrReferenceNotFound):
+		h.Response.Error(c, domain.MsgMotorcycleReferenceNotFound)
+	case errors.Is(err, domain.ErrReferenceRequired):
+		h.Response.Error(c, domain.MsgReferenceRequired)
+	case errors.Is(err, domain.ErrDuplicateLicensePlate):
+		h.Response.Error(c, domain.MsgDuplicateLicensePlate)
+	case errors.Is(err, domain.ErrMotorcycleCannotSave):
+		h.Response.Error(c, domain.MsgMotorcycleCannotSave)
+	default:
+		h.Response.Error(c, domain.MsgServerError)
+	}
+}
+
+// mapMotorcycleUpdateError maps motorcycle update errors to API responses.
+func (h *handler) mapMotorcycleUpdateError(c *gin.Context, err error) {
+	switch {
+	case errors.Is(err, domain.ErrMotorcycleNotFound):
+		h.Response.Error(c, domain.MsgMotorcycleNotFound)
+	case errors.Is(err, domain.ErrReferenceNotFound):
+		h.Response.Error(c, domain.MsgMotorcycleReferenceNotFound)
+	case errors.Is(err, domain.ErrMotorcycleCannotUpdate):
+		h.Response.Error(c, domain.MsgMotorcycleCannotUpdate)
+	default:
+		h.Response.Error(c, domain.MsgServerError)
+	}
+}
 
 // buildPermittedBranches intersects active permissions with the representative's branches,
 // encoding each branch ID. Returns the permitted branches list and a set of raw IDs.
@@ -954,4 +850,48 @@ func (h *handler) fetchAndEncodeEvidence(
 	}
 
 	return evidenceResponses
+}
+
+// fetchAndEncodeCompletedServices fetches completed services for a motorcycle and encodes all IDs.
+// Returns nil on error (non-fatal, same pattern as fetchAndEncodeDiagnostics).
+func (h *handler) fetchAndEncodeCompletedServices(
+	c *gin.Context,
+	motorcycleID, encodedMotorcycleID string,
+	log logger.Logger,
+) []CompletedServiceResponse {
+	if h.CompletedServiceInteractor == nil {
+		return nil
+	}
+
+	services, err := h.CompletedServiceInteractor.GetCompletedServicesByMotorcycle(
+		c.Request.Context(),
+		motorcycleID,
+	)
+	if err != nil {
+		log.Warn(logger.LogCSControllerListByMotoError,
+			"motorcycle_id", motorcycleID,
+			"error", err)
+		return nil
+	}
+
+	if len(services) == 0 {
+		return nil
+	}
+
+	responses := make([]CompletedServiceResponse, 0, len(services))
+	for _, svc := range services {
+		resp := ToCompletedServiceResponse(&svc)
+		encodedID, err := h.EncodeID(svc.ID)
+		if err == nil {
+			resp.ID = encodedID
+		}
+		resp.MotorcycleID = encodedMotorcycleID
+		encodedBranchID, err := h.EncodeID(svc.BranchID)
+		if err == nil {
+			resp.BranchID = encodedBranchID
+		}
+		responses = append(responses, resp)
+	}
+
+	return responses
 }

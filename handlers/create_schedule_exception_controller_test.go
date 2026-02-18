@@ -13,6 +13,7 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/handlers"
 	"github.com/EstebanGitPro/motogo-backend/middleware"
 	"github.com/EstebanGitPro/motogo-backend/mocks"
+	"github.com/EstebanGitPro/motogo-backend/platform/constants"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -63,7 +64,7 @@ func TestCreateScheduleException_Integration_Success(t *testing.T) {
 	}, nil)
 
 	// Mock: CreateException (exception interactor)
-	exceptionStartDate, _ := time.ParseInLocation("2006-01-02", "2026-12-25", time.Local)
+	exceptionStartDate, _ := time.ParseInLocation(constants.DateFormat, "2026-12-25", time.Local)
 	mockDetailService.On("BeginTx", mock.Anything).Return(mockTx, nil)
 	mockDetailService.On("CreateException", mock.Anything, mockTx, mock.AnythingOfType("domain.ScheduleDetail")).
 		Return(&domain.ScheduleDetail{

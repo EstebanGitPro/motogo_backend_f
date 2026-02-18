@@ -10,7 +10,7 @@ import (
 )
 
 type Validators struct {
-	FileReader                       FileReaderInterface
+	FileReader                       FileReader
 	RegisterValidator                *jsonschema.Schema
 	MessageValidator                 *jsonschema.Schema
 	CreateMessageValidator           *jsonschema.Schema
@@ -26,10 +26,20 @@ type Validators struct {
 	UpdateScheduleExceptionValidator *jsonschema.Schema // HU21 (update exception)
 	FranchiseValidator               *jsonschema.Schema // HU26-29 (franchises)
 	RegisterMotorcycleValidator      *jsonschema.Schema // HU43 (register motorcycle)
+	UpdateMotorcycleValidator        *jsonschema.Schema // HU44 (update motorcycle)
 	CreateEvidenceValidator          *jsonschema.Schema // HU16 (create evidence)
+	CompletedServiceValidator        *jsonschema.Schema // HU64 (completed services)
+	DiagnosticValidator              *jsonschema.Schema // HU11 (create diagnostic)
+	UpdateDiagnosticValidator        *jsonschema.Schema // HU12 (update diagnostic)
+	DiagnosticSolutionValidator      *jsonschema.Schema // PATCH diagnostic solution
+	UpdateScheduleDetailValidator    *jsonschema.Schema // HU7 (update schedule detail)
+	DiagnosticPermissionValidator    *jsonschema.Schema // diagnostic permission
+	BranchServicesValidator          *jsonschema.Schema // branch services association
+	FranchiseBranchValidator         *jsonschema.Schema // franchise branch association
+	UpdateStatusValidator            *jsonschema.Schema // HU74 (update status)
 }
 
-type FileReaderInterface interface {
+type FileReader interface {
 	ReadJsonSchema(resourcePath string) ([]byte, error)
 }
 
@@ -51,107 +61,52 @@ func (f *DefaultFileReader) ReadJsonSchema(resourcePath string) ([]byte, error) 
 	return io.ReadAll(data)
 }
 
-func NewValidator(fileReader FileReaderInterface) (*Validators, error) {
+func NewValidator(fileReader FileReader) (*Validators, error) {
 	validator := &Validators{
 		FileReader: fileReader,
 	}
 
-	register, err := validator.createSchema("register_person_schema.json")
-	if err != nil {
-		return nil, err
+	type schemaEntry struct {
+		field **jsonschema.Schema
+		name  string
 	}
 
-	message, err := validator.createSchema("message_schema.json")
-	if err != nil {
-		return nil, err
+	schemas := []schemaEntry{
+		{&validator.RegisterValidator, "register_person_schema.json"},
+		{&validator.MessageValidator, "message_schema.json"},
+		{&validator.CreateMessageValidator, "create_message_schema.json"},
+		{&validator.ResendVerificationValidator, "resend_verification_email.json"},
+		{&validator.PasswordResetValidator, "password_reset_request.json"},
+		{&validator.UpdateProfileValidator, "update_profile_schema.json"},
+		{&validator.ResetPasswordWithTokenValidator, "reset_password_with_token_schema.json"},
+		{&validator.ChangePasswordValidator, "change_password_schema.json"},
+		{&validator.RegisterBranchValidator, "register_branch_schema.json"},
+		{&validator.ScheduleDetailValidator, "schedule_detail_schema.json"},
+		{&validator.UpdateScheduleValidator, "update_schedule_schema.json"},
+		{&validator.ScheduleExceptionValidator, "schedule_exception_schema.json"},
+		{&validator.UpdateScheduleExceptionValidator, "update_schedule_exception_schema.json"},
+		{&validator.FranchiseValidator, "franchise_schema.json"},
+		{&validator.RegisterMotorcycleValidator, "register_motorcycle_schema.json"},
+		{&validator.UpdateMotorcycleValidator, "update_motorcycle_schema.json"},
+		{&validator.CreateEvidenceValidator, "create_evidence_schema.json"},
+		{&validator.CompletedServiceValidator, "completed_service_schema.json"},
+		{&validator.DiagnosticValidator, "diagnostic_schema.json"},
+		{&validator.UpdateDiagnosticValidator, "update_diagnostic_schema.json"},
+		{&validator.DiagnosticSolutionValidator, "diagnostic_solution_schema.json"},
+		{&validator.UpdateScheduleDetailValidator, "update_schedule_detail_schema.json"},
+		{&validator.DiagnosticPermissionValidator, "diagnostic_permission_schema.json"},
+		{&validator.BranchServicesValidator, "branch_services_schema.json"},
+		{&validator.FranchiseBranchValidator, "franchise_branch_schema.json"},
+		{&validator.UpdateStatusValidator, "update_status_schema.json"},
 	}
 
-	createMessage, err := validator.createSchema("create_message_schema.json")
-	if err != nil {
-		return nil, err
+	for _, s := range schemas {
+		sch, err := validator.createSchema(s.name)
+		if err != nil {
+			return nil, err
+		}
+		*s.field = sch
 	}
-
-	resendVerification, err := validator.createSchema("resend_verification_email.json")
-	if err != nil {
-		return nil, err
-	}
-
-	passwordReset, err := validator.createSchema("password_reset_request.json")
-	if err != nil {
-		return nil, err
-	}
-
-	updateProfile, err := validator.createSchema("update_profile_schema.json")
-	if err != nil {
-		return nil, err
-	}
-
-	resetPasswordWithToken, err := validator.createSchema("reset_password_with_token_schema.json")
-	if err != nil {
-		return nil, err
-	}
-
-	changePassword, err := validator.createSchema("change_password_schema.json")
-	if err != nil {
-		return nil, err
-	}
-
-	registerBranch, err := validator.createSchema("register_branch_schema.json")
-	if err != nil {
-		return nil, err
-	}
-
-	scheduleDetail, err := validator.createSchema("schedule_detail_schema.json")
-	if err != nil {
-		return nil, err
-	}
-
-	updateSchedule, err := validator.createSchema("update_schedule_schema.json")
-	if err != nil {
-		return nil, err
-	}
-
-	scheduleException, err := validator.createSchema("schedule_exception_schema.json")
-	if err != nil {
-		return nil, err
-	}
-
-	updateScheduleException, err := validator.createSchema("update_schedule_exception_schema.json")
-	if err != nil {
-		return nil, err
-	}
-
-	franchise, err := validator.createSchema("franchise_schema.json")
-	if err != nil {
-		return nil, err
-	}
-
-	registerMotorcycle, err := validator.createSchema("register_motorcycle_schema.json")
-	if err != nil {
-		return nil, err
-	}
-
-	createEvidence, err := validator.createSchema("create_evidence_schema.json")
-	if err != nil {
-		return nil, err
-	}
-
-	validator.RegisterValidator = register
-	validator.MessageValidator = message
-	validator.CreateMessageValidator = createMessage
-	validator.ResendVerificationValidator = resendVerification
-	validator.PasswordResetValidator = passwordReset
-	validator.UpdateProfileValidator = updateProfile
-	validator.ResetPasswordWithTokenValidator = resetPasswordWithToken
-	validator.ChangePasswordValidator = changePassword
-	validator.RegisterBranchValidator = registerBranch
-	validator.ScheduleDetailValidator = scheduleDetail
-	validator.UpdateScheduleValidator = updateSchedule
-	validator.ScheduleExceptionValidator = scheduleException
-	validator.UpdateScheduleExceptionValidator = updateScheduleException
-	validator.FranchiseValidator = franchise
-	validator.RegisterMotorcycleValidator = registerMotorcycle
-	validator.CreateEvidenceValidator = createEvidence
 
 	return validator, nil
 }
@@ -211,6 +166,20 @@ func (v *Validators) ValidateRegisterMotorcycle(data interface{}) error {
 	}
 
 	result := v.RegisterMotorcycleValidator.Validate(data)
+	if !result.IsValid() {
+		return ErrValidationFailed
+	}
+
+	return nil
+}
+
+// ValidateUpdateMotorcycle validates data against the update motorcycle schema (HU44)
+func (v *Validators) ValidateUpdateMotorcycle(data interface{}) error {
+	if v.UpdateMotorcycleValidator == nil {
+		return ErrSchemaEmpty
+	}
+
+	result := v.UpdateMotorcycleValidator.Validate(data)
 	if !result.IsValid() {
 		return ErrValidationFailed
 	}

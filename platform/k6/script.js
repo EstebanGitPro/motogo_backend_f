@@ -18,7 +18,7 @@ export const options = {
 
 const BASE_URL = 'http://host.docker.internal:8085/motogo/api/v1';
 
-export default function () {
+export default function mainTest() {
   // Test 1: GET Messages List (Success)
   group('Messages API - Success Cases', function () {
     const messagesRes = http.get(`${BASE_URL}/messages`);

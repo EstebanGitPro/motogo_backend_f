@@ -42,15 +42,9 @@ func (i *ScheduleDetailInteractor) CreateDetail(
 		"representative_id", representativeID)
 
 	// 1. Verify ownership of branch
-	branch, branchErr := i.branchService.GetBranchByID(ctx, branchID)
-	if branchErr != nil {
-		scheduleDetailInteractorLog.Error(logger.LogScheduleDetailInteractorBranchError, "error", branchErr)
-		return nil, domain.ErrBranchNotFound
-	}
-	if branch.RepresentativeID != representativeID {
-		scheduleDetailInteractorLog.Warn(logger.LogScheduleDetailInteractorOwnershipError,
-			"branch_id", branchID, "representative_id", representativeID)
-		return nil, domain.ErrForbidden
+	if ownerErr := verifyBranchOwnership(ctx, i.branchService, branchID, representativeID,
+		scheduleDetailInteractorLog, logger.LogScheduleDetailInteractorBranchError, logger.LogScheduleDetailInteractorOwnershipError); ownerErr != nil {
+		return nil, ownerErr
 	}
 
 	// 2. Begin transaction
@@ -60,17 +54,8 @@ func (i *ScheduleDetailInteractor) CreateDetail(
 		return nil, txErr
 	}
 
-	defer func() {
-		if err != nil {
-			if rbErr := tx.Rollback(); rbErr != nil {
-				scheduleDetailInteractorLog.Error(logger.LogScheduleDetailInteractorRollbackError,
-					"rollback_error", rbErr,
-					"original_error", err)
-			} else {
-				scheduleDetailInteractorLog.Warn(logger.LogScheduleDetailInteractorRollbackOK)
-			}
-		}
-	}()
+	defer deferRollback(tx, &err, scheduleDetailInteractorLog,
+		logger.LogScheduleDetailInteractorRollbackError, logger.LogScheduleDetailInteractorRollbackOK)()
 
 	// 3. Create detail via service
 	result, err = i.detailService.CreateDetail(ctx, tx, detail)
@@ -133,18 +118,10 @@ func (i *ScheduleDetailInteractor) UpdateDetail(
 		return domain.ErrScheduleDetailNotFound
 	}
 
-	// 2. Get schedule and verify ownership via branch
-	schedule, schedErr := i.scheduleService.GetScheduleByID(ctx, existing.ScheduleID)
-	if schedErr != nil {
-		return schedErr
-	}
-
-	branch, branchErr := i.branchService.GetBranchByID(ctx, schedule.BranchID)
-	if branchErr != nil {
-		return domain.ErrBranchNotFound
-	}
-	if branch.RepresentativeID != representativeID {
-		return domain.ErrForbidden
+	// 2. Verify ownership via schedule → branch
+	if ownerErr := verifyScheduleOwnership(ctx, i.scheduleService, i.branchService,
+		existing.ScheduleID, representativeID); ownerErr != nil {
+		return ownerErr
 	}
 
 	// 3. Begin transaction
@@ -153,17 +130,8 @@ func (i *ScheduleDetailInteractor) UpdateDetail(
 		return txErr
 	}
 
-	defer func() {
-		if err != nil {
-			if rbErr := tx.Rollback(); rbErr != nil {
-				scheduleDetailInteractorLog.Error(logger.LogScheduleDetailInteractorRollbackError,
-					"rollback_error", rbErr,
-					"original_error", err)
-			} else {
-				scheduleDetailInteractorLog.Warn(logger.LogScheduleDetailInteractorRollbackOK)
-			}
-		}
-	}()
+	defer deferRollback(tx, &err, scheduleDetailInteractorLog,
+		logger.LogScheduleDetailInteractorRollbackError, logger.LogScheduleDetailInteractorRollbackOK)()
 
 	// 4. Update detail
 	if err = i.detailService.UpdateDetail(ctx, tx, detail); err != nil {
@@ -194,18 +162,10 @@ func (i *ScheduleDetailInteractor) DeleteDetail(
 		return domain.ErrScheduleDetailNotFound
 	}
 
-	// 2. Get schedule and verify ownership via branch
-	schedule, schedErr := i.scheduleService.GetScheduleByID(ctx, existing.ScheduleID)
-	if schedErr != nil {
-		return schedErr
-	}
-
-	branch, branchErr := i.branchService.GetBranchByID(ctx, schedule.BranchID)
-	if branchErr != nil {
-		return domain.ErrBranchNotFound
-	}
-	if branch.RepresentativeID != representativeID {
-		return domain.ErrForbidden
+	// 2. Verify ownership via schedule → branch
+	if ownerErr := verifyScheduleOwnership(ctx, i.scheduleService, i.branchService,
+		existing.ScheduleID, representativeID); ownerErr != nil {
+		return ownerErr
 	}
 
 	// 3. Begin transaction
@@ -214,17 +174,8 @@ func (i *ScheduleDetailInteractor) DeleteDetail(
 		return txErr
 	}
 
-	defer func() {
-		if err != nil {
-			if rbErr := tx.Rollback(); rbErr != nil {
-				scheduleDetailInteractorLog.Error(logger.LogScheduleDetailInteractorRollbackError,
-					"rollback_error", rbErr,
-					"original_error", err)
-			} else {
-				scheduleDetailInteractorLog.Warn(logger.LogScheduleDetailInteractorRollbackOK)
-			}
-		}
-	}()
+	defer deferRollback(tx, &err, scheduleDetailInteractorLog,
+		logger.LogScheduleDetailInteractorRollbackError, logger.LogScheduleDetailInteractorRollbackOK)()
 
 	// 4. Delete detail
 	if err = i.detailService.DeleteDetail(ctx, tx, detailID); err != nil {

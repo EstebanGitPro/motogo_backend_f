@@ -11,8 +11,8 @@ import (
 // These interfaces allow dependency injection and testing
 // ============================================
 
-// BrandInteractorInterface defines the contract for brand catalog operations
-type BrandInteractorInterface interface {
+// BrandLister defines the contract for brand catalog operations
+type BrandLister interface {
 	GetAllBrands(ctx context.Context) ([]domain.Brand, error)
 }
 
@@ -52,4 +52,12 @@ type EvidenceInteractorInterface interface {
 	UpdateEvidence(ctx context.Context, evidenceID, ownerID string, updates *domain.MotorcycleEvidence) (*domain.MotorcycleEvidence, error) // HU17
 	DeleteEvidence(ctx context.Context, evidenceID, ownerID string) error
 	LookupEvidence(ctx context.Context, motorcycleID string) ([]domain.MotorcycleEvidence, error) // Workshop lookup (no ownership check)
+}
+
+// CompletedServiceInteractorInterface defines the contract for completed service operations (HU64)
+type CompletedServiceInteractorInterface interface {
+	RegisterCompletedService(ctx context.Context, service *domain.CompletedService, serviceIDs []string, personID string) (*domain.CompletedService, error)
+	GetCompletedServiceByID(ctx context.Context, serviceID string) (*domain.CompletedService, error)
+	GetCompletedServicesByBranch(ctx context.Context, branchID string) ([]domain.CompletedService, error)
+	GetCompletedServicesByMotorcycle(ctx context.Context, motorcycleID string) ([]domain.CompletedService, error)
 }

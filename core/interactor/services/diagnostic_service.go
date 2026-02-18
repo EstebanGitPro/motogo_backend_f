@@ -150,7 +150,7 @@ func (s *DiagnosticServiceImpl) GetByMotorcycleID(ctx context.Context, motorcycl
 }
 
 // ApplyDiagnosticUpdates merges partial updates into an existing diagnostic
-func (s *DiagnosticServiceImpl) ApplyDiagnosticUpdates(existing *domain.Diagnostic, updates *domain.Diagnostic) {
+func (s *DiagnosticServiceImpl) ApplyDiagnosticUpdates(existing, updates *domain.Diagnostic) {
 	if updates.ProblemDescription != nil {
 		existing.ProblemDescription = updates.ProblemDescription
 	}
@@ -178,7 +178,7 @@ func (s *DiagnosticServiceImpl) DeleteDiagnostic(ctx context.Context, tx output.
 }
 
 // SetSolution sets the possible solution for a diagnostic
-func (s *DiagnosticServiceImpl) SetSolution(ctx context.Context, tx output.Tx, diagnosticID string, solution string) error {
+func (s *DiagnosticServiceImpl) SetSolution(ctx context.Context, tx output.Tx, diagnosticID, solution string) error {
 	diagnostic, err := s.diagnosticRepo.GetByID(ctx, diagnosticID)
 	if err != nil {
 		diagnosticLog.Error(logger.LogDiagnosticInteractorSetSolutionError, "error", err, "diagnostic_id", diagnosticID)

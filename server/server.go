@@ -57,22 +57,23 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 	errorHandler := middleware.NewErrorHandler(dependencies.MessagingCache)
 	app.Use(errorHandler.Handle())
 
-	handler := handlers.New(
-		dependencies.Interactor,
-		dependencies.MessageInteractor,
-		dependencies.BranchInteractor,
-		dependencies.BrandInteractor,
-		dependencies.LocationInteractor,
-		dependencies.ServiceInteractor,
-		dependencies.FranchiseInteractor,
-		dependencies.MotorcycleInteractor,
-		dependencies.EvidenceInteractor,   // HU16-19
-		dependencies.DiagnosticInteractor, // HU11-14
-		dependencies.FirebaseClient,
-		dependencies.MessagingCache,
-		dependencies.IDEncoder,
-		dependencies.ResponseHandler,
-	)
+	handler := handlers.New(handlers.HandlerConfig{
+		PersonInteractor:           dependencies.Interactor,
+		MessageInteractor:          dependencies.MessageInteractor,
+		BranchInteractor:           dependencies.BranchInteractor,
+		BrandInteractor:            dependencies.BrandInteractor,
+		LocationInteractor:         dependencies.LocationInteractor,
+		ServiceInteractor:          dependencies.ServiceInteractor,
+		FranchiseInteractor:        dependencies.FranchiseInteractor,
+		MotorcycleInteractor:       dependencies.MotorcycleInteractor,
+		EvidenceInteractor:         dependencies.EvidenceInteractor,
+		DiagnosticInteractor:       dependencies.DiagnosticInteractor,
+		CompletedServiceInteractor: dependencies.CompletedServiceInteractor,
+		FirebaseClient:             dependencies.FirebaseClient,
+		MessagingCache:             dependencies.MessagingCache,
+		IDEncoder:                  dependencies.IDEncoder,
+		ResponseHandler:            dependencies.ResponseHandler,
+	})
 
 	validators, err := schema.NewValidator(&schema.DefaultFileReader{})
 	if err != nil {
@@ -94,6 +95,10 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 
 	public := app.Group("motogo/api/v1")
 	{
+		// Rate limiter for auth endpoints (brute force / abuse protection)
+		// 0.2 rps = 1 request every 5 seconds per IP, burst allows 5 quick requests
+		authLimiter := middleware.NewRateLimiter(0.2, 5)
+
 		// === PERSONS ENDPOINTS ===
 		// POST /persons - Crear nueva persona (registro)
 		// Devuelve: 201 Created + Location header + HATEOAS links
@@ -104,23 +109,23 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		// public.GET("/persons/:id", handler.GetPersonByID())
 
 		// === AUTH ENDPOINTS ===
-		// POST /auth/login - Autenticar usuario
-		public.POST("/auth/login", handler.Login())
+		// POST /auth/login - Autenticar usuario (rate-limited)
+		public.POST("/auth/login", authLimiter.Limit(), handler.Login())
 
 		// POST /auth/refresh - Refrescar access token
 		public.POST("/auth/refresh", handler.RefreshToken())
 
-		// POST /auth/resend-verification - Reenviar email de verificación
-		public.POST("/auth/resend-verification", validator.WithValidateResendVerification(), handler.ResendVerificationEmail())
+		// POST /auth/resend-verification - Reenviar email de verificación (rate-limited)
+		public.POST("/auth/resend-verification", authLimiter.Limit(), validator.WithValidateResendVerification(), handler.ResendVerificationEmail())
 
-		// POST /auth/password-reset - Solicitar recuperación de contraseña
-		public.POST("/auth/password-reset", validator.WithValidatePasswordReset(), handler.RequestPasswordReset())
+		// POST /auth/password-reset - Solicitar recuperación de contraseña (rate-limited)
+		public.POST("/auth/password-reset", authLimiter.Limit(), validator.WithValidatePasswordReset(), handler.RequestPasswordReset())
 
-		// POST /auth/verify-email - Verificar email mediante token proxy (no expone Keycloak)
-		public.POST("/auth/verify-email", handler.VerifyEmailByToken())
+		// POST /auth/verify-email - Verificar email mediante token proxy (rate-limited)
+		public.POST("/auth/verify-email", authLimiter.Limit(), handler.VerifyEmailByToken())
 
-		// POST /auth/password/reset - Actualizar contraseña con token del email de recuperación
-		public.POST("/auth/password/reset", handler.ResetPasswordWithToken())
+		// POST /auth/password/reset - Actualizar contraseña con token del email de recuperación (rate-limited)
+		public.POST("/auth/password/reset", authLimiter.Limit(), handler.ResetPasswordWithToken())
 
 		// GET /persons/:id/contact - Obtener info de contacto pública (HU55)
 		public.GET("/persons/:id/contact", handler.GetPublicContact())
@@ -170,10 +175,10 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		protected.GET("/persons/me", handler.GetAuthenticatedUser())
 
 		// PUT /persons/me - Actualizar perfil del usuario autenticado (HU52)
-		protected.PUT("/persons/me", handler.UpdateProfile())
+		protected.PUT("/persons/me", validator.WithValidateUpdateProfile(), handler.UpdateProfile())
 
 		// PUT /persons/me/password - Cambiar contraseña del usuario autenticado (HU57)
-		protected.PUT("/persons/me/password", handler.ChangePassword())
+		protected.PUT("/persons/me/password", validator.WithValidateChangePassword(), handler.ChangePassword())
 
 		// DELETE /persons/me - Eliminar cuenta del usuario autenticado (HU53)
 		protected.DELETE("/persons/me", handler.DeleteSelf())
@@ -230,6 +235,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		// PUT /motorcycles/:id - Update motorcycle (HU44, solo propietario)
 		protected.PUT("/motorcycles/:id",
 			middleware.RequireRole(domain.RoleUser),
+			validator.WithValidateUpdateMotorcycle(),
 			handler.UpdateMotorcycle(),
 		)
 
@@ -293,6 +299,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		// PUT /motorcycles/:id/evidence/:evidenceId - Update evidence (HU17)
 		protected.PUT("/motorcycles/:id/evidence/:evidenceId",
 			middleware.RequireRole(domain.RoleUser),
+			validator.WithValidateEvidence(),
 			handler.UpdateEvidence(),
 		)
 
@@ -308,6 +315,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		// POST /motorcycles/:id/diagnostics - Create diagnostic (HU11)
 		protected.POST("/motorcycles/:id/diagnostics",
 			middleware.RequireRole(domain.RoleUser),
+			validator.WithValidateDiagnostic(),
 			handler.CreateDiagnostic(),
 		)
 
@@ -326,6 +334,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		// PUT /motorcycles/:id/diagnostics/:diagnosticId - Update diagnostic (HU12)
 		protected.PUT("/motorcycles/:id/diagnostics/:diagnosticId",
 			middleware.RequireRole(domain.RoleUser),
+			validator.WithValidateUpdateDiagnostic(),
 			handler.UpdateDiagnostic(),
 		)
 
@@ -338,7 +347,53 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		// PATCH /diagnostics/:id/solution - Set diagnostic solution (representative)
 		protected.PATCH("/diagnostics/:id/solution",
 			middleware.RequireRole(domain.RoleRepresentative),
+			validator.WithValidateDiagnosticSolution(),
 			handler.SetDiagnosticSolution(),
+		)
+
+		// === COMPLETED SERVICE ENDPOINTS (HU64) ===
+		// POST /completed-services - Register a performed service (representative)
+		protected.POST("/completed-services",
+			middleware.RequireRole(domain.RoleRepresentative),
+			validator.WithValidateCompletedService(),
+			handler.RegisterCompletedService(),
+		)
+
+		// GET /branches/:id/completed-services - List completed services for a branch
+		protected.GET("/branches/:id/completed-services",
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.GetCompletedServicesByBranch(),
+		)
+
+		// GET /motorcycles/:id/completed-services - List completed services for a motorcycle (owner)
+		protected.GET("/motorcycles/:id/completed-services",
+			middleware.RequireRole(domain.RoleUser),
+			handler.GetCompletedServicesByMotorcycle(),
+		)
+
+		// GET /completed-services/statuses - Get all valid statuses (HU15)
+		protected.GET("/completed-services/statuses",
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.GetServiceStatuses(),
+		)
+
+		// DELETE /completed-services/:id - Delete a completed service (HU65)
+		protected.DELETE("/completed-services/:id",
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.DeleteCompletedService(),
+		)
+
+		// GET /completed-services/:id/transitions - Get status history (HU73)
+		protected.GET("/completed-services/:id/transitions",
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.GetCompletedServiceTransitions(),
+		)
+
+		// PATCH /completed-services/:id/status - Update service status (HU74)
+		protected.PATCH("/completed-services/:id/status",
+			middleware.RequireRole(domain.RoleRepresentative),
+			validator.WithValidateUpdateStatus(),
+			handler.UpdateCompletedServiceStatus(),
 		)
 
 		// === DIAGNOSTIC PERMISSION ENDPOINTS ===
@@ -347,6 +402,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		// POST /motorcycles/:id/permissions - Grant permission to a branch
 		protected.POST("/motorcycles/:id/permissions",
 			middleware.RequireRole(domain.RoleUser),
+			validator.WithValidateDiagnosticPermission(),
 			handler.GrantDiagnosticPermission(),
 		)
 
@@ -365,6 +421,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		// POST /branches/:id/services - Asociar servicios a una sede (solo REPRESENTANTE)
 		protected.POST("/branches/:id/services",
 			middleware.RequireRole(domain.RoleRepresentative),
+			validator.WithValidateBranchServices(),
 			handler.AssociateBranchServices(),
 		)
 
@@ -409,6 +466,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		// PUT /branches/:id/schedules - Modificar horario de una sede (HU31)
 		protected.PUT("/branches/:id/schedules",
 			middleware.RequireRole(domain.RoleRepresentative),
+			validator.WithValidateUpdateSchedule(),
 			handler.UpdateBranchSchedule(dependencies.ScheduleInteractor),
 		)
 
@@ -447,6 +505,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		// PUT /schedule-details/:id - Modificar franja horaria (HU7)
 		protected.PUT("/schedule-details/:id",
 			middleware.RequireRole(domain.RoleRepresentative),
+			validator.WithValidateUpdateScheduleDetail(),
 			handler.UpdateScheduleDetail(dependencies.ScheduleDetailInteractor),
 		)
 
@@ -534,6 +593,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		// POST /franchises/:id/branches - Agregar sede a franquicia
 		protected.POST("/franchises/:id/branches",
 			middleware.RequireRole(domain.RoleRepresentative),
+			validator.WithValidateFranchiseBranch(),
 			handler.AddBranchToFranchise(dependencies.FranchiseInteractor),
 		)
 

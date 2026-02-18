@@ -327,7 +327,7 @@ func (h *handler) DeleteFranchise(franchiseInteractor *interactor.FranchiseInter
 }
 
 // BuildFranchiseLinks generates HATEOAS links for a franchise
-func BuildFranchiseLinks(baseURL string, franchiseEncodedID string) []Link {
+func BuildFranchiseLinks(baseURL, franchiseEncodedID string) []Link {
 	resourceURL := BuildResourceURL(baseURL, "franchises", franchiseEncodedID)
 	collectionURL := BuildCollectionURL(baseURL, "franchises")
 

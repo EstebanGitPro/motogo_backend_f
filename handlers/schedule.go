@@ -1,13 +1,20 @@
 package handlers
 
-import "github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
+import (
+	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
+	"github.com/EstebanGitPro/motogo-backend/platform/constants"
+)
+
+const (
+	pathSchedules    = "/schedules"
+	pathDetails      = "/details"
+	pathScheduleDays = "/schedules/days"
+	relDaysCatalog   = "days-catalog"
+)
 
 // ============================================
 // Schedule DTOs (HU30-35, HU10)
 // ============================================
-
-// Date format for API responses
-const dateFormat = "2006-01-02"
 
 // ScheduleResponse represents a schedule in API responses (HATEOAS)
 type ScheduleResponse struct {
@@ -34,10 +41,10 @@ func NewScheduleResponse(schedule *domain.BranchSchedule, encodedID, encodedBran
 
 // formatScheduleDates formats StartDate and EndDate for API response
 func formatScheduleDates(schedule *domain.BranchSchedule) (string, *string) {
-	startDate := schedule.StartDate.Format(dateFormat)
+	startDate := schedule.StartDate.Format(constants.DateFormat)
 	var endDate *string
 	if schedule.EndDate != nil {
-		formatted := schedule.EndDate.Format(dateFormat)
+		formatted := schedule.EndDate.Format(constants.DateFormat)
 		endDate = &formatted
 	}
 	return startDate, endDate
@@ -60,7 +67,7 @@ func NewDaysCatalogResponse(days []domain.DayCatalogEntry, baseURL string) DaysC
 	return DaysCatalogResponse{
 		Days: days,
 		Links: []Link{
-			{Rel: "self", Href: baseURL + "/schedules/days", Method: "GET"},
+			{Rel: "self", Href: baseURL + pathScheduleDays, Method: "GET"},
 		},
 	}
 }
@@ -74,7 +81,7 @@ type ScheduleDeleteResponse struct {
 func NewScheduleDeleteResponse(baseURL, encodedBranchID string) ScheduleDeleteResponse {
 	return ScheduleDeleteResponse{
 		Links: []Link{
-			{Rel: "create", Href: BuildResourceURL(baseURL, "branches", encodedBranchID) + "/schedules", Method: "POST"},
+			{Rel: "create", Href: BuildResourceURL(baseURL, "branches", encodedBranchID) + pathSchedules, Method: "POST"},
 			{Rel: "branch", Href: BuildResourceURL(baseURL, "branches", encodedBranchID), Method: "GET"},
 		},
 	}

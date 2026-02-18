@@ -13,26 +13,5 @@ func (r *repository) GetByType(ctx context.Context, msgType string) ([]domain.Me
 	}
 	defer func() { _ = rows.Close() }() // Rows close error intentionally ignored
 
-	var messages []domain.Message
-	for rows.Next() {
-		var m domain.Message
-		err := rows.Scan(
-			&m.ID,
-			&m.Code,
-			&m.Type,
-			&m.Category,
-			&m.Module,
-			&m.Title,
-			&m.Content,
-			&m.Active,
-			&m.CreatedAt,
-			&m.UpdatedAt,
-		)
-		if err != nil {
-			return nil, err
-		}
-		messages = append(messages, m)
-	}
-
-	return messages, rows.Err()
+	return scanMessages(rows)
 }

@@ -14,7 +14,7 @@ var motorcycleLog logger.Logger = logger.NewSlogLogger()
 type MotorcycleServiceImpl struct {
 	motorcycleRepo output.MotorcycleRepository
 	diagPermRepo   output.DiagnosticPermissionRepository
-	storageClient  output.StorageClient // Optional: Firebase Storage for image deletion
+	storageClient  output.StorageFileDeleter // Optional: Firebase Storage for image deletion
 }
 
 // NewMotorcycleService creates a new MotorcycleService instance
@@ -29,7 +29,7 @@ func NewMotorcycleService(
 }
 
 // WithStorageClient sets the storage client for image deletion (optional)
-func (s *MotorcycleServiceImpl) WithStorageClient(client output.StorageClient) {
+func (s *MotorcycleServiceImpl) WithStorageClient(client output.StorageFileDeleter) {
 	s.storageClient = client
 }
 
@@ -115,7 +115,7 @@ func (s *MotorcycleServiceImpl) GetByLicensePlate(ctx context.Context, licensePl
 
 // ApplyUpdates merges partial updates into an existing motorcycle (HU44)
 // Validates new reference_id if changed
-func (s *MotorcycleServiceImpl) ApplyUpdates(existing *domain.Motorcycle, updates *domain.Motorcycle) error {
+func (s *MotorcycleServiceImpl) ApplyUpdates(existing, updates *domain.Motorcycle) error {
 	// Validate new reference_id if changed
 	if updates.ReferenceID != "" && updates.ReferenceID != existing.ReferenceID {
 		exists, err := s.motorcycleRepo.ValidateReferenceExists(context.Background(), updates.ReferenceID)

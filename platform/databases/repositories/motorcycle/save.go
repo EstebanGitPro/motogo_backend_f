@@ -26,8 +26,8 @@ func (r *repository) Save(ctx context.Context, tx output.Tx, motorcycle *domain.
 		return domain.ErrMotorcycleCannotSave
 	}
 
-	//TODO: Remove this when Release 11 is implemented
-	// Convert ReferenceID to sql.NullString (optional until Release 11)
+	// NOTE: ReferenceID uses sql.NullString to support optional values.
+	// Convert ReferenceID to sql.NullString
 	var referenceID sql.NullString
 	if motorcycle.ReferenceID != "" {
 		referenceID = sql.NullString{String: motorcycle.ReferenceID, Valid: true}

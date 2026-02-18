@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// MockGeocodingClient is a mock implementation of geocoding.Client
+// MockGeocodingClient is a mock implementation of geocoding.Geocoder
 type MockGeocodingClient struct {
 	mock.Mock
 }

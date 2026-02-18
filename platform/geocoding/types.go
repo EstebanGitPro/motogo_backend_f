@@ -2,9 +2,9 @@ package geocoding
 
 import "context"
 
-// Client defines the interface for geocoding operations
+// Geocoder defines the interface for geocoding operations
 // All geocoding providers (Google, Mapbox) must implement this interface
-type Client interface {
+type Geocoder interface {
 	// Geocode converts address components to geographic coordinates
 	// Returns nil, nil if no results found (not an error)
 	// Returns nil, error if there was an API/network error

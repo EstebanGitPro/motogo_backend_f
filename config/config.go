@@ -13,6 +13,8 @@ import (
 
 var log = logger.SlogLogger{}
 
+const localConfigFile = "local-config.json"
+
 type Config struct {
 	Environment  string          `json:"environment"`
 	Database     Database        `json:"database"`
@@ -101,7 +103,7 @@ func LoadConfig() (*Config, error) {
 	case "railway":
 		configFile = "railway-config.json"
 	default:
-		configFile = "local-config.json"
+		configFile = localConfigFile
 	}
 
 	configPath := filepath.Join(root, "config", configFile)
@@ -109,8 +111,8 @@ func LoadConfig() (*Config, error) {
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		slog.Warn("Config file not found, falling back to default",
 			slog.String("requested_file", configFile),
-			slog.String("fallback_file", "local-config.json"))
-		configPath = filepath.Join(root, "config", "local-config.json")
+			slog.String("fallback_file", localConfigFile))
+		configPath = filepath.Join(root, "config", localConfigFile)
 	}
 
 	file, err := os.ReadFile(configPath)

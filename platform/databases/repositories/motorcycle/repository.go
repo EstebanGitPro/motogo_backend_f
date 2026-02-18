@@ -15,8 +15,8 @@ const (
 		SELECT m.id, m.license_plate, m.reference_id, m.owner_id, m.year, m.current_mileage, m.owner_notes, m.profile_image_url,
 		       r.id as ref_id, r.brand_id, b.name as brand_name, r.model, r.category, r.engine_displacement
 		FROM motorcycles m
-		INNER JOIN motorcycle_references r ON m.reference_id = r.id
-		INNER JOIN brands b ON r.brand_id = b.id
+		LEFT JOIN motorcycle_references r ON m.reference_id = r.id
+		LEFT JOIN brands b ON r.brand_id = b.id
 		WHERE m.id = ? AND m.deleted_at IS NULL
 	`
 
@@ -24,8 +24,8 @@ const (
 		SELECT m.id, m.license_plate, m.reference_id, m.owner_id, m.year, m.current_mileage, m.owner_notes, m.profile_image_url,
 		       r.id as ref_id, r.brand_id, b.name as brand_name, r.model, r.category, r.engine_displacement
 		FROM motorcycles m
-		INNER JOIN motorcycle_references r ON m.reference_id = r.id
-		INNER JOIN brands b ON r.brand_id = b.id
+		LEFT JOIN motorcycle_references r ON m.reference_id = r.id
+		LEFT JOIN brands b ON r.brand_id = b.id
 		WHERE m.owner_id = ? AND m.deleted_at IS NULL
 		ORDER BY m.created_at DESC
 	`
@@ -34,8 +34,8 @@ const (
 		SELECT m.id, m.license_plate, m.reference_id, m.owner_id, m.year, m.current_mileage, m.owner_notes, m.profile_image_url,
 		       r.id as ref_id, r.brand_id, b.name as brand_name, r.model, r.category, r.engine_displacement
 		FROM motorcycles m
-		INNER JOIN motorcycle_references r ON m.reference_id = r.id
-		INNER JOIN brands b ON r.brand_id = b.id
+		LEFT JOIN motorcycle_references r ON m.reference_id = r.id
+		LEFT JOIN brands b ON r.brand_id = b.id
 		WHERE m.license_plate = ? AND m.deleted_at IS NULL
 	`
 

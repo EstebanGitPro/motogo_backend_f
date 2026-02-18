@@ -164,8 +164,8 @@ func (h *handler) GetBranchServices() gin.HandlerFunc {
 		// Build HATEOAS links
 		baseURL := GetBaseURL(c)
 		links := []Link{
-			{Rel: "self", Href: baseURL + "/branches/" + branchID + "/services", Method: "GET"},
-			{Rel: "branch", Href: baseURL + "/branches/" + branchID, Method: "GET"},
+			{Rel: "self", Href: baseURL + pathBranches + branchID + pathServices, Method: "GET"},
+			{Rel: "branch", Href: baseURL + pathBranches + branchID, Method: "GET"},
 		}
 
 		// Build response with encoded service IDs
@@ -237,15 +237,11 @@ func (h *handler) AssociateBranchServices() gin.HandlerFunc {
 		}
 
 		// Decode all service IDs
-		decodedServiceIDs := make([]string, len(req.ServiceIDs))
-		for i, id := range req.ServiceIDs {
-			decoded, err := h.IDEncoder.Decode(id)
-			if err != nil {
-				log.Warn(logger.LogBranchServicesControllerInvalidSvcID, "id", id)
-				h.Response.Error(c, domain.MsgServiceNotFound)
-				return
-			}
-			decodedServiceIDs[i] = decoded
+		decodedServiceIDs, err := h.decodeServiceIDs(req.ServiceIDs)
+		if err != nil {
+			log.Warn(logger.LogBranchServicesControllerInvalidSvcID, "error", err)
+			h.Response.Error(c, domain.MsgServiceNotFound)
+			return
 		}
 
 		// Validate service IDs exist
@@ -255,25 +251,8 @@ func (h *handler) AssociateBranchServices() gin.HandlerFunc {
 			return
 		}
 
-		// Start transaction and associate
-		tx, err := h.ServiceInteractor.BeginTx(c.Request.Context())
-		if err != nil {
-			log.Error(logger.LogBranchServicesControllerTxError, "error", err)
-			h.Response.Error(c, domain.MsgServerError)
-			return
-		}
-
-		err = h.ServiceInteractor.AssociateBranchServices(c.Request.Context(), tx, decodedBranchID, decodedServiceIDs)
-		if err != nil {
-			_ = tx.Rollback()
-			log.Error(logger.LogBranchServicesControllerAssociateErr, "error", err)
-			h.Response.Error(c, domain.MsgServerError)
-			return
-		}
-
-		if err := tx.Commit(); err != nil {
-			log.Error(logger.LogBranchServicesControllerCommitError, "error", err)
-			h.Response.Error(c, domain.MsgServerError)
+		// Execute association in a transaction
+		if h.associateServicesInTx(c, log, decodedBranchID, decodedServiceIDs) != nil {
 			return
 		}
 
@@ -282,13 +261,39 @@ func (h *handler) AssociateBranchServices() gin.HandlerFunc {
 		response := AssociateBranchServicesResponse{
 			AddedCount: len(decodedServiceIDs),
 			Links: []Link{
-				{Rel: "branch_services", Href: baseURL + "/branches/" + branchID + "/services", Method: "GET"},
+				{Rel: "branch_services", Href: baseURL + pathBranches + branchID + pathServices, Method: "GET"},
 			},
 		}
 
 		log.Success(logger.LogBranchServicesControllerAssociateOK, "branch_id", branchID, "added_count", len(decodedServiceIDs))
 		h.Response.SuccessWithData(c, domain.MsgServiceAssociated, response)
 	}
+}
+
+// associateServicesInTx performs the service association inside a transaction.
+// Responds with an error and returns a non-nil error on failure.
+func (h *handler) associateServicesInTx(c *gin.Context, log logger.Logger, branchID string, serviceIDs []string) error {
+	tx, err := h.ServiceInteractor.BeginTx(c.Request.Context())
+	if err != nil {
+		log.Error(logger.LogBranchServicesControllerTxError, "error", err)
+		h.Response.Error(c, domain.MsgServerError)
+		return err
+	}
+
+	if err := h.ServiceInteractor.AssociateBranchServices(c.Request.Context(), tx, branchID, serviceIDs); err != nil {
+		_ = tx.Rollback()
+		log.Error(logger.LogBranchServicesControllerAssociateErr, "error", err)
+		h.Response.Error(c, domain.MsgServerError)
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		log.Error(logger.LogBranchServicesControllerCommitError, "error", err)
+		h.Response.Error(c, domain.MsgServerError)
+		return err
+	}
+
+	return nil
 }
 
 // DissociateBranchService handles DELETE /branches/:id/services/:serviceId - removes a service from a branch
@@ -409,46 +414,17 @@ func (h *handler) UpdateService() gin.HandlerFunc {
 			return
 		}
 
-		// Verify service exists
-		existingService, err := h.ServiceInteractor.GetServiceByID(c.Request.Context(), decodedID)
+		// Fetch, update, and persist
+		existingService, err := h.fetchAndUpdateService(c, log, decodedID, serviceID, req)
 		if err != nil {
-			if errors.Is(err, domain.ErrServiceNotFound) {
-				log.Warn(logger.LogServiceControllerUpdateError, "service_id", serviceID, "error", "not found")
-				h.Response.Error(c, domain.MsgServiceResNotFound)
-				return
-			}
-			log.Error(logger.LogServiceControllerUpdateError, "error", err)
-			h.Response.Error(c, domain.MsgServerError)
-			return
-		}
-
-		// Update service fields
-		existingService.Name = req.Name
-		existingService.Description = req.Description
-		existingService.ServiceType = domain.ServiceType(req.ServiceType)
-
-		// Update activation status if provided
-		if req.IsActive != nil {
-			existingService.IsActive = *req.IsActive
-		}
-
-		// Perform update
-		if err := h.ServiceInteractor.UpdateService(c.Request.Context(), *existingService); err != nil {
-			if errors.Is(err, domain.ErrServiceNotFound) {
-				log.Warn(logger.LogServiceControllerUpdateError, "service_id", serviceID, "error", "update failed - not found")
-				h.Response.Error(c, domain.MsgServiceResNotFound)
-				return
-			}
-			log.Error(logger.LogServiceControllerUpdateError, "error", err)
-			h.Response.Error(c, domain.MsgServerError)
 			return
 		}
 
 		// Build HATEOAS links
 		baseURL := GetBaseURL(c)
 		links := []Link{
-			{Rel: "self", Href: baseURL + "/admin/services/" + serviceID, Method: "PUT"},
-			{Rel: "services", Href: baseURL + "/services", Method: "GET"},
+			{Rel: "self", Href: baseURL + "/admin" + pathServices + "/" + serviceID, Method: "PUT"},
+			{Rel: "services", Href: baseURL + pathServices, Method: "GET"},
 		}
 
 		// Build response with encoded ID
@@ -462,4 +438,40 @@ func (h *handler) UpdateService() gin.HandlerFunc {
 		log.Success(logger.LogServiceControllerUpdateOK, "service_id", serviceID)
 		h.Response.SuccessWithData(c, domain.MsgServiceUpdated, response)
 	}
+}
+
+// fetchAndUpdateService retrieves a service, applies request changes, and persists the update.
+// Responds with the appropriate error and returns a non-nil error on failure.
+func (h *handler) fetchAndUpdateService(c *gin.Context, log logger.Logger, decodedID, serviceID string, req UpdateServiceRequest) (*domain.Service, error) {
+	existingService, err := h.ServiceInteractor.GetServiceByID(c.Request.Context(), decodedID)
+	if err != nil {
+		h.handleServiceError(c, log, err, serviceID, "not found")
+		return nil, err
+	}
+
+	// Apply updates
+	existingService.Name = req.Name
+	existingService.Description = req.Description
+	existingService.ServiceType = domain.ServiceType(req.ServiceType)
+	if req.IsActive != nil {
+		existingService.IsActive = *req.IsActive
+	}
+
+	if err := h.ServiceInteractor.UpdateService(c.Request.Context(), *existingService); err != nil {
+		h.handleServiceError(c, log, err, serviceID, "update failed - not found")
+		return nil, err
+	}
+
+	return existingService, nil
+}
+
+// handleServiceError responds with the appropriate error for service operations.
+func (h *handler) handleServiceError(c *gin.Context, log logger.Logger, err error, serviceID, warnDetail string) {
+	if errors.Is(err, domain.ErrServiceNotFound) {
+		log.Warn(logger.LogServiceControllerUpdateError, "service_id", serviceID, "error", warnDetail)
+		h.Response.Error(c, domain.MsgServiceResNotFound)
+		return
+	}
+	log.Error(logger.LogServiceControllerUpdateError, "error", err)
+	h.Response.Error(c, domain.MsgServerError)
 }

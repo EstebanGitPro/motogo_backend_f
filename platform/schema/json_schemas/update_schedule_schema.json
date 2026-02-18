@@ -1,48 +1,24 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Update Schedule Schema",
-  "description": "Validates schedule update request for HU31",
+  "title": "Update Schedule",
+  "description": "Schema for updating a branch schedule (HU31)",
   "type": "object",
   "properties": {
     "active": {
       "type": "boolean",
-      "description": "Whether the schedule is active"
+      "description": "Whether the schedule is active — BOOLEAN"
     },
-    "details": {
-      "type": "array",
-      "description": "Array of schedule time slots",
-      "items": {
-        "type": "object",
-        "required": ["entry_type"],
-        "properties": {
-          "entry_type": {
-            "type": "string",
-            "enum": ["REGULAR", "EXCEPTION"]
-          },
-          "day_of_week": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 7
-          },
-          "exception_date": {
-            "type": "string",
-            "format": "date"
-          },
-          "opening_time": {
-            "type": "string",
-            "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)$"
-          },
-          "closing_time": {
-            "type": "string",
-            "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)$"
-          },
-          "is_closed": {
-            "type": "boolean"
-          }
-        }
-      },
-      "minItems": 0,
-      "maxItems": 21
+    "start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Schedule start date YYYY-MM-DD — DATE"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Schedule end date YYYY-MM-DD (null=indefinite) — DATE"
     }
-  }
+  },
+  "minProperties": 1,
+  "additionalProperties": false
 }

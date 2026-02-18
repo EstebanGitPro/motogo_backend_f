@@ -51,7 +51,7 @@ type GoogleMapsError struct {
 }
 
 // NewGoogleMapsClient creates a new Google Maps geocoding client
-func NewGoogleMapsClient(apiKey, baseURL, region string, timeout time.Duration, log logger.Logger) Client {
+func NewGoogleMapsClient(apiKey, baseURL, region string, timeout time.Duration, log logger.Logger) Geocoder {
 	return &googleMapsClient{
 		apiKey:     apiKey,
 		baseURL:    baseURL,

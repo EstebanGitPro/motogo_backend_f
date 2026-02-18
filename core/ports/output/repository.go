@@ -2,6 +2,7 @@ package output
 
 import (
 	"context"
+	"time"
 
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 )
@@ -72,7 +73,7 @@ type BranchRepository interface {
 	ValidateBrands(ctx context.Context, brands []string) error
 
 	// GetBranchesNearby retrieves branches within radius of given coordinates (HU89)
-	GetBranchesNearby(ctx context.Context, lat, lng, radiusKm float64, establishmentType string, latMin, latMax, lngMin, lngMax float64, brandID, displacementRange string) ([]domain.NearbyBranch, error)
+	GetBranchesNearby(ctx context.Context, params domain.NearbySearchParams) ([]domain.NearbyBranch, error)
 }
 
 // BrandRepository interface for Brand catalog operations
@@ -289,4 +290,30 @@ type DiagnosticPermissionRepository interface {
 	// Permission operations - read
 	GetByMotorcycleAndBranch(ctx context.Context, motorcycleID, branchID string) (*domain.DiagnosticPermission, error)
 	GetByMotorcycleID(ctx context.Context, motorcycleID string) ([]domain.DiagnosticPermission, error)
+}
+
+// CompletedServiceRepository interface for Completed Service operations (HU64)
+type CompletedServiceRepository interface {
+	BeginTx(ctx context.Context) (Tx, error)
+
+	// Completed service operations - write (HU64, HU65, HU74)
+	Save(ctx context.Context, tx Tx, service *domain.CompletedService) error
+	SaveItems(ctx context.Context, tx Tx, items []domain.CompletedServiceItem) error
+	SaveStatusHistory(ctx context.Context, tx Tx, history *domain.ServiceStatusHistory) error
+	Delete(ctx context.Context, tx Tx, serviceID string) error
+	SoftDelete(ctx context.Context, tx Tx, serviceID string) error
+	UpdateStatus(ctx context.Context, tx Tx, serviceID string, status string, completionDate *time.Time) error
+
+	// Completed service operations - read (HU66, HU73)
+	GetByID(ctx context.Context, serviceID string) (*domain.CompletedService, error)
+	GetByMotorcycleID(ctx context.Context, motorcycleID string) ([]domain.CompletedService, error)
+	GetByBranchID(ctx context.Context, branchID string) ([]domain.CompletedService, error)
+	GetStatusHistory(ctx context.Context, serviceID string) ([]domain.ServiceStatusHistory, error)
+
+	// Items read
+	GetItemsByCompletedServiceID(ctx context.Context, completedServiceID string) ([]domain.CompletedServiceItem, error)
+
+	// Validation
+	ValidateBranchServices(ctx context.Context, branchID string, serviceIDs []string) error
+	HasActiveService(ctx context.Context, branchID, motorcycleID string) (bool, error)
 }

@@ -91,7 +91,7 @@ func (h handler) RegisterPerson() func(c *gin.Context) {
 func (h handler) ResendVerificationEmail() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req ResendVerificationEmailRequest
-		if err := c.ShouldBindJSON(&req); err != nil {
+		if c.ShouldBindJSON(&req) != nil {
 			h.Response.Error(c, domain.MsgValBadFormat)
 			return
 		}
@@ -130,7 +130,7 @@ func (h handler) ResendVerificationEmail() gin.HandlerFunc {
 func (h handler) RequestPasswordReset() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req PasswordResetRequest
-		if err := c.ShouldBindJSON(&req); err != nil {
+		if c.ShouldBindJSON(&req) != nil {
 			h.Response.Error(c, domain.MsgValBadFormat)
 			return
 		}
@@ -528,34 +528,13 @@ func (h handler) UpdateProfile() gin.HandlerFunc {
 		log.Info(logger.LogUpdateProfileStart, "user_id", person.ID, "client_ip", c.ClientIP())
 
 		// Merge request with existing person data (only update provided fields)
-		updatedPerson := *person
-		if req.IdentityNumber != "" {
-			updatedPerson.IdentityNumber = req.IdentityNumber
-		}
-		if req.FirstName != "" {
-			updatedPerson.FirstName = req.FirstName
-		}
-		if req.LastName != "" {
-			updatedPerson.LastName = req.LastName
-		}
-		if req.SecondLastName != "" {
-			updatedPerson.SecondLastName = req.SecondLastName
-		}
-		if req.PhoneNumber != "" {
-			updatedPerson.PhoneNumber = req.PhoneNumber
-		}
+		updatedPerson := mergeProfileFields(*person, req)
 
 		// Call interactor to update profile
 		result, err := h.Interactor.UpdateProfile(c, updatedPerson)
 		if err != nil {
 			log.Error(logger.LogUpdateProfileError, "user_id", person.ID, "error", err, "client_ip", c.ClientIP())
-
-			switch {
-			case errors.Is(err, domain.ErrDuplicateUser):
-				h.Response.Error(c, domain.MsgUserDuplicate)
-			default:
-				h.Response.Error(c, domain.MsgPersonUpdated)
-			}
+			h.mapUpdateProfileError(c, err)
 			return
 		}
 
@@ -585,6 +564,36 @@ func (h handler) UpdateProfile() gin.HandlerFunc {
 
 		log.Success(logger.LogUpdateProfileSuccess, "user_id", encodedID, "client_ip", c.ClientIP())
 		h.Response.SuccessWithData(c, domain.MsgPersonUpdated, response)
+	}
+}
+
+// mergeProfileFields merges non-empty request fields into the existing person.
+func mergeProfileFields(person domain.Person, req UpdateProfileRequest) domain.Person {
+	if req.IdentityNumber != "" {
+		person.IdentityNumber = req.IdentityNumber
+	}
+	if req.FirstName != "" {
+		person.FirstName = req.FirstName
+	}
+	if req.LastName != "" {
+		person.LastName = req.LastName
+	}
+	if req.SecondLastName != "" {
+		person.SecondLastName = req.SecondLastName
+	}
+	if req.PhoneNumber != "" {
+		person.PhoneNumber = req.PhoneNumber
+	}
+	return person
+}
+
+// mapUpdateProfileError maps profile update errors to API responses.
+func (h handler) mapUpdateProfileError(c *gin.Context, err error) {
+	switch {
+	case errors.Is(err, domain.ErrDuplicateUser):
+		h.Response.Error(c, domain.MsgUserDuplicate)
+	default:
+		h.Response.Error(c, domain.MsgPersonUpdated)
 	}
 }
 
