@@ -93,6 +93,7 @@ func (s *SlogLogger) Debug(msg string, args ...any) {
 
 func (s *SlogLogger) Success(msg string, args ...any) {
 	enrichedArgs := s.enrichWithContext(args...)
+	enrichedArgs = append(enrichedArgs, "log_level", "SUCCESS")
 	slog.Info(msg, enrichedArgs...)
 }
 
@@ -103,10 +104,12 @@ func (s *SlogLogger) Warn(msg string, args ...any) {
 
 func (s *SlogLogger) Fatal(msg string, args ...any) {
 	enrichedArgs := s.enrichWithContext(args...)
+	enrichedArgs = append(enrichedArgs, "log_level", "FATAL")
 	slog.Error(msg, enrichedArgs...)
 }
 
 func (s *SlogLogger) Panic(msg string, args ...any) {
 	enrichedArgs := s.enrichWithContext(args...)
+	enrichedArgs = append(enrichedArgs, "log_level", "PANIC")
 	slog.Error(msg, enrichedArgs...)
 }
