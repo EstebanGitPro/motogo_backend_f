@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// MockClient is a mock implementation of geocoding.Client for testing
+// MockClient is a mock implementation of geocoding.Geocoder for testing
 type MockClient struct {
 	mock.Mock
 }
@@ -36,7 +36,7 @@ func TestNewFallbackClient_ReturnsClient(t *testing.T) {
 
 	// Assert
 	assert.NotNil(t, client)
-	assert.Implements(t, (*Client)(nil), client)
+	assert.Implements(t, (*Geocoder)(nil), client)
 }
 
 // ============================================

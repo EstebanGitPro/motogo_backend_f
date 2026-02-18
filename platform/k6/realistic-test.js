@@ -16,7 +16,7 @@ export const options = {
 
 const BASE_URL = 'http://host.docker.internal:8085/motogo/api/v1';
 
-export default function () {
+export default function realisticTest() {
   // Flujo realista de usuario
   
   // 1. Usuario visita homepage/mensajes
@@ -40,7 +40,7 @@ export default function () {
   });
   sleep(2); // Usuario lee el detalle
   
-  // TODO: Cuando tengas más endpoints, añadir:
+  // FUTURE: Cuando tengas más endpoints, añadir:
   // 4. Usuario intenta registrarse
   // const registerData = {
   //   identity_number: `TEST${Date.now()}`,

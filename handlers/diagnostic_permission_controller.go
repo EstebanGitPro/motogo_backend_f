@@ -86,14 +86,7 @@ func (h *handler) GrantDiagnosticPermission() gin.HandlerFunc {
 				"motorcycle_id", motorcycleID,
 				"branch_id", branchID,
 				"client_ip", c.ClientIP())
-			switch {
-			case errors.Is(err, domain.ErrMotorcycleNotFound):
-				h.Response.Error(c, domain.MsgMotorcycleNotFound)
-			case errors.Is(err, domain.ErrPermissionCannotSave):
-				h.Response.Error(c, domain.MsgPermissionCannotSave)
-			default:
-				h.Response.Error(c, domain.MsgServerError)
-			}
+			h.mapGrantPermissionError(c, err)
 			return
 		}
 
@@ -113,7 +106,11 @@ func (h *handler) GrantDiagnosticPermission() gin.HandlerFunc {
 			"branch_id", branchID,
 			"client_ip", c.ClientIP())
 
-		h.Response.SuccessWithData(c, domain.MsgPermissionGranted, response)
+		msgCode := domain.MsgPermissionGranted
+		if !active {
+			msgCode = domain.MsgPermissionRevoked
+		}
+		h.Response.SuccessWithData(c, msgCode, response)
 	}
 }
 
@@ -254,11 +251,7 @@ func (h *handler) ListDiagnosticPermissions() gin.HandlerFunc {
 				"error", err,
 				"motorcycle_id", motorcycleID,
 				"client_ip", c.ClientIP())
-			if errors.Is(err, domain.ErrMotorcycleNotFound) {
-				h.Response.Error(c, domain.MsgMotorcycleNotFound)
-			} else {
-				h.Response.Error(c, domain.MsgServerError)
-			}
+			h.mapListPermissionsError(c, err)
 			return
 		}
 
@@ -289,5 +282,30 @@ func (h *handler) ListDiagnosticPermissions() gin.HandlerFunc {
 		}
 
 		h.Response.SuccessWithData(c, domain.MsgPermissionsListed, result)
+	}
+}
+
+// ============================================
+// Diagnostic Permission Helpers (extracted to reduce cognitive complexity)
+// ============================================
+
+// mapGrantPermissionError maps permission grant errors to API responses.
+func (h *handler) mapGrantPermissionError(c *gin.Context, err error) {
+	switch {
+	case errors.Is(err, domain.ErrMotorcycleNotFound):
+		h.Response.Error(c, domain.MsgMotorcycleNotFound)
+	case errors.Is(err, domain.ErrPermissionCannotSave):
+		h.Response.Error(c, domain.MsgPermissionCannotSave)
+	default:
+		h.Response.Error(c, domain.MsgServerError)
+	}
+}
+
+// mapListPermissionsError maps permission list errors to API responses.
+func (h *handler) mapListPermissionsError(c *gin.Context, err error) {
+	if errors.Is(err, domain.ErrMotorcycleNotFound) {
+		h.Response.Error(c, domain.MsgMotorcycleNotFound)
+	} else {
+		h.Response.Error(c, domain.MsgServerError)
 	}
 }

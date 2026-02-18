@@ -5,6 +5,13 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/platform/constants"
 )
 
+const (
+	pathSchedules    = "/schedules"
+	pathDetails      = "/details"
+	pathScheduleDays = "/schedules/days"
+	relDaysCatalog   = "days-catalog"
+)
+
 // ============================================
 // Schedule DTOs (HU30-35, HU10)
 // ============================================
@@ -60,7 +67,7 @@ func NewDaysCatalogResponse(days []domain.DayCatalogEntry, baseURL string) DaysC
 	return DaysCatalogResponse{
 		Days: days,
 		Links: []Link{
-			{Rel: "self", Href: baseURL + "/schedules/days", Method: "GET"},
+			{Rel: "self", Href: baseURL + pathScheduleDays, Method: "GET"},
 		},
 	}
 }
@@ -74,7 +81,7 @@ type ScheduleDeleteResponse struct {
 func NewScheduleDeleteResponse(baseURL, encodedBranchID string) ScheduleDeleteResponse {
 	return ScheduleDeleteResponse{
 		Links: []Link{
-			{Rel: "create", Href: BuildResourceURL(baseURL, "branches", encodedBranchID) + "/schedules", Method: "POST"},
+			{Rel: "create", Href: BuildResourceURL(baseURL, "branches", encodedBranchID) + pathSchedules, Method: "POST"},
 			{Rel: "branch", Href: BuildResourceURL(baseURL, "branches", encodedBranchID), Method: "GET"},
 		},
 	}

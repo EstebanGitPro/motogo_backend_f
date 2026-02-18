@@ -41,30 +41,17 @@ func ToProfileImageResponse(motorcycleID string, imageURL *string) ProfileImageR
 
 // BuildProfileImageLinks builds HATEOAS links for profile image operations
 func BuildProfileImageLinks(baseURL, motorcycleID string, hasImage bool) []Link {
+	motorcycleURL := baseURL + "/motorcycles/" + motorcycleID
+	profileImageURL := motorcycleURL + "/profile-image"
+
 	links := []Link{
-		{
-			Href:   baseURL + "/motorcycles/" + motorcycleID + "/profile-image",
-			Rel:    "self",
-			Method: "GET",
-		},
-		{
-			Href:   baseURL + "/motorcycles/" + motorcycleID + "/profile-image",
-			Rel:    "update",
-			Method: "PUT",
-		},
-		{
-			Href:   baseURL + "/motorcycles/" + motorcycleID,
-			Rel:    "motorcycle",
-			Method: "GET",
-		},
+		{Href: profileImageURL, Rel: "self", Method: "GET"},
+		{Href: profileImageURL, Rel: "update", Method: "PUT"},
+		{Href: motorcycleURL, Rel: "motorcycle", Method: "GET"},
 	}
 
 	if hasImage {
-		links = append(links, Link{
-			Href:   baseURL + "/motorcycles/" + motorcycleID + "/profile-image",
-			Rel:    "delete",
-			Method: "DELETE",
-		})
+		links = append(links, Link{Href: profileImageURL, Rel: "delete", Method: "DELETE"})
 	}
 
 	return links

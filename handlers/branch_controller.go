@@ -90,18 +90,7 @@ func (h *handler) RegisterBranch() gin.HandlerFunc {
 				"error", err,
 				"branch_name", req.Name,
 				"client_ip", c.ClientIP())
-			switch {
-			case errors.Is(err, domain.ErrInvalidBranchType):
-				h.Response.Error(c, domain.MsgBranchInvalidType)
-			case errors.Is(err, domain.ErrDuplicateBranchName):
-				h.Response.Error(c, domain.MsgBranchDuplicateName)
-			case errors.Is(err, domain.ErrBrandNotFound):
-				h.Response.Error(c, domain.MsgBrandNotFound)
-			case errors.Is(err, domain.ErrDuplicateAddress):
-				h.Response.Error(c, domain.MsgDuplicateAddress)
-			default:
-				h.Response.Error(c, domain.MsgBranchCannotSave)
-			}
+			h.mapRegisterBranchError(c, err)
 			return
 		}
 
@@ -407,18 +396,7 @@ func (h *handler) UpdateBranch() gin.HandlerFunc {
 		updatedBranch, geocodingSucceeded, err := h.BranchInteractor.UpdateBranch(c.Request.Context(), branchID, branch, person.ID)
 		if err != nil {
 			log.Error(logger.LogBranchControllerUpdateError, "error", err, "branch_id", branchID)
-			switch {
-			case errors.Is(err, domain.ErrBranchNotFound):
-				h.Response.Error(c, domain.MsgBranchNotFound)
-			case errors.Is(err, domain.ErrForbidden):
-				h.Response.Error(c, domain.MsgForbidden)
-			case errors.Is(err, domain.ErrInvalidBranchType):
-				h.Response.Error(c, domain.MsgBranchInvalidType)
-			case errors.Is(err, domain.ErrBrandNotFound):
-				h.Response.Error(c, domain.MsgBrandNotFound)
-			default:
-				h.Response.Error(c, domain.MsgBranchCannotUpdate)
-			}
+			h.mapUpdateBranchError(c, err)
 			return
 		}
 
@@ -584,31 +562,7 @@ func (h *handler) GetNearbyBranches() gin.HandlerFunc {
 
 		// 6. Build response with encoded IDs and HATEOAS links
 		baseURL := GetBaseURL(c)
-		items := make([]NearbyBranchResponse, 0, len(branches))
-		for _, branch := range branches {
-			encodedID, err := h.EncodeID(branch.ID)
-			if err != nil {
-				log.Warn(logger.LogIDEncodeError, "branch_id", branch.ID, "error", err)
-				continue
-			}
-			resp := NewNearbyBranchResponse(branch, encodedID, baseURL)
-
-			// Encode brand IDs
-			if len(branch.Brands) > 0 {
-				encodedBrands := make([]string, 0, len(branch.Brands))
-				for _, brandID := range branch.Brands {
-					encodedBrand, err := h.EncodeID(brandID)
-					if err != nil {
-						log.Warn(logger.LogIDEncodeError, "brand_id", brandID, "error", err)
-						continue
-					}
-					encodedBrands = append(encodedBrands, encodedBrand)
-				}
-				resp.Brands = encodedBrands
-			}
-
-			items = append(items, resp)
-		}
+		items := h.buildNearbyBranchItems(branches, baseURL, log)
 
 		// 7. Build collection response
 		response := NearbyBranchesResponse{
@@ -811,6 +765,68 @@ func (h *handler) encodeBranchResponseIDs(response *BranchResponse, branch *doma
 			response.Location.CityID = encodedCityID
 		}
 	}
+}
+
+// mapRegisterBranchError maps RegisterBranch interactor errors to response messages.
+func (h *handler) mapRegisterBranchError(c *gin.Context, err error) {
+	switch {
+	case errors.Is(err, domain.ErrInvalidBranchType):
+		h.Response.Error(c, domain.MsgBranchInvalidType)
+	case errors.Is(err, domain.ErrDuplicateBranchName):
+		h.Response.Error(c, domain.MsgBranchDuplicateName)
+	case errors.Is(err, domain.ErrBrandNotFound):
+		h.Response.Error(c, domain.MsgBrandNotFound)
+	case errors.Is(err, domain.ErrDuplicateAddress):
+		h.Response.Error(c, domain.MsgDuplicateAddress)
+	default:
+		h.Response.Error(c, domain.MsgBranchCannotSave)
+	}
+}
+
+// mapUpdateBranchError maps UpdateBranch interactor errors to response messages.
+func (h *handler) mapUpdateBranchError(c *gin.Context, err error) {
+	switch {
+	case errors.Is(err, domain.ErrBranchNotFound):
+		h.Response.Error(c, domain.MsgBranchNotFound)
+	case errors.Is(err, domain.ErrForbidden):
+		h.Response.Error(c, domain.MsgForbidden)
+	case errors.Is(err, domain.ErrInvalidBranchType):
+		h.Response.Error(c, domain.MsgBranchInvalidType)
+	case errors.Is(err, domain.ErrBrandNotFound):
+		h.Response.Error(c, domain.MsgBrandNotFound)
+	default:
+		h.Response.Error(c, domain.MsgBranchCannotUpdate)
+	}
+}
+
+// buildNearbyBranchItems encodes all IDs for nearby branches and builds response items.
+func (h *handler) buildNearbyBranchItems(branches []domain.NearbyBranch, baseURL string, log logger.Logger) []NearbyBranchResponse {
+	items := make([]NearbyBranchResponse, 0, len(branches))
+	for _, branch := range branches {
+		encodedID, err := h.EncodeID(branch.ID)
+		if err != nil {
+			log.Warn(logger.LogIDEncodeError, "branch_id", branch.ID, "error", err)
+			continue
+		}
+		resp := NewNearbyBranchResponse(branch, encodedID, baseURL)
+
+		// Encode brand IDs
+		if len(branch.Brands) > 0 {
+			encodedBrands := make([]string, 0, len(branch.Brands))
+			for _, brandID := range branch.Brands {
+				encodedBrand, err := h.EncodeID(brandID)
+				if err != nil {
+					log.Warn(logger.LogIDEncodeError, "brand_id", brandID, "error", err)
+					continue
+				}
+				encodedBrands = append(encodedBrands, encodedBrand)
+			}
+			resp.Brands = encodedBrands
+		}
+
+		items = append(items, resp)
+	}
+	return items
 }
 
 // nearbyFilters holds parsed query parameters for GetNearbyBranches.

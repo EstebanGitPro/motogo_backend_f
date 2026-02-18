@@ -16,7 +16,7 @@ export const options = {
 
 const BASE_URL = 'http://host.docker.internal:8085/motogo/api/v1';
 
-export default function () {
+export default function soakTest() {
   // Simular comportamiento real de usuario
   
   // 1. Listar mensajes

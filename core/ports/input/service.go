@@ -247,7 +247,7 @@ type MotorcycleService interface {
 	GetByID(ctx context.Context, motorcycleID string) (*domain.Motorcycle, error)
 	GetByOwnerID(ctx context.Context, ownerID string) ([]domain.Motorcycle, error)
 	GetByLicensePlate(ctx context.Context, licensePlate string) (*domain.Motorcycle, error)
-	ApplyUpdates(existing *domain.Motorcycle, updates *domain.Motorcycle) error
+	ApplyUpdates(existing, updates *domain.Motorcycle) error
 	UpdateMotorcycle(ctx context.Context, tx output.Tx, motorcycle *domain.Motorcycle) error
 	DeleteMotorcycle(ctx context.Context, tx output.Tx, motorcycleID string) error
 	ClearProfileImageURL(ctx context.Context, tx output.Tx, motorcycleID string) error
@@ -287,10 +287,10 @@ type DiagnosticService interface {
 	RegisterOrUpdateDiagnostic(ctx context.Context, tx output.Tx, motorcycleID, branchID string, problemDescription *string, evidenceURLs []string) (*domain.Diagnostic, error)
 	GetByID(ctx context.Context, diagnosticID string) (*domain.Diagnostic, error)
 	GetByMotorcycleID(ctx context.Context, motorcycleID string) ([]domain.Diagnostic, error)
-	ApplyDiagnosticUpdates(existing *domain.Diagnostic, updates *domain.Diagnostic)
+	ApplyDiagnosticUpdates(existing, updates *domain.Diagnostic)
 	UpdateDiagnostic(ctx context.Context, tx output.Tx, diagnostic *domain.Diagnostic) error
 	DeleteDiagnostic(ctx context.Context, tx output.Tx, diagnosticID string) error
-	SetSolution(ctx context.Context, tx output.Tx, diagnosticID string, solution string) error
+	SetSolution(ctx context.Context, tx output.Tx, diagnosticID, solution string) error
 
 	// Evidence
 	LoadEvidence(ctx context.Context, diagnosticID string) ([]domain.DiagnosticEvidence, error)
@@ -310,7 +310,7 @@ type EvidenceService interface {
 	CreateEvidence(ctx context.Context, tx output.Tx, motorcycleID string, evidence *domain.MotorcycleEvidence) (*domain.MotorcycleEvidence, error)
 	GetByID(ctx context.Context, evidenceID string) (*domain.MotorcycleEvidence, error)
 	GetByMotorcycleID(ctx context.Context, motorcycleID string) ([]domain.MotorcycleEvidence, error)
-	ApplyUpdatesAndCleanup(ctx context.Context, existing *domain.MotorcycleEvidence, updates *domain.MotorcycleEvidence)
+	ApplyUpdatesAndCleanup(ctx context.Context, existing, updates *domain.MotorcycleEvidence)
 	UpdateEvidence(ctx context.Context, tx output.Tx, evidence *domain.MotorcycleEvidence) error
 	DeleteEvidence(ctx context.Context, tx output.Tx, evidenceID string) error
 

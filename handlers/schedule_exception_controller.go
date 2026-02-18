@@ -57,45 +57,23 @@ func (h *handler) CreateScheduleException(
 		schedule, err := scheduleInteractor.GetScheduleByBranchID(c.Request.Context(), branchID, person.ID)
 		if err != nil {
 			log.Error(logger.LogScheduleDetailControllerCreateError, "error", err, "branch_id", branchID)
-			switch {
-			case errors.Is(err, domain.ErrScheduleNotFound):
-				h.Response.Error(c, domain.MsgScheduleNotFound)
-			case errors.Is(err, domain.ErrBranchNotFound):
-				h.Response.Error(c, domain.MsgBranchNotFound)
-			case errors.Is(err, domain.ErrForbidden):
-				h.Response.Error(c, domain.MsgForbidden)
-			default:
-				h.Response.Error(c, domain.MsgServerError)
-			}
+			h.mapScheduleError(c, err)
 			return
 		}
 
-		// 5. Parse exception dates (start date required, end date optional)
-		// IMPORTANT: Use ParseInLocation with time.Local to match MySQL loc=Local config
-		// Using time.Parse creates UTC dates which cause a 1-day shift when MySQL converts them
-		exceptionStartDate, err := time.ParseInLocation(constants.DateFormat, req.ExceptionStartDate, time.Local)
+		// 5. Parse exception dates
+		startDate, endDate, err := parseExceptionDates(req)
 		if err != nil {
-			log.Warn(logger.LogScheduleDetailControllerBindError, "error", err, "date", req.ExceptionStartDate)
+			log.Warn(logger.LogScheduleDetailControllerBindError, "error", err)
 			h.Response.Error(c, domain.MsgScheduleExceptionDatePast)
 			return
-		}
-
-		// If end date not provided, use start date (single day exception)
-		exceptionEndDate := exceptionStartDate
-		if req.ExceptionEndDate != "" {
-			exceptionEndDate, err = time.ParseInLocation(constants.DateFormat, req.ExceptionEndDate, time.Local)
-			if err != nil {
-				log.Warn(logger.LogScheduleDetailControllerBindError, "error", err, "date", req.ExceptionEndDate)
-				h.Response.Error(c, domain.MsgScheduleExceptionDatePast)
-				return
-			}
 		}
 
 		// 6. Build domain object
 		exception := domain.ScheduleDetail{
 			ScheduleID:         schedule.ID,
-			ExceptionStartDate: &exceptionStartDate,
-			ExceptionEndDate:   &exceptionEndDate,
+			ExceptionStartDate: &startDate,
+			ExceptionEndDate:   &endDate,
 			OpeningTime:        req.OpeningTime,
 			ClosingTime:        req.ClosingTime,
 			IsClosed:           req.IsClosed,
@@ -105,22 +83,7 @@ func (h *handler) CreateScheduleException(
 		createdException, err := exceptionInteractor.CreateException(c.Request.Context(), exception, person.ID, branchID)
 		if err != nil {
 			log.Error(logger.LogScheduleDetailControllerCreateError, "error", err, "schedule_id", schedule.ID)
-			switch {
-			case errors.Is(err, domain.ErrScheduleNotFound):
-				h.Response.Error(c, domain.MsgScheduleNotFound)
-			case errors.Is(err, domain.ErrScheduleExceptionDatePast):
-				h.Response.Error(c, domain.MsgScheduleExceptionDatePast)
-			case errors.Is(err, domain.ErrScheduleExceptionDateConflict):
-				h.Response.Error(c, domain.MsgScheduleExceptionDateConflict)
-			case errors.Is(err, domain.ErrScheduleExceptionInvalidTime):
-				h.Response.Error(c, domain.MsgScheduleExceptionInvalidTime)
-			case errors.Is(err, domain.ErrScheduleExceptionRedundant):
-				h.Response.Error(c, domain.MsgScheduleExceptionRedundant)
-			case errors.Is(err, domain.ErrForbidden):
-				h.Response.Error(c, domain.MsgForbidden)
-			default:
-				h.Response.Error(c, domain.MsgServerError)
-			}
+			h.mapExceptionCreationError(c, err)
 			return
 		}
 
@@ -150,6 +113,46 @@ func (h *handler) CreateScheduleException(
 			"exception_start_date", req.ExceptionStartDate)
 
 		h.Response.SuccessWithData(c, domain.MsgScheduleExceptionCreated, response)
+	}
+}
+
+// parseExceptionDates parses start and optional end date from the request.
+// If end date is empty, it defaults to the start date (single-day exception).
+func parseExceptionDates(req CreateScheduleExceptionRequest) (time.Time, time.Time, error) {
+	// IMPORTANT: Use ParseInLocation with time.Local to match MySQL loc=Local config
+	startDate, err := time.ParseInLocation(constants.DateFormat, req.ExceptionStartDate, time.Local)
+	if err != nil {
+		return time.Time{}, time.Time{}, err
+	}
+
+	endDate := startDate
+	if req.ExceptionEndDate != "" {
+		endDate, err = time.ParseInLocation(constants.DateFormat, req.ExceptionEndDate, time.Local)
+		if err != nil {
+			return time.Time{}, time.Time{}, err
+		}
+	}
+
+	return startDate, endDate, nil
+}
+
+// mapExceptionCreationError maps exception creation errors to API responses.
+func (h *handler) mapExceptionCreationError(c *gin.Context, err error) {
+	switch {
+	case errors.Is(err, domain.ErrScheduleNotFound):
+		h.Response.Error(c, domain.MsgScheduleNotFound)
+	case errors.Is(err, domain.ErrScheduleExceptionDatePast):
+		h.Response.Error(c, domain.MsgScheduleExceptionDatePast)
+	case errors.Is(err, domain.ErrScheduleExceptionDateConflict):
+		h.Response.Error(c, domain.MsgScheduleExceptionDateConflict)
+	case errors.Is(err, domain.ErrScheduleExceptionInvalidTime):
+		h.Response.Error(c, domain.MsgScheduleExceptionInvalidTime)
+	case errors.Is(err, domain.ErrScheduleExceptionRedundant):
+		h.Response.Error(c, domain.MsgScheduleExceptionRedundant)
+	case errors.Is(err, domain.ErrForbidden):
+		h.Response.Error(c, domain.MsgForbidden)
+	default:
+		h.Response.Error(c, domain.MsgServerError)
 	}
 }
 

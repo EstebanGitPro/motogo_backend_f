@@ -7,6 +7,7 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/dto"
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/input"
+	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
 	"github.com/EstebanGitPro/motogo-backend/middleware"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
@@ -31,24 +32,7 @@ func (i *Interactor) RegisterPerson(ctx context.Context, person domain.Person) (
 	// PASO 1: Validaciones iniciales
 	result, err = i.service.RegisterPerson(ctx, person)
 	if err != nil {
-		// Si es un registro incompleto, ejecutar limpieza automática
-		if errors.Is(err, domain.ErrIncompleteRegistration) {
-			log.Warn(logger.LogPersonInteractorIncompleteDetected, "email", person.Email)
-
-			// Intentar limpiar el estado inconsistente
-			if cleanErr := i.service.CheckAndCleanInconsistentState(ctx, person.Email); cleanErr != nil {
-				log.Error(logger.LogPersonInteractorCleanup_Error, "email", person.Email, "error", cleanErr)
-				// Si falla la limpieza, retornar error de limpieza
-				return nil, cleanErr
-			}
-
-			log.Success(logger.LogPersonInteractorCleanup_OK, "email", person.Email)
-			// Retornar el error de registro incompleto para que el cliente sepa que debe reintentar
-			return nil, err
-		}
-
-		log.Error(logger.LogPersonInteractorStep1_Error, "error", err)
-		return result, err
+		return i.handleIncompleteRegistration(ctx, err, person, log)
 	}
 	log.Success(logger.LogPersonInteractorStep1_OK)
 
@@ -68,31 +52,12 @@ func (i *Interactor) RegisterPerson(ctx context.Context, person domain.Person) (
 		log.Error(logger.LogPersonInteractorStep2_Error, "error", err)
 		return result, err
 	}
-	log.Success(logger.LogPersonInteractorStep2_OK)
 
 	var keycloakUserID string
 	var keycloakCreated bool
 
 	defer func() {
-		if err != nil {
-			if rbErr := tx.Rollback(); rbErr != nil {
-				log.Error(logger.LogPersonInteractorRollbackDB_Error,
-					"rollback_error", rbErr,
-					"original_error", err)
-			} else {
-				log.Warn(logger.LogPersonInteractorRollbackDB_OK)
-			}
-
-			if keycloakCreated {
-				if kcErr := i.service.RollbackKeycloakUser(ctx, keycloakUserID); kcErr != nil {
-					log.Error(logger.LogPersonInteractorRollbackKeycloak_Err,
-						"keycloak_error", kcErr,
-						"keycloak_user_id", keycloakUserID)
-				} else {
-					log.Warn(logger.LogPersonInteractorRollbackKeycloak_OK)
-				}
-			}
-		}
+		i.rollbackRegistration(tx, keycloakUserID, keycloakCreated, &err, ctx, log)
 	}()
 
 	// PASO 3: Guardar persona en BD
@@ -144,25 +109,71 @@ func (i *Interactor) RegisterPerson(ctx context.Context, person domain.Person) (
 	result.Message = "Usuario registrado exitosamente"
 
 	// PASO 9: Enviar email de verificación (no bloquea el registro si falla)
-	if sendErr := i.service.SendVerificationEmail(ctx, keycloakUserID); sendErr != nil {
-		// Log warning pero NO fallar el registro
-		log.Warn(logger.LogKeycloakSendVerificationEmailError,
-			"keycloak_user_id", keycloakUserID,
-			"email", person.Email,
-			"error", sendErr)
-	} else {
-		log.Info(logger.LogKeycloakSendVerificationEmailOK,
-			"keycloak_user_id", keycloakUserID,
-			"email", person.Email)
-	}
+	i.sendVerificationEmailBestEffort(ctx, keycloakUserID, person.Email, log)
 
-	//TODO: preguntar si dejar info en el logger success
 	log.Success(logger.LogPersonInteractorRegComplete,
 		person.ToLogger(),
 		"keycloak_user_id", keycloakUserID)
 
 	err = nil // asegurar que defer NO ejecute rollback
 	return result, err
+}
+
+// handleIncompleteRegistration handles the error case when initial registration validation fails.
+func (i *Interactor) handleIncompleteRegistration(ctx context.Context, err error, person domain.Person, log logger.Logger) (*dto.RegistrationResult, error) {
+	if !errors.Is(err, domain.ErrIncompleteRegistration) {
+		log.Error(logger.LogPersonInteractorStep1_Error, "error", err)
+		return nil, err
+	}
+
+	log.Warn(logger.LogPersonInteractorIncompleteDetected, "email", person.Email)
+
+	// Intentar limpiar el estado inconsistente
+	if cleanErr := i.service.CheckAndCleanInconsistentState(ctx, person.Email); cleanErr != nil {
+		log.Error(logger.LogPersonInteractorCleanup_Error, "email", person.Email, "error", cleanErr)
+		return nil, cleanErr
+	}
+
+	log.Success(logger.LogPersonInteractorCleanup_OK, "email", person.Email)
+	return nil, err
+}
+
+// rollbackRegistration handles rollback of both DB and Keycloak on error.
+func (i *Interactor) rollbackRegistration(tx output.Tx, keycloakUserID string, keycloakCreated bool, err *error, ctx context.Context, log logger.Logger) {
+	if *err == nil {
+		return
+	}
+	if rbErr := tx.Rollback(); rbErr != nil {
+		log.Error(logger.LogPersonInteractorRollbackDB_Error,
+			"rollback_error", rbErr,
+			"original_error", *err)
+	} else {
+		log.Warn(logger.LogPersonInteractorRollbackDB_OK)
+	}
+
+	if keycloakCreated {
+		if kcErr := i.service.RollbackKeycloakUser(ctx, keycloakUserID); kcErr != nil {
+			log.Error(logger.LogPersonInteractorRollbackKeycloak_Err,
+				"keycloak_error", kcErr,
+				"keycloak_user_id", keycloakUserID)
+		} else {
+			log.Warn(logger.LogPersonInteractorRollbackKeycloak_OK)
+		}
+	}
+}
+
+// sendVerificationEmailBestEffort sends a verification email without failing the registration.
+func (i *Interactor) sendVerificationEmailBestEffort(ctx context.Context, keycloakUserID, email string, log logger.Logger) {
+	if sendErr := i.service.SendVerificationEmail(ctx, keycloakUserID); sendErr != nil {
+		log.Warn(logger.LogKeycloakSendVerificationEmailError,
+			"keycloak_user_id", keycloakUserID,
+			"email", email,
+			"error", sendErr)
+	} else {
+		log.Info(logger.LogKeycloakSendVerificationEmailOK,
+			"keycloak_user_id", keycloakUserID,
+			"email", email)
+	}
 }
 
 // ResendVerificationEmail reenvía el email de verificación a un usuario

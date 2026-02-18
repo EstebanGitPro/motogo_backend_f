@@ -10,6 +10,12 @@ import (
 const (
 	motorcycleReferencesPath = "%s/motogo/api/v1/motorcycle-references"
 	motorcycleCategoriesPath = "%s/motogo/api/v1/motorcycle-categories"
+	branchTypesPath          = "%s/motogo/api/v1/branch-types"
+	motorcycleEvidencePath   = "%s/motogo/api/v1/motorcycles/%s/evidence"
+	motorcycleEvidenceIDPath = "%s/motogo/api/v1/motorcycles/%s/evidence/%s"
+	personsProfilePath       = "%s/motogo/api/v1/persons/me"
+	personsPasswordPath      = "%s/motogo/api/v1/persons/me/password"
+	authLoginPath            = "%s/motogo/api/v1/auth/login"
 )
 
 type Link struct {
@@ -23,12 +29,28 @@ type HATEOASResource struct {
 }
 
 // GetBaseURL extrae la URL base de la petición (scheme + host)
+// The host is validated to prevent open redirects via Host header injection (S5146)
 func GetBaseURL(c *gin.Context) string {
 	scheme := "http"
 	if c.Request.TLS != nil {
 		scheme = "https"
 	}
-	return scheme + "://" + c.Request.Host
+	host := sanitizeHost(c.Request.Host)
+	return scheme + "://" + host
+}
+
+// sanitizeHost validates that the host contains only valid hostname characters.
+// Returns "localhost" if the host contains suspicious characters that could enable open redirects.
+func sanitizeHost(host string) string {
+	for _, ch := range host {
+		if !((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '.' || ch == ':' || ch == '-') {
+			return "localhost"
+		}
+	}
+	if host == "" {
+		return "localhost"
+	}
+	return host
 }
 
 // SetLocationHeader establece el Location header con la URL del recurso
@@ -81,17 +103,17 @@ func BuildResourceLinks(baseURL, resource, resourceID string) []Link {
 }
 
 // BuildAccountLinks construye links específicos para cuentas (wrapper para compatibilidad)
-func BuildAccountLinks(baseURL string, accountID string) []Link {
+func BuildAccountLinks(baseURL, accountID string) []Link {
 	return BuildResourceLinks(baseURL, "accounts", accountID)
 }
 
 // BuildMessageLinks construye links HATEOAS para un mensaje específico
-func BuildMessageLinks(baseURL string, messageID string) []Link {
+func BuildMessageLinks(baseURL, messageID string) []Link {
 	return BuildResourceLinks(baseURL, "messages", messageID)
 }
 
 // BuildMessageCreatedLinks construye links para un mensaje recién creado
-func BuildMessageCreatedLinks(baseURL string, messageID string) []Link {
+func BuildMessageCreatedLinks(baseURL, messageID string) []Link {
 	resourceURL := BuildResourceURL(baseURL, "messages", messageID)
 	collectionURL := BuildCollectionURL(baseURL, "messages")
 
@@ -120,7 +142,7 @@ func BuildMessageCreatedLinks(baseURL string, messageID string) []Link {
 }
 
 // BuildMessageUpdatedLinks construye links para un mensaje actualizado
-func BuildMessageUpdatedLinks(baseURL string, messageID string) []Link {
+func BuildMessageUpdatedLinks(baseURL, messageID string) []Link {
 	resourceURL := BuildResourceURL(baseURL, "messages", messageID)
 	collectionURL := BuildCollectionURL(baseURL, "messages")
 
@@ -188,17 +210,17 @@ func BuildLoginLinks(baseURL string) []Link {
 func BuildAuthMeLinks(baseURL string) []Link {
 	return []Link{
 		{
-			Href:   fmt.Sprintf("%s/motogo/api/v1/persons/me", baseURL),
+			Href:   fmt.Sprintf(personsProfilePath, baseURL),
 			Rel:    "self",
 			Method: "GET",
 		},
 		{
-			Href:   fmt.Sprintf("%s/motogo/api/v1/persons/me/password", baseURL),
+			Href:   fmt.Sprintf(personsPasswordPath, baseURL),
 			Rel:    "change-password",
 			Method: "PUT",
 		},
 		{
-			Href:   fmt.Sprintf("%s/motogo/api/v1/auth/login", baseURL),
+			Href:   fmt.Sprintf(authLoginPath, baseURL),
 			Rel:    "login",
 			Method: "POST",
 		},
@@ -207,7 +229,7 @@ func BuildAuthMeLinks(baseURL string) []Link {
 
 // BuildAccountCreatedLinks constructs HATEOAS links for newly created account
 // Replaces the generic BuildAccountLinks with context-specific links for registration
-func BuildAccountCreatedLinks(baseURL string, accountID string) []Link {
+func BuildAccountCreatedLinks(baseURL, accountID string) []Link {
 	resourceURL := BuildResourceURL(baseURL, "accounts", accountID)
 
 	return []Link{
@@ -217,7 +239,7 @@ func BuildAccountCreatedLinks(baseURL string, accountID string) []Link {
 			Method: "GET",
 		},
 		{
-			Href:   fmt.Sprintf("%s/motogo/api/v1/auth/login", baseURL),
+			Href:   fmt.Sprintf(authLoginPath, baseURL),
 			Rel:    "login",
 			Method: "POST",
 		},
@@ -234,12 +256,12 @@ func BuildAccountCreatedLinks(baseURL string, accountID string) []Link {
 func BuildChangePasswordLinks(baseURL string) []Link {
 	return []Link{
 		{
-			Href:   fmt.Sprintf("%s/motogo/api/v1/persons/me", baseURL),
+			Href:   fmt.Sprintf(personsProfilePath, baseURL),
 			Rel:    "profile",
 			Method: "GET",
 		},
 		{
-			Href:   fmt.Sprintf("%s/motogo/api/v1/auth/login", baseURL),
+			Href:   fmt.Sprintf(authLoginPath, baseURL),
 			Rel:    "login",
 			Method: "POST",
 		},
@@ -251,22 +273,22 @@ func BuildChangePasswordLinks(baseURL string) []Link {
 func BuildUpdateProfileLinks(baseURL string) []Link {
 	return []Link{
 		{
-			Href:   fmt.Sprintf("%s/motogo/api/v1/persons/me", baseURL),
+			Href:   fmt.Sprintf(personsProfilePath, baseURL),
 			Rel:    "self",
 			Method: "GET",
 		},
 		{
-			Href:   fmt.Sprintf("%s/motogo/api/v1/persons/me", baseURL),
+			Href:   fmt.Sprintf(personsProfilePath, baseURL),
 			Rel:    "update",
 			Method: "PUT",
 		},
 		{
-			Href:   fmt.Sprintf("%s/motogo/api/v1/persons/me/password", baseURL),
+			Href:   fmt.Sprintf(personsPasswordPath, baseURL),
 			Rel:    "change-password",
 			Method: "PUT",
 		},
 		{
-			Href:   fmt.Sprintf("%s/motogo/api/v1/auth/login", baseURL),
+			Href:   fmt.Sprintf(authLoginPath, baseURL),
 			Rel:    "login",
 			Method: "POST",
 		},
@@ -275,7 +297,7 @@ func BuildUpdateProfileLinks(baseURL string) []Link {
 
 // BuildPublicContactLinks constructs HATEOAS links for public contact response (HU55)
 // Para motociclistas viendo info de contacto del representante
-func BuildPublicContactLinks(baseURL string, personID string) []Link {
+func BuildPublicContactLinks(baseURL, personID string) []Link {
 	return []Link{
 		{
 			Href:   fmt.Sprintf("%s/motogo/api/v1/persons/%s/contact", baseURL, personID),
@@ -287,7 +309,7 @@ func BuildPublicContactLinks(baseURL string, personID string) []Link {
 
 // BuildBranchCreatedLinks constructs HATEOAS links for newly created branch (HU59)
 // Richardson Maturity Model Level 3: Provides discoverable next actions
-func BuildBranchCreatedLinks(baseURL string, branchID string) []Link {
+func BuildBranchCreatedLinks(baseURL, branchID string) []Link {
 	resourceURL := BuildResourceURL(baseURL, "branches", branchID)
 	collectionURL := BuildCollectionURL(baseURL, "branches")
 
@@ -406,7 +428,7 @@ func BuildBranchDetailLinks(baseURL string, branchID string, isOwner bool) []Lin
 func BuildBranchTypesLinks(baseURL string) []Link {
 	return []Link{
 		{
-			Href:   fmt.Sprintf("%s/motogo/api/v1/branch-types", baseURL),
+			Href:   fmt.Sprintf(branchTypesPath, baseURL),
 			Rel:    "self",
 			Method: "GET",
 		},
@@ -425,7 +447,7 @@ func BuildBranchListLinks(baseURL string) []Link {
 		{Href: collectionURL, Rel: "self", Method: "GET"},
 		{Href: collectionURL, Rel: "create", Method: "POST"},
 		{Href: BuildCollectionURL(baseURL, "brands"), Rel: "brands", Method: "GET"},
-		{Href: BuildCollectionURL(baseURL, "branch-types"), Rel: "branch-types", Method: "GET"},
+		{Href: fmt.Sprintf(branchTypesPath, baseURL), Rel: "branch-types", Method: "GET"},
 	}
 }
 
@@ -456,7 +478,7 @@ func BuildServiceTypeListLinks(baseURL string) []Link {
 }
 
 // BuildServiceListLinks constructs HATEOAS links for services catalog (HU63)
-func BuildServiceListLinks(baseURL string, filterType string) []Link {
+func BuildServiceListLinks(baseURL, filterType string) []Link {
 	servicesURL := BuildCollectionURL(baseURL, "services")
 	links := []Link{
 		{
@@ -542,7 +564,7 @@ func BuildNearbyBranchesLinks(baseURL string, lat, lng, radiusKm float64) []Link
 	return []Link{
 		{Href: nearbyURL, Rel: "self", Method: "GET"},
 		{Href: BuildCollectionURL(baseURL, "branches"), Rel: "branches", Method: "GET"},
-		{Href: fmt.Sprintf("%s/motogo/api/v1/branch-types", baseURL), Rel: "branch-types", Method: "GET"},
+		{Href: fmt.Sprintf(branchTypesPath, baseURL), Rel: "branch-types", Method: "GET"},
 	}
 }
 
@@ -556,7 +578,7 @@ func BuildMotorcycleReferencesLinks(baseURL string) []Link {
 }
 
 // BuildBrandLinesLinks constructs HATEOAS links for brand lines catalog (HU40 - Admin)
-func BuildBrandLinesLinks(baseURL string, brandID string) []Link {
+func BuildBrandLinesLinks(baseURL, brandID string) []Link {
 	return []Link{
 		{Href: fmt.Sprintf("%s/motogo/api/v1/admin/brands/%s/lines", baseURL, brandID), Rel: "self", Method: "GET"},
 		{Href: BuildCollectionURL(baseURL, "brands"), Rel: "brands", Method: "GET"},
@@ -618,8 +640,8 @@ func BuildRatingRangeLinks(baseURL string) []Link {
 // BuildEvidenceDetailLinks constructs HATEOAS links for evidence detail (HU16-19)
 // isOwner is used to show/hide edit and delete actions
 func BuildEvidenceDetailLinks(baseURL, motorcycleID, evidenceID string, isOwner bool) []Link {
-	evidenceURL := fmt.Sprintf("%s/motogo/api/v1/motorcycles/%s/evidence/%s", baseURL, motorcycleID, evidenceID)
-	listURL := fmt.Sprintf("%s/motogo/api/v1/motorcycles/%s/evidence", baseURL, motorcycleID)
+	evidenceURL := fmt.Sprintf(motorcycleEvidenceIDPath, baseURL, motorcycleID, evidenceID)
+	listURL := fmt.Sprintf(motorcycleEvidencePath, baseURL, motorcycleID)
 	motorcycleURL := BuildResourceURL(baseURL, "motorcycles", motorcycleID)
 
 	links := []Link{
@@ -640,7 +662,7 @@ func BuildEvidenceDetailLinks(baseURL, motorcycleID, evidenceID string, isOwner 
 
 // BuildEvidenceListLinks constructs HATEOAS links for evidence list (HU18)
 func BuildEvidenceListLinks(baseURL, motorcycleID string) []Link {
-	listURL := fmt.Sprintf("%s/motogo/api/v1/motorcycles/%s/evidence", baseURL, motorcycleID)
+	listURL := fmt.Sprintf(motorcycleEvidencePath, baseURL, motorcycleID)
 	motorcycleURL := BuildResourceURL(baseURL, "motorcycles", motorcycleID)
 
 	return []Link{
@@ -653,7 +675,7 @@ func BuildEvidenceListLinks(baseURL, motorcycleID string) []Link {
 // BuildEvidenceDeletedLinks constructs HATEOAS links after evidence deletion (HU19)
 // Shows next possible actions: list evidence or view motorcycle
 func BuildEvidenceDeletedLinks(baseURL, motorcycleID string) []Link {
-	listURL := fmt.Sprintf("%s/motogo/api/v1/motorcycles/%s/evidence", baseURL, motorcycleID)
+	listURL := fmt.Sprintf(motorcycleEvidencePath, baseURL, motorcycleID)
 	motorcycleURL := BuildResourceURL(baseURL, "motorcycles", motorcycleID)
 
 	return []Link{

@@ -196,13 +196,8 @@ func (h *handler) UpdateBranchSchedule(scheduleInteractor *interactor.ScheduleIn
 		req.Sanitize()
 
 		// 4. Get existing schedule
-		schedule, err := scheduleInteractor.GetScheduleByBranchIDPublic(c.Request.Context(), branchID)
+		schedule, err := h.fetchSchedulePublic(c, scheduleInteractor, branchID)
 		if err != nil {
-			if errors.Is(err, domain.ErrScheduleNotFound) {
-				h.Response.Error(c, domain.MsgScheduleNotFound)
-			} else {
-				h.Response.Error(c, domain.MsgServerError)
-			}
 			return
 		}
 
@@ -215,28 +210,21 @@ func (h *handler) UpdateBranchSchedule(scheduleInteractor *interactor.ScheduleIn
 			return
 		}
 
-		// 7. Update schedule
+		// 6. Update schedule
 		if err := scheduleInteractor.UpdateSchedule(c.Request.Context(), *schedule, person.ID); err != nil {
 			log.Error(logger.LogScheduleControllerUpdateError, "error", err, "schedule_id", schedule.ID)
-			switch {
-			case errors.Is(err, domain.ErrScheduleNotFound):
-				h.Response.Error(c, domain.MsgScheduleNotFound)
-			case errors.Is(err, domain.ErrForbidden):
-				h.Response.Error(c, domain.MsgForbidden)
-			default:
-				h.Response.Error(c, domain.MsgServerError)
-			}
+			h.mapScheduleUpdateError(c, err)
 			return
 		}
 
-		// 8. Encode schedule ID
+		// 7. Encode schedule ID
 		encodedScheduleID, err := h.EncodeID(schedule.ID)
 		if err != nil {
 			h.HandleIDEncodingError(c, schedule.ID, err)
 			return
 		}
 
-		// 9. Build HATEOAS response
+		// 8. Build HATEOAS response
 		baseURL := GetBaseURL(c)
 		links := BuildScheduleLinks(baseURL, encodedBranchID, encodedScheduleID)
 
@@ -245,6 +233,33 @@ func (h *handler) UpdateBranchSchedule(scheduleInteractor *interactor.ScheduleIn
 		log.Success(logger.LogScheduleControllerUpdateOK, "schedule_id", schedule.ID, "branch_id", branchID)
 
 		h.Response.SuccessWithData(c, domain.MsgScheduleUpdated, response)
+	}
+}
+
+// fetchSchedulePublic retrieves a schedule by branch ID for public access.
+// Responds with an error and returns nil on failure.
+func (h *handler) fetchSchedulePublic(c *gin.Context, si *interactor.ScheduleInteractor, branchID string) (*domain.BranchSchedule, error) {
+	schedule, err := si.GetScheduleByBranchIDPublic(c.Request.Context(), branchID)
+	if err != nil {
+		if errors.Is(err, domain.ErrScheduleNotFound) {
+			h.Response.Error(c, domain.MsgScheduleNotFound)
+		} else {
+			h.Response.Error(c, domain.MsgServerError)
+		}
+		return nil, err
+	}
+	return schedule, nil
+}
+
+// mapScheduleUpdateError maps schedule update/delete errors to API responses.
+func (h *handler) mapScheduleUpdateError(c *gin.Context, err error) {
+	switch {
+	case errors.Is(err, domain.ErrScheduleNotFound):
+		h.Response.Error(c, domain.MsgScheduleNotFound)
+	case errors.Is(err, domain.ErrForbidden):
+		h.Response.Error(c, domain.MsgForbidden)
+	default:
+		h.Response.Error(c, domain.MsgServerError)
 	}
 }
 
@@ -485,23 +500,24 @@ func (h *handler) GetDaysOfWeek() gin.HandlerFunc {
 
 // BuildScheduleLinks generates HATEOAS links for a schedule resource
 func BuildScheduleLinks(baseURL, encodedBranchID, encodedScheduleID string) []Link {
-	branchScheduleURL := BuildResourceURL(baseURL, "branches", encodedBranchID) + "/schedules"
+	branchScheduleURL := BuildResourceURL(baseURL, "branches", encodedBranchID) + pathSchedules
+	daysCatalogURL := baseURL + pathScheduleDays
 
 	return []Link{
 		{Rel: "self", Href: branchScheduleURL, Method: "GET"},
 		{Rel: "delete", Href: branchScheduleURL, Method: "DELETE"},
 		{Rel: "activate", Href: branchScheduleURL + "/activate", Method: "PUT"},
 		{Rel: "deactivate", Href: branchScheduleURL + "/deactivate", Method: "PUT"},
-		{Rel: "details-list", Href: branchScheduleURL + "/details", Method: "GET"},    // HU6-9: Schedule Details
-		{Rel: "details-create", Href: branchScheduleURL + "/details", Method: "POST"}, // HU6: Create Detail
+		{Rel: "details-list", Href: branchScheduleURL + pathDetails, Method: "GET"},    // HU6-9: Schedule Details
+		{Rel: "details-create", Href: branchScheduleURL + pathDetails, Method: "POST"}, // HU6: Create Detail
 		{Rel: "branch", Href: BuildResourceURL(baseURL, "branches", encodedBranchID), Method: "GET"},
-		{Rel: "days-catalog", Href: baseURL + "/schedules/days", Method: "GET"},
+		{Rel: relDaysCatalog, Href: daysCatalogURL, Method: "GET"},
 	}
 }
 
 // BuildScheduleDetailLinks generates HATEOAS links for a schedule detail resource (HU6-9)
 func BuildScheduleDetailLinks(baseURL, encodedBranchID, encodedDetailID string) []Link {
-	branchScheduleURL := BuildResourceURL(baseURL, "branches", encodedBranchID) + "/schedules"
+	branchScheduleURL := BuildResourceURL(baseURL, "branches", encodedBranchID) + pathSchedules
 	detailURL := BuildResourceURL(baseURL, "schedule-details", encodedDetailID)
 
 	return []Link{
@@ -509,21 +525,21 @@ func BuildScheduleDetailLinks(baseURL, encodedBranchID, encodedDetailID string) 
 		{Rel: "update", Href: detailURL, Method: "PUT"},
 		{Rel: "delete", Href: detailURL, Method: "DELETE"},
 		{Rel: "schedule", Href: branchScheduleURL, Method: "GET"},
-		{Rel: "details-list", Href: branchScheduleURL + "/details", Method: "GET"},
-		{Rel: "days-catalog", Href: baseURL + "/schedules/days", Method: "GET"},
+		{Rel: "details-list", Href: branchScheduleURL + pathDetails, Method: "GET"},
+		{Rel: relDaysCatalog, Href: baseURL + pathScheduleDays, Method: "GET"},
 	}
 }
 
 // BuildScheduleDetailListLinks generates HATEOAS links for the schedule details list (HU9)
 func BuildScheduleDetailListLinks(baseURL, encodedBranchID string) []Link {
-	branchScheduleURL := BuildResourceURL(baseURL, "branches", encodedBranchID) + "/schedules"
+	branchScheduleURL := BuildResourceURL(baseURL, "branches", encodedBranchID) + pathSchedules
 
 	return []Link{
-		{Rel: "self", Href: branchScheduleURL + "/details", Method: "GET"},
-		{Rel: "create", Href: branchScheduleURL + "/details", Method: "POST"},
+		{Rel: "self", Href: branchScheduleURL + pathDetails, Method: "GET"},
+		{Rel: "create", Href: branchScheduleURL + pathDetails, Method: "POST"},
 		{Rel: "schedule", Href: branchScheduleURL, Method: "GET"},
 		{Rel: "branch", Href: BuildResourceURL(baseURL, "branches", encodedBranchID), Method: "GET"},
-		{Rel: "days-catalog", Href: baseURL + "/schedules/days", Method: "GET"},
+		{Rel: relDaysCatalog, Href: baseURL + pathScheduleDays, Method: "GET"},
 	}
 }
 

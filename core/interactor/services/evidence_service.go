@@ -14,7 +14,7 @@ var evidenceLog logger.Logger = logger.NewSlogLogger()
 type EvidenceServiceImpl struct {
 	evidenceRepo   output.EvidenceRepository
 	motorcycleRepo output.MotorcycleRepository
-	storageClient  output.StorageClient // Optional: Firebase Storage for image deletion
+	storageClient  output.StorageFileDeleter // Optional: Firebase Storage for image deletion
 }
 
 // NewEvidenceService creates a new EvidenceService instance
@@ -29,7 +29,7 @@ func NewEvidenceService(
 }
 
 // WithStorageClient sets the storage client for image deletion (optional)
-func (s *EvidenceServiceImpl) WithStorageClient(client output.StorageClient) *EvidenceServiceImpl {
+func (s *EvidenceServiceImpl) WithStorageClient(client output.StorageFileDeleter) *EvidenceServiceImpl {
 	s.storageClient = client
 	return s
 }

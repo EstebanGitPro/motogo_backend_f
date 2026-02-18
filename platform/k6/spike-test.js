@@ -19,7 +19,7 @@ export const options = {
 
 const BASE_URL = 'http://host.docker.internal:8085/motogo/api/v1';
 
-export default function () {
+export default function spikeTest() {
   const messagesRes = http.get(`${BASE_URL}/messages`);
   
   check(messagesRes, {

@@ -11,8 +11,8 @@ import (
 // These interfaces allow dependency injection and testing
 // ============================================
 
-// BrandInteractorInterface defines the contract for brand catalog operations
-type BrandInteractorInterface interface {
+// BrandLister defines the contract for brand catalog operations
+type BrandLister interface {
 	GetAllBrands(ctx context.Context) ([]domain.Brand, error)
 }
 

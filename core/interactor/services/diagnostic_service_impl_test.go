@@ -164,7 +164,7 @@ func (m *mockBranchRepo) HasBranchesByRepresentative(_ context.Context, _ string
 	return false, nil
 }
 func (m *mockBranchRepo) ValidateBrands(_ context.Context, _ []string) error { return nil }
-func (m *mockBranchRepo) GetBranchesNearby(_ context.Context, _, _, _ float64, _ string, _, _, _, _ float64, _, _ string) ([]domain.NearbyBranch, error) {
+func (m *mockBranchRepo) GetBranchesNearby(_ context.Context, _ domain.NearbySearchParams) ([]domain.NearbyBranch, error) {
 	return nil, nil
 }
 

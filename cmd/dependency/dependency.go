@@ -402,10 +402,10 @@ func initJWTValidator(cfg *config.Config, log logger.Logger) output.JWTValidator
 }
 
 // initGeocodingClient creates a geocoding client based on config, with optional fallback provider.
-func initGeocodingClient(cfg *config.Config, log logger.Logger) geocoding.Client {
+func initGeocodingClient(cfg *config.Config, log logger.Logger) geocoding.Geocoder {
 	timeout := time.Duration(cfg.Geocoding.TimeoutSeconds) * time.Second
 
-	var primaryClient geocoding.Client
+	var primaryClient geocoding.Geocoder
 	switch cfg.Geocoding.Provider {
 	case "google":
 		primaryClient = geocoding.NewGoogleMapsClient(
@@ -431,7 +431,7 @@ func initGeocodingClient(cfg *config.Config, log logger.Logger) geocoding.Client
 		return primaryClient
 	}
 
-	var fallbackClient geocoding.Client
+	var fallbackClient geocoding.Geocoder
 	switch cfg.Geocoding.FallbackProvider {
 	case "mapbox":
 		fallbackClient = geocoding.NewMapboxClient(

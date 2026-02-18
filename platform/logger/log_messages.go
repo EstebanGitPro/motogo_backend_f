@@ -486,7 +486,7 @@ const (
 	LogMessageInteractorCreateStep3OK    = "[PASO 3/3] Mensaje guardado en BD"
 	LogMessageInteractorCreateCommitErr  = "COMMIT FALLÓ - ALERTA CRÍTICA"
 	LogMessageInteractorCreateCommitOK   = "Transacción confirmada exitosamente"
-	LogMessageInteractorCreateComplete   = "Mensaje creado exitosamente"
+	LogMessageInteractorCreateComplete   = LogMessageCreateOK
 
 	// UPDATE flow
 	LogMessageInteractorUpdateStep1Error = "[PASO 1/4] Mensaje no encontrado"
@@ -989,7 +989,7 @@ const (
 	LogMessageCacheReloadRequest = "Solicitud de recarga de caché de mensajes recibida"
 	LogMessageCacheReloadError   = "Error al recargar caché de mensajes"
 	LogMessageCacheReloadOK      = "Caché de mensajes recargado exitosamente"
-	LogMessageCreatedOK          = "Mensaje creado exitosamente"
+	LogMessageCreatedOK          = LogMessageCreateOK
 	LogMessageUpdatedOK          = "Mensaje actualizado exitosamente"
 	LogMessageDeletedOK          = "Mensaje eliminado exitosamente"
 )
