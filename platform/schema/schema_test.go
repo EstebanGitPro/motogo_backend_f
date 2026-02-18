@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// MockFileReader implements schema.FileReaderInterface for testing.
+// MockFileReader implements schema.FileReader for testing.
 type MockFileReader struct {
 	schemas map[string][]byte
 	err     error

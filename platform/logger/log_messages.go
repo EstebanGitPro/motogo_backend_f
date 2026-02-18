@@ -420,11 +420,11 @@ const (
 	LogPersonInteractorStep6_OK             = "[PASO 6/8] Rol asignado"
 	LogPersonInteractorStep7_Error          = "[PASO 7/8] Error actualizando Keycloak ID en BD"
 	LogPersonInteractorStep7_OK             = "[PASO 7/8] Keycloak_user_id actualizado en BD"
-	LogPersonInteractorCommit_Error         = "COMMIT FALLÓ - ALERTA CRÍTICA"
-	LogPersonInteractorCommit_OK            = "Transacción confirmada exitosamente"
+	LogPersonInteractorCommit_Error         = LogBranchInteractorCommitError
+	LogPersonInteractorCommit_OK            = LogMessageTxCommitOK
 	LogPersonInteractorRegComplete          = "Registro completado exitosamente"
-	LogPersonInteractorRollbackDB_Error     = "ROLLBACK BD FALLÓ - ALERTA CRÍTICA"
-	LogPersonInteractorRollbackDB_OK        = "Rollback BD ejecutado correctamente"
+	LogPersonInteractorRollbackDB_Error     = LogTxRollbackError
+	LogPersonInteractorRollbackDB_OK        = LogTxRollbackOK
 	LogPersonInteractorRollbackKeycloak_Err = "ROLLBACK KEYCLOAK FALLÓ - ALERTA CRÍTICA"
 	LogPersonInteractorRollbackKeycloak_OK  = "Rollback Keycloak ejecutado correctamente"
 	LogPersonInteractorIncompleteDetected   = "Registro incompleto detectado"
@@ -484,8 +484,8 @@ const (
 	LogMessageInteractorCreateStep2OK    = "[PASO 2/3] Transacción iniciada"
 	LogMessageInteractorCreateStep3Error = "[PASO 3/3] Error guardando mensaje"
 	LogMessageInteractorCreateStep3OK    = "[PASO 3/3] Mensaje guardado en BD"
-	LogMessageInteractorCreateCommitErr  = "COMMIT FALLÓ - ALERTA CRÍTICA"
-	LogMessageInteractorCreateCommitOK   = "Transacción confirmada exitosamente"
+	LogMessageInteractorCreateCommitErr  = LogBranchInteractorCommitError
+	LogMessageInteractorCreateCommitOK   = LogMessageTxCommitOK
 	LogMessageInteractorCreateComplete   = LogMessageCreateOK
 
 	// UPDATE flow
@@ -497,9 +497,9 @@ const (
 	LogMessageInteractorUpdateStep3OK    = "[PASO 3/4] Transacción iniciada"
 	LogMessageInteractorUpdateStep4Error = "[PASO 4/4] Error actualizando mensaje"
 	LogMessageInteractorUpdateStep4OK    = "[PASO 4/4] Mensaje actualizado en BD"
-	LogMessageInteractorUpdateCommitErr  = "COMMIT FALLÓ - ALERTA CRÍTICA"
-	LogMessageInteractorUpdateCommitOK   = "Transacción confirmada exitosamente"
-	LogMessageInteractorUpdateComplete   = "Mensaje actualizado exitosamente"
+	LogMessageInteractorUpdateCommitErr  = LogBranchInteractorCommitError
+	LogMessageInteractorUpdateCommitOK   = LogMessageTxCommitOK
+	LogMessageInteractorUpdateComplete   = LogMessageUpdateOK
 
 	// DELETE flow
 	LogMessageInteractorDeleteStep1Error = "[PASO 1/3] Mensaje no encontrado"
@@ -508,13 +508,13 @@ const (
 	LogMessageInteractorDeleteStep2OK    = "[PASO 2/3] Transacción iniciada"
 	LogMessageInteractorDeleteStep3Error = "[PASO 3/3] Error eliminando mensaje"
 	LogMessageInteractorDeleteStep3OK    = "[PASO 3/3] Mensaje eliminado de BD"
-	LogMessageInteractorDeleteCommitErr  = "COMMIT FALLÓ - ALERTA CRÍTICA"
-	LogMessageInteractorDeleteCommitOK   = "Transacción confirmada exitosamente"
-	LogMessageInteractorDeleteComplete   = "Mensaje eliminado exitosamente"
+	LogMessageInteractorDeleteCommitErr  = LogBranchInteractorCommitError
+	LogMessageInteractorDeleteCommitOK   = LogMessageTxCommitOK
+	LogMessageInteractorDeleteComplete   = LogMessageDeleteOK
 
 	// Common rollback
-	LogMessageInteractorRollbackError = "ROLLBACK BD FALLÓ - ALERTA CRÍTICA"
-	LogMessageInteractorRollbackOK    = "Rollback BD ejecutado correctamente"
+	LogMessageInteractorRollbackError = LogTxRollbackError
+	LogMessageInteractorRollbackOK    = LogTxRollbackOK
 )
 
 // ============================================
@@ -531,8 +531,8 @@ const (
 	LogBranchInteractorRegSaved        = "Sede guardada en BD"
 	LogBranchInteractorCommitError     = "COMMIT FALLÓ - ALERTA CRÍTICA"
 	LogBranchInteractorRegComplete     = "Sede registrada exitosamente"
-	LogBranchInteractorRollbackError   = "ROLLBACK BD FALLÓ - ALERTA CRÍTICA"
-	LogBranchInteractorRollbackOK      = "Rollback BD ejecutado correctamente"
+	LogBranchInteractorRollbackError   = LogTxRollbackError
+	LogBranchInteractorRollbackOK      = LogTxRollbackOK
 	LogBranchInteractorGetByID         = "Obteniendo sede por ID"
 	LogBranchInteractorGetByIDError    = "Error obteniendo sede por ID"
 	LogBranchInteractorGetByIDOK       = "Sede obtenida exitosamente"
@@ -563,7 +563,7 @@ const (
 	LogBranchRepoSaveError        = "Error guardando sede en BD"
 	LogBranchRepoUpdateError      = "Error actualizando sede en BD"
 	LogBranchRepoDeleteError      = "Error eliminando sede de BD"
-	LogBranchRepoGetByIDError     = "Error obteniendo sede por ID"
+	LogBranchRepoGetByIDError     = LogBranchInteractorGetByIDError
 	LogBranchRepoGetByNameError   = "Error obteniendo sede por nombre"
 	LogBranchRepoGetByRepError    = "Error obteniendo sedes por representante"
 	LogBranchRepoScanError        = "Error escaneando fila de sede"
@@ -587,10 +587,10 @@ const (
 	LogBranchServiceDupNameCheck = "Error verificando nombre duplicado"
 	LogBranchServiceDupName      = "Nombre de sede duplicado en franquicia"
 	LogBranchServiceSaveError    = "Error guardando sede"
-	LogBranchServiceLocSaveError = "Error guardando ubicación"
+	LogBranchServiceLocSaveError = LogBranchRepoLocationSaveErr
 	LogBranchServiceBrandSaveErr = "Error guardando marcas"
 	LogBranchServiceRegComplete  = "Sede registrada exitosamente"
-	LogBranchServiceGetError     = "Error obteniendo sede por ID"
+	LogBranchServiceGetError     = LogBranchInteractorGetByIDError
 	// HU61: Delete branch
 	LogBranchServiceDelError    = "Error eliminando sede"
 	LogBranchServiceDelComplete = "Sede eliminada exitosamente"
@@ -699,15 +699,15 @@ const (
 // LOCATION REPOSITORY
 // ============================================
 const (
-	LogLocationRepoGetDepartmentsError     = "Error obteniendo departamentos"
+	LogLocationRepoGetDepartmentsError     = LogLocationInteractorGetDepartmentsError
 	LogLocationRepoGetDepartmentsScanError = "Error escaneando departamento"
 	LogLocationRepoGetDepartmentsIterError = "Error iterando departamentos"
-	LogLocationRepoGetCitiesError          = "Error obteniendo ciudades"
+	LogLocationRepoGetCitiesError          = LogLocationInteractorGetCitiesError
 	LogLocationRepoGetCitiesScanError      = "Error escaneando ciudad"
 	LogLocationRepoGetCitiesIterError      = "Error iterando ciudades"
 	LogLocationRepoValidateCityError       = "Error validando ciudad en departamento"
 	LogLocationRepoGetDeptByIDError        = "Error obteniendo departamento por ID"
-	LogLocationRepoSaveError               = "Error guardando ubicación"
+	LogLocationRepoSaveError               = LogBranchRepoLocationSaveErr
 	LogLocationRepoUpdateError             = "Error actualizando ubicación"
 	LogLocationRepoPrepareError            = "Error preparando statement de ubicación"
 )
@@ -767,9 +767,9 @@ const (
 	LogFranchiseServiceDupName      = "Nombre de franquicia duplicado"
 	LogFranchiseServiceSaveError    = "Error guardando franquicia"
 	LogFranchiseServiceGetError     = "Error obteniendo franquicia por ID"
-	LogFranchiseServiceUpdateError  = "Error actualizando franquicia"
-	LogFranchiseServiceDeleteError  = "Error eliminando franquicia"
-	LogFranchiseServiceDeleted      = "Franquicia eliminada exitosamente"
+	LogFranchiseServiceUpdateError  = LogFranchiseInteractorUpdateError
+	LogFranchiseServiceDeleteError  = LogFranchiseInteractorDeleteError
+	LogFranchiseServiceDeleted      = LogFranchiseInteractorDeleteComplete
 )
 
 // ============================================
@@ -804,10 +804,10 @@ const (
 	LogFranchiseControllerGetSuccess       = "Franquicia obtenida exitosamente"
 	LogFranchiseControllerBindError        = "Error parseando JSON de franquicia"
 	LogFranchiseControllerIDDecodeError    = "Error decodificando ID de franquicia"
-	LogFranchiseControllerUpdateError      = "Error actualizando franquicia"
+	LogFranchiseControllerUpdateError      = LogFranchiseInteractorUpdateError
 	LogFranchiseControllerUpdateSuccess    = "Franquicia actualizada exitosamente"
-	LogFranchiseControllerDeleteError      = "Error eliminando franquicia"
-	LogFranchiseControllerDeleteSuccess    = "Franquicia eliminada exitosamente"
+	LogFranchiseControllerDeleteError      = LogFranchiseInteractorDeleteError
+	LogFranchiseControllerDeleteSuccess    = LogFranchiseInteractorDeleteComplete
 	LogFranchiseControllerAddBranchRequest = "Solicitud vincular sede a franquicia"
 	LogFranchiseControllerAddBranchError   = "Error vinculando sede a franquicia"
 	LogFranchiseControllerAddBranchSuccess = "Sede vinculada a franquicia exitosamente"
@@ -975,10 +975,10 @@ const (
 // ============================================
 const (
 	LogLocationControllerGetDepts      = "Solicitud de listado de departamentos recibida"
-	LogLocationControllerGetDeptsError = "Error obteniendo departamentos"
+	LogLocationControllerGetDeptsError = LogLocationInteractorGetDepartmentsError
 	LogLocationControllerGetDeptsOK    = "Departamentos obtenidos exitosamente"
 	LogLocationControllerGetCities     = "Solicitud de listado de ciudades recibida"
-	LogLocationControllerGetCitiesErr  = "Error obteniendo ciudades"
+	LogLocationControllerGetCitiesErr  = LogLocationInteractorGetCitiesError
 	LogLocationControllerGetCitiesOK   = "Ciudades obtenidas exitosamente"
 )
 
@@ -990,8 +990,8 @@ const (
 	LogMessageCacheReloadError   = "Error al recargar caché de mensajes"
 	LogMessageCacheReloadOK      = "Caché de mensajes recargado exitosamente"
 	LogMessageCreatedOK          = LogMessageCreateOK
-	LogMessageUpdatedOK          = "Mensaje actualizado exitosamente"
-	LogMessageDeletedOK          = "Mensaje eliminado exitosamente"
+	LogMessageUpdatedOK          = LogMessageUpdateOK
+	LogMessageDeletedOK          = LogMessageDeleteOK
 )
 
 // ============================================
@@ -1039,11 +1039,11 @@ const (
 	LogScheduleInteractorRollbackError  = "ROLLBACK FALLÓ - Horario"
 	LogScheduleInteractorRollbackOK     = "Rollback ejecutado para horario"
 	LogScheduleInteractorUpdateStart    = "Iniciando actualización de horario"
-	LogScheduleInteractorUpdateComplete = "Horario actualizado exitosamente"
+	LogScheduleInteractorUpdateComplete = LogScheduleServiceUpdateOK
 	LogScheduleInteractorDeleteStart    = "Iniciando eliminación de horario"
-	LogScheduleInteractorDeleteComplete = "Horario eliminado exitosamente"
-	LogScheduleInteractorGetError       = "Error obteniendo horario"
-	LogScheduleInteractorGetOK          = "Horario obtenido exitosamente"
+	LogScheduleInteractorDeleteComplete = LogScheduleServiceDeleteOK
+	LogScheduleInteractorGetError       = LogScheduleServiceGetError
+	LogScheduleInteractorGetOK          = LogScheduleServiceGetOK
 )
 
 // ============================================
@@ -1055,14 +1055,14 @@ const (
 	LogScheduleControllerCreateError         = "Error creando horario"
 	LogScheduleControllerCreateOK            = "Horario creado exitosamente"
 	LogScheduleControllerGetRequest          = "Solicitud de consulta de horario recibida"
-	LogScheduleControllerGetError            = "Error obteniendo horario"
-	LogScheduleControllerGetOK               = "Horario obtenido exitosamente"
+	LogScheduleControllerGetError            = LogScheduleServiceGetError
+	LogScheduleControllerGetOK               = LogScheduleServiceGetOK
 	LogScheduleControllerUpdateRequest       = "Solicitud de actualización de horario recibida"
 	LogScheduleControllerUpdateError         = "Error actualizando horario"
-	LogScheduleControllerUpdateOK            = "Horario actualizado exitosamente"
+	LogScheduleControllerUpdateOK            = LogScheduleServiceUpdateOK
 	LogScheduleControllerDeleteRequest       = "Solicitud de eliminación de horario recibida"
 	LogScheduleControllerDeleteError         = "Error eliminando horario"
-	LogScheduleControllerDeleteOK            = "Horario eliminado exitosamente"
+	LogScheduleControllerDeleteOK            = LogScheduleServiceDeleteOK
 	LogScheduleControllerActivateReq         = "Solicitud de activación de horario recibida"
 	LogScheduleControllerActivateError       = "Error activando horario"
 	LogScheduleControllerActivateOK          = "Horario activado exitosamente"
@@ -1110,9 +1110,9 @@ const (
 	LogScheduleDetailInteractorTxError        = "Error iniciando transacción de detalle horario"
 	LogScheduleDetailInteractorCreateError    = "Error creando detalle horario"
 	LogScheduleDetailInteractorCommitError    = "COMMIT FALLÓ - Detalle horario"
-	LogScheduleDetailInteractorCreateOK       = "Detalle horario creado exitosamente"
-	LogScheduleDetailInteractorListError      = "Error listando detalles horario"
-	LogScheduleDetailInteractorListOK         = "Detalles horario listados exitosamente"
+	LogScheduleDetailInteractorCreateOK       = LogScheduleDetailServiceCreateOK
+	LogScheduleDetailInteractorListError      = LogScheduleDetailServiceListError
+	LogScheduleDetailInteractorListOK         = LogScheduleDetailServiceListOK
 	LogScheduleDetailInteractorRollbackError  = "ROLLBACK BD FALLÓ - ALERTA CRÍTICA (detalle horario)"
 	LogScheduleDetailInteractorRollbackOK     = "Rollback BD ejecutado correctamente (detalle horario)"
 )
@@ -1137,10 +1137,10 @@ const (
 const (
 	LogScheduleDetailControllerCreateRequest = "Solicitud de creación de detalle horario recibida"
 	LogScheduleDetailControllerCreateError   = "Error creando detalle horario"
-	LogScheduleDetailControllerCreateOK      = "Detalle horario creado exitosamente"
+	LogScheduleDetailControllerCreateOK      = LogScheduleDetailServiceCreateOK
 	LogScheduleDetailControllerListRequest   = "Solicitud de listado de detalles horario recibida"
-	LogScheduleDetailControllerListError     = "Error listando detalles horario"
-	LogScheduleDetailControllerListOK        = "Detalles horario listados exitosamente"
+	LogScheduleDetailControllerListError     = LogScheduleDetailServiceListError
+	LogScheduleDetailControllerListOK        = LogScheduleDetailServiceListOK
 	LogScheduleDetailControllerGetRequest    = "Solicitud de consulta de detalle horario recibida"
 	LogScheduleDetailControllerGetError      = "Error obteniendo detalle horario"
 	LogScheduleDetailControllerGetOK         = "Detalle horario obtenido exitosamente"
@@ -1427,10 +1427,10 @@ const (
 	LogEvidenceControllerGetError      = "Error obteniendo evidencia"
 	LogEvidenceControllerGetSuccess    = "Evidencia obtenida exitosamente"
 	LogEvidenceControllerUpdateRequest = "Solicitud de actualización de evidencia recibida"
-	LogEvidenceControllerUpdateError   = "Error actualizando evidencia"
+	LogEvidenceControllerUpdateError   = LogEvidenceInteractorUpdateError
 	LogEvidenceControllerUpdateSuccess = "Evidencia actualizada exitosamente"
 	LogEvidenceControllerDeleteRequest = "Solicitud de eliminación de evidencia recibida"
-	LogEvidenceControllerDeleteError   = "Error eliminando evidencia"
+	LogEvidenceControllerDeleteError   = LogEvidenceInteractorDeleteError
 	LogEvidenceControllerDeleteSuccess = "Evidencia eliminada exitosamente"
 )
 
@@ -1445,8 +1445,8 @@ const (
 	LogEvidenceRepoListByMotoError    = "Error listando evidencias por motocicleta"
 	LogEvidenceRepoScanError          = "Error escaneando fila de evidencia"
 	LogEvidenceRepoCountError         = "Error contando evidencias"
-	LogEvidenceRepoUpdateError        = "Error actualizando evidencia"
-	LogEvidenceRepoDeleteError        = "Error eliminando evidencia"
+	LogEvidenceRepoUpdateError        = LogEvidenceInteractorUpdateError
+	LogEvidenceRepoDeleteError        = LogEvidenceInteractorDeleteError
 	LogEvidenceRepoPrepareInsertError = "Error preparando statement de inserción de evidencia"
 	LogEvidenceRepoPrepareUpdateError = "Error preparando statement de actualización de evidencia"
 	LogEvidenceRepoPrepareDeleteError = "Error preparando statement de eliminación de evidencia"
@@ -1691,7 +1691,7 @@ const (
 	LogDiagPermInteractorDeleteError   = "Error revocando permiso de diagnóstico"
 	LogDiagPermInteractorRevokeSuccess = "Permiso de diagnóstico revocado exitosamente"
 	LogDiagPermInteractorListStart     = "Listado de permisos de diagnóstico iniciado"
-	LogDiagPermInteractorListError     = "Error listando permisos de diagnóstico"
+	LogDiagPermInteractorListError     = LogDiagPermRepoListError
 	LogDiagPermInteractorListSuccess   = "Permisos de diagnóstico listados exitosamente"
 
 	// LookupPermissions (representative plate lookup - no ownership check)
@@ -1711,7 +1711,7 @@ const (
 	LogDiagPermControllerRevokeError   = "Error revocando permiso de diagnóstico"
 	LogDiagPermControllerRevokeSuccess = "Permiso de diagnóstico revocado exitosamente"
 	LogDiagPermControllerListRequest   = "Solicitud de listado de permisos de diagnóstico recibida"
-	LogDiagPermControllerListError     = "Error listando permisos de diagnóstico"
+	LogDiagPermControllerListError     = LogDiagPermRepoListError
 	LogDiagPermControllerListSuccess   = "Permisos de diagnóstico listados exitosamente"
 
 	// Dependency initialization

@@ -10,7 +10,7 @@ import (
 )
 
 type Validators struct {
-	FileReader                       FileReaderInterface
+	FileReader                       FileReader
 	RegisterValidator                *jsonschema.Schema
 	MessageValidator                 *jsonschema.Schema
 	CreateMessageValidator           *jsonschema.Schema
@@ -39,7 +39,7 @@ type Validators struct {
 	UpdateStatusValidator            *jsonschema.Schema // HU74 (update status)
 }
 
-type FileReaderInterface interface {
+type FileReader interface {
 	ReadJsonSchema(resourcePath string) ([]byte, error)
 }
 
@@ -61,7 +61,7 @@ func (f *DefaultFileReader) ReadJsonSchema(resourcePath string) ([]byte, error) 
 	return io.ReadAll(data)
 }
 
-func NewValidator(fileReader FileReaderInterface) (*Validators, error) {
+func NewValidator(fileReader FileReader) (*Validators, error) {
 	validator := &Validators{
 		FileReader: fileReader,
 	}
