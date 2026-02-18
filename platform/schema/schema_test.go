@@ -120,3 +120,141 @@ func TestNewValidator_InvalidSchemaJSON(t *testing.T) {
 	assert.Error(t, err)
 	assert.Nil(t, v)
 }
+
+// ============================================
+// ValidateRegister Tests
+// ============================================
+
+func TestValidateRegister_ValidData_NoError(t *testing.T) {
+	reader := buildMockReader()
+	v, err := schema.NewValidator(reader)
+	assert.NoError(t, err)
+
+	// Minimal valid object for {"type": "object"} schema
+	err = v.ValidateRegister(map[string]interface{}{})
+	assert.NoError(t, err)
+}
+
+func TestValidateRegister_InvalidData_Error(t *testing.T) {
+	reader := buildMockReader()
+	v, err := schema.NewValidator(reader)
+	assert.NoError(t, err)
+
+	// A string is not a valid object
+	err = v.ValidateRegister("not an object")
+	assert.Error(t, err)
+}
+
+func TestValidateRegister_NilValidator_Error(t *testing.T) {
+	v := &schema.Validators{}
+	err := v.ValidateRegister(map[string]interface{}{})
+	assert.Error(t, err)
+}
+
+// ============================================
+// ValidateMessage Tests
+// ============================================
+
+func TestValidateMessage_ValidData_NoError(t *testing.T) {
+	reader := buildMockReader()
+	v, err := schema.NewValidator(reader)
+	assert.NoError(t, err)
+
+	err = v.ValidateMessage(map[string]interface{}{})
+	assert.NoError(t, err)
+}
+
+func TestValidateMessage_InvalidData_Error(t *testing.T) {
+	reader := buildMockReader()
+	v, err := schema.NewValidator(reader)
+	assert.NoError(t, err)
+
+	err = v.ValidateMessage("not an object")
+	assert.Error(t, err)
+}
+
+func TestValidateMessage_NilValidator_Error(t *testing.T) {
+	v := &schema.Validators{}
+	err := v.ValidateMessage(map[string]interface{}{})
+	assert.Error(t, err)
+}
+
+// ============================================
+// ValidateRegisterMotorcycle Tests
+// ============================================
+
+func TestValidateRegisterMotorcycle_ValidData_NoError(t *testing.T) {
+	reader := buildMockReader()
+	v, err := schema.NewValidator(reader)
+	assert.NoError(t, err)
+
+	err = v.ValidateRegisterMotorcycle(map[string]interface{}{})
+	assert.NoError(t, err)
+}
+
+func TestValidateRegisterMotorcycle_InvalidData_Error(t *testing.T) {
+	reader := buildMockReader()
+	v, err := schema.NewValidator(reader)
+	assert.NoError(t, err)
+
+	err = v.ValidateRegisterMotorcycle(42)
+	assert.Error(t, err)
+}
+
+func TestValidateRegisterMotorcycle_NilValidator_Error(t *testing.T) {
+	v := &schema.Validators{}
+	err := v.ValidateRegisterMotorcycle(map[string]interface{}{})
+	assert.Error(t, err)
+}
+
+// ============================================
+// ValidateUpdateMotorcycle Tests
+// ============================================
+
+func TestValidateUpdateMotorcycle_ValidData_NoError(t *testing.T) {
+	reader := buildMockReader()
+	v, err := schema.NewValidator(reader)
+	assert.NoError(t, err)
+
+	err = v.ValidateUpdateMotorcycle(map[string]interface{}{})
+	assert.NoError(t, err)
+}
+
+func TestValidateUpdateMotorcycle_InvalidData_Error(t *testing.T) {
+	reader := buildMockReader()
+	v, err := schema.NewValidator(reader)
+	assert.NoError(t, err)
+
+	err = v.ValidateUpdateMotorcycle(true)
+	assert.Error(t, err)
+}
+
+func TestValidateUpdateMotorcycle_NilValidator_Error(t *testing.T) {
+	v := &schema.Validators{}
+	err := v.ValidateUpdateMotorcycle(map[string]interface{}{})
+	assert.Error(t, err)
+}
+
+// ============================================
+// DefaultFileReader Tests
+// ============================================
+
+func TestDefaultFileReader_ReadJsonSchema_Success(t *testing.T) {
+	reader := &schema.DefaultFileReader{}
+
+	// Read an actual schema file that exists in the project
+	data, err := reader.ReadJsonSchema("register_person_schema.json")
+
+	assert.NoError(t, err)
+	assert.NotNil(t, data)
+	assert.NotEmpty(t, data)
+}
+
+func TestDefaultFileReader_ReadJsonSchema_NotFound(t *testing.T) {
+	reader := &schema.DefaultFileReader{}
+
+	data, err := reader.ReadJsonSchema("nonexistent_schema.json")
+
+	assert.Error(t, err)
+	assert.Nil(t, data)
+}

@@ -53,10 +53,14 @@ func sanitizeHost(host string) string {
 	return host
 }
 
-// SetLocationHeader establece el Location header con la URL del recurso
-func SetLocationHeader(c *gin.Context, baseURL, resource, resourceID string) {
-	locationURL := BuildResourceURL(baseURL, resource, resourceID)
-	c.Header("Location", locationURL)
+// SetLocationHeader establece el Location header con la URL del recurso.
+// Uses a relative path to avoid open redirects via user-controlled Host header (S5146).
+func SetLocationHeader(c *gin.Context, _, resource, resourceID string) {
+	path := fmt.Sprintf("/motogo/api/v1/%s", resource)
+	if resourceID != "" {
+		path = fmt.Sprintf("%s/%s", path, resourceID)
+	}
+	c.Header("Location", path)
 }
 
 // BuildResourceURL construye una URL completa para un recurso

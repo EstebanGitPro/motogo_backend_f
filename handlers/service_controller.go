@@ -252,7 +252,7 @@ func (h *handler) AssociateBranchServices() gin.HandlerFunc {
 		}
 
 		// Execute association in a transaction
-		if err := h.associateServicesInTx(c, log, decodedBranchID, decodedServiceIDs); err != nil {
+		if h.associateServicesInTx(c, log, decodedBranchID, decodedServiceIDs) != nil {
 			return
 		}
 

@@ -424,7 +424,7 @@ func (s *scheduleDetailService) validateExceptionTimeIfOpen(exception domain.Sch
 	if exception.OpeningTime == nil || exception.ClosingTime == nil {
 		return domain.ErrScheduleExceptionInvalidTime
 	}
-	if err := s.ValidateTimeRange(*exception.OpeningTime, *exception.ClosingTime); err != nil {
+	if s.ValidateTimeRange(*exception.OpeningTime, *exception.ClosingTime) != nil {
 		return domain.ErrScheduleExceptionInvalidTime
 	}
 	return nil
@@ -483,7 +483,7 @@ func (s *scheduleDetailService) UpdateException(
 		if exception.OpeningTime == nil || exception.ClosingTime == nil {
 			return domain.ErrScheduleExceptionInvalidTime
 		}
-		if err := s.ValidateTimeRange(*exception.OpeningTime, *exception.ClosingTime); err != nil {
+		if s.ValidateTimeRange(*exception.OpeningTime, *exception.ClosingTime) != nil {
 			return domain.ErrScheduleExceptionInvalidTime
 		}
 	}

@@ -248,7 +248,7 @@ func TestSetLocationHeader(t *testing.T) {
 
 	// Assert
 	location := w.Header().Get("Location")
-	assert.Equal(t, "http://localhost:8080/motogo/api/v1/accounts/xyz123", location)
+	assert.Equal(t, "/motogo/api/v1/accounts/xyz123", location)
 }
 
 func TestLink_Structure(t *testing.T) {

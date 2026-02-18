@@ -91,7 +91,7 @@ func (h handler) RegisterPerson() func(c *gin.Context) {
 func (h handler) ResendVerificationEmail() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req ResendVerificationEmailRequest
-		if err := c.ShouldBindJSON(&req); err != nil {
+		if c.ShouldBindJSON(&req) != nil {
 			h.Response.Error(c, domain.MsgValBadFormat)
 			return
 		}
@@ -130,7 +130,7 @@ func (h handler) ResendVerificationEmail() gin.HandlerFunc {
 func (h handler) RequestPasswordReset() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req PasswordResetRequest
-		if err := c.ShouldBindJSON(&req); err != nil {
+		if c.ShouldBindJSON(&req) != nil {
 			h.Response.Error(c, domain.MsgValBadFormat)
 			return
 		}

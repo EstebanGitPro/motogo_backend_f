@@ -14,7 +14,7 @@ func (r *repository) getBranchBrands(ctx context.Context, branchID string) ([]st
 	var brands []string
 	for rows.Next() {
 		var brand string
-		if err := rows.Scan(&brand); err != nil {
+		if rows.Scan(&brand) != nil {
 			continue
 		}
 		brands = append(brands, brand)

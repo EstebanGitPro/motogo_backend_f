@@ -263,10 +263,7 @@ func (h *handler) LookupMotorcycleByPlate() gin.HandlerFunc {
 			return
 		}
 
-		repBranchSet := make(map[string]domain.Branch, len(repBranches))
-		for _, b := range repBranches {
-			repBranchSet[b.ID] = b
-		}
+		repBranchSet := buildBranchSetByID(repBranches)
 
 		// 4. Call interactor to get motorcycle by plate
 		motorcycle, err := h.MotorcycleInteractor.GetMotorcycleByLicensePlate(c.Request.Context(), plate)
@@ -634,6 +631,15 @@ func (h *handler) GetBrandLines() gin.HandlerFunc {
 		// 6. Send success response (200 OK)
 		h.Response.SuccessWithData(c, domain.MsgBrandLinesRetrieved, response)
 	}
+}
+
+// buildBranchSetByID creates a map of branches indexed by their ID.
+func buildBranchSetByID(branches []domain.Branch) map[string]domain.Branch {
+	result := make(map[string]domain.Branch, len(branches))
+	for _, b := range branches {
+		result[b.ID] = b
+	}
+	return result
 }
 
 // ============================================

@@ -65,7 +65,7 @@ func (r *repository) ValidateBrandIDs(ctx context.Context, brandIDs []string) er
 	foundBrands := make(map[string]bool)
 	for rows.Next() {
 		var id string
-		if err := rows.Scan(&id); err != nil {
+		if rows.Scan(&id) != nil {
 			continue
 		}
 		foundBrands[id] = true

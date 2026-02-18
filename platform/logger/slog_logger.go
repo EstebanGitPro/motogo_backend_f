@@ -16,7 +16,7 @@ type SlogLogger struct {
 func NewSlogLogger() Logger {
 	// Create log directory if it doesn't exist
 	logDir := "/tmp/motogo-logs"
-	if err := os.MkdirAll(logDir, 0755); err != nil {
+	if os.MkdirAll(logDir, 0755) != nil {
 		// If we can't create the directory, just log to stdout
 		handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 			Level:     slog.LevelDebug,
