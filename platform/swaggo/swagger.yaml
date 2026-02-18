@@ -290,6 +290,64 @@ definitions:
       name:
         type: string
     type: object
+  handlers.CompletedServiceItemResponse:
+    properties:
+      id:
+        type: string
+      service_id:
+        type: string
+    type: object
+  handlers.CompletedServiceResponse:
+    properties:
+      branch_id:
+        type: string
+      branch_name:
+        type: string
+      diagnostic_id:
+        type: string
+      final_price:
+        type: number
+      id:
+        type: string
+      motorcycle_id:
+        type: string
+      quoted_price:
+        type: number
+      representative_notes:
+        type: string
+      request_date:
+        type: string
+      services:
+        items:
+          $ref: '#/definitions/handlers.CompletedServiceItemResponse'
+        type: array
+      status:
+        type: string
+    type: object
+  handlers.CreateCompletedServiceRequest:
+    properties:
+      branch_id:
+        type: string
+      diagnostic_id:
+        type: string
+      final_price:
+        type: number
+      motorcycle_id:
+        type: string
+      quoted_price:
+        type: number
+      representative_notes:
+        type: string
+      service_ids:
+        items:
+          type: string
+        minItems: 1
+        type: array
+    required:
+    - branch_id
+    - motorcycle_id
+    - service_ids
+    type: object
   handlers.CreateDiagnosticRequest:
     properties:
       branch_id:
@@ -648,6 +706,10 @@ definitions:
       _links:
         items:
           $ref: '#/definitions/handlers.Link'
+        type: array
+      completed_services:
+        items:
+          $ref: '#/definitions/handlers.CompletedServiceResponse'
         type: array
       current_mileage:
         type: integer
@@ -1025,6 +1087,19 @@ definitions:
         example: true
         type: boolean
     type: object
+  handlers.StatusTransitionResponse:
+    properties:
+      created_at:
+        type: string
+      created_by:
+        type: string
+      id:
+        type: string
+      new_status:
+        type: string
+      previous_status:
+        type: string
+    type: object
   handlers.UpdateDiagnosticRequest:
     properties:
       possible_solution:
@@ -1134,6 +1209,13 @@ definitions:
     required:
     - name
     - service_type
+    type: object
+  handlers.UpdateStatusRequest:
+    properties:
+      status:
+        type: string
+    required:
+    - status
     type: object
   handlers.VerifyEmailRequest:
     properties:
@@ -1970,6 +2052,44 @@ paths:
       summary: Update a branch
       tags:
       - Branch
+  /branches/{id}/completed-services:
+    get:
+      description: Lists all completed services registered at a branch
+      parameters:
+      - description: Branch ID (obfuscated)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Completed services list
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/handlers.CompletedServiceResponse'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Branch not found
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: List completed services for a branch
   /branches/{id}/schedules:
     delete:
       description: Removes the schedule configuration for a branch
@@ -2422,6 +2542,168 @@ paths:
       summary: Get all motorcycle brands
       tags:
       - Brands
+  /completed-services:
+    post:
+      consumes:
+      - application/json
+      description: Registers a new performed service for a motorcycle at a branch.
+        Creates the service record, pivot items, and initial status history.
+      parameters:
+      - description: Completed service data
+        in: body
+        name: completedService
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CreateCompletedServiceRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Service registered successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.CompletedServiceResponse'
+              type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Branch or motorcycle not found
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: Register performed service
+  /completed-services/{id}:
+    delete:
+      description: Deletes a completed service record and its associated items and
+        status history (via DB cascade).
+      parameters:
+      - description: Completed service ID (obfuscated)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Service deleted successfully
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Completed service not found
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a completed service
+  /completed-services/{id}/status:
+    patch:
+      consumes:
+      - application/json
+      description: Updates the status of a completed service, validating the transition
+        is allowed
+      parameters:
+      - description: Completed service ID (obfuscated)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: New status
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.UpdateStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Status updated successfully
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "400":
+          description: Invalid status transition
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Completed service not found
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: Update the status of a completed service
+      tags:
+      - Completed Services
+  /completed-services/{id}/transitions:
+    get:
+      description: Retrieves the full status transition history for a completed service
+      parameters:
+      - description: Completed service ID (obfuscated)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Transitions list
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/handlers.StatusTransitionResponse'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Completed service not found
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: Get status transition history for a completed service
+      tags:
+      - Completed Services
   /departments:
     get:
       description: Retrieves all Colombian departments for location selection
@@ -3073,6 +3355,47 @@ paths:
       summary: Update motorcycle information
       tags:
       - Motorcycles
+  /motorcycles/{id}/completed-services:
+    get:
+      description: Lists all completed services associated with a motorcycle. Only
+        the owner can access.
+      parameters:
+      - description: Motorcycle ID (hashid encoded)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Completed services list
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.StandardResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/handlers.CompletedServiceResponse'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Motorcycle not found
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: List completed services for a motorcycle
+      tags:
+      - Completed Services
   /motorcycles/{id}/diagnostics:
     get:
       description: Lists all diagnostics for a motorcycle owned by authenticated user

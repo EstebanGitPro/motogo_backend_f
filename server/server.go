@@ -57,23 +57,23 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 	errorHandler := middleware.NewErrorHandler(dependencies.MessagingCache)
 	app.Use(errorHandler.Handle())
 
-	handler := handlers.New(
-		dependencies.Interactor,
-		dependencies.MessageInteractor,
-		dependencies.BranchInteractor,
-		dependencies.BrandInteractor,
-		dependencies.LocationInteractor,
-		dependencies.ServiceInteractor,
-		dependencies.FranchiseInteractor,
-		dependencies.MotorcycleInteractor,
-		dependencies.EvidenceInteractor,         // HU16-19
-		dependencies.DiagnosticInteractor,       // HU11-14
-		dependencies.CompletedServiceInteractor, // HU64
-		dependencies.FirebaseClient,
-		dependencies.MessagingCache,
-		dependencies.IDEncoder,
-		dependencies.ResponseHandler,
-	)
+	handler := handlers.New(handlers.HandlerConfig{
+		PersonInteractor:           dependencies.Interactor,
+		MessageInteractor:          dependencies.MessageInteractor,
+		BranchInteractor:           dependencies.BranchInteractor,
+		BrandInteractor:            dependencies.BrandInteractor,
+		LocationInteractor:         dependencies.LocationInteractor,
+		ServiceInteractor:          dependencies.ServiceInteractor,
+		FranchiseInteractor:        dependencies.FranchiseInteractor,
+		MotorcycleInteractor:       dependencies.MotorcycleInteractor,
+		EvidenceInteractor:         dependencies.EvidenceInteractor,
+		DiagnosticInteractor:       dependencies.DiagnosticInteractor,
+		CompletedServiceInteractor: dependencies.CompletedServiceInteractor,
+		FirebaseClient:             dependencies.FirebaseClient,
+		MessagingCache:             dependencies.MessagingCache,
+		IDEncoder:                  dependencies.IDEncoder,
+		ResponseHandler:            dependencies.ResponseHandler,
+	})
 
 	validators, err := schema.NewValidator(&schema.DefaultFileReader{})
 	if err != nil {
@@ -235,7 +235,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		// PUT /motorcycles/:id - Update motorcycle (HU44, solo propietario)
 		protected.PUT("/motorcycles/:id",
 			middleware.RequireRole(domain.RoleUser),
-			validator.WithValidateRegisterMotorcycle(),
+			validator.WithValidateUpdateMotorcycle(),
 			handler.UpdateMotorcycle(),
 		)
 

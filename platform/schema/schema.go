@@ -26,6 +26,7 @@ type Validators struct {
 	UpdateScheduleExceptionValidator *jsonschema.Schema // HU21 (update exception)
 	FranchiseValidator               *jsonschema.Schema // HU26-29 (franchises)
 	RegisterMotorcycleValidator      *jsonschema.Schema // HU43 (register motorcycle)
+	UpdateMotorcycleValidator        *jsonschema.Schema // HU44 (update motorcycle)
 	CreateEvidenceValidator          *jsonschema.Schema // HU16 (create evidence)
 	CompletedServiceValidator        *jsonschema.Schema // HU64 (completed services)
 	DiagnosticValidator              *jsonschema.Schema // HU11 (create diagnostic)
@@ -86,6 +87,7 @@ func NewValidator(fileReader FileReaderInterface) (*Validators, error) {
 		{&validator.UpdateScheduleExceptionValidator, "update_schedule_exception_schema.json"},
 		{&validator.FranchiseValidator, "franchise_schema.json"},
 		{&validator.RegisterMotorcycleValidator, "register_motorcycle_schema.json"},
+		{&validator.UpdateMotorcycleValidator, "update_motorcycle_schema.json"},
 		{&validator.CreateEvidenceValidator, "create_evidence_schema.json"},
 		{&validator.CompletedServiceValidator, "completed_service_schema.json"},
 		{&validator.DiagnosticValidator, "diagnostic_schema.json"},
@@ -164,6 +166,20 @@ func (v *Validators) ValidateRegisterMotorcycle(data interface{}) error {
 	}
 
 	result := v.RegisterMotorcycleValidator.Validate(data)
+	if !result.IsValid() {
+		return ErrValidationFailed
+	}
+
+	return nil
+}
+
+// ValidateUpdateMotorcycle validates data against the update motorcycle schema (HU44)
+func (v *Validators) ValidateUpdateMotorcycle(data interface{}) error {
+	if v.UpdateMotorcycleValidator == nil {
+		return ErrSchemaEmpty
+	}
+
+	result := v.UpdateMotorcycleValidator.Validate(data)
 	if !result.IsValid() {
 		return ErrValidationFailed
 	}
