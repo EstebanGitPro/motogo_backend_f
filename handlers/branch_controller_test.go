@@ -50,6 +50,8 @@ func createTestMessageCache() *messagingCache.MessageCache {
 		{Code: "MOD_AUTH_PROFILE_EXI_00001", Type: "EXITO", Title: "Perfil obtenido", Content: "Perfil del usuario obtenido exitosamente", Active: true},
 		{Code: "GEN_OPE_EXI_00001", Type: "EXITO", Title: "Operación exitosa", Content: "Operación completada exitosamente", Active: true},
 		{Code: "MOD_M_CREATE_EXI_00001", Type: "EXITO", Title: "Mensaje creado", Content: "Mensaje del sistema creado exitosamente", Active: true},
+		{Code: "MOD_M_UPDATE_EXI_00002", Type: "EXITO", Title: "Mensaje actualizado", Content: "Mensaje del sistema actualizado exitosamente", Active: true},
+		{Code: "MOD_M_DELETE_EXI_00003", Type: "EXITO", Title: "Mensaje eliminado", Content: "Mensaje del sistema eliminado exitosamente", Active: true},
 		{Code: "MOD_U_REG_EXI_00001", Type: "EXITO", Title: "Usuario registrado", Content: "Usuario registrado exitosamente", Active: true},
 		{Code: "MOD_AUTH_LOGIN_SUCCESS_EXI_00001", Type: "EXITO", Title: "Login exitoso", Content: "Autenticación exitosa", Active: true},
 		{Code: "MOD_P_UPD_EXI_00002", Type: "EXITO", Title: "Perfil actualizado", Content: "Perfil actualizado exitosamente", Active: true},

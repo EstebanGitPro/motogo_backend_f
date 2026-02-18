@@ -1,14 +1,18 @@
 package middleware_test
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/middleware"
+	"github.com/EstebanGitPro/motogo-backend/mocks"
+	"github.com/EstebanGitPro/motogo-backend/platform/jwt"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestGetAuthenticatedUser_NotExists(t *testing.T) {
@@ -223,4 +227,231 @@ func TestRequireRole_MultipleAllowedRoles(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+// ============================================
+// RequireAuth Integration Tests
+// ============================================
+
+// setupRequireAuthRouter creates a Gin router with RequireAuth middleware and an ErrorHandler
+// to properly convert c.Error() calls into HTTP status codes.
+func setupRequireAuthRouter(
+	personService *mocks.MockPersonService,
+	jwtValidator *mocks.MockJWKSValidator,
+) *gin.Engine {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+
+	// Add RequireAuth middleware
+	router.Use(middleware.RequireAuth(personService, nil, jwtValidator))
+
+	// Add a protected endpoint
+	router.GET("/protected", func(c *gin.Context) {
+		person, exists := middleware.GetAuthenticatedUser(c)
+		if exists && person != nil {
+			c.JSON(http.StatusOK, gin.H{"user_id": person.ID})
+		} else {
+			c.JSON(http.StatusOK, gin.H{"message": "no user"})
+		}
+	})
+
+	return router
+}
+
+func TestRequireAuth_ValidToken_SetsAuthenticatedUser(t *testing.T) {
+	// Arrange
+	mockService := new(mocks.MockPersonService)
+	mockValidator := new(mocks.MockJWKSValidator)
+
+	expectedPerson := &domain.Person{
+		ID:             "person-123",
+		Email:          "test@example.com",
+		KeycloakUserID: "kc-user-456",
+	}
+
+	// Mock: validator returns valid claims with "sub"
+	mockValidator.On("ValidateToken", "valid-jwt-token").Return(
+		map[string]interface{}{"sub": "kc-user-456"}, nil,
+	)
+
+	// Mock: person service finds the user
+	mockService.On("GetPersonByKeycloakID", mock.Anything, "kc-user-456").Return(
+		expectedPerson, nil,
+	)
+
+	router := setupRequireAuthRouter(mockService, mockValidator)
+
+	// Act
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/protected", nil)
+	req.Header.Set("Authorization", "Bearer valid-jwt-token")
+	router.ServeHTTP(w, req)
+
+	// Assert
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "person-123")
+	mockValidator.AssertExpectations(t)
+	mockService.AssertExpectations(t)
+}
+
+func TestRequireAuth_MissingAuthHeader_Aborts(t *testing.T) {
+	// Arrange
+	mockService := new(mocks.MockPersonService)
+	mockValidator := new(mocks.MockJWKSValidator)
+
+	router := setupRequireAuthRouter(mockService, mockValidator)
+
+	// Act - No Authorization header
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/protected", nil)
+	router.ServeHTTP(w, req)
+
+	// Assert - c.Abort() prevents the handler from executing, so the body
+	// should NOT contain handler output (the handler writes user_id or message).
+	assert.NotContains(t, w.Body.String(), "user_id")
+	assert.NotContains(t, w.Body.String(), "no user")
+}
+
+func TestRequireAuth_InvalidBearerFormat_Aborts(t *testing.T) {
+	// Arrange
+	mockService := new(mocks.MockPersonService)
+	mockValidator := new(mocks.MockJWKSValidator)
+
+	router := setupRequireAuthRouter(mockService, mockValidator)
+
+	// Act - "Basic" instead of "Bearer"
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/protected", nil)
+	req.Header.Set("Authorization", "Basic some-credentials")
+	router.ServeHTTP(w, req)
+
+	// Assert - handler should not execute
+	assert.NotContains(t, w.Body.String(), "user_id")
+	assert.NotContains(t, w.Body.String(), "no user")
+}
+
+func TestRequireAuth_ExpiredToken_MapsToTokenExpired(t *testing.T) {
+	// Arrange
+	mockService := new(mocks.MockPersonService)
+	mockValidator := new(mocks.MockJWKSValidator)
+
+	// Mock: validator returns expired token error
+	mockValidator.On("ValidateToken", "expired-token").Return(
+		nil, jwt.ErrTokenExpired,
+	)
+
+	router := setupRequireAuthRouter(mockService, mockValidator)
+
+	// Act
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/protected", nil)
+	req.Header.Set("Authorization", "Bearer expired-token")
+	router.ServeHTTP(w, req)
+
+	// Assert - handler should not execute
+	assert.NotContains(t, w.Body.String(), "user_id")
+	assert.NotContains(t, w.Body.String(), "no user")
+	mockValidator.AssertExpectations(t)
+}
+
+func TestRequireAuth_InvalidToken_MapsToInvalidToken(t *testing.T) {
+	// Arrange
+	mockService := new(mocks.MockPersonService)
+	mockValidator := new(mocks.MockJWKSValidator)
+
+	// Mock: validator returns a generic validation error
+	mockValidator.On("ValidateToken", "bad-signature-token").Return(
+		nil, errors.New("invalid signature"),
+	)
+
+	router := setupRequireAuthRouter(mockService, mockValidator)
+
+	// Act
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/protected", nil)
+	req.Header.Set("Authorization", "Bearer bad-signature-token")
+	router.ServeHTTP(w, req)
+
+	// Assert - handler should not execute
+	assert.NotContains(t, w.Body.String(), "user_id")
+	assert.NotContains(t, w.Body.String(), "no user")
+	mockValidator.AssertExpectations(t)
+}
+
+func TestRequireAuth_MissingSubClaim_Aborts(t *testing.T) {
+	// Arrange
+	mockService := new(mocks.MockPersonService)
+	mockValidator := new(mocks.MockJWKSValidator)
+
+	// Mock: valid token but claims don't have "sub" as string
+	mockValidator.On("ValidateToken", "no-sub-token").Return(
+		map[string]interface{}{"iss": "test-issuer"}, nil,
+	)
+
+	router := setupRequireAuthRouter(mockService, mockValidator)
+
+	// Act
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/protected", nil)
+	req.Header.Set("Authorization", "Bearer no-sub-token")
+	router.ServeHTTP(w, req)
+
+	// Assert - handler should not execute
+	assert.NotContains(t, w.Body.String(), "user_id")
+	assert.NotContains(t, w.Body.String(), "no user")
+	mockValidator.AssertExpectations(t)
+}
+
+func TestRequireAuth_EmptySubClaim_Aborts(t *testing.T) {
+	// Arrange
+	mockService := new(mocks.MockPersonService)
+	mockValidator := new(mocks.MockJWKSValidator)
+
+	// Mock: valid token but "sub" is empty string
+	mockValidator.On("ValidateToken", "empty-sub-token").Return(
+		map[string]interface{}{"sub": ""}, nil,
+	)
+
+	router := setupRequireAuthRouter(mockService, mockValidator)
+
+	// Act
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/protected", nil)
+	req.Header.Set("Authorization", "Bearer empty-sub-token")
+	router.ServeHTTP(w, req)
+
+	// Assert - handler should not execute
+	assert.NotContains(t, w.Body.String(), "user_id")
+	assert.NotContains(t, w.Body.String(), "no user")
+	mockValidator.AssertExpectations(t)
+}
+
+func TestRequireAuth_UserNotFoundInDB_Aborts(t *testing.T) {
+	// Arrange
+	mockService := new(mocks.MockPersonService)
+	mockValidator := new(mocks.MockJWKSValidator)
+
+	// Mock: valid token with valid "sub"
+	mockValidator.On("ValidateToken", "valid-token").Return(
+		map[string]interface{}{"sub": "kc-user-unknown"}, nil,
+	)
+
+	// Mock: person service can't find the user
+	mockService.On("GetPersonByKeycloakID", mock.Anything, "kc-user-unknown").Return(
+		nil, errors.New("user not found"),
+	)
+
+	router := setupRequireAuthRouter(mockService, mockValidator)
+
+	// Act
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/protected", nil)
+	req.Header.Set("Authorization", "Bearer valid-token")
+	router.ServeHTTP(w, req)
+
+	// Assert - handler should not execute
+	assert.NotContains(t, w.Body.String(), "user_id")
+	assert.NotContains(t, w.Body.String(), "no user")
+	mockValidator.AssertExpectations(t)
+	mockService.AssertExpectations(t)
 }

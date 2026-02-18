@@ -2,6 +2,7 @@ package keycloak
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -196,7 +197,7 @@ func (c *client) GetUserByEmail(ctx context.Context, email string) (*gocloak.Use
 
 func (c *client) GetUserByID(ctx context.Context, userID string) (*gocloak.User, error) {
 	if userID == "" {
-		return nil, fmt.Errorf(errUserIDEmpty)
+		return nil, errors.New(errUserIDEmpty)
 	}
 
 	token, err := c.ensureValidToken(ctx)
@@ -242,7 +243,7 @@ func (c *client) UpdateUser(ctx context.Context, user *gocloak.User) error {
 
 func (c *client) DeleteUser(ctx context.Context, userID string) error {
 	if userID == "" {
-		return fmt.Errorf(errUserIDEmpty)
+		return errors.New(errUserIDEmpty)
 	}
 
 	token, err := c.ensureValidToken(ctx)
@@ -373,7 +374,7 @@ func (c *client) RemoveRole(ctx context.Context, userID string, roleName string)
 
 func (c *client) GetUserRoles(ctx context.Context, userID string) ([]*gocloak.Role, error) {
 	if userID == "" {
-		return nil, fmt.Errorf(errUserIDEmpty)
+		return nil, errors.New(errUserIDEmpty)
 	}
 
 	token, err := c.ensureValidToken(ctx)
@@ -396,7 +397,7 @@ func (c *client) GetUserRoles(ctx context.Context, userID string) ([]*gocloak.Ro
 
 func (c *client) SendVerificationEmail(ctx context.Context, userID string) error {
 	if userID == "" {
-		return fmt.Errorf(errUserIDEmpty)
+		return errors.New(errUserIDEmpty)
 	}
 
 	token, err := c.ensureValidToken(ctx)
@@ -489,7 +490,7 @@ func (c *client) SendPasswordResetEmail(ctx context.Context, email string) error
 
 func (c *client) VerifyEmail(ctx context.Context, userID string) error {
 	if userID == "" {
-		return fmt.Errorf(errUserIDEmpty)
+		return errors.New(errUserIDEmpty)
 	}
 
 	user, err := c.GetUserByID(ctx, userID)
