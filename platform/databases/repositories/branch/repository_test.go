@@ -500,10 +500,10 @@ func TestGetBranchesNearby_Success(t *testing.T) {
 
 	branches, err := repo.GetBranchesNearby(
 		context.Background(),
-		4.7110, -74.0721, 5.0,
-		"",
-		4.6110, 4.8110, -74.1721, -73.9721,
-		"", "",
+		domain.NearbySearchParams{
+			Lat: 4.7110, Lng: -74.0721, RadiusKm: 5.0,
+			LatMin: 4.6110, LatMax: 4.8110, LngMin: -74.1721, LngMax: -73.9721,
+		},
 	)
 
 	assert.NoError(t, err)
@@ -536,10 +536,11 @@ func TestGetBranchesNearby_Empty(t *testing.T) {
 
 	branches, err := repo.GetBranchesNearby(
 		context.Background(),
-		4.7110, -74.0721, 1.0,
-		"WORKSHOP",
-		4.6110, 4.8110, -74.1721, -73.9721,
-		"", "",
+		domain.NearbySearchParams{
+			Lat: 4.7110, Lng: -74.0721, RadiusKm: 1.0,
+			EstablishmentType: "WORKSHOP",
+			LatMin:            4.6110, LatMax: 4.8110, LngMin: -74.1721, LngMax: -73.9721,
+		},
 	)
 
 	assert.NoError(t, err)
@@ -558,10 +559,10 @@ func TestGetBranchesNearby_DBError(t *testing.T) {
 
 	branches, err := repo.GetBranchesNearby(
 		context.Background(),
-		4.7110, -74.0721, 5.0,
-		"",
-		4.6110, 4.8110, -74.1721, -73.9721,
-		"", "",
+		domain.NearbySearchParams{
+			Lat: 4.7110, Lng: -74.0721, RadiusKm: 5.0,
+			LatMin: 4.6110, LatMax: 4.8110, LngMin: -74.1721, LngMax: -73.9721,
+		},
 	)
 
 	assert.Nil(t, branches)

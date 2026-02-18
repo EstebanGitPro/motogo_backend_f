@@ -13,10 +13,7 @@ import (
 // Uses Haversine formula with bounding box optimization and optional brand/displacement filters
 func (r *repository) GetBranchesNearby(
 	ctx context.Context,
-	lat, lng, radiusKm float64,
-	establishmentType string,
-	latMin, latMax, lngMin, lngMax float64,
-	brandID, displacementRange string,
+	params domain.NearbySearchParams,
 ) ([]domain.NearbyBranch, error) {
 	// Build dynamic query with optional filters
 	var query strings.Builder
@@ -42,41 +39,41 @@ func (r *repository) GetBranchesNearby(
 		  AND l.latitude IS NOT NULL
 		  AND l.longitude IS NOT NULL
 	`)
-	args = append(args, lat, lng, lat)
+	args = append(args, params.Lat, params.Lng, params.Lat)
 
 	// Optional: establishment type filter
-	if establishmentType != "" {
+	if params.EstablishmentType != "" {
 		query.WriteString(fmt.Sprintf("  AND b.establishment_type LIKE CONCAT('%%', ?, '%%')\n"))
-		args = append(args, establishmentType)
+		args = append(args, params.EstablishmentType)
 	}
 
 	// Bounding box filter (always applied)
 	query.WriteString("  AND l.latitude BETWEEN ? AND ?\n")
 	query.WriteString("  AND l.longitude BETWEEN ? AND ?\n")
-	args = append(args, latMin, latMax, lngMin, lngMax)
+	args = append(args, params.LatMin, params.LatMax, params.LngMin, params.LngMax)
 	// Optional filters: brand and/or displacement range
 	// When both are provided, use OR (match either); when only one, use AND
-	hasBrand := brandID != ""
-	hasDisplacement := displacementRange != ""
+	hasBrand := params.BrandID != ""
+	hasDisplacement := params.DisplacementRange != ""
 
 	switch {
 	case hasBrand && hasDisplacement:
 		query.WriteString("  AND (EXISTS (SELECT 1 FROM branch_brands bb WHERE bb.branch_id = b.id AND bb.brand_id = ?)")
 		query.WriteString("    OR EXISTS (SELECT 1 FROM branch_displacement_ranges bdr WHERE bdr.branch_id = b.id AND bdr.displacement_range = ? AND bdr.active = TRUE))\n")
-		args = append(args, brandID, displacementRange)
+		args = append(args, params.BrandID, params.DisplacementRange)
 	case hasBrand:
 		query.WriteString("  AND EXISTS (SELECT 1 FROM branch_brands bb WHERE bb.branch_id = b.id AND bb.brand_id = ?)\n")
-		args = append(args, brandID)
+		args = append(args, params.BrandID)
 	case hasDisplacement:
 		query.WriteString("  AND EXISTS (SELECT 1 FROM branch_displacement_ranges bdr WHERE bdr.branch_id = b.id AND bdr.displacement_range = ? AND bdr.active = TRUE)\n")
-		args = append(args, displacementRange)
+		args = append(args, params.DisplacementRange)
 	}
 
 	// HAVING, ORDER, LIMIT
 	query.WriteString("HAVING distance_km <= ?\n")
 	query.WriteString("ORDER BY distance_km ASC\n")
 	query.WriteString("LIMIT 50\n")
-	args = append(args, radiusKm)
+	args = append(args, params.RadiusKm)
 
 	// Execute dynamic query
 	rows, err := r.db.QueryContext(ctx, query.String(), args...)

@@ -127,71 +127,92 @@ func (h *ErrorHandler) Handle() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Next()
 
-		if len(c.Errors) > 0 {
-			err := c.Errors.Last().Err
-
-			// Get request ID for trace correlation
-			traceID := GetRequestID(c)
-			log := log.WithTraceID(traceID)
-
-			// Extract validation field names from context if available
-			var params []string
-			var validationFieldsList []string
-			if validationFields, exists := c.Get("validation_fields"); exists {
-				if fields, ok := validationFields.([]string); ok {
-					validationFieldsList = fields // Keep original list for response
-					// For multiple fields error, concatenate all field names into one parameter
-					if len(fields) > 1 {
-						// Join fields with comma for multiple fields message
-						fieldsStr := fields[0]
-						for i := 1; i < len(fields); i++ {
-							fieldsStr += ", " + fields[i]
-						}
-						params = []string{fieldsStr}
-					} else {
-						params = fields
-					}
-				}
-			}
-
-			// Try to map domain error to message code
-			if messageCode, ok := errorToMessageCode[err]; ok {
-				// Get message from cache (or DB if not cached) with field params
-				msg := h.cache.GetMessageResponse(messageCode, params...)
-				status := h.cache.GetHTTPStatus(messageCode)
-
-				if msg != nil {
-					log.Warn(logger.LogMiddlewareErrorCaught,
-						"error", err.Error(),
-						"code", msg.Code,
-						"status", status,
-						"fields", params,
-						"path", c.Request.URL.Path,
-						"method", c.Request.Method,
-						"client_ip", c.ClientIP())
-
-					c.JSON(status, ErrorResponse{
-						Success: false,
-						Code:    msg.Code,
-						Message: msg.Content,
-						Fields:  validationFieldsList, // Include fields that failed validation
-					})
-					return
-				}
-			}
-
-			// Fallback for unmapped errors
-			log.Error(logger.LogMiddlewareInternalErr,
-				"error", err.Error(),
-				"path", c.Request.URL.Path,
-				"method", c.Request.Method,
-				"client_ip", c.ClientIP())
-
-			c.JSON(http.StatusInternalServerError, ErrorResponse{
-				Success: false,
-				Code:    domain.MsgServerError,
-				Message: "Error interno del servidor",
-			})
+		if len(c.Errors) == 0 {
+			return
 		}
+
+		err := c.Errors.Last().Err
+
+		// Get request ID for trace correlation
+		traceID := GetRequestID(c)
+		log := log.WithTraceID(traceID)
+
+		// Extract validation field names from context if available
+		params, validationFieldsList := extractValidationParams(c)
+
+		// Try to map domain error to message code
+		if h.handleMappedError(c, log, err, params, validationFieldsList) {
+			return
+		}
+
+		// Fallback for unmapped errors
+		log.Error(logger.LogMiddlewareInternalErr,
+			"error", err.Error(),
+			"path", c.Request.URL.Path,
+			"method", c.Request.Method,
+			"client_ip", c.ClientIP())
+
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Success: false,
+			Code:    domain.MsgServerError,
+			Message: "Error interno del servidor",
+		})
 	}
+}
+
+// extractValidationParams reads validation fields from context and builds the params list.
+// Returns the message params (possibly concatenated) and the original field list for the response.
+func extractValidationParams(c *gin.Context) ([]string, []string) {
+	validationFields, exists := c.Get("validation_fields")
+	if !exists {
+		return nil, nil
+	}
+
+	fields, ok := validationFields.([]string)
+	if !ok {
+		return nil, nil
+	}
+
+	if len(fields) <= 1 {
+		return fields, fields
+	}
+
+	// For multiple fields, concatenate all field names into one parameter
+	fieldsStr := fields[0]
+	for i := 1; i < len(fields); i++ {
+		fieldsStr += ", " + fields[i]
+	}
+	return []string{fieldsStr}, fields
+}
+
+// handleMappedError looks up the error in the message code map and responds if found.
+// Returns true if the error was handled, false otherwise.
+func (h *ErrorHandler) handleMappedError(c *gin.Context, log logger.Logger, err error, params, validationFieldsList []string) bool {
+	messageCode, ok := errorToMessageCode[err]
+	if !ok {
+		return false
+	}
+
+	msg := h.cache.GetMessageResponse(messageCode, params...)
+	status := h.cache.GetHTTPStatus(messageCode)
+	if msg == nil {
+		return false
+	}
+
+	log.Warn(logger.LogMiddlewareErrorCaught,
+		"error", err.Error(),
+		"code", msg.Code,
+		"status", status,
+		"fields", params,
+		"path", c.Request.URL.Path,
+		"method", c.Request.Method,
+		"client_ip", c.ClientIP())
+
+	c.JSON(status, ErrorResponse{
+		Success: false,
+		Code:    msg.Code,
+		Message: msg.Content,
+		Fields:  validationFieldsList,
+	})
+	return true
 }
