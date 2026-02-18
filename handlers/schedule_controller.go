@@ -338,63 +338,7 @@ func (h *handler) DeleteBranchSchedule(scheduleInteractor *interactor.ScheduleIn
 // @Failure 404 {object} StandardResponse
 // @Router /branches/{id}/schedules/activate [put]
 func (h *handler) ActivateBranchSchedule(scheduleInteractor *interactor.ScheduleInteractor) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		traceID := middleware.GetRequestID(c)
-		log := Logger.WithTraceID(traceID)
-
-		log.Info(logger.LogScheduleControllerActivateReq, "client_ip", c.ClientIP())
-
-		// 1. Get authenticated person
-		person, _ := middleware.GetAuthenticatedUser(c)
-
-		// 2. Decode branch ID
-		encodedBranchID := c.Param("id")
-		branchID, err := h.DecodeID(encodedBranchID)
-		if err != nil {
-			h.Response.Error(c, domain.MsgBranchNotFound)
-			return
-		}
-
-		// 3. Get schedule to get its ID
-		schedule, err := scheduleInteractor.GetScheduleByBranchIDPublic(c.Request.Context(), branchID)
-		if err != nil {
-			if errors.Is(err, domain.ErrScheduleNotFound) {
-				h.Response.Error(c, domain.MsgScheduleNotFound)
-			} else {
-				h.Response.Error(c, domain.MsgServerError)
-			}
-			return
-		}
-
-		// 4. Activate schedule
-		if err := scheduleInteractor.ActivateSchedule(c.Request.Context(), schedule.ID, person.ID); err != nil {
-			log.Error(logger.LogScheduleControllerActivateError, "error", err, "schedule_id", schedule.ID)
-			switch {
-			case errors.Is(err, domain.ErrScheduleNotFound):
-				h.Response.Error(c, domain.MsgScheduleNotFound)
-			case errors.Is(err, domain.ErrForbidden):
-				h.Response.Error(c, domain.MsgForbidden)
-			default:
-				h.Response.Error(c, domain.MsgServerError)
-			}
-			return
-		}
-
-		// 5. Encode schedule ID
-		encodedScheduleID, _ := h.EncodeID(schedule.ID)
-
-		// 6. Build HATEOAS response
-		baseURL := GetBaseURL(c)
-		links := BuildScheduleLinks(baseURL, encodedBranchID, encodedScheduleID)
-
-		// After activation, active = true
-		schedule.Active = true
-		response := NewScheduleResponse(schedule, encodedScheduleID, encodedBranchID, links)
-
-		log.Success(logger.LogScheduleControllerActivateOK, "schedule_id", schedule.ID)
-
-		h.Response.SuccessWithData(c, domain.MsgScheduleActivated, response)
-	}
+	return h.toggleScheduleActive(scheduleInteractor, true)
 }
 
 // DeactivateBranchSchedule handles PUT /branches/:id/schedules/deactivate (HU35)
@@ -409,11 +353,27 @@ func (h *handler) ActivateBranchSchedule(scheduleInteractor *interactor.Schedule
 // @Failure 404 {object} StandardResponse
 // @Router /branches/{id}/schedules/deactivate [put]
 func (h *handler) DeactivateBranchSchedule(scheduleInteractor *interactor.ScheduleInteractor) gin.HandlerFunc {
+	return h.toggleScheduleActive(scheduleInteractor, false)
+}
+
+// toggleScheduleActive is a shared helper for activate/deactivate schedule handlers.
+func (h *handler) toggleScheduleActive(scheduleInteractor *interactor.ScheduleInteractor, activate bool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		traceID := middleware.GetRequestID(c)
 		log := Logger.WithTraceID(traceID)
 
-		log.Info(logger.LogScheduleControllerDeactivateReq, "client_ip", c.ClientIP())
+		reqLogMsg := logger.LogScheduleControllerActivateReq
+		errLogMsg := logger.LogScheduleControllerActivateError
+		okLogMsg := logger.LogScheduleControllerActivateOK
+		successMsg := domain.MsgScheduleActivated
+		if !activate {
+			reqLogMsg = logger.LogScheduleControllerDeactivateReq
+			errLogMsg = logger.LogScheduleControllerDeactivateErr
+			okLogMsg = logger.LogScheduleControllerDeactivateOK
+			successMsg = domain.MsgScheduleDeactivated
+		}
+
+		log.Info(reqLogMsg, "client_ip", c.ClientIP())
 
 		// 1. Get authenticated person
 		person, _ := middleware.GetAuthenticatedUser(c)
@@ -437,13 +397,19 @@ func (h *handler) DeactivateBranchSchedule(scheduleInteractor *interactor.Schedu
 			return
 		}
 
-		// 4. Deactivate schedule
-		if err := scheduleInteractor.DeactivateSchedule(c.Request.Context(), schedule.ID, person.ID); err != nil {
-			log.Error(logger.LogScheduleControllerDeactivateErr, "error", err, "schedule_id", schedule.ID)
+		// 4. Toggle schedule active status
+		var toggleErr error
+		if activate {
+			toggleErr = scheduleInteractor.ActivateSchedule(c.Request.Context(), schedule.ID, person.ID)
+		} else {
+			toggleErr = scheduleInteractor.DeactivateSchedule(c.Request.Context(), schedule.ID, person.ID)
+		}
+		if toggleErr != nil {
+			log.Error(errLogMsg, "error", toggleErr, "schedule_id", schedule.ID)
 			switch {
-			case errors.Is(err, domain.ErrScheduleNotFound):
+			case errors.Is(toggleErr, domain.ErrScheduleNotFound):
 				h.Response.Error(c, domain.MsgScheduleNotFound)
-			case errors.Is(err, domain.ErrForbidden):
+			case errors.Is(toggleErr, domain.ErrForbidden):
 				h.Response.Error(c, domain.MsgForbidden)
 			default:
 				h.Response.Error(c, domain.MsgServerError)
@@ -458,13 +424,12 @@ func (h *handler) DeactivateBranchSchedule(scheduleInteractor *interactor.Schedu
 		baseURL := GetBaseURL(c)
 		links := BuildScheduleLinks(baseURL, encodedBranchID, encodedScheduleID)
 
-		// After deactivation, active = false
-		schedule.Active = false
+		schedule.Active = activate
 		response := NewScheduleResponse(schedule, encodedScheduleID, encodedBranchID, links)
 
-		log.Success(logger.LogScheduleControllerDeactivateOK, "schedule_id", schedule.ID)
+		log.Success(okLogMsg, "schedule_id", schedule.ID)
 
-		h.Response.SuccessWithData(c, domain.MsgScheduleDeactivated, response)
+		h.Response.SuccessWithData(c, successMsg, response)
 	}
 }
 

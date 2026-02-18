@@ -15,36 +15,5 @@ func (r *repository) GetExceptionsByScheduleID(ctx context.Context, scheduleID s
 	}
 	defer func() { _ = rows.Close() }() // Rows close error intentionally ignored
 
-	var exceptions []domain.ScheduleDetail
-	for rows.Next() {
-		var exception domain.ScheduleDetail
-		var entryType string
-
-		if err := rows.Scan(
-			&exception.ID,
-			&exception.ScheduleID,
-			&entryType,
-			&exception.DayOfWeek,
-			&exception.ExceptionStartDate,
-			&exception.ExceptionEndDate,
-			&exception.OpeningTime,
-			&exception.ClosingTime,
-			&exception.IsClosed,
-			&exception.Active,
-			&exception.CreatedAt,
-			&exception.UpdatedAt,
-		); err != nil {
-			log.Error(logger.LogScheduleDetailRepoScanError, "error", err)
-			return nil, err
-		}
-
-		exception.EntryType = domain.EntryType(entryType)
-		exceptions = append(exceptions, exception)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return exceptions, nil
+	return scanScheduleDetails(rows)
 }

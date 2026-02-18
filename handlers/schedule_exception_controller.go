@@ -343,53 +343,28 @@ func (h *handler) DeleteScheduleException(
 func (h *handler) ActivateScheduleException(
 	exceptionInteractor *interactor.ScheduleExceptionInteractor,
 ) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		traceID := middleware.GetRequestID(c)
-		log := Logger.WithTraceID(traceID)
-
-		log.Info(logger.LogScheduleDetailControllerUpdateRequest,
-			"method", c.Request.Method,
-			"path", c.Request.URL.Path,
-			"client_ip", c.ClientIP())
-
-		// 1. Get authenticated person from context
-		person, _ := middleware.GetAuthenticatedUser(c)
-
-		// 2. Decode exception ID
-		encodedExceptionID := c.Param("id")
-		exceptionID, err := h.DecodeID(encodedExceptionID)
-		if err != nil {
-			log.Warn(logger.LogScheduleDetailControllerIDDecodeError, "encoded_id", encodedExceptionID, "error", err)
-			h.Response.Error(c, domain.MsgScheduleExceptionNotFound)
-			return
-		}
-
-		// 3. Activate exception
-		if err := exceptionInteractor.ActivateException(c.Request.Context(), exceptionID, person.ID); err != nil {
-			log.Error(logger.LogScheduleDetailControllerUpdateError, "error", err, "exception_id", exceptionID)
-			switch {
-			case errors.Is(err, domain.ErrScheduleExceptionNotFound):
-				h.Response.Error(c, domain.MsgScheduleExceptionNotFound)
-			case errors.Is(err, domain.ErrForbidden):
-				h.Response.Error(c, domain.MsgForbidden)
-			default:
-				h.Response.Error(c, domain.MsgServerError)
-			}
-			return
-		}
-
-		log.Success(logger.LogScheduleDetailControllerUpdateOK, "exception_id", exceptionID)
-		h.Response.Success(c, domain.MsgScheduleExceptionActivated)
-	}
+	return h.toggleExceptionActive(exceptionInteractor, true)
 }
 
 // DeactivateScheduleException handles PUT /schedule-exceptions/:id/deactivate (HU25)
 func (h *handler) DeactivateScheduleException(
 	exceptionInteractor *interactor.ScheduleExceptionInteractor,
 ) gin.HandlerFunc {
+	return h.toggleExceptionActive(exceptionInteractor, false)
+}
+
+// toggleExceptionActive is a shared helper for activate/deactivate exception handlers.
+func (h *handler) toggleExceptionActive(
+	exceptionInteractor *interactor.ScheduleExceptionInteractor, activate bool,
+) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		traceID := middleware.GetRequestID(c)
 		log := Logger.WithTraceID(traceID)
+
+		successMsg := domain.MsgScheduleExceptionActivated
+		if !activate {
+			successMsg = domain.MsgScheduleExceptionDeactivated
+		}
 
 		log.Info(logger.LogScheduleDetailControllerUpdateRequest,
 			"method", c.Request.Method,
@@ -408,13 +383,19 @@ func (h *handler) DeactivateScheduleException(
 			return
 		}
 
-		// 3. Deactivate exception
-		if err := exceptionInteractor.DeactivateException(c.Request.Context(), exceptionID, person.ID); err != nil {
-			log.Error(logger.LogScheduleDetailControllerUpdateError, "error", err, "exception_id", exceptionID)
+		// 3. Toggle exception active status
+		var toggleErr error
+		if activate {
+			toggleErr = exceptionInteractor.ActivateException(c.Request.Context(), exceptionID, person.ID)
+		} else {
+			toggleErr = exceptionInteractor.DeactivateException(c.Request.Context(), exceptionID, person.ID)
+		}
+		if toggleErr != nil {
+			log.Error(logger.LogScheduleDetailControllerUpdateError, "error", toggleErr, "exception_id", exceptionID)
 			switch {
-			case errors.Is(err, domain.ErrScheduleExceptionNotFound):
+			case errors.Is(toggleErr, domain.ErrScheduleExceptionNotFound):
 				h.Response.Error(c, domain.MsgScheduleExceptionNotFound)
-			case errors.Is(err, domain.ErrForbidden):
+			case errors.Is(toggleErr, domain.ErrForbidden):
 				h.Response.Error(c, domain.MsgForbidden)
 			default:
 				h.Response.Error(c, domain.MsgServerError)
@@ -423,6 +404,6 @@ func (h *handler) DeactivateScheduleException(
 		}
 
 		log.Success(logger.LogScheduleDetailControllerUpdateOK, "exception_id", exceptionID)
-		h.Response.Success(c, domain.MsgScheduleExceptionDeactivated)
+		h.Response.Success(c, successMsg)
 	}
 }

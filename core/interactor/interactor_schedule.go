@@ -29,14 +29,9 @@ func (i *ScheduleInteractor) CreateSchedule(ctx context.Context, branchID, repre
 	scheduleInteractorLog.Info(logger.LogScheduleInteractorCreateStart, "branch_id", branchID, "representative_id", representativeID)
 
 	// 1. Verify ownership of branch
-	branch, err := i.branchService.GetBranchByID(ctx, branchID)
-	if err != nil {
-		scheduleInteractorLog.Error(logger.LogScheduleInteractorCreateError, "error", "branch not found", "branch_id", branchID)
-		return nil, domain.ErrBranchNotFound
-	}
-	if branch.RepresentativeID != representativeID {
-		scheduleInteractorLog.Warn(logger.LogBranchInteractorOwnershipError, "branch_id", branchID, "representative_id", representativeID)
-		return nil, domain.ErrForbidden
+	if ownerErr := verifyBranchOwnership(ctx, i.branchService, branchID, representativeID,
+		scheduleInteractorLog, logger.LogScheduleInteractorCreateError, logger.LogBranchInteractorOwnershipError); ownerErr != nil {
+		return nil, ownerErr
 	}
 
 	// 2. Begin transaction
@@ -46,17 +41,8 @@ func (i *ScheduleInteractor) CreateSchedule(ctx context.Context, branchID, repre
 		return nil, txErr
 	}
 
-	defer func() {
-		if err != nil {
-			if rbErr := tx.Rollback(); rbErr != nil {
-				scheduleInteractorLog.Error(logger.LogScheduleInteractorRollbackError,
-					"rollback_error", rbErr,
-					"original_error", err)
-			} else {
-				scheduleInteractorLog.Warn(logger.LogScheduleInteractorRollbackOK)
-			}
-		}
-	}()
+	defer deferRollback(tx, &err, scheduleInteractorLog,
+		logger.LogScheduleInteractorRollbackError, logger.LogScheduleInteractorRollbackOK)()
 
 	// 3. Create schedule via service
 	result, err = i.scheduleService.CreateSchedule(ctx, tx, branchID)
@@ -80,14 +66,9 @@ func (i *ScheduleInteractor) CreateSchedule(ctx context.Context, branchID, repre
 // GetScheduleByBranchID retrieves schedule for a branch with ownership check (HU32, protected)
 func (i *ScheduleInteractor) GetScheduleByBranchID(ctx context.Context, branchID, representativeID string) (*domain.BranchSchedule, error) {
 	// 1. Verify ownership of branch
-	branch, err := i.branchService.GetBranchByID(ctx, branchID)
-	if err != nil {
-		scheduleInteractorLog.Error(logger.LogScheduleInteractorGetError, "error", "branch not found", "branch_id", branchID)
-		return nil, domain.ErrBranchNotFound
-	}
-	if branch.RepresentativeID != representativeID {
-		scheduleInteractorLog.Warn(logger.LogBranchInteractorOwnershipError, "branch_id", branchID, "representative_id", representativeID)
-		return nil, domain.ErrForbidden
+	if ownerErr := verifyBranchOwnership(ctx, i.branchService, branchID, representativeID,
+		scheduleInteractorLog, logger.LogScheduleInteractorGetError, logger.LogBranchInteractorOwnershipError); ownerErr != nil {
+		return nil, ownerErr
 	}
 
 	// 2. Get schedule
@@ -135,17 +116,8 @@ func (i *ScheduleInteractor) UpdateSchedule(ctx context.Context, schedule domain
 		return txErr
 	}
 
-	defer func() {
-		if err != nil {
-			if rbErr := tx.Rollback(); rbErr != nil {
-				scheduleInteractorLog.Error(logger.LogScheduleInteractorRollbackError,
-					"rollback_error", rbErr,
-					"original_error", err)
-			} else {
-				scheduleInteractorLog.Warn(logger.LogScheduleInteractorRollbackOK)
-			}
-		}
-	}()
+	defer deferRollback(tx, &err, scheduleInteractorLog,
+		logger.LogScheduleInteractorRollbackError, logger.LogScheduleInteractorRollbackOK)()
 
 	// 3. Update schedule with all fields
 	if err = i.scheduleService.UpdateSchedule(ctx, tx, schedule); err != nil {
@@ -168,18 +140,10 @@ func (i *ScheduleInteractor) UpdateSchedule(ctx context.Context, schedule domain
 func (i *ScheduleInteractor) DeleteSchedule(ctx context.Context, scheduleID, representativeID string) (err error) {
 	scheduleInteractorLog.Info(logger.LogScheduleInteractorDeleteStart, "schedule_id", scheduleID)
 
-	// 1. Get schedule and verify ownership
-	schedule, schedErr := i.scheduleService.GetScheduleByID(ctx, scheduleID)
-	if schedErr != nil {
-		return schedErr
-	}
-
-	branch, branchErr := i.branchService.GetBranchByID(ctx, schedule.BranchID)
-	if branchErr != nil {
-		return domain.ErrBranchNotFound
-	}
-	if branch.RepresentativeID != representativeID {
-		return domain.ErrForbidden
+	// 1. Verify ownership via schedule → branch
+	if ownerErr := verifyScheduleOwnership(ctx, i.scheduleService, i.branchService,
+		scheduleID, representativeID); ownerErr != nil {
+		return ownerErr
 	}
 
 	// 2. Begin transaction
@@ -188,17 +152,8 @@ func (i *ScheduleInteractor) DeleteSchedule(ctx context.Context, scheduleID, rep
 		return txErr
 	}
 
-	defer func() {
-		if err != nil {
-			if rbErr := tx.Rollback(); rbErr != nil {
-				scheduleInteractorLog.Error(logger.LogScheduleInteractorRollbackError,
-					"rollback_error", rbErr,
-					"original_error", err)
-			} else {
-				scheduleInteractorLog.Warn(logger.LogScheduleInteractorRollbackOK)
-			}
-		}
-	}()
+	defer deferRollback(tx, &err, scheduleInteractorLog,
+		logger.LogScheduleInteractorRollbackError, logger.LogScheduleInteractorRollbackOK)()
 
 	// 3. Delete schedule
 	if err = i.scheduleService.DeleteSchedule(ctx, tx, scheduleID); err != nil {
@@ -229,18 +184,10 @@ func (i *ScheduleInteractor) DeactivateSchedule(ctx context.Context, scheduleID,
 
 // setActive is a helper for activate/deactivate with ownership check
 func (i *ScheduleInteractor) setActive(ctx context.Context, scheduleID, representativeID string, active bool) (err error) {
-	// 1. Get schedule and verify ownership
-	schedule, schedErr := i.scheduleService.GetScheduleByID(ctx, scheduleID)
-	if schedErr != nil {
-		return schedErr
-	}
-
-	branch, branchErr := i.branchService.GetBranchByID(ctx, schedule.BranchID)
-	if branchErr != nil {
-		return domain.ErrBranchNotFound
-	}
-	if branch.RepresentativeID != representativeID {
-		return domain.ErrForbidden
+	// 1. Verify ownership via schedule → branch
+	if ownerErr := verifyScheduleOwnership(ctx, i.scheduleService, i.branchService,
+		scheduleID, representativeID); ownerErr != nil {
+		return ownerErr
 	}
 
 	// 2. Begin transaction
@@ -249,17 +196,8 @@ func (i *ScheduleInteractor) setActive(ctx context.Context, scheduleID, represen
 		return txErr
 	}
 
-	defer func() {
-		if err != nil {
-			if rbErr := tx.Rollback(); rbErr != nil {
-				scheduleInteractorLog.Error(logger.LogScheduleInteractorRollbackError,
-					"rollback_error", rbErr,
-					"original_error", err)
-			} else {
-				scheduleInteractorLog.Warn(logger.LogScheduleInteractorRollbackOK)
-			}
-		}
-	}()
+	defer deferRollback(tx, &err, scheduleInteractorLog,
+		logger.LogScheduleInteractorRollbackError, logger.LogScheduleInteractorRollbackOK)()
 
 	// 3. Set active status
 	if active {
