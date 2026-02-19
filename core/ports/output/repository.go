@@ -303,6 +303,8 @@ type CompletedServiceRepository interface {
 	Delete(ctx context.Context, tx Tx, serviceID string) error
 	SoftDelete(ctx context.Context, tx Tx, serviceID string) error
 	UpdateStatus(ctx context.Context, tx Tx, serviceID string, status string, completionDate *time.Time) error
+	UpdateStatusWithPrice(ctx context.Context, tx Tx, serviceID string, status string, completionDate *time.Time, finalPrice *float64) error
+	UpdateDetails(ctx context.Context, tx Tx, serviceID string, quotedPrice, finalPrice *float64, notes *string) error
 
 	// Completed service operations - read (HU66, HU73)
 	GetByID(ctx context.Context, serviceID string) (*domain.CompletedService, error)
@@ -316,4 +318,12 @@ type CompletedServiceRepository interface {
 	// Validation
 	ValidateBranchServices(ctx context.Context, branchID string, serviceIDs []string) error
 	HasActiveService(ctx context.Context, branchID, motorcycleID string) (bool, error)
+}
+
+// RatingRepository interface for Rating operations (RELEASE_14 / HU48)
+type RatingRepository interface {
+	BeginTx(ctx context.Context) (Tx, error)
+	RateServiceItem(ctx context.Context, tx Tx, itemID string, rating int, comment *string, isOffensive bool) error
+	GetItemByID(ctx context.Context, itemID string) (*domain.CompletedServiceItem, error)
+	GetReviewsByServiceID(ctx context.Context, serviceID string) (*domain.ServiceReviewSummary, error)
 }

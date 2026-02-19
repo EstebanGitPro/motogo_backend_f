@@ -34,6 +34,7 @@ import (
 	messageRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/message"
 	motorcycleRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/motorcycle"
 	repo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/person"
+	ratingRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/rating" // HU48
 	scheduleRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/schedule"
 	scheduleDetailRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/schedule_detail"
 	serviceRepo "github.com/EstebanGitPro/motogo-backend/platform/databases/repositories/service"
@@ -57,6 +58,7 @@ type Dependencies struct {
 	EvidenceInteractor          *interactor.EvidenceInteractor          // HU16-19
 	DiagnosticInteractor        *interactor.DiagnosticInteractor        // HU11-14
 	CompletedServiceInteractor  *interactor.CompletedServiceInteractor  // HU64
+	RatingInteractor            *interactor.RatingInteractor            // HU48
 	FirebaseClient              output.CustomTokenProvider              // Firebase Auth
 	JWTValidator                output.JWTValidator                     // JWT validation with JWKS
 	Config                      *config.Config
@@ -203,6 +205,16 @@ func Init() (*Dependencies, error) {
 	completedServiceInteractor := interactor.NewCompletedServiceInteractor(completedServiceService)
 	log.Success(logger.LogDepCSInteractorInitOK)
 
+	// Rating (RELEASE_14 / HU48)
+	ratingRepository, err := ratingRepo.NewRepository(db)
+	if err != nil {
+		log.Error(logger.LogDepCSRepoInitErr, "error", err)
+		return nil, err
+	}
+	ratingService := services.NewRatingService(ratingRepository, completedServiceRepository)
+	ratingInteractor := interactor.NewRatingInteractor(ratingService)
+	log.Success(logger.LogDepCSInteractorInitOK)
+
 	// Firebase and storage integration
 	firebaseClient := initFirebaseIntegration(cfg, log, motorcycleService, evidenceService, branchInteractor)
 
@@ -227,6 +239,7 @@ func Init() (*Dependencies, error) {
 		EvidenceInteractor:          evidenceInteractor,         // HU16-19
 		DiagnosticInteractor:        diagnosticInteractor,       // HU11-14
 		CompletedServiceInteractor:  completedServiceInteractor, // HU64
+		RatingInteractor:            ratingInteractor,           // HU48
 		FirebaseClient:              firebaseClient,
 		JWTValidator:                jwtValidator,
 		Config:                      cfg,

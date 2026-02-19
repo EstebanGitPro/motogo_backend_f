@@ -334,8 +334,19 @@ type CompletedServiceService interface {
 	SaveStatusHistory(ctx context.Context, tx output.Tx, history *domain.ServiceStatusHistory) error
 	DeleteCompletedService(ctx context.Context, tx output.Tx, serviceID string, status domain.ServiceStatus) error
 	UpdateStatus(ctx context.Context, tx output.Tx, serviceID string, status string, completionDate *time.Time) error
+	UpdateStatusWithPrice(ctx context.Context, tx output.Tx, serviceID string, status string, completionDate *time.Time, finalPrice *float64) error
+	UpdateDetails(ctx context.Context, tx output.Tx, serviceID string, quotedPrice, finalPrice *float64, notes *string) error
 	GetByID(ctx context.Context, serviceID string) (*domain.CompletedService, error)
 	GetByMotorcycleID(ctx context.Context, motorcycleID string) ([]domain.CompletedService, error)
 	GetByBranchID(ctx context.Context, branchID string) ([]domain.CompletedService, error)
 	GetStatusHistory(ctx context.Context, serviceID string) ([]domain.ServiceStatusHistory, error)
+}
+
+// RatingService - Use Cases for Rating operations (RELEASE_14 / HU48)
+type RatingService interface {
+	BeginTx(ctx context.Context) (output.Tx, error)
+	RateServiceItem(ctx context.Context, tx output.Tx, itemID string, rating int, comment *string) error
+	GetItemByID(ctx context.Context, itemID string) (*domain.CompletedServiceItem, error)
+	GetCompletedServiceByID(ctx context.Context, serviceID string) (*domain.CompletedService, error)
+	GetReviewsByServiceID(ctx context.Context, serviceID string) (*domain.ServiceReviewSummary, error)
 }

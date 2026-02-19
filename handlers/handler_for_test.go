@@ -157,3 +157,17 @@ func (h *handler) MapDetailCreationError(c *gin.Context, err error) {
 func (h *handler) MapExceptionCreationError(c *gin.Context, err error) {
 	h.mapExceptionCreationError(c, err)
 }
+
+// NewForTestWithRating creates a handler with RatingInteractor for integration testing
+// of rating controllers (RateServiceItem) (RELEASE_14 / HU48).
+func NewForTestWithRating(
+	ratingInteractor *interactor.RatingInteractor,
+	encoder *idencoder.HashidsEncoder,
+	responseHandler *middleware.ResponseHandler,
+) *handler {
+	return &handler{
+		RatingInteractor: ratingInteractor,
+		IDEncoder:        encoder,
+		Response:         responseHandler,
+	}
+}

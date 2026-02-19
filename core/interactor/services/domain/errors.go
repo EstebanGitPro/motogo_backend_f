@@ -565,30 +565,52 @@ const (
 var (
 	ErrCompletedServiceNotFound     = errors.New("ERR_COMPLETED_SERVICE_NOT_FOUND")
 	ErrCompletedServiceCannotSave   = errors.New("ERR_COMPLETED_SERVICE_CANNOT_SAVE")
+	ErrCompletedServiceCannotUpdate = errors.New("ERR_COMPLETED_SERVICE_CANNOT_UPDATE")
 	ErrCompletedServiceCannotDelete = errors.New("ERR_COMPLETED_SERVICE_CANNOT_DELETE")
 	ErrInvalidBranchServices        = errors.New("ERR_INVALID_BRANCH_SERVICES")
 	ErrDiagnosticNotForMotorcycle   = errors.New("ERR_DIAGNOSTIC_NOT_FOR_MOTORCYCLE")
 	ErrActiveServiceExists          = errors.New("ERR_ACTIVE_SERVICE_EXISTS")
 	ErrInvalidStatusTransition      = errors.New("ERR_INVALID_STATUS_TRANSITION")
+
+	// Rating Errors (RELEASE_14 / HU48)
+	ErrServiceItemNotFound     = errors.New("ERR_SERVICE_ITEM_NOT_FOUND")
+	ErrServiceItemAlreadyRated = errors.New("ERR_SERVICE_ITEM_ALREADY_RATED")
+	ErrInvalidRatingRange      = errors.New("ERR_INVALID_RATING_RANGE")
+	ErrServiceNotFinalized     = errors.New("ERR_SERVICE_NOT_FINALIZED")
+	ErrServiceItemNotInService = errors.New("ERR_SERVICE_ITEM_NOT_IN_SERVICE")
+	ErrRatingCannotSave        = errors.New("ERR_RATING_CANNOT_SAVE")
 )
 
 // Completed Service Module (MOD_CS_*) - HU64/HU65/HU73/HU74
 const (
 	// Success messages
-	MsgCompletedServiceCreated   = "MOD_CS_CREATE_EXI_00001"
-	MsgCompletedServiceRetrieved = "MOD_CS_GET_EXI_00001"
-	MsgCompletedServicesListed   = "MOD_CS_LIST_EXI_00001"
-	MsgCompletedServiceDeleted   = "MOD_CS_DEL_EXI_00001"
-	MsgStatusTransitionSuccess   = "MOD_CS_STATUS_EXI_00001"
-	MsgStatusHistoryRetrieved    = "MOD_CS_TRANS_EXI_00001"
+	MsgCompletedServiceCreated        = "MOD_CS_CREATE_EXI_00001"
+	MsgCompletedServiceRetrieved      = "MOD_CS_GET_EXI_00001"
+	MsgCompletedServicesListed        = "MOD_CS_LIST_EXI_00001"
+	MsgCompletedServiceDeleted        = "MOD_CS_DEL_EXI_00001"
+	MsgStatusTransitionSuccess        = "MOD_CS_STATUS_EXI_00001"
+	MsgStatusHistoryRetrieved         = "MOD_CS_TRANS_EXI_00001"
+	MsgCompletedServiceDetailsUpdated = "MOD_CS_DETAILS_UPD_EXI_00001"
+
+	// Rating Success (RELEASE_14 / HU48)
+	MsgRatingCreated    = "MOD_CS_RATE_EXI_00001"
+	MsgRatingsRetrieved = "MOD_CS_RATE_LIST_EXI_00001"
 
 	// Error messages
-	MsgCompletedServiceNotFound    = "MOD_CS_NOT_FOUND_ERR_00001"
-	MsgCompletedServiceCannotSave  = "MOD_CS_CREATE_ERR_00001"
-	MsgCompletedServiceDeleteError = "MOD_CS_DEL_ERR_00001"
-	MsgInvalidBranchServices       = "MOD_CS_BRANCH_SVC_ERR_00001"
-	MsgDiagnosticNotForMotorcycle  = "MOD_CS_DGN_MOTO_ERR_00001"
-	MsgActiveServiceExists         = "MOD_CS_ACTIVE_ERR_00001"
-	MsgStatusTransitionError       = "MOD_CS_STATUS_ERR_00001"
-	MsgStatusHistoryError          = "MOD_CS_TRANS_ERR_00001"
+	MsgCompletedServiceNotFound     = "MOD_CS_NOT_FOUND_ERR_00001"
+	MsgCompletedServiceCannotSave   = "MOD_CS_CREATE_ERR_00001"
+	MsgCompletedServiceCannotUpdate = "MOD_CS_UPDATE_ERR_00001"
+	MsgCompletedServiceDeleteError  = "MOD_CS_DEL_ERR_00001"
+	MsgInvalidBranchServices        = "MOD_CS_BRANCH_SVC_ERR_00001"
+	MsgDiagnosticNotForMotorcycle   = "MOD_CS_DGN_MOTO_ERR_00001"
+	MsgActiveServiceExists          = "MOD_CS_ACTIVE_ERR_00001"
+	MsgStatusTransitionError        = "MOD_CS_STATUS_ERR_00001"
+	MsgStatusHistoryError           = "MOD_CS_TRANS_ERR_00001"
+
+	// Rating Errors (RELEASE_14 / HU48)
+	MsgServiceItemNotFound     = "MOD_CS_ITEM_NF_ERR_00001"
+	MsgServiceItemAlreadyRated = "MOD_CS_RATE_DUP_ERR_00001"
+	MsgInvalidRatingRange      = "MOD_CS_RATE_RANGE_ERR_00001"
+	MsgServiceNotFinalized     = "MOD_CS_RATE_STATUS_ERR_00001"
+	MsgRatingCannotSave        = "MOD_CS_RATE_SAVE_ERR_00001"
 )
