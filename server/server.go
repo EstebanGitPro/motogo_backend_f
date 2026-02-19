@@ -69,6 +69,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		EvidenceInteractor:         dependencies.EvidenceInteractor,
 		DiagnosticInteractor:       dependencies.DiagnosticInteractor,
 		CompletedServiceInteractor: dependencies.CompletedServiceInteractor,
+		RatingInteractor:           dependencies.RatingInteractor,
 		FirebaseClient:             dependencies.FirebaseClient,
 		MessagingCache:             dependencies.MessagingCache,
 		IDEncoder:                  dependencies.IDEncoder,
@@ -394,6 +395,24 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 			middleware.RequireRole(domain.RoleRepresentative),
 			validator.WithValidateUpdateStatus(),
 			handler.UpdateCompletedServiceStatus(),
+		)
+
+		// PATCH /completed-services/:id - Update service details (prices/notes)
+		protected.PATCH("/completed-services/:id",
+			middleware.RequireRole(domain.RoleRepresentative),
+			handler.UpdateCompletedServiceDetails(),
+		)
+
+		// POST /completed-services/:id/items/:itemId/rating - Rate a service item (HU48)
+		protected.POST("/completed-services/:id/items/:itemId/rating",
+			middleware.RequireRole(domain.RoleUser),
+			validator.WithValidateRateServiceItem(),
+			handler.RateServiceItem(),
+		)
+
+		// GET /services/:id/reviews - Get reviews for a service type (HU48)
+		protected.GET("/services/:id/reviews",
+			handler.GetServiceReviews(),
 		)
 
 		// === DIAGNOSTIC PERMISSION ENDPOINTS ===

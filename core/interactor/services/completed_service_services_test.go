@@ -87,6 +87,22 @@ func (m *mockCSRepo) GetStatusHistory(ctx context.Context, serviceID string) ([]
 	}
 	return args.Get(0).([]domain.ServiceStatusHistory), args.Error(1)
 }
+func (m *mockCSRepo) UpdateStatusWithPrice(ctx context.Context, tx output.Tx, serviceID string, status string, completionDate *time.Time, finalPrice *float64) error {
+	return m.Called(ctx, tx, serviceID, status, completionDate, finalPrice).Error(0)
+}
+func (m *mockCSRepo) UpdateDetails(ctx context.Context, tx output.Tx, serviceID string, quotedPrice, finalPrice *float64, notes *string) error {
+	return m.Called(ctx, tx, serviceID, quotedPrice, finalPrice, notes).Error(0)
+}
+func (m *mockCSRepo) RateServiceItem(ctx context.Context, tx output.Tx, itemID string, rating int, comment *string, isOffensive bool) error {
+	return m.Called(ctx, tx, itemID, rating, comment, isOffensive).Error(0)
+}
+func (m *mockCSRepo) GetItemByID(ctx context.Context, itemID string) (*domain.CompletedServiceItem, error) {
+	args := m.Called(ctx, itemID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.CompletedServiceItem), args.Error(1)
+}
 
 type mockDiagRepo struct{ mock.Mock }
 
@@ -306,31 +322,140 @@ func TestCSGetByID_ItemsError(t *testing.T) {
 }
 
 // ============================================
-// Pass-through methods
+// GetByMotorcycleID — hydration
 // ============================================
 
-func TestCSGetByMotorcycleID_DelegatesToRepo(t *testing.T) {
+func TestCSGetByMotorcycleID_HydratesItems(t *testing.T) {
 	csRepo, _, svc := setupCSService()
 
-	expected := []domain.CompletedService{{ID: "cs-1"}}
-	csRepo.On("GetByMotorcycleID", mock.Anything, "moto-1").Return(expected, nil)
+	services := []domain.CompletedService{
+		{ID: "cs-1"},
+		{ID: "cs-2"},
+	}
+	csRepo.On("GetByMotorcycleID", mock.Anything, "moto-1").Return(services, nil)
+
+	items1 := []domain.CompletedServiceItem{
+		{ID: "item-1", ServiceID: "svc-1"},
+		{ID: "item-2", ServiceID: "svc-2"},
+	}
+	items2 := []domain.CompletedServiceItem{
+		{ID: "item-3", ServiceID: "svc-3"},
+	}
+	csRepo.On("GetItemsByCompletedServiceID", mock.Anything, "cs-1").Return(items1, nil)
+	csRepo.On("GetItemsByCompletedServiceID", mock.Anything, "cs-2").Return(items2, nil)
 
 	result, err := svc.GetByMotorcycleID(context.Background(), "moto-1")
 
 	assert.NoError(t, err)
-	assert.Len(t, result, 1)
+	assert.Len(t, result, 2)
+	assert.Len(t, result[0].Services, 2)
+	assert.Len(t, result[1].Services, 1)
+	assert.Equal(t, "item-1", result[0].Services[0].ID)
+	assert.Equal(t, "item-3", result[1].Services[0].ID)
+	csRepo.AssertExpectations(t)
 }
 
-func TestCSGetByBranchID_DelegatesToRepo(t *testing.T) {
+func TestCSGetByMotorcycleID_RepoError(t *testing.T) {
 	csRepo, _, svc := setupCSService()
 
-	expected := []domain.CompletedService{{ID: "cs-1"}, {ID: "cs-2"}}
-	csRepo.On("GetByBranchID", mock.Anything, "branch-1").Return(expected, nil)
+	csRepo.On("GetByMotorcycleID", mock.Anything, "moto-bad").Return(nil, errors.New("db error"))
+
+	result, err := svc.GetByMotorcycleID(context.Background(), "moto-bad")
+
+	assert.Error(t, err)
+	assert.Nil(t, result)
+}
+
+func TestCSGetByMotorcycleID_HydrationError(t *testing.T) {
+	csRepo, _, svc := setupCSService()
+
+	services := []domain.CompletedService{{ID: "cs-1"}}
+	csRepo.On("GetByMotorcycleID", mock.Anything, "moto-1").Return(services, nil)
+	csRepo.On("GetItemsByCompletedServiceID", mock.Anything, "cs-1").Return(nil, errors.New("item load error"))
+
+	result, err := svc.GetByMotorcycleID(context.Background(), "moto-1")
+
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "item load error")
+}
+
+func TestCSGetByMotorcycleID_EmptyList(t *testing.T) {
+	csRepo, _, svc := setupCSService()
+
+	csRepo.On("GetByMotorcycleID", mock.Anything, "moto-empty").Return([]domain.CompletedService{}, nil)
+
+	result, err := svc.GetByMotorcycleID(context.Background(), "moto-empty")
+
+	assert.NoError(t, err)
+	assert.Empty(t, result)
+}
+
+// ============================================
+// GetByBranchID — hydration
+// ============================================
+
+func TestCSGetByBranchID_HydratesItems(t *testing.T) {
+	csRepo, _, svc := setupCSService()
+
+	services := []domain.CompletedService{
+		{ID: "cs-1"},
+		{ID: "cs-2"},
+	}
+	csRepo.On("GetByBranchID", mock.Anything, "branch-1").Return(services, nil)
+
+	items1 := []domain.CompletedServiceItem{
+		{ID: "item-a", ServiceID: "svc-a"},
+	}
+	items2 := []domain.CompletedServiceItem{
+		{ID: "item-b", ServiceID: "svc-b"},
+		{ID: "item-c", ServiceID: "svc-c"},
+	}
+	csRepo.On("GetItemsByCompletedServiceID", mock.Anything, "cs-1").Return(items1, nil)
+	csRepo.On("GetItemsByCompletedServiceID", mock.Anything, "cs-2").Return(items2, nil)
 
 	result, err := svc.GetByBranchID(context.Background(), "branch-1")
 
 	assert.NoError(t, err)
 	assert.Len(t, result, 2)
+	assert.Len(t, result[0].Services, 1)
+	assert.Len(t, result[1].Services, 2)
+	csRepo.AssertExpectations(t)
+}
+
+func TestCSGetByBranchID_RepoError(t *testing.T) {
+	csRepo, _, svc := setupCSService()
+
+	csRepo.On("GetByBranchID", mock.Anything, "branch-bad").Return(nil, errors.New("db error"))
+
+	result, err := svc.GetByBranchID(context.Background(), "branch-bad")
+
+	assert.Error(t, err)
+	assert.Nil(t, result)
+}
+
+func TestCSGetByBranchID_HydrationError(t *testing.T) {
+	csRepo, _, svc := setupCSService()
+
+	services := []domain.CompletedService{{ID: "cs-1"}, {ID: "cs-2"}}
+	csRepo.On("GetByBranchID", mock.Anything, "branch-1").Return(services, nil)
+	csRepo.On("GetItemsByCompletedServiceID", mock.Anything, "cs-1").Return(nil, errors.New("hydration fail"))
+
+	result, err := svc.GetByBranchID(context.Background(), "branch-1")
+
+	assert.Error(t, err)
+	assert.Nil(t, result)
+}
+
+func TestCSGetByBranchID_EmptyList(t *testing.T) {
+	csRepo, _, svc := setupCSService()
+
+	csRepo.On("GetByBranchID", mock.Anything, "branch-empty").Return([]domain.CompletedService{}, nil)
+
+	result, err := svc.GetByBranchID(context.Background(), "branch-empty")
+
+	assert.NoError(t, err)
+	assert.Empty(t, result)
 }
 
 func TestCSBeginTx_DelegatesToRepo(t *testing.T) {
@@ -549,4 +674,79 @@ func TestCSGetStatusHistory_Empty(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Empty(t, result)
+}
+
+// ============================================
+// UpdateStatusWithPrice
+// ============================================
+
+func TestCSUpdateStatusWithPrice_DelegatesToRepo(t *testing.T) {
+	csRepo, _, svc := setupCSService()
+
+	mockTx := new(mockCSTx)
+	completionDate := time.Now()
+	finalPrice := 150000.0
+
+	csRepo.On("UpdateStatusWithPrice", mock.Anything, mockTx, "cs-1", "FINALIZADO", &completionDate, &finalPrice).Return(nil)
+
+	err := svc.UpdateStatusWithPrice(context.Background(), mockTx, "cs-1", "FINALIZADO", &completionDate, &finalPrice)
+
+	assert.NoError(t, err)
+	csRepo.AssertExpectations(t)
+}
+
+func TestCSUpdateStatusWithPrice_RepoError(t *testing.T) {
+	csRepo, _, svc := setupCSService()
+
+	mockTx := new(mockCSTx)
+	csRepo.On("UpdateStatusWithPrice", mock.Anything, mockTx, "cs-1", "FINALIZADO", (*time.Time)(nil), (*float64)(nil)).Return(errors.New("update error"))
+
+	err := svc.UpdateStatusWithPrice(context.Background(), mockTx, "cs-1", "FINALIZADO", nil, nil)
+
+	assert.Error(t, err)
+}
+
+// ============================================
+// UpdateDetails
+// ============================================
+
+func TestCSUpdateDetails_DelegatesToRepo(t *testing.T) {
+	csRepo, _, svc := setupCSService()
+
+	mockTx := new(mockCSTx)
+	quotedPrice := 200000.0
+	finalPrice := 180000.0
+	notes := "Revisión completada"
+
+	csRepo.On("UpdateDetails", mock.Anything, mockTx, "cs-1", &quotedPrice, &finalPrice, &notes).Return(nil)
+
+	err := svc.UpdateDetails(context.Background(), mockTx, "cs-1", &quotedPrice, &finalPrice, &notes)
+
+	assert.NoError(t, err)
+	csRepo.AssertExpectations(t)
+}
+
+func TestCSUpdateDetails_RepoError(t *testing.T) {
+	csRepo, _, svc := setupCSService()
+
+	mockTx := new(mockCSTx)
+	quotedPrice := 100000.0
+	csRepo.On("UpdateDetails", mock.Anything, mockTx, "cs-bad", &quotedPrice, (*float64)(nil), (*string)(nil)).Return(errors.New("update error"))
+
+	err := svc.UpdateDetails(context.Background(), mockTx, "cs-bad", &quotedPrice, nil, nil)
+
+	assert.Error(t, err)
+}
+
+func TestCSUpdateDetails_NilOptionals(t *testing.T) {
+	csRepo, _, svc := setupCSService()
+
+	mockTx := new(mockCSTx)
+	notes := "Solo notas"
+	csRepo.On("UpdateDetails", mock.Anything, mockTx, "cs-1", (*float64)(nil), (*float64)(nil), &notes).Return(nil)
+
+	err := svc.UpdateDetails(context.Background(), mockTx, "cs-1", nil, nil, &notes)
+
+	assert.NoError(t, err)
+	csRepo.AssertExpectations(t)
 }

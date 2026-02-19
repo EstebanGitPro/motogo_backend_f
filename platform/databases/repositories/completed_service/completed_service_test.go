@@ -175,6 +175,7 @@ func TestItemToDomain_AllFieldsPopulated(t *testing.T) {
 		ID:                 "item-1",
 		CompletedServiceID: "cs-1",
 		ServiceID:          "svc-1",
+		ServiceName:        sql.NullString{String: "Cambio de aceite", Valid: true},
 		Rating:             sql.NullInt32{Int32: 5, Valid: true},
 		Comment:            sql.NullString{String: "excelente", Valid: true},
 		RatedAt:            sql.NullTime{Time: now, Valid: true},
@@ -186,6 +187,8 @@ func TestItemToDomain_AllFieldsPopulated(t *testing.T) {
 	assert.Equal(t, "item-1", result.ID)
 	assert.Equal(t, "cs-1", result.CompletedServiceID)
 	assert.Equal(t, "svc-1", result.ServiceID)
+	assert.NotNil(t, result.ServiceName)
+	assert.Equal(t, "Cambio de aceite", *result.ServiceName)
 	assert.NotNil(t, result.Rating)
 	assert.Equal(t, 5, *result.Rating)
 	assert.NotNil(t, result.Comment)
@@ -203,6 +206,7 @@ func TestItemToDomain_NullableFieldsEmpty(t *testing.T) {
 
 	result := dbItem.ItemToDomain()
 
+	assert.Nil(t, result.ServiceName)
 	assert.Nil(t, result.Rating)
 	assert.Nil(t, result.Comment)
 	assert.Nil(t, result.RatedAt)

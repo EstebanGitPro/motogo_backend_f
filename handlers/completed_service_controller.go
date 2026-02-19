@@ -130,6 +130,16 @@ func (h *handler) validateMotorcycleOwnership(c *gin.Context, log logger.Logger,
 // Handler Methods
 // ==========================================
 
+// encodeItemIDs encodes the obfuscated IDs for service items in a response.
+func (h *handler) encodeItemIDs(resp *CompletedServiceResponse) {
+	for j := range resp.Services {
+		encodedItemID, _ := h.EncodeID(resp.Services[j].ID)
+		resp.Services[j].ID = encodedItemID
+		encodedServiceID, _ := h.EncodeID(resp.Services[j].ServiceID)
+		resp.Services[j].ServiceID = encodedServiceID
+	}
+}
+
 // RegisterCompletedService handles POST /completed-services - register a performed service (HU64)
 // @Summary Register performed service
 // @Description Registers a new performed service for a motorcycle at a branch. Creates the service record, pivot items, and initial status history.
@@ -265,6 +275,7 @@ func (h *handler) GetCompletedServicesByBranch() gin.HandlerFunc {
 			responses[i].BranchID = encodedBranchID
 			encodedMotoID, _ := h.EncodeID(services[i].MotorcycleID)
 			responses[i].MotorcycleID = encodedMotoID
+			h.encodeItemIDs(&responses[i])
 		}
 
 		h.Response.SuccessWithData(c, domain.MsgCompletedServicesListed, responses)
@@ -330,6 +341,7 @@ func (h *handler) GetCompletedServicesByMotorcycle() gin.HandlerFunc {
 			responses[i].MotorcycleID = encodedID
 			encodedBranchID, _ := h.EncodeID(services[i].BranchID)
 			responses[i].BranchID = encodedBranchID
+			h.encodeItemIDs(&responses[i])
 		}
 
 		log.Success(logger.LogCSControllerListByMotoSuccess,
@@ -513,6 +525,7 @@ func (h *handler) UpdateCompletedServiceStatus() gin.HandlerFunc {
 			serviceID,
 			req.Status,
 			person.ID,
+			req.FinalPrice,
 		); err != nil {
 			Logger.Error(logger.LogCSControllerStatusError, "error", err)
 
@@ -551,5 +564,65 @@ func (h *handler) GetServiceStatuses() gin.HandlerFunc {
 		}
 
 		h.Response.SuccessWithData(c, domain.MsgStatusHistoryRetrieved, items)
+	}
+}
+
+// UpdateCompletedServiceDetails handles PATCH /completed-services/:id
+// @Summary Update service details (prices/notes)
+// @Description Updates quoted_price, final_price, and/or representative_notes for a service in PENDIENTE or EN_PROCESO status
+func (h *handler) UpdateCompletedServiceDetails() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		Logger.Info(logger.LogCSControllerDetailsRequest)
+
+		// Parse service ID
+		encodedID := c.Param("id")
+		serviceID, err := h.DecodeID(encodedID)
+		if err != nil {
+			Logger.Warn(logger.LogCSControllerDetailsError, "error", err)
+			h.Response.Error(c, domain.MsgValIDInvalid)
+			return
+		}
+
+		// Parse request body
+		var req UpdateDetailsRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			Logger.Warn(logger.LogCSControllerDetailsError, "error", err)
+			h.Response.Error(c, domain.MsgValBadFormat)
+			return
+		}
+
+		// Sanitize
+		req.Sanitize()
+
+		// Validate at least one field is provided
+		if req.QuotedPrice == nil && req.FinalPrice == nil && req.RepresentativeNotes == nil {
+			Logger.Warn(logger.LogCSControllerDetailsError, "error", "no fields provided")
+			h.Response.Error(c, domain.MsgValInvalidReq)
+			return
+		}
+
+		// Delegate to interactor
+		if err := h.CompletedServiceInteractor.UpdateCompletedServiceDetails(
+			c.Request.Context(),
+			serviceID,
+			req.QuotedPrice,
+			req.FinalPrice,
+			req.RepresentativeNotes,
+		); err != nil {
+			Logger.Error(logger.LogCSControllerDetailsError, "error", err)
+
+			switch {
+			case errors.Is(err, domain.ErrCompletedServiceNotFound):
+				h.Response.Error(c, domain.MsgCompletedServiceNotFound)
+			case errors.Is(err, domain.ErrCompletedServiceCannotUpdate):
+				h.Response.Error(c, domain.MsgCompletedServiceCannotUpdate)
+			default:
+				h.Response.Error(c, domain.MsgServerError)
+			}
+			return
+		}
+
+		Logger.Success(logger.LogCSControllerDetailsSuccess)
+		h.Response.Success(c, domain.MsgCompletedServiceDetailsUpdated)
 	}
 }

@@ -1848,6 +1848,64 @@ const (
 	LogCSRepoUpdateStatusErr     = "Error actualizando estado en BD"
 	LogCSRepoGetHistoryErr       = "Error obteniendo historial de transiciones"
 	LogCSRepoScanHistoryErr      = "Error escaneando transición de estado"
+	LogCSRepoPrepareUpdPrice     = "Error preparando stmtUpdateStatusWithPrice"
+	LogCSRepoPrepareUpdDetails   = "Error preparando stmtUpdateDetails"
+	LogCSRepoUpdPriceErr         = "Error actualizando estado con precio en BD"
+	LogCSRepoUpdDetailsErr       = "Error actualizando detalles en BD"
+
+	// Update Details (Feature B) - Interactor
+	LogCSInteractorDetailsStart         = "Iniciando actualización de detalles de servicio"
+	LogCSInteractorDetailsNotFound      = "Servicio no encontrado para actualización de detalles"
+	LogCSInteractorDetailsInvalidStatus = "Estado no permite actualización de detalles"
+	LogCSInteractorDetailsTxErr         = "Error al iniciar transacción para actualización de detalles"
+	LogCSInteractorDetailsUpdErr        = "Error al actualizar detalles en BD"
+	LogCSInteractorDetailsCommErr       = "Error al hacer commit de actualización de detalles"
+	LogCSInteractorDetailsSuccess       = "Detalles de servicio actualizados exitosamente"
+
+	// Update Details (Feature B) - Controller
+	LogCSControllerDetailsRequest = "Solicitud de actualización de detalles de servicio recibida"
+	LogCSControllerDetailsError   = "Error al actualizar detalles de servicio"
+	LogCSControllerDetailsSuccess = "Detalles de servicio actualizados exitosamente"
+
+	// Rating (RELEASE_14 / HU48) - Repository
+	LogCSRepoPrepareRateItem    = "Error preparando stmtRateServiceItem"
+	LogCSRepoPrepareGetItemByID = "Error preparando stmtGetItemByID"
+	LogCSRepoRateItemErr        = "Error al calificar item de servicio en BD"
+	LogCSRepoGetItemByIDErr     = "Error obteniendo item de servicio por ID"
+
+	// Rating (RELEASE_14 / HU48) - Interactor
+	LogCSInteractorRateStart    = "Iniciando calificación de item de servicio"
+	LogCSInteractorRateNotFound = "Item de servicio no encontrado para calificar"
+	LogCSInteractorRateAlready  = "Item de servicio ya fue calificado"
+	LogCSInteractorRateInvalid  = "Valor de calificación fuera de rango"
+	LogCSInteractorRateNotFinal = "Servicio no finalizado, no se puede calificar"
+	LogCSInteractorRateTxErr    = "Error al iniciar transacción para calificación"
+	LogCSInteractorRateUpdErr   = "Error al guardar calificación en BD"
+	LogCSInteractorRateCommErr  = "Error al hacer commit de calificación"
+	LogCSInteractorRateRbErr    = "Error en rollback de calificación"
+	LogCSInteractorRateRbOK     = "Rollback de calificación ejecutado"
+	LogCSInteractorRateSuccess  = "Calificación registrada exitosamente"
+	LogCSInteractorRateOffComm  = "Comentario ofensivo detectado"
+
+	// Rating (RELEASE_14 / HU48) - Controller
+	LogCSControllerRateRequest = "Solicitud de calificación de item de servicio recibida"
+	LogCSControllerRateError   = "Error al calificar item de servicio"
+	LogCSControllerRateSuccess = "Calificación de item registrada exitosamente"
+
+	// Reviews (RELEASE_14 / HU48) - Repository
+	LogCSRepoPrepareGetReviews = "Error preparando stmtGetReviewsByServiceID"
+	LogCSRepoGetReviewsErr     = "Error obteniendo reseñas por servicio"
+	LogCSRepoScanReviewErr     = "Error escaneando fila de reseña"
+
+	// Reviews (RELEASE_14 / HU48) - Interactor
+	LogCSInteractorReviewsStart   = "Consultando reseñas de servicio"
+	LogCSInteractorReviewsError   = "Error al obtener reseñas de servicio"
+	LogCSInteractorReviewsSuccess = "Reseñas de servicio obtenidas exitosamente"
+
+	// Reviews (RELEASE_14 / HU48) - Controller
+	LogCSControllerReviewsRequest = "Solicitud de reseñas de servicio recibida"
+	LogCSControllerReviewsError   = "Error al obtener reseñas de servicio"
+	LogCSControllerReviewsSuccess = "Reseñas de servicio obtenidas exitosamente"
 )
 
 // ============================================

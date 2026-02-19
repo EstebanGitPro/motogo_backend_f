@@ -217,7 +217,7 @@ func (i *CompletedServiceInteractor) DeleteCompletedService(ctx context.Context,
 }
 
 // TransitionStatus validates and applies a status transition for a completed service (HU74)
-func (i *CompletedServiceInteractor) TransitionStatus(ctx context.Context, serviceID string, newStatus string, personID string) error {
+func (i *CompletedServiceInteractor) TransitionStatus(ctx context.Context, serviceID string, newStatus string, personID string, finalPrice *float64) error {
 	traceID := middleware.GetTraceIDFromContext(ctx)
 	log := log.WithTraceID(traceID)
 
@@ -257,10 +257,17 @@ func (i *CompletedServiceInteractor) TransitionStatus(ctx context.Context, servi
 		completionDate = &now
 	}
 
-	// STEP 5: Update status in DB
-	if err = i.service.UpdateStatus(ctx, tx, serviceID, newStatus, completionDate); err != nil {
-		log.Error(logger.LogCSInteractorStatusUpdErr, "error", err)
-		return domain.ErrInvalidStatusTransition
+	// STEP 5: Update status in DB (with optional final price)
+	if finalPrice != nil && domain.ServiceStatus(newStatus) == domain.ServiceStatusCompleted {
+		if err = i.service.UpdateStatusWithPrice(ctx, tx, serviceID, newStatus, completionDate, finalPrice); err != nil {
+			log.Error(logger.LogCSInteractorStatusUpdErr, "error", err)
+			return domain.ErrInvalidStatusTransition
+		}
+	} else {
+		if err = i.service.UpdateStatus(ctx, tx, serviceID, newStatus, completionDate); err != nil {
+			log.Error(logger.LogCSInteractorStatusUpdErr, "error", err)
+			return domain.ErrInvalidStatusTransition
+		}
 	}
 
 	// STEP 6: Insert transition history
@@ -319,4 +326,53 @@ func (i *CompletedServiceInteractor) GetStatusHistory(ctx context.Context, servi
 		"count", len(history))
 
 	return history, nil
+}
+
+// UpdateCompletedServiceDetails updates prices and notes for a completed service in PENDIENTE or EN_PROCESO status
+func (i *CompletedServiceInteractor) UpdateCompletedServiceDetails(ctx context.Context, serviceID string, quotedPrice, finalPrice *float64, notes *string) error {
+	traceID := middleware.GetTraceIDFromContext(ctx)
+	log := log.WithTraceID(traceID)
+
+	log.Info(logger.LogCSInteractorDetailsStart, "service_id", serviceID)
+
+	// STEP 1: Verify service exists and get current status
+	cs, err := i.service.GetByID(ctx, serviceID)
+	if err != nil {
+		log.Warn(logger.LogCSInteractorDetailsNotFound, "service_id", serviceID, "error", err)
+		return domain.ErrCompletedServiceNotFound
+	}
+
+	// STEP 2: Validate status allows editing
+	if cs.Status != domain.ServiceStatusPending && cs.Status != domain.ServiceStatusInProgress {
+		log.Warn(logger.LogCSInteractorDetailsInvalidStatus,
+			"service_id", serviceID,
+			"status", cs.Status)
+		return domain.ErrCompletedServiceCannotUpdate
+	}
+
+	// STEP 3: Begin transaction
+	tx, err := i.service.BeginTx(ctx)
+	if err != nil {
+		log.Error(logger.LogCSInteractorDetailsTxErr, "error", err)
+		return domain.ErrCompletedServiceCannotUpdate
+	}
+
+	defer deferRollback(tx, &err, log, logger.LogTxRollbackError, logger.LogTxRollbackOK)()
+
+	// STEP 4: Update details in DB
+	if err = i.service.UpdateDetails(ctx, tx, serviceID, quotedPrice, finalPrice, notes); err != nil {
+		log.Error(logger.LogCSInteractorDetailsUpdErr, "service_id", serviceID, "error", err)
+		return domain.ErrCompletedServiceCannotUpdate
+	}
+
+	// STEP 5: Commit
+	if err = tx.Commit(); err != nil {
+		log.Error(logger.LogCSInteractorDetailsCommErr, "error", err)
+		return domain.ErrCompletedServiceCannotUpdate
+	}
+
+	log.Success(logger.LogCSInteractorDetailsSuccess, "service_id", serviceID)
+
+	err = nil
+	return nil
 }

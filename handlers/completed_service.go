@@ -42,7 +42,23 @@ func (r *CreateCompletedServiceRequest) Sanitize() {
 
 // UpdateStatusRequest represents the request body for status updates
 type UpdateStatusRequest struct {
-	Status string `json:"status" binding:"required"`
+	Status     string   `json:"status" binding:"required"`
+	FinalPrice *float64 `json:"final_price,omitempty"`
+}
+
+// UpdateDetailsRequest represents the request body for updating service details (prices/notes)
+type UpdateDetailsRequest struct {
+	QuotedPrice         *float64 `json:"quoted_price,omitempty"`
+	FinalPrice          *float64 `json:"final_price,omitempty"`
+	RepresentativeNotes *string  `json:"representative_notes,omitempty"`
+}
+
+// Sanitize trims whitespace from string fields.
+func (r *UpdateDetailsRequest) Sanitize() {
+	if r.RepresentativeNotes != nil {
+		trimmed := strings.TrimSpace(*r.RepresentativeNotes)
+		r.RepresentativeNotes = &trimmed
+	}
 }
 
 // ==========================================
@@ -66,8 +82,12 @@ type CompletedServiceResponse struct {
 
 // CompletedServiceItemResponse represents a single service item in the response.
 type CompletedServiceItemResponse struct {
-	ID        string `json:"id"`
-	ServiceID string `json:"service_id"`
+	ID          string  `json:"id"`
+	ServiceID   string  `json:"service_id"`
+	ServiceName *string `json:"service_name,omitempty"`
+	Rating      *int    `json:"rating,omitempty"`
+	Comment     *string `json:"comment,omitempty"`
+	RatedAt     *string `json:"rated_at,omitempty"`
 }
 
 // StatusTransitionResponse represents a single status transition in the API response
@@ -107,10 +127,18 @@ func ToCompletedServiceResponse(cs *domain.CompletedService) CompletedServiceRes
 	if cs.Services != nil {
 		resp.Services = make([]CompletedServiceItemResponse, len(cs.Services))
 		for i, item := range cs.Services {
-			resp.Services[i] = CompletedServiceItemResponse{
-				ID:        item.ID,
-				ServiceID: item.ServiceID,
+			itemResp := CompletedServiceItemResponse{
+				ID:          item.ID,
+				ServiceID:   item.ServiceID,
+				ServiceName: item.ServiceName,
+				Rating:      item.Rating,
+				Comment:     item.Comment,
 			}
+			if item.RatedAt != nil {
+				formatted := item.RatedAt.Format(constants.DateFormat)
+				itemResp.RatedAt = &formatted
+			}
+			resp.Services[i] = itemResp
 		}
 	}
 	return resp

@@ -90,14 +90,34 @@ func (s *completedServiceService) GetByID(ctx context.Context, serviceID string)
 	return cs, nil
 }
 
-// GetByMotorcycleID retrieves completed services for a motorcycle
+// GetByMotorcycleID retrieves completed services for a motorcycle (with items)
 func (s *completedServiceService) GetByMotorcycleID(ctx context.Context, motorcycleID string) ([]domain.CompletedService, error) {
-	return s.repository.GetByMotorcycleID(ctx, motorcycleID)
+	services, err := s.repository.GetByMotorcycleID(ctx, motorcycleID)
+	if err != nil {
+		return nil, err
+	}
+	return s.hydrateItems(ctx, services)
 }
 
-// GetByBranchID retrieves completed services for a branch
+// GetByBranchID retrieves completed services for a branch (with items)
 func (s *completedServiceService) GetByBranchID(ctx context.Context, branchID string) ([]domain.CompletedService, error) {
-	return s.repository.GetByBranchID(ctx, branchID)
+	services, err := s.repository.GetByBranchID(ctx, branchID)
+	if err != nil {
+		return nil, err
+	}
+	return s.hydrateItems(ctx, services)
+}
+
+// hydrateItems loads the associated items for each completed service.
+func (s *completedServiceService) hydrateItems(ctx context.Context, services []domain.CompletedService) ([]domain.CompletedService, error) {
+	for i := range services {
+		items, err := s.repository.GetItemsByCompletedServiceID(ctx, services[i].ID)
+		if err != nil {
+			return nil, err
+		}
+		services[i].Services = items
+	}
+	return services, nil
 }
 
 // ValidateNoActiveService checks that there is no active service (PENDIENTE/EN_PROCESO) for the motorcycle at the branch
@@ -131,6 +151,16 @@ func (s *completedServiceService) DeleteCompletedService(ctx context.Context, tx
 // UpdateStatus updates the status and optionally the completion date (HU74)
 func (s *completedServiceService) UpdateStatus(ctx context.Context, tx output.Tx, serviceID string, status string, completionDate *time.Time) error {
 	return s.repository.UpdateStatus(ctx, tx, serviceID, status, completionDate)
+}
+
+// UpdateStatusWithPrice updates the status, completion date, and final price
+func (s *completedServiceService) UpdateStatusWithPrice(ctx context.Context, tx output.Tx, serviceID string, status string, completionDate *time.Time, finalPrice *float64) error {
+	return s.repository.UpdateStatusWithPrice(ctx, tx, serviceID, status, completionDate, finalPrice)
+}
+
+// UpdateDetails updates the quoted price, final price, and representative notes
+func (s *completedServiceService) UpdateDetails(ctx context.Context, tx output.Tx, serviceID string, quotedPrice, finalPrice *float64, notes *string) error {
+	return s.repository.UpdateDetails(ctx, tx, serviceID, quotedPrice, finalPrice, notes)
 }
 
 // GetStatusHistory retrieves the status transition history for a completed service (HU73)
