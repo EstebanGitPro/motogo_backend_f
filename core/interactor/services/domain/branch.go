@@ -150,6 +150,7 @@ type NearbyBranch struct {
 	DistanceKm         float64             `json:"distance_km"`
 	Brands             []string            `json:"brands,omitempty"`
 	DisplacementRanges []DisplacementRange `json:"displacement_ranges,omitempty"`
+	ServiceNames       []string            `json:"service_names,omitempty"`
 }
 
 // NearbyLocation contains location info for nearby search results (HU89)

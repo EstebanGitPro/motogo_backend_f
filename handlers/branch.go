@@ -194,6 +194,7 @@ type NearbyBranchResponse struct {
 	DistanceKm             float64  `json:"distance_km"`
 	Brands                 []string `json:"brands,omitempty"`
 	DisplacementRanges     []string `json:"displacement_ranges,omitempty"`
+	ServiceNames           []string `json:"service_names,omitempty"`
 	Links                  []Link   `json:"_links"`
 }
 
@@ -218,6 +219,8 @@ func NewNearbyBranchResponse(branch domain.NearbyBranch, encodedID string, baseU
 		resp.Latitude = branch.Location.Latitude
 		resp.Longitude = branch.Location.Longitude
 	}
+
+	resp.ServiceNames = branch.ServiceNames
 
 	return resp
 }

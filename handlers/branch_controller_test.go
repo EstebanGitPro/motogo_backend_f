@@ -147,6 +147,9 @@ func createTestMessageCache() *messagingCache.MessageCache {
 		{Code: "MOD_CS_ACTIVE_ERR_00001", Type: "ERROR", Title: "Servicio activo", Content: "Ya existe un servicio activo para esta motocicleta en esta sede", Active: true},
 		{Code: "MOD_CS_TRANS_ERR_00001", Type: "ERROR", Title: "Error de historial", Content: "Error al obtener historial de transiciones", Active: true},
 		{Code: "MOD_CS_STATUS_ERR_00001", Type: "ERROR", Title: "Error de estado", Content: "Error al actualizar estado del servicio", Active: true},
+		{Code: "MOD_CS_DETAILS_UPD_EXI_00001", Type: "EXITO", Title: "Detalles actualizados", Content: "Detalles del servicio actualizados exitosamente", Active: true},
+		{Code: "MOD_CS_UPDATE_ERR_00001", Type: "ERROR", Title: "No se puede actualizar", Content: "No se puede actualizar el servicio en su estado actual", Active: true},
+		{Code: "MOD_V_VAL_ERR_00002", Type: "ERROR", Title: "Solicitud inválida", Content: "La solicitud no es válida", Active: true},
 		// Auth error messages
 		{Code: "GEN_AUTH_ERR_00002", Type: "ERROR", Title: "No autorizado", Content: "No tiene autorización para realizar esta acción", Active: true},
 		{Code: "MOD_DGN_NOT_FOUND_ERR_00001", Type: "ERROR", Title: "Diagnóstico no encontrado", Content: "El diagnóstico no fue encontrado", Active: true},
