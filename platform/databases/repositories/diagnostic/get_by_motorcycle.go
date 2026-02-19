@@ -39,35 +39,3 @@ func (r *repository) GetByMotorcycleID(ctx context.Context, motorcycleID string)
 
 	return diagnostics, nil
 }
-
-// GetEvidenceByDiagnosticID retrieves all evidence photos for a diagnostic
-func (r *repository) GetEvidenceByDiagnosticID(ctx context.Context, diagnosticID string) ([]domain.DiagnosticEvidence, error) {
-	rows, err := r.stmtGetEvidenceByDiagnosticID.QueryContext(ctx, diagnosticID)
-	if err != nil {
-		log.Error(logger.LogDiagnosticRepoListEvidenceError, err)
-		return nil, err
-	}
-	defer func() { _ = rows.Close() }()
-
-	var evidences []domain.DiagnosticEvidence
-	for rows.Next() {
-		var evid DiagnosticEvidence
-		if err := rows.Scan(
-			&evid.ID,
-			&evid.DiagnosticID,
-			&evid.ImageURL,
-			&evid.Description,
-			&evid.CreatedAt,
-		); err != nil {
-			log.Error(logger.LogDiagnosticRepoScanError, err)
-			return nil, err
-		}
-		evidences = append(evidences, evid.EvidenceToDomain())
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return evidences, nil
-}

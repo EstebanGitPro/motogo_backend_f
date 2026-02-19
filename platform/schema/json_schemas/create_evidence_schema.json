@@ -11,10 +11,8 @@
     },
     "image_url": {
       "type": "string",
-      "format": "uri",
       "minLength": 1,
-      "maxLength": 255,
-      "pattern": "^https://firebasestorage\\.googleapis\\.com/.*$",
+      "maxLength": 500,
       "description": "Firebase Storage URL for the uploaded image"
     },
     "description": {

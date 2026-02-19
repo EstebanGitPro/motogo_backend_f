@@ -72,8 +72,8 @@ func (s *DiagnosticServiceImpl) ValidateBranchExists(ctx context.Context, branch
 
 // RegisterOrUpdateDiagnostic implements UPSERT logic:
 // If a diagnostic already exists for the same motorcycle+branch, it updates it.
-// Otherwise, it creates a new one. Evidence is always replaced.
-func (s *DiagnosticServiceImpl) RegisterOrUpdateDiagnostic(ctx context.Context, tx output.Tx, motorcycleID, branchID string, problemDescription *string, evidenceURLs []string) (*domain.Diagnostic, error) {
+// Otherwise, it creates a new one.
+func (s *DiagnosticServiceImpl) RegisterOrUpdateDiagnostic(ctx context.Context, tx output.Tx, motorcycleID, branchID string, problemDescription *string) (*domain.Diagnostic, error) {
 	// Check if diagnostic already exists for this motorcycle+branch
 	existing, existErr := s.diagnosticRepo.GetByMotorcycleAndBranch(ctx, motorcycleID, branchID)
 	if existErr != nil {
@@ -94,23 +94,6 @@ func (s *DiagnosticServiceImpl) RegisterOrUpdateDiagnostic(ctx context.Context, 
 			return nil, domain.ErrDiagnosticCannotSave
 		}
 
-		// Delete old evidence
-		if err := s.diagnosticRepo.DeleteEvidenceByDiagnosticID(ctx, tx, existing.ID); err != nil {
-			diagnosticLog.Error(logger.LogDiagnosticInteractorEvidCleanupError, "error", err, "diagnostic_id", existing.ID)
-			return nil, domain.ErrDiagnosticCannotSave
-		}
-
-		// Save new evidence
-		existing.Evidence = nil
-		for _, url := range evidenceURLs {
-			evidence := NewDiagnosticEvidence(existing.ID, url, nil)
-			if err := s.diagnosticRepo.SaveEvidence(ctx, tx, evidence); err != nil {
-				diagnosticLog.Error(logger.LogDiagnosticInteractorSaveEvidError, "error", err, "url", url)
-				return nil, domain.ErrDiagnosticCannotSave
-			}
-			existing.Evidence = append(existing.Evidence, *evidence)
-		}
-
 		diagnosticLog.Success(logger.LogDiagnosticInteractorUpsertSuccess, "id", existing.ID, "motorcycle_id", motorcycleID)
 		return existing, nil
 	}
@@ -123,16 +106,6 @@ func (s *DiagnosticServiceImpl) RegisterOrUpdateDiagnostic(ctx context.Context, 
 	if err := s.diagnosticRepo.Save(ctx, tx, diagnostic); err != nil {
 		diagnosticLog.Error(logger.LogDiagnosticInteractorSaveError, "error", err)
 		return nil, domain.ErrDiagnosticCannotSave
-	}
-
-	// Save evidence photos
-	for _, url := range evidenceURLs {
-		evidence := NewDiagnosticEvidence(diagnostic.ID, url, nil)
-		if err := s.diagnosticRepo.SaveEvidence(ctx, tx, evidence); err != nil {
-			diagnosticLog.Error(logger.LogDiagnosticInteractorSaveEvidError, "error", err, "url", url)
-			return nil, domain.ErrDiagnosticCannotSave
-		}
-		diagnostic.Evidence = append(diagnostic.Evidence, *evidence)
 	}
 
 	diagnosticLog.Success(logger.LogDiagnosticInteractorCreateSuccess, "id", diagnostic.ID, "motorcycle_id", motorcycleID)
@@ -193,27 +166,5 @@ func (s *DiagnosticServiceImpl) SetSolution(ctx context.Context, tx output.Tx, d
 	}
 
 	diagnosticLog.Success(logger.LogDiagnosticInteractorSetSolutionSuccess, "diagnostic_id", diagnosticID)
-	return nil
-}
-
-// ============================================
-// Evidence
-// ============================================
-
-// LoadEvidence retrieves all evidence for a diagnostic
-func (s *DiagnosticServiceImpl) LoadEvidence(ctx context.Context, diagnosticID string) ([]domain.DiagnosticEvidence, error) {
-	return s.diagnosticRepo.GetEvidenceByDiagnosticID(ctx, diagnosticID)
-}
-
-// LoadEvidenceForDiagnostics loads evidence for each diagnostic in the slice (in-place)
-func (s *DiagnosticServiceImpl) LoadEvidenceForDiagnostics(ctx context.Context, diagnostics []domain.Diagnostic) error {
-	for idx := range diagnostics {
-		evidence, err := s.diagnosticRepo.GetEvidenceByDiagnosticID(ctx, diagnostics[idx].ID)
-		if err != nil {
-			diagnosticLog.Error(logger.LogDiagnosticInteractorListError, "error loading evidence", err, "diagnostic_id", diagnostics[idx].ID)
-			return err
-		}
-		diagnostics[idx].Evidence = evidence
-	}
 	return nil
 }

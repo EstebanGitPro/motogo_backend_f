@@ -53,7 +53,7 @@ func TestCreateDiagnostic_Integration_Success(t *testing.T) {
 	}, nil)
 	mockSvc.On("ValidateBranchExists", mock.Anything, diagTestBranchUUID).Return(nil)
 	mockSvc.On("BeginTx", mock.Anything).Return(mockTx, nil)
-	mockSvc.On("RegisterOrUpdateDiagnostic", mock.Anything, mockTx, diagTestMotorcycleUUID, diagTestBranchUUID, &problemDesc, []string(nil)).Return(&domain.Diagnostic{
+	mockSvc.On("RegisterOrUpdateDiagnostic", mock.Anything, mockTx, diagTestMotorcycleUUID, diagTestBranchUUID, &problemDesc).Return(&domain.Diagnostic{
 		ID:           diagTestDiagnosticUUID,
 		MotorcycleID: diagTestMotorcycleUUID,
 		BranchID:     diagTestBranchUUID,
@@ -109,7 +109,7 @@ func TestListDiagnostics_Integration_Success(t *testing.T) {
 	encodedMotorcycleID, _ := encoder.Encode(diagTestMotorcycleUUID)
 	now := time.Now()
 
-	// Interactor flow: ValidateOwnership → GetByMotorcycleID → LoadEvidenceForDiagnostics
+	// Interactor flow: ValidateOwnership → GetByMotorcycleID
 	mockSvc.On("ValidateMotorcycleOwnership", mock.Anything, diagTestMotorcycleUUID, diagTestOwnerID).Return(&domain.Motorcycle{
 		ID:      diagTestMotorcycleUUID,
 		OwnerID: diagTestOwnerID,
@@ -118,7 +118,6 @@ func TestListDiagnostics_Integration_Success(t *testing.T) {
 		{ID: diagTestDiagnosticUUID, MotorcycleID: diagTestMotorcycleUUID, BranchID: diagTestBranchUUID, Date: now},
 		{ID: "a5555555-5555-4000-8000-555555555555", MotorcycleID: diagTestMotorcycleUUID, BranchID: diagTestBranchUUID, Date: now},
 	}, nil)
-	mockSvc.On("LoadEvidenceForDiagnostics", mock.Anything, mock.AnythingOfType("[]domain.Diagnostic")).Return(nil)
 
 	router := gin.New()
 	router.Use(func(c *gin.Context) {
@@ -165,7 +164,7 @@ func TestGetDiagnostic_Integration_Success(t *testing.T) {
 	encodedDiagnosticID, _ := encoder.Encode(diagTestDiagnosticUUID)
 	now := time.Now()
 
-	// Interactor flow: GetByID → ValidateOwnership → LoadEvidence
+	// Interactor flow: GetByID → ValidateOwnership
 	mockSvc.On("GetByID", mock.Anything, diagTestDiagnosticUUID).Return(&domain.Diagnostic{
 		ID:           diagTestDiagnosticUUID,
 		MotorcycleID: diagTestMotorcycleUUID,
@@ -176,7 +175,6 @@ func TestGetDiagnostic_Integration_Success(t *testing.T) {
 		ID:      diagTestMotorcycleUUID,
 		OwnerID: diagTestOwnerID,
 	}, nil)
-	mockSvc.On("LoadEvidence", mock.Anything, diagTestDiagnosticUUID).Return([]domain.DiagnosticEvidence{}, nil)
 
 	router := gin.New()
 	router.Use(func(c *gin.Context) {

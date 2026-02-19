@@ -5,8 +5,6 @@ import (
 	"database/sql"
 
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
-	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
-	"github.com/EstebanGitPro/motogo-backend/platform/databases/common"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
@@ -34,20 +32,4 @@ func (r *repository) GetByMotorcycleAndBranch(ctx context.Context, motorcycleID,
 
 	result := diag.ToDomain()
 	return &result, nil
-}
-
-// DeleteEvidenceByDiagnosticID removes all evidence for a diagnostic within a transaction
-func (r *repository) DeleteEvidenceByDiagnosticID(ctx context.Context, tx output.Tx, diagnosticID string) error {
-	sqlTx, ok := tx.(*common.SQLTx)
-	if !ok {
-		return domain.ErrInvalidTransaction
-	}
-
-	_, err := sqlTx.ExecContext(ctx, queryDeleteEvidenceByDiagnosticID, diagnosticID)
-	if err != nil {
-		log.Error(logger.LogDiagnosticRepoDeleteEvidenceError, err)
-		return err
-	}
-
-	return nil
 }

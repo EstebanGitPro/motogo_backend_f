@@ -284,17 +284,13 @@ type DiagnosticService interface {
 	ValidateBranchExists(ctx context.Context, branchID string) error
 
 	// Diagnostic CRUD
-	RegisterOrUpdateDiagnostic(ctx context.Context, tx output.Tx, motorcycleID, branchID string, problemDescription *string, evidenceURLs []string) (*domain.Diagnostic, error)
+	RegisterOrUpdateDiagnostic(ctx context.Context, tx output.Tx, motorcycleID, branchID string, problemDescription *string) (*domain.Diagnostic, error)
 	GetByID(ctx context.Context, diagnosticID string) (*domain.Diagnostic, error)
 	GetByMotorcycleID(ctx context.Context, motorcycleID string) ([]domain.Diagnostic, error)
 	ApplyDiagnosticUpdates(existing, updates *domain.Diagnostic)
 	UpdateDiagnostic(ctx context.Context, tx output.Tx, diagnostic *domain.Diagnostic) error
 	DeleteDiagnostic(ctx context.Context, tx output.Tx, diagnosticID string) error
 	SetSolution(ctx context.Context, tx output.Tx, diagnosticID, solution string) error
-
-	// Evidence
-	LoadEvidence(ctx context.Context, diagnosticID string) ([]domain.DiagnosticEvidence, error)
-	LoadEvidenceForDiagnostics(ctx context.Context, diagnostics []domain.Diagnostic) error
 }
 
 // EvidenceService - Use Cases for Motorcycle Evidence operations (HU16-19)

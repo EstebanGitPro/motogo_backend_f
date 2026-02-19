@@ -64,57 +64,6 @@ func TestNewDiagnostic_PossibleSolutionIsNil(t *testing.T) {
 }
 
 // ============================================
-// NewDiagnosticEvidence Tests
-// ============================================
-
-func TestNewDiagnosticEvidence_GeneratesUUID(t *testing.T) {
-	evidence := services.NewDiagnosticEvidence("diag-001", "https://firebase.com/img.jpg", nil)
-
-	assert.NotEmpty(t, evidence.ID)
-	assert.Len(t, evidence.ID, 36)
-}
-
-func TestNewDiagnosticEvidence_GeneratesUniqueIDs(t *testing.T) {
-	e1 := services.NewDiagnosticEvidence("diag-001", "https://firebase.com/img1.jpg", nil)
-	e2 := services.NewDiagnosticEvidence("diag-001", "https://firebase.com/img2.jpg", nil)
-
-	assert.NotEqual(t, e1.ID, e2.ID)
-}
-
-func TestNewDiagnosticEvidence_SetsDiagnosticID(t *testing.T) {
-	evidence := services.NewDiagnosticEvidence("diag-456", "https://firebase.com/img.jpg", nil)
-	assert.Equal(t, "diag-456", evidence.DiagnosticID)
-}
-
-func TestNewDiagnosticEvidence_SetsImageURL(t *testing.T) {
-	url := "https://firebasestorage.googleapis.com/v0/b/test/image.jpg"
-	evidence := services.NewDiagnosticEvidence("diag-001", url, nil)
-	assert.Equal(t, url, evidence.ImageURL)
-}
-
-func TestNewDiagnosticEvidence_NilDescription(t *testing.T) {
-	evidence := services.NewDiagnosticEvidence("diag-001", "https://firebase.com/img.jpg", nil)
-	assert.Nil(t, evidence.Description)
-}
-
-func TestNewDiagnosticEvidence_WithDescription(t *testing.T) {
-	desc := "Foto del daño lateral"
-	evidence := services.NewDiagnosticEvidence("diag-001", "https://firebase.com/img.jpg", &desc)
-
-	assert.NotNil(t, evidence.Description)
-	assert.Equal(t, "Foto del daño lateral", *evidence.Description)
-}
-
-func TestNewDiagnosticEvidence_SetsCreatedAt(t *testing.T) {
-	before := time.Now()
-	evidence := services.NewDiagnosticEvidence("diag-001", "https://firebase.com/img.jpg", nil)
-	after := time.Now()
-
-	assert.True(t, evidence.CreatedAt.After(before) || evidence.CreatedAt.Equal(before))
-	assert.True(t, evidence.CreatedAt.Before(after) || evidence.CreatedAt.Equal(after))
-}
-
-// ============================================
 // RefreshDiagnostic Tests
 // ============================================
 

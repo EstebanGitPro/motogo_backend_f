@@ -19,9 +19,7 @@
     "profile_image_url": {
       "type": "string",
       "description": "Optional Firebase Storage URL for branch profile image",
-      "format": "uri",
-      "pattern": "^https://firebasestorage\\.googleapis\\.com/.*$",
-      "maxLength": 255
+      "maxLength": 500
     },
     "location": {
       "type": "object",

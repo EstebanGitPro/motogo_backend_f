@@ -39,18 +39,6 @@ const (
 		ORDER BY date DESC
 	`
 
-	queryInsertEvidence = `
-		INSERT INTO diagnostic_evidence (id, diagnostic_id, image_url, description, created_at)
-		VALUES (?, ?, ?, ?, ?)
-	`
-
-	queryGetEvidenceByDiagnosticID = `
-		SELECT id, diagnostic_id, image_url, description, created_at
-		FROM diagnostic_evidence
-		WHERE diagnostic_id = ?
-		ORDER BY created_at ASC
-	`
-
 	queryGetByMotorcycleAndBranch = `
 		SELECT id, motorcycle_id, branch_id, date, problem_description, possible_solution
 		FROM diagnostics
@@ -58,25 +46,18 @@ const (
 		ORDER BY date DESC
 		LIMIT 1
 	`
-
-	queryDeleteEvidenceByDiagnosticID = `
-		DELETE FROM diagnostic_evidence WHERE diagnostic_id = ?
-	`
 )
 
 var log logger.Logger = logger.NewSlogLogger()
 
 type repository struct {
-	db                               *sql.DB
-	stmtInsert                       *sql.Stmt
-	stmtUpdate                       *sql.Stmt
-	stmtDelete                       *sql.Stmt
-	stmtGetByID                      *sql.Stmt
-	stmtGetByMotorcycleID            *sql.Stmt
-	stmtInsertEvidence               *sql.Stmt
-	stmtGetEvidenceByDiagnosticID    *sql.Stmt
-	stmtGetByMotorcycleAndBranch     *sql.Stmt
-	stmtDeleteEvidenceByDiagnosticID *sql.Stmt
+	db                           *sql.DB
+	stmtInsert                   *sql.Stmt
+	stmtUpdate                   *sql.Stmt
+	stmtDelete                   *sql.Stmt
+	stmtGetByID                  *sql.Stmt
+	stmtGetByMotorcycleID        *sql.Stmt
+	stmtGetByMotorcycleAndBranch *sql.Stmt
 }
 
 // NewRepository creates a new diagnostic repository with prepared statements
@@ -115,41 +96,20 @@ func NewRepository(db *sql.DB) (output.DiagnosticRepository, error) {
 		return nil, fmt.Errorf("error preparing stmtGetByMotorcycleID: %w", err)
 	}
 
-	stmtInsertEvidence, err := db.Prepare(queryInsertEvidence)
-	if err != nil {
-		log.Error(logger.LogDiagnosticRepoPrepareEvidInsError, err)
-		return nil, fmt.Errorf("error preparing stmtInsertEvidence: %w", err)
-	}
-
-	stmtGetEvidenceByDiagnosticID, err := db.Prepare(queryGetEvidenceByDiagnosticID)
-	if err != nil {
-		log.Error(logger.LogDiagnosticRepoPrepareEvidGetError, err)
-		return nil, fmt.Errorf("error preparing stmtGetEvidenceByDiagnosticID: %w", err)
-	}
-
 	stmtGetByMotorcycleAndBranch, err := db.Prepare(queryGetByMotorcycleAndBranch)
 	if err != nil {
 		log.Error(logger.LogDiagnosticRepoPrepareGetMotoBranchError, err)
 		return nil, fmt.Errorf("error preparing stmtGetByMotorcycleAndBranch: %w", err)
 	}
 
-	stmtDeleteEvidenceByDiagnosticID, err := db.Prepare(queryDeleteEvidenceByDiagnosticID)
-	if err != nil {
-		log.Error(logger.LogDiagnosticRepoPrepareEvidDelError, err)
-		return nil, fmt.Errorf("error preparing stmtDeleteEvidenceByDiagnosticID: %w", err)
-	}
-
 	return &repository{
-		db:                               db,
-		stmtInsert:                       stmtInsert,
-		stmtUpdate:                       stmtUpdate,
-		stmtDelete:                       stmtDelete,
-		stmtGetByID:                      stmtGetByID,
-		stmtGetByMotorcycleID:            stmtGetByMotorcycleID,
-		stmtInsertEvidence:               stmtInsertEvidence,
-		stmtGetEvidenceByDiagnosticID:    stmtGetEvidenceByDiagnosticID,
-		stmtGetByMotorcycleAndBranch:     stmtGetByMotorcycleAndBranch,
-		stmtDeleteEvidenceByDiagnosticID: stmtDeleteEvidenceByDiagnosticID,
+		db:                           db,
+		stmtInsert:                   stmtInsert,
+		stmtUpdate:                   stmtUpdate,
+		stmtDelete:                   stmtDelete,
+		stmtGetByID:                  stmtGetByID,
+		stmtGetByMotorcycleID:        stmtGetByMotorcycleID,
+		stmtGetByMotorcycleAndBranch: stmtGetByMotorcycleAndBranch,
 	}, nil
 }
 

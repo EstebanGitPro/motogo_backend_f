@@ -30,20 +30,18 @@ func TestRegisterDiagnostic_CreateNew_Success(t *testing.T) {
 
 	desc := "Frenos hacen ruido"
 	createdDiag := &domain.Diagnostic{ID: "diag-1", MotorcycleID: "moto-1", BranchID: "branch-1"}
-	createdDiag.Evidence = []domain.DiagnosticEvidence{{ID: "ev-1"}}
 
 	svc.On("ValidateMotorcycleOwnership", ctx, "moto-1", "owner-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}, nil)
 	svc.On("ValidateBranchExists", ctx, "branch-1").Return(nil)
 	svc.On("BeginTx", ctx).Return(mockTx, nil)
-	svc.On("RegisterOrUpdateDiagnostic", ctx, mockTx, "moto-1", "branch-1", &desc, []string{"http://img1.jpg"}).Return(createdDiag, nil)
+	svc.On("RegisterOrUpdateDiagnostic", ctx, mockTx, "moto-1", "branch-1", &desc).Return(createdDiag, nil)
 	mockTx.On("Commit").Return(nil)
 
-	result, err := di.RegisterDiagnostic(ctx, "moto-1", "branch-1", "owner-1", &desc, []string{"http://img1.jpg"})
+	result, err := di.RegisterDiagnostic(ctx, "moto-1", "branch-1", "owner-1", &desc)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, "diag-1", result.ID)
-	assert.Len(t, result.Evidence, 1)
 	svc.AssertExpectations(t)
 	mockTx.AssertExpectations(t)
 }
@@ -54,7 +52,7 @@ func TestRegisterDiagnostic_MotorcycleNotFound(t *testing.T) {
 
 	svc.On("ValidateMotorcycleOwnership", ctx, "moto-bad", "owner-1").Return(nil, domain.ErrMotorcycleNotFound)
 
-	result, err := di.RegisterDiagnostic(ctx, "moto-bad", "branch-1", "owner-1", nil, nil)
+	result, err := di.RegisterDiagnostic(ctx, "moto-bad", "branch-1", "owner-1", nil)
 
 	assert.Error(t, err)
 	assert.Nil(t, result)
@@ -67,7 +65,7 @@ func TestRegisterDiagnostic_OwnershipError(t *testing.T) {
 
 	svc.On("ValidateMotorcycleOwnership", ctx, "moto-1", "impostor").Return(nil, domain.ErrMotorcycleNotFound)
 
-	result, err := di.RegisterDiagnostic(ctx, "moto-1", "branch-1", "impostor", nil, nil)
+	result, err := di.RegisterDiagnostic(ctx, "moto-1", "branch-1", "impostor", nil)
 
 	assert.Error(t, err)
 	assert.Nil(t, result)
@@ -81,7 +79,7 @@ func TestRegisterDiagnostic_BranchNotFound(t *testing.T) {
 	svc.On("ValidateMotorcycleOwnership", ctx, "moto-1", "owner-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}, nil)
 	svc.On("ValidateBranchExists", ctx, "branch-bad").Return(domain.ErrBranchNotFound)
 
-	result, err := di.RegisterDiagnostic(ctx, "moto-1", "branch-bad", "owner-1", nil, nil)
+	result, err := di.RegisterDiagnostic(ctx, "moto-1", "branch-bad", "owner-1", nil)
 
 	assert.Error(t, err)
 	assert.Nil(t, result)
@@ -96,7 +94,7 @@ func TestRegisterDiagnostic_BeginTxError(t *testing.T) {
 	svc.On("ValidateBranchExists", ctx, "branch-1").Return(nil)
 	svc.On("BeginTx", ctx).Return(nil, errors.New("tx error"))
 
-	result, err := di.RegisterDiagnostic(ctx, "moto-1", "branch-1", "owner-1", nil, nil)
+	result, err := di.RegisterDiagnostic(ctx, "moto-1", "branch-1", "owner-1", nil)
 
 	assert.Error(t, err)
 	assert.Nil(t, result)
@@ -111,10 +109,10 @@ func TestRegisterDiagnostic_ServiceError_RollsBack(t *testing.T) {
 	svc.On("ValidateMotorcycleOwnership", ctx, "moto-1", "owner-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}, nil)
 	svc.On("ValidateBranchExists", ctx, "branch-1").Return(nil)
 	svc.On("BeginTx", ctx).Return(mockTx, nil)
-	svc.On("RegisterOrUpdateDiagnostic", ctx, mockTx, "moto-1", "branch-1", (*string)(nil), []string(nil)).Return(nil, domain.ErrDiagnosticCannotSave)
+	svc.On("RegisterOrUpdateDiagnostic", ctx, mockTx, "moto-1", "branch-1", (*string)(nil)).Return(nil, domain.ErrDiagnosticCannotSave)
 	mockTx.On("Rollback").Return(nil)
 
-	result, err := di.RegisterDiagnostic(ctx, "moto-1", "branch-1", "owner-1", nil, nil)
+	result, err := di.RegisterDiagnostic(ctx, "moto-1", "branch-1", "owner-1", nil)
 
 	assert.Error(t, err)
 	assert.Nil(t, result)
@@ -130,11 +128,11 @@ func TestRegisterDiagnostic_CommitError_RollsBack(t *testing.T) {
 	svc.On("ValidateMotorcycleOwnership", ctx, "moto-1", "owner-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}, nil)
 	svc.On("ValidateBranchExists", ctx, "branch-1").Return(nil)
 	svc.On("BeginTx", ctx).Return(mockTx, nil)
-	svc.On("RegisterOrUpdateDiagnostic", ctx, mockTx, "moto-1", "branch-1", (*string)(nil), []string(nil)).Return(&domain.Diagnostic{ID: "diag-1"}, nil)
+	svc.On("RegisterOrUpdateDiagnostic", ctx, mockTx, "moto-1", "branch-1", (*string)(nil)).Return(&domain.Diagnostic{ID: "diag-1"}, nil)
 	mockTx.On("Commit").Return(errors.New("commit failed"))
 	mockTx.On("Rollback").Return(nil)
 
-	result, err := di.RegisterDiagnostic(ctx, "moto-1", "branch-1", "owner-1", nil, nil)
+	result, err := di.RegisterDiagnostic(ctx, "moto-1", "branch-1", "owner-1", nil)
 
 	assert.Error(t, err)
 	assert.Nil(t, result)
@@ -151,18 +149,15 @@ func TestGetDiagnosticByID_Success(t *testing.T) {
 	di, svc := setupDiagnosticInteractor()
 
 	diag := &domain.Diagnostic{ID: "diag-1", MotorcycleID: "moto-1"}
-	evidence := []domain.DiagnosticEvidence{{ID: "ev-1", DiagnosticID: "diag-1"}}
 
 	svc.On("GetByID", ctx, "diag-1").Return(diag, nil)
 	svc.On("ValidateMotorcycleOwnership", ctx, "moto-1", "owner-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}, nil)
-	svc.On("LoadEvidence", ctx, "diag-1").Return(evidence, nil)
 
 	result, err := di.GetDiagnosticByID(ctx, "diag-1", "owner-1")
 
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, "diag-1", result.ID)
-	assert.Len(t, result.Evidence, 1)
 	svc.AssertExpectations(t)
 }
 
@@ -209,7 +204,6 @@ func TestListDiagnosticsByMotorcycle_Success(t *testing.T) {
 
 	svc.On("ValidateMotorcycleOwnership", ctx, "moto-1", "owner-1").Return(&domain.Motorcycle{ID: "moto-1", OwnerID: "owner-1"}, nil)
 	svc.On("GetByMotorcycleID", ctx, "moto-1").Return(diagnostics, nil)
-	svc.On("LoadEvidenceForDiagnostics", ctx, diagnostics).Return(nil)
 
 	result, err := di.ListDiagnosticsByMotorcycle(ctx, "moto-1", "owner-1")
 
@@ -484,7 +478,6 @@ func TestListDiagnosticsByMotorcycleID_Success(t *testing.T) {
 	}
 
 	svc.On("GetByMotorcycleID", ctx, "moto-1").Return(diagnostics, nil)
-	svc.On("LoadEvidenceForDiagnostics", ctx, diagnostics).Return(nil)
 
 	result, err := di.ListDiagnosticsByMotorcycleID(ctx, "moto-1")
 
@@ -498,23 +491,6 @@ func TestListDiagnosticsByMotorcycleID_RepoError(t *testing.T) {
 	di, svc := setupDiagnosticInteractor()
 
 	svc.On("GetByMotorcycleID", ctx, "moto-1").Return(nil, errors.New("db error"))
-
-	result, err := di.ListDiagnosticsByMotorcycleID(ctx, "moto-1")
-
-	assert.Error(t, err)
-	assert.Nil(t, result)
-}
-
-func TestListDiagnosticsByMotorcycleID_EvidenceError(t *testing.T) {
-	ctx := context.Background()
-	di, svc := setupDiagnosticInteractor()
-
-	diagnostics := []domain.Diagnostic{
-		{ID: "diag-1", MotorcycleID: "moto-1"},
-	}
-
-	svc.On("GetByMotorcycleID", ctx, "moto-1").Return(diagnostics, nil)
-	svc.On("LoadEvidenceForDiagnostics", ctx, diagnostics).Return(errors.New("evidence error"))
 
 	result, err := di.ListDiagnosticsByMotorcycleID(ctx, "moto-1")
 

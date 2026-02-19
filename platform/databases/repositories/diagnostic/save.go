@@ -32,26 +32,3 @@ func (r *repository) Save(ctx context.Context, tx output.Tx, diagnostic *domain.
 
 	return nil
 }
-
-// SaveEvidence inserts a new diagnostic evidence record
-func (r *repository) SaveEvidence(ctx context.Context, tx output.Tx, evidence *domain.DiagnosticEvidence) error {
-	sqlTx, ok := tx.(*common.SQLTx)
-	if !ok {
-		return domain.ErrInvalidTransaction
-	}
-
-	dbEvid := EvidenceFromDomain(evidence)
-	_, err := sqlTx.ExecContext(ctx, queryInsertEvidence,
-		dbEvid.ID,
-		dbEvid.DiagnosticID,
-		dbEvid.ImageURL,
-		dbEvid.Description,
-		dbEvid.CreatedAt,
-	)
-	if err != nil {
-		log.Error(logger.LogDiagnosticRepoSaveEvidenceError, err)
-		return domain.ErrDiagnosticCannotSave
-	}
-
-	return nil
-}

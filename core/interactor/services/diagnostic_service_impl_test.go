@@ -34,9 +34,6 @@ func (m *mockDiagnosticRepo) Update(ctx context.Context, tx output.Tx, d *domain
 func (m *mockDiagnosticRepo) Delete(ctx context.Context, tx output.Tx, id string) error {
 	return m.Called(ctx, tx, id).Error(0)
 }
-func (m *mockDiagnosticRepo) SaveEvidence(ctx context.Context, tx output.Tx, e *domain.DiagnosticEvidence) error {
-	return m.Called(ctx, tx, e).Error(0)
-}
 func (m *mockDiagnosticRepo) GetByID(ctx context.Context, id string) (*domain.Diagnostic, error) {
 	args := m.Called(ctx, id)
 	if args.Get(0) == nil {
@@ -57,16 +54,6 @@ func (m *mockDiagnosticRepo) GetByMotorcycleAndBranch(ctx context.Context, motoI
 		return nil, args.Error(1)
 	}
 	return args.Get(0).(*domain.Diagnostic), args.Error(1)
-}
-func (m *mockDiagnosticRepo) GetEvidenceByDiagnosticID(ctx context.Context, diagID string) ([]domain.DiagnosticEvidence, error) {
-	args := m.Called(ctx, diagID)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).([]domain.DiagnosticEvidence), args.Error(1)
-}
-func (m *mockDiagnosticRepo) DeleteEvidenceByDiagnosticID(ctx context.Context, tx output.Tx, diagID string) error {
-	return m.Called(ctx, tx, diagID).Error(0)
 }
 
 type mockMotorcycleRepo struct{ mock.Mock }
@@ -298,15 +285,13 @@ func TestDiagSvc_RegisterOrUpdate_CreateNew(t *testing.T) {
 
 	diagRepo.On("GetByMotorcycleAndBranch", mock.Anything, "moto-1", "branch-1").Return(nil, nil)
 	diagRepo.On("Save", mock.Anything, tx, mock.AnythingOfType("*domain.Diagnostic")).Return(nil)
-	diagRepo.On("SaveEvidence", mock.Anything, tx, mock.AnythingOfType("*domain.DiagnosticEvidence")).Return(nil)
 
-	result, err := svc.RegisterOrUpdateDiagnostic(context.Background(), tx, "moto-1", "branch-1", &desc, []string{"http://img1.jpg"})
+	result, err := svc.RegisterOrUpdateDiagnostic(context.Background(), tx, "moto-1", "branch-1", &desc)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, "moto-1", result.MotorcycleID)
 	assert.Equal(t, "branch-1", result.BranchID)
-	assert.Len(t, result.Evidence, 1)
 }
 
 func TestDiagSvc_RegisterOrUpdate_CreateNew_NoEvidence(t *testing.T) {
@@ -317,11 +302,10 @@ func TestDiagSvc_RegisterOrUpdate_CreateNew_NoEvidence(t *testing.T) {
 	diagRepo.On("GetByMotorcycleAndBranch", mock.Anything, "moto-1", "branch-1").Return(nil, nil)
 	diagRepo.On("Save", mock.Anything, tx, mock.AnythingOfType("*domain.Diagnostic")).Return(nil)
 
-	result, err := svc.RegisterOrUpdateDiagnostic(context.Background(), tx, "moto-1", "branch-1", nil, []string{})
+	result, err := svc.RegisterOrUpdateDiagnostic(context.Background(), tx, "moto-1", "branch-1", nil)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
-	assert.Empty(t, result.Evidence)
 }
 
 func TestDiagSvc_RegisterOrUpdate_UpdateExisting(t *testing.T) {
@@ -333,15 +317,12 @@ func TestDiagSvc_RegisterOrUpdate_UpdateExisting(t *testing.T) {
 
 	diagRepo.On("GetByMotorcycleAndBranch", mock.Anything, "moto-1", "branch-1").Return(existing, nil)
 	diagRepo.On("Update", mock.Anything, tx, existing).Return(nil)
-	diagRepo.On("DeleteEvidenceByDiagnosticID", mock.Anything, tx, "diag-existing").Return(nil)
-	diagRepo.On("SaveEvidence", mock.Anything, tx, mock.AnythingOfType("*domain.DiagnosticEvidence")).Return(nil)
 
-	result, err := svc.RegisterOrUpdateDiagnostic(context.Background(), tx, "moto-1", "branch-1", &desc, []string{"http://new-img.jpg"})
+	result, err := svc.RegisterOrUpdateDiagnostic(context.Background(), tx, "moto-1", "branch-1", &desc)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, "diag-existing", result.ID)
-	assert.Len(t, result.Evidence, 1)
 }
 
 func TestDiagSvc_RegisterOrUpdate_LookupError(t *testing.T) {
@@ -351,7 +332,7 @@ func TestDiagSvc_RegisterOrUpdate_LookupError(t *testing.T) {
 
 	diagRepo.On("GetByMotorcycleAndBranch", mock.Anything, "moto-1", "branch-1").Return(nil, errors.New("db error"))
 
-	result, err := svc.RegisterOrUpdateDiagnostic(context.Background(), tx, "moto-1", "branch-1", nil, nil)
+	result, err := svc.RegisterOrUpdateDiagnostic(context.Background(), tx, "moto-1", "branch-1", nil)
 
 	assert.Nil(t, result)
 	assert.Equal(t, domain.ErrDiagnosticCannotSave, err)
@@ -365,22 +346,7 @@ func TestDiagSvc_RegisterOrUpdate_SaveError(t *testing.T) {
 	diagRepo.On("GetByMotorcycleAndBranch", mock.Anything, "moto-1", "branch-1").Return(nil, nil)
 	diagRepo.On("Save", mock.Anything, tx, mock.AnythingOfType("*domain.Diagnostic")).Return(errors.New("save error"))
 
-	result, err := svc.RegisterOrUpdateDiagnostic(context.Background(), tx, "moto-1", "branch-1", nil, nil)
-
-	assert.Nil(t, result)
-	assert.Equal(t, domain.ErrDiagnosticCannotSave, err)
-}
-
-func TestDiagSvc_RegisterOrUpdate_SaveEvidenceError(t *testing.T) {
-	diagRepo, _, _, svc := setupDiagnosticService()
-
-	tx := new(mockDiagTx)
-
-	diagRepo.On("GetByMotorcycleAndBranch", mock.Anything, "moto-1", "branch-1").Return(nil, nil)
-	diagRepo.On("Save", mock.Anything, tx, mock.AnythingOfType("*domain.Diagnostic")).Return(nil)
-	diagRepo.On("SaveEvidence", mock.Anything, tx, mock.AnythingOfType("*domain.DiagnosticEvidence")).Return(errors.New("evidence error"))
-
-	result, err := svc.RegisterOrUpdateDiagnostic(context.Background(), tx, "moto-1", "branch-1", nil, []string{"http://img.jpg"})
+	result, err := svc.RegisterOrUpdateDiagnostic(context.Background(), tx, "moto-1", "branch-1", nil)
 
 	assert.Nil(t, result)
 	assert.Equal(t, domain.ErrDiagnosticCannotSave, err)
@@ -395,40 +361,7 @@ func TestDiagSvc_RegisterOrUpdate_UpdateError(t *testing.T) {
 	diagRepo.On("GetByMotorcycleAndBranch", mock.Anything, "moto-1", "branch-1").Return(existing, nil)
 	diagRepo.On("Update", mock.Anything, tx, existing).Return(errors.New("update error"))
 
-	result, err := svc.RegisterOrUpdateDiagnostic(context.Background(), tx, "moto-1", "branch-1", nil, nil)
-
-	assert.Nil(t, result)
-	assert.Equal(t, domain.ErrDiagnosticCannotSave, err)
-}
-
-func TestDiagSvc_RegisterOrUpdate_DeleteEvidenceError(t *testing.T) {
-	diagRepo, _, _, svc := setupDiagnosticService()
-
-	tx := new(mockDiagTx)
-	existing := &domain.Diagnostic{ID: "diag-1", MotorcycleID: "moto-1", BranchID: "branch-1"}
-
-	diagRepo.On("GetByMotorcycleAndBranch", mock.Anything, "moto-1", "branch-1").Return(existing, nil)
-	diagRepo.On("Update", mock.Anything, tx, existing).Return(nil)
-	diagRepo.On("DeleteEvidenceByDiagnosticID", mock.Anything, tx, "diag-1").Return(errors.New("delete evid error"))
-
-	result, err := svc.RegisterOrUpdateDiagnostic(context.Background(), tx, "moto-1", "branch-1", nil, nil)
-
-	assert.Nil(t, result)
-	assert.Equal(t, domain.ErrDiagnosticCannotSave, err)
-}
-
-func TestDiagSvc_RegisterOrUpdate_UpsertSaveEvidenceError(t *testing.T) {
-	diagRepo, _, _, svc := setupDiagnosticService()
-
-	tx := new(mockDiagTx)
-	existing := &domain.Diagnostic{ID: "diag-1", MotorcycleID: "moto-1", BranchID: "branch-1"}
-
-	diagRepo.On("GetByMotorcycleAndBranch", mock.Anything, "moto-1", "branch-1").Return(existing, nil)
-	diagRepo.On("Update", mock.Anything, tx, existing).Return(nil)
-	diagRepo.On("DeleteEvidenceByDiagnosticID", mock.Anything, tx, "diag-1").Return(nil)
-	diagRepo.On("SaveEvidence", mock.Anything, tx, mock.AnythingOfType("*domain.DiagnosticEvidence")).Return(errors.New("save evid error"))
-
-	result, err := svc.RegisterOrUpdateDiagnostic(context.Background(), tx, "moto-1", "branch-1", nil, []string{"http://img.jpg"})
+	result, err := svc.RegisterOrUpdateDiagnostic(context.Background(), tx, "moto-1", "branch-1", nil)
 
 	assert.Nil(t, result)
 	assert.Equal(t, domain.ErrDiagnosticCannotSave, err)
@@ -638,77 +571,4 @@ func TestDiagSvc_SetSolution_UpdateError(t *testing.T) {
 	err := svc.SetSolution(context.Background(), tx, "diag-1", "solution")
 
 	assert.Equal(t, domain.ErrDiagnosticCannotUpdate, err)
-}
-
-// ============================================
-// LoadEvidence Tests
-// ============================================
-
-func TestDiagSvc_LoadEvidence_Success(t *testing.T) {
-	diagRepo, _, _, svc := setupDiagnosticService()
-
-	expected := []domain.DiagnosticEvidence{{ID: "ev-1"}, {ID: "ev-2"}}
-	diagRepo.On("GetEvidenceByDiagnosticID", mock.Anything, "diag-1").Return(expected, nil)
-
-	result, err := svc.LoadEvidence(context.Background(), "diag-1")
-
-	assert.NoError(t, err)
-	assert.Len(t, result, 2)
-}
-
-func TestDiagSvc_LoadEvidence_Error(t *testing.T) {
-	diagRepo, _, _, svc := setupDiagnosticService()
-
-	diagRepo.On("GetEvidenceByDiagnosticID", mock.Anything, "bad").Return(nil, errors.New("error"))
-
-	result, err := svc.LoadEvidence(context.Background(), "bad")
-
-	assert.Nil(t, result)
-	assert.Error(t, err)
-}
-
-// ============================================
-// LoadEvidenceForDiagnostics Tests
-// ============================================
-
-func TestDiagSvc_LoadEvidenceForDiagnostics_Success(t *testing.T) {
-	diagRepo, _, _, svc := setupDiagnosticService()
-
-	diagnostics := []domain.Diagnostic{
-		{ID: "d1"},
-		{ID: "d2"},
-	}
-
-	diagRepo.On("GetEvidenceByDiagnosticID", mock.Anything, "d1").Return([]domain.DiagnosticEvidence{{ID: "ev-1"}}, nil)
-	diagRepo.On("GetEvidenceByDiagnosticID", mock.Anything, "d2").Return([]domain.DiagnosticEvidence{{ID: "ev-2"}}, nil)
-
-	err := svc.LoadEvidenceForDiagnostics(context.Background(), diagnostics)
-
-	assert.NoError(t, err)
-	assert.Len(t, diagnostics[0].Evidence, 1)
-	assert.Len(t, diagnostics[1].Evidence, 1)
-}
-
-func TestDiagSvc_LoadEvidenceForDiagnostics_Error(t *testing.T) {
-	diagRepo, _, _, svc := setupDiagnosticService()
-
-	diagnostics := []domain.Diagnostic{
-		{ID: "d1"},
-	}
-
-	diagRepo.On("GetEvidenceByDiagnosticID", mock.Anything, "d1").Return(nil, errors.New("load error"))
-
-	err := svc.LoadEvidenceForDiagnostics(context.Background(), diagnostics)
-
-	assert.Error(t, err)
-}
-
-func TestDiagSvc_LoadEvidenceForDiagnostics_Empty(t *testing.T) {
-	_, _, _, svc := setupDiagnosticService()
-
-	diagnostics := []domain.Diagnostic{}
-
-	err := svc.LoadEvidenceForDiagnostics(context.Background(), diagnostics)
-
-	assert.NoError(t, err)
 }

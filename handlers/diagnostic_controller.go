@@ -11,7 +11,7 @@ import (
 
 // CreateDiagnostic handles POST /motorcycles/:id/diagnostics - creates a diagnostic (HU11)
 // @Summary Create motorcycle diagnostic
-// @Description Creates a diagnostic request for a motorcycle. Optionally includes evidence photo URLs.
+// @Description Creates a diagnostic request for a motorcycle.
 // @Accept json
 // @Produce json
 // @Security     BearerAuth
@@ -72,7 +72,6 @@ func (h *handler) CreateDiagnostic() gin.HandlerFunc {
 			branchID,
 			user.ID,
 			request.ProblemDescription,
-			request.EvidenceURLs,
 		)
 		if err != nil {
 			Logger.Error(logger.LogDiagnosticControllerCreateError, "error", err)
@@ -96,12 +95,6 @@ func (h *handler) CreateDiagnostic() gin.HandlerFunc {
 		response.ID = encodedDiagID
 		response.MotorcycleID = encodedMotorcycleID
 		response.BranchID = request.BranchID // return the obfuscated branch ID the client sent
-
-		// Encode evidence IDs
-		for i := range response.Evidence {
-			encodedEvidID, _ := h.EncodeID(diagnostic.Evidence[i].ID)
-			response.Evidence[i].ID = encodedEvidID
-		}
 
 		h.Response.SuccessWithData(c, domain.MsgDiagnosticCreated, response)
 	}
@@ -168,11 +161,6 @@ func (h *handler) ListDiagnostics() gin.HandlerFunc {
 			responses[i].MotorcycleID = encodedMotorcycleID
 			encodedBranchID, _ := h.EncodeID(diagnostics[i].BranchID)
 			responses[i].BranchID = encodedBranchID
-
-			for j := range responses[i].Evidence {
-				encodedEvidID, _ := h.EncodeID(diagnostics[i].Evidence[j].ID)
-				responses[i].Evidence[j].ID = encodedEvidID
-			}
 		}
 
 		h.Response.SuccessWithData(c, domain.MsgDiagnosticsListed, responses)
@@ -236,11 +224,6 @@ func (h *handler) GetDiagnostic() gin.HandlerFunc {
 		response.MotorcycleID = encodedMotorcycleID
 		encodedBranchID, _ := h.EncodeID(diagnostic.BranchID)
 		response.BranchID = encodedBranchID
-
-		for i := range response.Evidence {
-			encodedEvidID, _ := h.EncodeID(diagnostic.Evidence[i].ID)
-			response.Evidence[i].ID = encodedEvidID
-		}
 
 		h.Response.SuccessWithData(c, domain.MsgDiagnosticRetrieved, response)
 	}
@@ -330,7 +313,7 @@ func (h *handler) UpdateDiagnostic() gin.HandlerFunc {
 
 // DeleteDiagnostic handles DELETE /motorcycles/:id/diagnostics/:diagnosticId - deletes a diagnostic (HU13)
 // @Summary Delete motorcycle diagnostic
-// @Description Deletes a diagnostic and its evidence. Only the owner can delete.
+// @Description Deletes a diagnostic. Only the owner can delete.
 // @Produce json
 // @Security     BearerAuth
 // @Param id path string true "Motorcycle ID (obfuscated)"
