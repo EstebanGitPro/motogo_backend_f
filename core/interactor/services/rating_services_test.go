@@ -48,7 +48,6 @@ type stubTx struct{ mock.Mock }
 func (t *stubTx) Commit() error   { return t.Called().Error(0) }
 func (t *stubTx) Rollback() error { return t.Called().Error(0) }
 
-
 // ─────────────────────────────────────────────
 // Tests — NewRatingService verified via coverage (constructor is trivial)
 // Tests for each method via direct struct construction
