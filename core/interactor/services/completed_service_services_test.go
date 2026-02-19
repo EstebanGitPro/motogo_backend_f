@@ -122,9 +122,6 @@ func (m *mockDiagRepo) Update(ctx context.Context, tx output.Tx, d *domain.Diagn
 func (m *mockDiagRepo) Delete(ctx context.Context, tx output.Tx, id string) error {
 	return m.Called(ctx, tx, id).Error(0)
 }
-func (m *mockDiagRepo) SaveEvidence(ctx context.Context, tx output.Tx, e *domain.DiagnosticEvidence) error {
-	return m.Called(ctx, tx, e).Error(0)
-}
 func (m *mockDiagRepo) GetByID(ctx context.Context, id string) (*domain.Diagnostic, error) {
 	args := m.Called(ctx, id)
 	if args.Get(0) == nil {
@@ -145,16 +142,6 @@ func (m *mockDiagRepo) GetByMotorcycleAndBranch(ctx context.Context, motoID, bra
 		return nil, args.Error(1)
 	}
 	return args.Get(0).(*domain.Diagnostic), args.Error(1)
-}
-func (m *mockDiagRepo) GetEvidenceByDiagnosticID(ctx context.Context, diagID string) ([]domain.DiagnosticEvidence, error) {
-	args := m.Called(ctx, diagID)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).([]domain.DiagnosticEvidence), args.Error(1)
-}
-func (m *mockDiagRepo) DeleteEvidenceByDiagnosticID(ctx context.Context, tx output.Tx, diagID string) error {
-	return m.Called(ctx, tx, diagID).Error(0)
 }
 
 // ============================================

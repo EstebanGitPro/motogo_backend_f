@@ -1293,3 +1293,158 @@ func TestGetStatusHistory_DBError(t *testing.T) {
 	assert.Nil(t, results)
 	assert.Error(t, err)
 }
+
+// ============================================
+// UpdateStatusWithPrice Tests (Cluster 4)
+// ============================================
+
+func TestUpdateStatusWithPrice_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	now := time.Now()
+	price := 150000.0
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE completed_services").
+		WithArgs("FINALIZADO", sqlmock.AnyArg(), sqlmock.AnyArg(), "cs-1").
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	sqlTx, _ := db.Begin()
+	tx := common.NewSQLTx(sqlTx)
+
+	repo := &repository{db: db}
+
+	err = repo.UpdateStatusWithPrice(context.Background(), tx, "cs-1", "FINALIZADO", &now, &price)
+	assert.NoError(t, err)
+}
+
+func TestUpdateStatusWithPrice_NilOptionals(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE completed_services").
+		WithArgs("EN_PROCESO", sqlmock.AnyArg(), sqlmock.AnyArg(), "cs-2").
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	sqlTx, _ := db.Begin()
+	tx := common.NewSQLTx(sqlTx)
+
+	repo := &repository{db: db}
+
+	err = repo.UpdateStatusWithPrice(context.Background(), tx, "cs-2", "EN_PROCESO", nil, nil)
+	assert.NoError(t, err)
+}
+
+func TestUpdateStatusWithPrice_InvalidTx(t *testing.T) {
+	db, _, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	repo := &repository{db: db}
+
+	err = repo.UpdateStatusWithPrice(context.Background(), nil, "cs-1", "FINALIZADO", nil, nil)
+	assert.Error(t, err)
+	assert.Equal(t, domain.ErrInvalidTransaction, err)
+}
+
+func TestUpdateStatusWithPrice_DBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE completed_services").
+		WithArgs("FINALIZADO", sqlmock.AnyArg(), sqlmock.AnyArg(), "cs-err").
+		WillReturnError(sql.ErrConnDone)
+
+	sqlTx, _ := db.Begin()
+	tx := common.NewSQLTx(sqlTx)
+
+	repo := &repository{db: db}
+
+	err = repo.UpdateStatusWithPrice(context.Background(), tx, "cs-err", "FINALIZADO", nil, nil)
+	assert.Error(t, err)
+	assert.Equal(t, sql.ErrConnDone, err)
+}
+
+// ============================================
+// UpdateDetails Tests (Cluster 4)
+// ============================================
+
+func TestUpdateDetails_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	qp := 100000.0
+	fp := 120000.0
+	notes := "Revisión completa"
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE completed_services").
+		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), "cs-1").
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	sqlTx, _ := db.Begin()
+	tx := common.NewSQLTx(sqlTx)
+
+	repo := &repository{db: db}
+
+	err = repo.UpdateDetails(context.Background(), tx, "cs-1", &qp, &fp, &notes)
+	assert.NoError(t, err)
+}
+
+func TestUpdateDetails_NilOptionals(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE completed_services").
+		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), "cs-2").
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	sqlTx, _ := db.Begin()
+	tx := common.NewSQLTx(sqlTx)
+
+	repo := &repository{db: db}
+
+	err = repo.UpdateDetails(context.Background(), tx, "cs-2", nil, nil, nil)
+	assert.NoError(t, err)
+}
+
+func TestUpdateDetails_InvalidTx(t *testing.T) {
+	db, _, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	repo := &repository{db: db}
+
+	err = repo.UpdateDetails(context.Background(), nil, "cs-1", nil, nil, nil)
+	assert.Error(t, err)
+	assert.Equal(t, domain.ErrInvalidTransaction, err)
+}
+
+func TestUpdateDetails_DBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE completed_services").
+		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), "cs-err").
+		WillReturnError(sql.ErrConnDone)
+
+	sqlTx, _ := db.Begin()
+	tx := common.NewSQLTx(sqlTx)
+
+	repo := &repository{db: db}
+
+	err = repo.UpdateDetails(context.Background(), tx, "cs-err", nil, nil, nil)
+	assert.Error(t, err)
+	assert.Equal(t, sql.ErrConnDone, err)
+}
