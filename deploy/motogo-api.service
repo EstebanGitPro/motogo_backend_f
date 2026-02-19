@@ -1,0 +1,25 @@
+[Unit]
+Description=MotoGo Backend API
+After=network.target docker.service
+Wants=docker.service
+
+[Service]
+Type=simple
+User=motogo
+Group=motogo
+WorkingDirectory=/home/motogo/motogo-backend
+Environment=APP_ENV=production
+ExecStart=/home/motogo/motogo-backend/motogo-api
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=motogo-api
+
+# Seguridad
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/home/motogo/motogo-backend
+
+[Install]
+WantedBy=multi-user.target

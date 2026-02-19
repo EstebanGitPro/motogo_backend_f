@@ -102,6 +102,8 @@ func LoadConfig() (*Config, error) {
 	switch env {
 	case "railway":
 		configFile = "railway-config.json"
+	case "production":
+		configFile = "prod-config.json"
 	default:
 		configFile = localConfigFile
 	}

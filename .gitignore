@@ -39,3 +39,10 @@ serviceAccountKey.json
 # Agent Skills & Workflows (local AI tools)
 .github/skills/
 .agent/
+
+# Production configs (contain secrets - NEVER commit)
+config/prod-config.json
+deploy/.env.production
+
+# Compiled binaries
+motogo-api
