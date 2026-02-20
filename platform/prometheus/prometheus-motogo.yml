@@ -30,8 +30,5 @@ scrape_configs:
     static_configs:
       - targets: ["motogo-grafana:3000"]
 
-  # Monitoreo de K6 a través de Pushgateway
-  - job_name: "k6"
-    honor_labels: true
-    static_configs:
-      - targets: ["motogo-pushgateway:9091"]
+  # k6 envía métricas vía Prometheus Remote Write,
+  # no se necesita scrape job — las métricas se reciben directamente

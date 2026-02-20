@@ -102,7 +102,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "k6_vus",
+          "expr": "k6_vus{}",
           "refId": "A",
           "legendFormat": "Virtual Users"
         }
@@ -169,7 +169,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "k6_http_req_duration_p99",
+          "expr": "histogram_quantile(0.99, sum(rate(k6_http_req_duration_seconds_bucket[1m])) by (le)) * 1000",
           "refId": "A"
         }
       ],
@@ -350,7 +350,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "k6_http_req_failed_rate",
+          "expr": "sum(rate(k6_http_req_failed_total[1m])) / sum(rate(k6_http_reqs_total[1m]))",
           "refId": "A",
           "legendFormat": "Error Rate"
         }
@@ -485,25 +485,25 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "k6_http_req_duration_p99{quantile=\"0.5\"}",
+          "expr": "histogram_quantile(0.50, sum(rate(k6_http_req_duration_seconds_bucket[1m])) by (le)) * 1000",
           "refId": "A",
-          "legendFormat": "p50 (approx)"
+          "legendFormat": "p50"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "k6_http_req_duration_p99{quantile=\"0.95\"}",
+          "expr": "histogram_quantile(0.95, sum(rate(k6_http_req_duration_seconds_bucket[1m])) by (le)) * 1000",
           "refId": "B",
-          "legendFormat": "p95 (approx)"
+          "legendFormat": "p95"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "k6_http_req_duration_p99",
+          "expr": "histogram_quantile(0.99, sum(rate(k6_http_req_duration_seconds_bucket[1m])) by (le)) * 1000",
           "refId": "C",
           "legendFormat": "p99"
         }
@@ -628,7 +628,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "k6_http_req_failed_rate * k6_http_reqs_total",
+          "expr": "sum(increase(k6_http_req_failed_total[5m]))",
           "refId": "A"
         }
       ],
@@ -748,7 +748,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(rate(k6_http_req_duration_seconds_sum[5m])) / sum(rate(k6_http_req_duration_seconds_count[5m])) * 1000",
+          "expr": "(sum(rate(k6_http_req_duration_seconds_sum[5m])) / sum(rate(k6_http_req_duration_seconds_count[5m]))) * 1000",
           "refId": "A"
         }
       ],
