@@ -52,8 +52,8 @@ func GetDB(dbConfig config.Database) (*sql.DB, error) {
 
 	db.SetMaxOpenConns(dbConfig.MaxOpenConns)
 	db.SetMaxIdleConns(dbConfig.MaxIdleConns)
-	db.SetConnMaxLifetime(time.Duration(dbConfig.ConnMaxLifetime))
-	db.SetConnMaxIdleTime(time.Duration(dbConfig.ConnMaxIdleTime))
+	db.SetConnMaxLifetime(time.Duration(dbConfig.ConnMaxLifetime) * time.Second)
+	db.SetConnMaxIdleTime(time.Duration(dbConfig.ConnMaxIdleTime) * time.Second)
 
 	log.Info(logger.LogDBPinging)
 
