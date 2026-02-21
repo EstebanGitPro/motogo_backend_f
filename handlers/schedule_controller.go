@@ -481,12 +481,13 @@ func BuildScheduleLinks(baseURL, encodedBranchID, encodedScheduleID string) []Li
 }
 
 // BuildScheduleDetailLinks generates HATEOAS links for a schedule detail resource (HU6-9)
+// Note: GET /schedule-details/:id does not exist as a standalone route,
+// so we omit the self-GET link. Update and delete are the primary actions.
 func BuildScheduleDetailLinks(baseURL, encodedBranchID, encodedDetailID string) []Link {
 	branchScheduleURL := BuildResourceURL(baseURL, "branches", encodedBranchID) + pathSchedules
 	detailURL := BuildResourceURL(baseURL, "schedule-details", encodedDetailID)
 
 	return []Link{
-		{Rel: "self", Href: detailURL, Method: "GET"},
 		{Rel: "update", Href: detailURL, Method: "PUT"},
 		{Rel: "delete", Href: detailURL, Method: "DELETE"},
 		{Rel: "schedule", Href: branchScheduleURL, Method: "GET"},

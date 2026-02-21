@@ -189,11 +189,11 @@ func TestBuildScheduleExceptionLinks(t *testing.T) {
 	// Act
 	links := handlers.BuildScheduleExceptionLinks("http://api.test.com", "branch-enc", "exception-enc")
 
-	// Assert
-	assert.Len(t, links, 6)
+	// Assert — self GET was removed (no GET /schedule-exceptions/:id route exists)
+	assert.Len(t, links, 5)
 
 	// Verify all expected rels exist
-	expectedRels := []string{"self", "update", "delete", "activate", "deactivate", "branch"}
+	expectedRels := []string{"update", "delete", "activate", "deactivate", "branch"}
 	foundRels := make(map[string]bool)
 	for _, l := range links {
 		foundRels[l.Rel] = true
@@ -208,12 +208,12 @@ func TestBuildScheduleExceptionLinks_URLs(t *testing.T) {
 	// Act
 	links := handlers.BuildScheduleExceptionLinks("http://api", "branch-1", "exc-1")
 
-	// Assert - verify URLs are correctly constructed
-	var selfLink, deleteLink, branchLink *handlers.Link
+	// Assert - verify URLs are correctly constructed (no self-GET link)
+	var updateLink, deleteLink, branchLink *handlers.Link
 	for i, l := range links {
 		switch l.Rel {
-		case "self":
-			selfLink = &links[i]
+		case "update":
+			updateLink = &links[i]
 		case "delete":
 			deleteLink = &links[i]
 		case "branch":
@@ -221,9 +221,9 @@ func TestBuildScheduleExceptionLinks_URLs(t *testing.T) {
 		}
 	}
 
-	assert.NotNil(t, selfLink)
-	assert.Equal(t, "http://api/schedule-exceptions/exc-1", selfLink.Href)
-	assert.Equal(t, "GET", selfLink.Method)
+	assert.NotNil(t, updateLink)
+	assert.Equal(t, "http://api/schedule-exceptions/exc-1", updateLink.Href)
+	assert.Equal(t, "PUT", updateLink.Method)
 
 	assert.NotNil(t, deleteLink)
 	assert.Equal(t, "http://api/schedule-exceptions/exc-1", deleteLink.Href)

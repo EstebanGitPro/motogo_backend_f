@@ -133,10 +133,11 @@ func getDayNameSpanish(date time.Time) string {
 }
 
 // BuildScheduleExceptionLinks builds HATEOAS links for a schedule exception
+// Note: GET /schedule-exceptions/:id does not exist as a standalone route,
+// so we omit the self-GET link. Update and delete are the primary actions.
 func BuildScheduleExceptionLinks(baseURL, encodedBranchID, encodedExceptionID string) []Link {
 	exceptionURL := baseURL + pathScheduleExceptions + encodedExceptionID
 	return []Link{
-		{Rel: "self", Href: exceptionURL, Method: "GET"},
 		{Rel: "update", Href: exceptionURL, Method: "PUT"},
 		{Rel: "delete", Href: exceptionURL, Method: "DELETE"},
 		{Rel: "activate", Href: exceptionURL + "/activate", Method: "PUT"},
