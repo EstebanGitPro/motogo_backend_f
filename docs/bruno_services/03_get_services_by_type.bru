@@ -1,0 +1,87 @@
+meta {
+  name: Get Services By Type
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}/services?type=Mantenimiento
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.getBody().success).to.be.true;
+  });
+  
+  test("Response has services array", function() {
+    expect(res.getBody().data.services).to.be.an('array');
+  });
+  
+  test("All services are of type Mantenimiento", function() {
+    const services = res.getBody().data.services;
+    services.forEach(svc => {
+      expect(svc.service_type).to.equal('Mantenimiento');
+    });
+  });
+  
+  test("Has multiple maintenance services", function() {
+    expect(res.getBody().data.services.length).to.be.above(10);
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.getBody().data._links).to.be.an('array');
+  });
+  
+  test("Has all-services link when filtered", function() {
+    const links = res.getBody().data._links;
+    const allServicesLink = links.find(link => link.rel === 'all-services');
+    expect(allServicesLink).to.exist;
+  });
+}
+
+docs {
+  # Get Services By Type (HU63 - Filter)
+  
+  Obtiene los servicios filtrados por tipo específico.
+  Este es un endpoint **público** (no requiere autenticación).
+  
+  ## Uso:
+  Los usuarios pueden filtrar el catálogo de servicios por tipo
+  para encontrar servicios específicos más fácilmente.
+  
+  ## Endpoint:
+  `GET /motogo/api/v1/services?type={tipo}`
+  
+  ## Tipos disponibles:
+  - Mantenimiento
+  - Reparación
+  - Llantas
+  - Diagnóstico
+  - Estética
+  - Accesorios
+  - Eléctrico
+  - Legal
+  
+  ## No requiere autenticación
+  
+  ## Respuestas:
+  - **200**: Servicios filtrados obtenidos exitosamente
+  - **500**: Error interno del servidor
+  
+  ## Ejemplo:
+  `GET /services?type=Mantenimiento` → Solo servicios de mantenimiento
+  `GET /services?type=Reparación` → Solo servicios de reparación
+  
+  ## HATEOAS Links adicionales:
+  - `all-services`: URL para obtener todos los servicios sin filtro
+}

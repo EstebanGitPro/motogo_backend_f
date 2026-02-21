@@ -1,0 +1,20 @@
+meta {
+  name: Reload Cache
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}/admin/messages/cache/reload
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -1,0 +1,114 @@
+meta {
+  name: Update Motorcycle (HU44) - Success
+  type: http
+  seq: 15
+}
+
+put {
+  url: {{base_url}}/motorcycles/{{motorcycle_id}}
+  body: json
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "year": 2024,
+    "current_mileage": 15500,
+    "owner_notes": "Actualizado desde Bruno - HU44 test"
+  }
+}
+
+script:post-response {
+  if (res.status === 200) {
+    console.log("✅ Motorcycle updated successfully");
+    console.log("📝 Updated fields:");
+    console.log("   - Year:", res.body.data.year);
+    console.log("   - Mileage:", res.body.data.current_mileage);
+    console.log("   - Notes:", res.body.data.owner_notes);
+  }
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.body.success).to.be.true;
+  });
+  
+  test("Response has data object", function() {
+    expect(res.body.data).to.be.an('object');
+  });
+  
+  test("Updated values are reflected", function() {
+    expect(res.body.data.year).to.equal(2024);
+    expect(res.body.data.current_mileage).to.equal(15500);
+  });
+  
+  test("Response includes HATEOAS links", function() {
+    expect(res.body.data._links).to.be.an('array');
+    expect(res.body.data._links.length).to.be.greaterThan(0);
+  });
+  
+  test("HATEOAS includes self link", function() {
+    var selfLink = res.body.data._links.find(l => l.rel === 'self');
+    expect(selfLink).to.exist;
+    expect(selfLink.method).to.equal('GET');
+  });
+  
+  test("HATEOAS includes update link", function() {
+    var updateLink = res.body.data._links.find(l => l.rel === 'update');
+    expect(updateLink).to.exist;
+    expect(updateLink.method).to.equal('PUT');
+  });
+}
+
+docs {
+  # PUT /motorcycles/:id - Update Motorcycle (HU44)
+  
+  ## Description
+  Updates information of an existing motorcycle. Only the owner can update.
+  
+  ## Authentication
+  Requires valid JWT token with USER role.
+  
+  ## Updateable Fields
+  - `reference_id` - Catalog reference (optional, validates existence)
+  - `year` - Model year (optional)
+  - `current_mileage` - Current mileage (optional)
+  - `owner_notes` - Owner notes (optional)
+  - `profile_image_url` - **HU36** Main profile photo URL (Firebase Storage, optional)
+  
+  ## Non-Updateable Fields
+  - `license_plate` - Business identifier, cannot be changed
+  
+  ## Request Body
+  ```json
+  {
+    "year": 2024,
+    "current_mileage": 15500,
+    "owner_notes": "Updated notes"
+  }
+  ```
+  
+  ## Responses
+  - 200: Motorcycle updated successfully
+  - 400: Invalid data
+  - 401: Not authenticated
+  - 404: Motorcycle not found or not owner
+  - 500: Server error
+  
+  ## Prerequisites
+  1. Run 14_list_motorcycles.bru to get motorcycle_id
+  2. Ensure you're authenticated as the motorcycle owner
+}

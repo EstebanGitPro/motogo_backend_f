@@ -1,0 +1,59 @@
+meta {
+  name: Transicionar a FINALIZADO (HU74)
+  type: http
+  seq: 6
+}
+
+patch {
+  url: {{base_url}}/completed-services/{{completed_service_id}}/status
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "status": "FINALIZADO"
+  }
+}
+
+script:post-response {
+  if (res.status === 200) {
+    console.log("✅ Estado actualizado a FINALIZADO");
+    console.log("📅 El completion_date se asignó automáticamente");
+  } else {
+    console.log("❌ Error:", res.status, res.body);
+  }
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success true", function() {
+    expect(res.body.success).to.be.true;
+  });
+}
+
+docs {
+  # PATCH /completed-services/:id/status (HU74)
+  
+  Transiciona el estado de **EN_PROCESO → FINALIZADO** ✅
+  
+  Esta transición asigna automáticamente el `completion_date` = NOW().
+  
+  ## Transición
+  - **Desde:** EN_PROCESO
+  - **Hacia:** FINALIZADO
+  - **Side Effect:** `completion_date` se asigna automáticamente
+  - **Esperado:** 200 OK
+}

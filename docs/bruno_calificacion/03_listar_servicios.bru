@@ -1,0 +1,132 @@
+meta {
+  name: Listar Servicios por Moto (obtener IDs)
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}/motorcycles/{{motorcycle_id}}/completed-services
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{user_access_token}}
+}
+
+script:pre-request {
+  var motoId = bru.getVar("motorcycle_id");
+  if (!motoId || motoId === "REPLACE_WITH_MOTORCYCLE_ID") {
+    console.log("⚠️ motorcycle_id no configurado!");
+    console.log("💡 Configura motorcycle_id en el environment");
+  }
+  
+  var token = bru.getVar("user_access_token");
+  if (!token) {
+    console.log("⚠️ user_access_token no configurado!");
+    console.log("💡 Ejecuta 02_login_dueno.bru primero");
+  }
+}
+
+script:post-response {
+  if (res.status === 200 && res.body.data && res.body.data.length > 0) {
+    console.log("═══════════════════════════════════════");
+    console.log("📋 SERVICIOS COMPLETADOS");
+    console.log("═══════════════════════════════════════");
+    console.log("📋 Total servicios:", res.body.data.length);
+    console.log("");
+    
+    var finalizados = [];
+    
+    res.body.data.forEach(function(svc, i) {
+      console.log("  [" + i + "] Servicio ID:", svc.id);
+      console.log("      Status:", svc.status);
+      console.log("      Fecha:", svc.request_date);
+      console.log("      Sede:", svc.branch_name || svc.branch_id);
+      
+      if (svc.services && svc.services.length > 0) {
+        console.log("      Ítems:");
+        svc.services.forEach(function(item, j) {
+          console.log("        [" + j + "] item_id:", item.id, "| service_id:", item.service_id);
+        });
+      }
+      
+      if (svc.status === "FINALIZADO") {
+        finalizados.push(svc);
+      }
+      console.log("");
+    });
+    
+    // Guardar el primer servicio finalizado
+    if (finalizados.length > 0) {
+      var svc = finalizados[0];
+      bru.setVar("completed_service_id", svc.id);
+      console.log("✅ completed_service_id guardado:", svc.id);
+      
+      // Si la respuesta incluye ítems, guardar automáticamente
+      if (svc.services && svc.services.length > 0) {
+        bru.setVar("service_item_id", svc.services[0].id);
+        console.log("✅ service_item_id guardado:", svc.services[0].id);
+      } else {
+        console.log("⚠️ La respuesta no incluye ítems individuales.");
+        console.log("   Consulta los ítems en la BD con:");
+        console.log("   SELECT id, service_id FROM completed_service_items");
+        console.log("   WHERE completed_service_id = '<id_decodificado>';");
+        console.log("");
+        console.log("   Luego codifica el id del ítem y configúralo en el environment:");
+        console.log("   service_item_id = <item_id_codificado>");
+      }
+    } else {
+      console.log("⚠️ No hay servicios FINALIZADOS para calificar");
+    }
+    
+    console.log("═══════════════════════════════════════");
+  } else if (res.status === 200) {
+    console.log("ℹ️ No hay servicios completados para esta moto.");
+  } else {
+    console.log("❌ Error:", res.status, res.body);
+  }
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.body.success).to.be.true;
+  });
+  
+  test("Response data is array", function() {
+    expect(res.body.data).to.be.an("array");
+  });
+}
+
+docs {
+  # Listar Servicios Completados (obtener IDs)
+  
+  Lista los servicios de la moto del dueño para identificar cuáles 
+  están FINALIZADOS y obtener el `completed_service_id`.
+  
+  ## Prerrequisitos
+  1. Ejecutar `02_login_dueno.bru` → guarda `user_access_token`
+  2. Configurar `motorcycle_id` en el environment
+  
+  ## Output automático
+  - `completed_service_id` → primer servicio FINALIZADO
+  
+  ## Obtener service_item_id
+  Actualmente la respuesta de listar no incluye los ítems individuales.
+  Para obtener el `service_item_id`, consulta directamente en la BD:
+  
+  ```sql
+  SELECT id, service_id FROM completed_service_items 
+  WHERE completed_service_id = '<id_decodificado>';
+  ```
+  
+  Luego codifica el `id` del ítem con HashIDs y configúralo en el environment.
+}

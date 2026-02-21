@@ -1,0 +1,50 @@
+meta {
+  name: 13 - Error Invalid Radius (> 50km)
+  type: http
+  seq: 13
+}
+
+get {
+  url: {{base_url}}/branches/nearby?lat=4.71&lng=-74.07&radius=100
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+tests {
+  test("Status code is 400 Bad Request", function() {
+    expect(res.status).to.equal(400);
+  });
+  
+  test("Response has error", function() {
+    expect(res.body.success).to.be.false;
+  });
+  
+  test("Error code is radius invalid", function() {
+    expect(res.body.message.code).to.equal("MOD_V_GEO_RAD_INV_ERR_00001");
+  });
+}
+
+docs {
+  # Error: Invalid Radius (exceeds maximum)
+  
+  Prueba de validación cuando el radio excede el máximo permitido.
+  
+  ## Rango válido de radio
+  - Mínimo: > 0
+  - Máximo: 50 km
+  
+  ## Este test
+  - Envía `radius=100` (inválido, mayor a 50)
+  
+  ## Respuesta esperada
+  - **400 Bad Request**
+  - Código: `MOD_V_GEO_RAD_INV_ERR_00001`
+}

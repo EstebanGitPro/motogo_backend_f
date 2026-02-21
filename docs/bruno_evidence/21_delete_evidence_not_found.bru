@@ -1,0 +1,38 @@
+meta {
+  name: Delete Evidence - Not Found
+  type: http
+  seq: 11
+}
+
+delete {
+  url: {{base_url}}/motorcycles/{{motorcycle_id}}/evidence/invalidevidence123
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+tests {
+  test("Status code is 404 Not Found", function() {
+    expect(res.status).to.equal(404);
+  });
+  
+  test("Response has success false", function() {
+    expect(res.body.success).to.be.false;
+  });
+}
+
+docs {
+  # Delete Evidence - Not Found Error Case
+  
+  Verifica que el endpoint retorna 404 cuando la evidencia no existe.
+  
+  ## Expected Response
+  - **404 Not Found**: Evidencia no encontrada
+}

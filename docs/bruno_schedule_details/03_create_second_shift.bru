@@ -1,0 +1,53 @@
+meta {
+  name: Crear Segunda Franja (Tarde)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}/branches/{{branch_id}}/schedules/details
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "day_of_week": 1,
+    "opening_time": "14:00",
+    "closing_time": "18:00",
+    "is_closed": false
+  }
+}
+
+tests {
+  test("Status code is 201 Created", function() {
+    expect(res.status).to.equal(201);
+  });
+  
+  test("Same day (Monday) can have multiple shifts", function() {
+    expect(res.body.data.day_of_week).to.equal(1);
+    expect(res.body.data.opening_time).to.equal("14:00");
+    expect(res.body.data.closing_time).to.equal("18:00");
+  });
+}
+
+docs {
+  # Crear Segunda Franja Horaria (Mismo Día)
+  
+  Demuestra que se pueden crear múltiples franjas horarias para el mismo día.
+  
+  ## Ejemplo de uso
+  - Mañana: 08:00 - 12:00 (creada en request anterior)
+  - Tarde: 14:00 - 18:00 (este request)
+  
+  Esto permite modelar horarios con pausas (ej: hora de almuerzo).
+}

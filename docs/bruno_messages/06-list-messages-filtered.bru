@@ -1,0 +1,60 @@
+meta {
+  name: 06 - List Messages (Filtered)
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{base_url}}/admin/messages?module=test_module&type=INFO&active=false
+  body: none
+  auth: none
+}
+
+params:query {
+  module: test_module
+  type: INFO
+  active: false
+  ~category: testing
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has messages array", function() {
+    expect(res.body.messages).to.be.an('array');
+  });
+  
+  test("All messages match filter", function() {
+    res.body.messages.forEach(msg => {
+      expect(msg.module).to.equal('test_module');
+      expect(msg.type).to.equal('INFO');
+      expect(msg.active).to.equal(true);
+    });
+  });
+}
+
+docs {
+  # List Messages with Filters
+  
+  Obtiene mensajes filtrados por criterios específicos.
+  
+  ## Query Parameters (todos opcionales)
+  - `module`: Filtrar por módulo
+  - `type`: Filtrar por tipo (ERROR, SUCCESS, WARNING, INFO, DEBUG)
+  - `category`: Filtrar por categoría
+  - `active`: Filtrar por estado (true/false)
+  
+  ## Ejemplos de Combinaciones
+  ```
+  ?type=ERROR
+  ?module=users&active=true
+  ?category=usuario_final
+  ?module=users&type=ERROR&active=true
+  ```
+  
+  ## Response
+  - Solo mensajes que cumplan TODOS los filtros aplicados
+  - Mismo formato que List All Messages
+}

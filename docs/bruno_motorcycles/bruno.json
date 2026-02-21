@@ -1,0 +1,8 @@
+{
+  "name": "MotoGo - Motorcycles API",
+  "version": "1",
+  "type": "collection",
+  "scripts": {
+    "docs": "# MotoGo Motorcycles Collection\n\nColección Bruno para endpoints de gestión de motocicletas.\n\n## HUs Implementadas\n\n- HU46: Consultar información de motocicleta"
+  }
+}

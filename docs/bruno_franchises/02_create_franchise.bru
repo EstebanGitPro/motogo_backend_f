@@ -1,0 +1,69 @@
+meta {
+  name: Crear Franquicia
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/franchises
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "name": "Motozona Colombia",
+    "description": "Red de talleres especializados en motos deportivas",
+    "branch_ids": ["{{branch_id}}"]
+  }
+}
+
+script:post-response {
+  if (res.status === 201 && res.body.data && res.body.data.id) {
+    bru.setEnvVar("franchise_id", res.body.data.id);
+    console.log("Franchise ID guardado:", res.body.data.id);
+  }
+}
+
+tests {
+  test("Status code is 201 Created", function() {
+    expect(res.status).to.equal(201);
+  });
+  
+  test("Response has franchise ID", function() {
+    expect(res.body.data.id).to.exist;
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.body.data._links).to.exist;
+  });
+}
+
+docs {
+  # Crear Franquicia (HU26)
+  
+  Crea una nueva franquicia asociando sedes existentes.
+  
+  ## Requisitos
+  - Usuario con rol `REPRESENTANTE`
+  - Al menos una sede sin franquicia
+  - `branch_ids` debe contener IDs encoded de sedes propias
+  
+  ## Variables requeridas
+  - `branch_id`: ID de una sede sin franquicia (ejecutar primero 02_register_branch en bruno_branches)
+  
+  ## Response
+  - 201: Franquicia creada exitosamente
+  - 400: Debe asociar al menos una sede
+  - 403: Sede no pertenece al representante
+  - 409: Nombre duplicado
+}

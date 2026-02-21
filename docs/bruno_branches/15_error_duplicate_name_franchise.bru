@@ -1,0 +1,64 @@
+meta {
+  name: ERROR - Duplicate Name in Franchise
+  type: http
+  seq: 15
+}
+
+post {
+  url: {{base_url}}/branches
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "name": "Sucursal MotoMax Norte",
+    "establishment_type": "WORKSHOP",
+    "franchise_id": "c3d4e5f6-3333-4000-8000-000000000001",
+    "location": {
+      "department_id": "a1b2c3d4-1111-4000-8000-000000000003",
+      "city_id": "b2c3d4e5-2222-4000-8000-000000000007",
+      "address": "Avenida Principal #200-100, Cali"
+    }
+  }
+}
+
+tests {
+  test("Status code is 409 Conflict", function() {
+    expect(res.status).to.equal(409);
+  });
+  
+  test("Response has error about duplicate", function() {
+    expect(res.body.success).to.be.false;
+  });
+}
+
+docs {
+  # Error Case: Duplicate Name in Franchise
+  
+  Prueba que el servidor rechaza nombres duplicados dentro de la misma franquicia.
+  
+  ## Prerrequisito
+  - **Ejecutar primero** `03_register_branch_with_franchise.bru` para crear "Sucursal MotoMax Norte"
+  
+  ## Regla de Negocio
+  No pueden existir dos sedes con el mismo nombre dentro de la misma franquicia.
+  (Pero SÍ pueden tener el mismo nombre si NO tienen franquicia o si están en franquicias diferentes)
+  
+  ## Datos Duplicados
+  - `name`: "Sucursal MotoMax Norte"
+  - `franchise_id`: MotoMax
+  
+  ## Comportamiento Esperado
+  - **Status**: 409 Conflict
+  - **Error**: Nombre duplicado en franquicia
+}

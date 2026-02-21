@@ -1,0 +1,99 @@
+meta {
+  name: Get Lines by Category
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/motorcycle-categories/{{category_name}}/lines
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+}
+
+vars:pre-request {
+  category_name: sport
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.getBody().success).to.be.true;
+  });
+  
+  test("Response has category_name", function() {
+    expect(res.getBody().data.category_name).to.exist;
+  });
+  
+  test("Response has lines array", function() {
+    expect(res.getBody().data.lines).to.be.an('array');
+  });
+  
+  test("Each line has model, brand_name, engine_displacement", function() {
+    const lines = res.getBody().data.lines;
+    if (lines.length > 0) {
+      expect(lines[0].model).to.exist;
+      expect(lines[0].brand_name).to.exist;
+      expect(lines[0].engine_displacement).to.be.a('number');
+    }
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.getBody().data._links).to.be.an('array');
+    const selfLink = res.getBody().data._links.find(link => link.rel === 'self');
+    const categoriesLink = res.getBody().data._links.find(link => link.rel === 'categories');
+    expect(selfLink).to.exist;
+    expect(categoriesLink).to.exist;
+  });
+}
+
+docs {
+  # Get Lines by Category (HU41)
+  
+  Obtiene las líneas (modelos) de motocicletas para una categoría específica.
+  Este es un endpoint **público** (no requiere autenticación).
+  
+  ## Endpoint:
+  `GET /motogo/api/v1/motorcycle-categories/:categoryName/lines`
+  
+  ## No requiere autenticación
+  
+  ## Parámetros de ruta:
+  - `categoryName`: Nombre de la categoría (ej: "Sport", "Naked", "Adventure")
+  
+  ## Respuestas:
+  - **200**: Líneas de la categoría obtenidas exitosamente
+  - **500**: Error interno del servidor
+  
+  ## Ejemplo de respuesta exitosa:
+  ```json
+  {
+    "success": true,
+    "code": "MOD_MOT_CAT_LINES_EXI_00001",
+    "message": "Líneas de categoría obtenidas exitosamente.",
+    "data": {
+      "category_name": "Sport",
+      "lines": [
+        {"model": "CBR500R", "brand_name": "Honda", "engine_displacement": 500},
+        {"model": "YZF-R3", "brand_name": "Yamaha", "engine_displacement": 321}
+      ],
+      "_links": [
+        {"href": ".../motorcycle-categories/Sport/lines", "rel": "self", "method": "GET"},
+        {"href": ".../motorcycle-categories", "rel": "categories", "method": "GET"},
+        {"href": ".../brands", "rel": "brands", "method": "GET"}
+      ]
+    }
+  }
+  ```
+  
+  ## HATEOAS Links:
+  - `self`: URL de las líneas de esta categoría
+  - `categories`: Volver al catálogo de categorías
+  - `brands`: URL del catálogo de marcas
+}

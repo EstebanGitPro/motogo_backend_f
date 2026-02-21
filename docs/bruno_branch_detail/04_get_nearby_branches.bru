@@ -1,0 +1,89 @@
+meta {
+  name: 04 - Get Nearby Branches
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{base_url}}/branches/nearby?lat={{lat}}&lng={{lng}}&radius={{radius}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has branches array", function() {
+    expect(res.body.data.branches).to.be.an('array');
+  });
+  
+  test("Found at least one branch", function() {
+    expect(res.body.data.count).to.be.greaterThan(0);
+  });
+  
+  test("Each branch has contact_phone field", function() {
+    var branches = res.body.data.branches;
+    if (branches.length > 0) {
+      expect(branches[0]).to.have.property('contact_phone');
+    }
+  });
+}
+
+script:post-response {
+  console.log("═══════════════════════════════════════");
+  console.log("📍 SEDES CERCANAS (" + res.body.data.count + " encontradas)");
+  console.log("═══════════════════════════════════════");
+  
+  var branches = res.body.data.branches || [];
+  branches.forEach(function(b, i) {
+    console.log((i+1) + ". " + b.name + " [" + b.establishment_type_label + "]");
+    console.log("   📞 Teléfono: " + (b.contact_phone || "No disponible"));
+    console.log("   📍 " + b.distance_km.toFixed(2) + " km - " + b.address);
+    console.log("   🆔 ID: " + b.id);
+    console.log("");
+  });
+  
+  // Guardar el primer branch_id para usar en otros requests
+  if (branches.length > 0) {
+    bru.setVar("branch_id", branches[0].id);
+    console.log("✅ branch_id guardado:", branches[0].id);
+  }
+}
+
+docs {
+  # Get Nearby Branches
+  
+  Busca sedes cercanas a Medellín/Rionegro (coords en environment).
+  
+  ## Parámetros (desde environment)
+  - `lat`: Latitud (default: 6.14 - Rionegro)
+  - `lng`: Longitud (default: -75.37)
+  - `radius`: Radio en km (default: 15)
+  
+  ## Response incluye:
+  - `branches[]`: Array de sedes cercanas
+    - `id`: ID codificado (usar en otros requests)
+    - `name`: Nombre de la sede
+    - `contact_phone`: Teléfono del representante
+    - `distance_km`: Distancia en km
+    - `address`: Dirección
+    - `_links`: Links HATEOAS
+  
+  ## Post-response:
+  Guarda automáticamente el ID del primer branch en `branch_id`.
+  
+  ## Filtros opcionales (query params)
+  - `type`: WORKSHOP, STORE, WORKSHOP_STORE
+  - `brand`: UUID de marca
+  - `displacement_range`: BAJO, MEDIO, ALTO
+}

@@ -1,0 +1,54 @@
+meta {
+  name: Error - Conflicto Horario
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{base_url}}/branches/{{branch_id}}/schedules/details
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "day_of_week": 1,
+    "opening_time": "09:00",
+    "closing_time": "11:00",
+    "is_closed": false
+  }
+}
+
+tests {
+  test("Status code is 409 Conflict", function() {
+    expect(res.status).to.equal(409);
+  });
+  
+  test("Response indicates time conflict", function() {
+    expect(res.body.message.code).to.include("CONFLICT");
+  });
+}
+
+docs {
+  # Error: Conflicto de Horarios
+  
+  Prueba de error cuando se intenta crear una franja que se superpone con otra existente.
+  
+  ## Prerrequisito
+  Ya debe existir una franja para el Lunes (day_of_week: 1) de 08:00-12:00.
+  
+  ## Este request intenta crear
+  Una franja de 09:00-11:00 que se superpone con la existente.
+  
+  ## Resultado esperado
+  HTTP 409 Conflict con mensaje de conflicto de horarios.
+}

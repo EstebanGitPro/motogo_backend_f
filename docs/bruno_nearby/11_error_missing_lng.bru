@@ -1,0 +1,43 @@
+meta {
+  name: 11 - Error Missing Longitude
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{base_url}}/branches/nearby?lat=4.71&radius=5
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+tests {
+  test("Status code is 400 Bad Request", function() {
+    expect(res.status).to.equal(400);
+  });
+  
+  test("Response has error", function() {
+    expect(res.body.success).to.be.false;
+  });
+  
+  test("Error code is longitude required", function() {
+    expect(res.body.message.code).to.equal("MOD_V_GEO_LNG_REQ_ERR_00001");
+  });
+}
+
+docs {
+  # Error: Missing Longitude
+  
+  Prueba de validación cuando no se envía longitud.
+  
+  ## Respuesta esperada
+  - **400 Bad Request**
+  - Código: `MOD_V_GEO_LNG_REQ_ERR_00001`
+}

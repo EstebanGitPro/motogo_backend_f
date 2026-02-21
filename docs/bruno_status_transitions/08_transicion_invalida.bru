@@ -1,0 +1,62 @@
+meta {
+  name: Transición Inválida (debe fallar)
+  type: http
+  seq: 8
+}
+
+patch {
+  url: {{base_url}}/completed-services/{{completed_service_id}}/status
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "status": "EN_PROCESO"
+  }
+}
+
+script:post-response {
+  if (res.status === 400) {
+    console.log("✅ Transición inválida rechazada correctamente!");
+    console.log("📋 Código:", res.body.code);
+    console.log("💬 Mensaje:", res.body.message);
+  } else if (res.status === 200) {
+    console.log("❌ ERROR: La transición debió fallar pero fue aceptada!");
+  } else {
+    console.log("⚠️ Status inesperado:", res.status, res.body);
+  }
+}
+
+tests {
+  test("Status code is 400 Bad Request", function() {
+    expect(res.status).to.equal(400);
+  });
+  
+  test("Response has success false", function() {
+    expect(res.body.success).to.be.false;
+  });
+}
+
+docs {
+  # Transición Inválida (Prueba Negativa)
+  
+  Intenta transicionar de **FINALIZADO → EN_PROCESO** ❌
+  
+  `FINALIZADO` es un estado terminal, no se puede cambiar.
+  La API debe responder con **400 Bad Request**.
+  
+  ## Transición
+  - **Desde:** FINALIZADO (terminal)
+  - **Hacia:** EN_PROCESO
+  - **Esperado:** 400 Bad Request - `MOD_CS_STATUS_ERR_00001`
+}

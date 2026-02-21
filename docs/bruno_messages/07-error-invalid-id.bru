@@ -1,0 +1,37 @@
+meta {
+  name: 07 - Error - Invalid ID
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{base_url}}/admin/messages/invalid-id
+  body: none
+  auth: none
+}
+
+tests {
+  test("Status code is 400", function() {
+    expect(res.status).to.equal(400);
+  });
+  
+  test("Response has error code", function() {
+    expect(res.body.code).to.exist;
+  });
+  
+  test("Response has error type", function() {
+    expect(res.body.type).to.equal('ERROR');
+  });
+}
+
+docs {
+  # Error Case - Invalid ID
+  
+  Prueba el manejo de errores cuando se proporciona un ID inválido.
+  
+  ## Expected Response
+  - Status: 400 Bad Request
+  - Error code: MOD_V_ID_ERR_00013
+  - Error type: ERROR
+  - Mensaje descriptivo del error
+}

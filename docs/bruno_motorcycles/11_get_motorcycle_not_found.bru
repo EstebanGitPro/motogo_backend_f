@@ -1,0 +1,49 @@
+meta {
+  name: Get Motorcycle (HU46) - Not Found
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{base_url}}/motorcycles/invalid-or-nonexistent-id
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+tests {
+  test("Status code is 404 Not Found", function() {
+    expect(res.status).to.equal(404);
+  });
+  
+  test("Response has success false", function() {
+    expect(res.body.success).to.be.false;
+  });
+  
+  test("Response has error message", function() {
+    expect(res.body.message).to.exist;
+  });
+}
+
+docs {
+  # Get Motorcycle (HU46) - Not Found Case
+  
+  Prueba el caso de error cuando la motocicleta no existe.
+  
+  ## Prerrequisitos
+  1. **Ejecutar Login primero** (01_login.bru)
+  
+  ## Respuesta Esperada
+  - **404 Not Found**: ID inválido o motocicleta inexistente
+  
+  ## Notas de Seguridad
+  - No se distingue entre ID inválido y motocicleta inexistente (por seguridad)
+  - Ambos casos retornan 404 para evitar enumeration attacks
+}

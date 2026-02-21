@@ -1,0 +1,55 @@
+meta {
+  name: 00 - Login (Get Token)
+  type: http
+  seq: 0
+}
+
+post {
+  url: {{base_url}}/auth/login
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "email": "negro@yopmail.com",
+    "password": "Secret123*"
+  }
+}
+
+script:post-response {
+  if (res.status === 200) {
+    var token = res.body.data.access_token;
+    bru.setVar("access_token", token);
+    console.log("✅ Token guardado");
+  } else {
+    console.log("❌ Login fallido:", res.status, res.body.message);
+  }
+}
+
+tests {
+  test("Login exitoso", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Token presente", function() {
+    expect(res.body.data.access_token).to.exist;
+  });
+}
+
+docs {
+  # Login - Obtener Token
+  
+  Autentica un usuario para obtener el access_token necesario para las demás peticiones.
+  
+  ## Credenciales de prueba (USER role)
+  - Email: negro@yopmail.com
+  - Password: Secret123*
+  
+  **Nota**: Ajustar las credenciales según tu entorno.
+}

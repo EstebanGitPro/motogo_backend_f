@@ -1,0 +1,67 @@
+meta {
+  name: Get Branch Types (HU76) - Success
+  type: http
+  seq: 22
+}
+
+get {
+  url: {{base_url}}/branch-types
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.body.success).to.be.true;
+  });
+  
+  test("Response has types array", function() {
+    expect(res.body.data.types).to.be.an('array');
+    expect(res.body.data.types.length).to.be.greaterThan(0);
+  });
+  
+  test("Each type has code and label", function() {
+    res.body.data.types.forEach(function(type) {
+      expect(type.code).to.exist;
+      expect(type.label).to.exist;
+    });
+  });
+  
+  test("Contains expected types", function() {
+    var codes = res.body.data.types.map(t => t.code);
+    expect(codes).to.include("WORKSHOP");
+    expect(codes).to.include("STORE");
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.body.data._links).to.exist;
+  });
+}
+
+docs {
+  # Get Branch Types (HU76) - Catálogo de Tipos de Establecimiento
+  
+  Endpoint público que devuelve todos los tipos de establecimiento disponibles.
+  No requiere autenticación.
+  
+  ## Respuesta
+  
+  | Campo | Descripción |
+  |-------|-------------|
+  | `types[].code` | Código a enviar al backend (WORKSHOP, STORE, WORKSHOP_STORE) |
+  | `types[].label` | Texto a mostrar en pantalla (Taller, Tienda, Taller y Tienda) |
+  
+  ## Uso en Frontend
+  
+  1. Llamar este endpoint al cargar el formulario de registro de sede
+  2. Mostrar el `label` en el dropdown
+  3. Enviar el `code` al backend cuando se registre la sede
+}

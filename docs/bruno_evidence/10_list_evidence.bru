@@ -1,0 +1,95 @@
+meta {
+  name: List Evidence (HU18) - Success
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{base_url}}/motorcycles/{{motorcycle_id}}/evidence
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+script:post-response {
+  if (res.status === 200) {
+    var evidences = res.body.data.evidence;
+    if (evidences && evidences.length > 0) {
+      var firstEvidenceId = evidences[0].id;
+      bru.setVar("evidence_id", firstEvidenceId);
+      console.log("✅ Found", evidences.length, "evidence item(s)");
+      console.log("💾 Saved first evidence_id:", firstEvidenceId);
+    } else {
+      console.log("⚠️ No evidence found for this motorcycle");
+      console.log("💡 Create evidence first using 02_create_evidence.bru");
+    }
+  }
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.body.success).to.be.true;
+  });
+  
+  test("Response has data object", function() {
+    expect(res.body.data).to.be.an('object');
+  });
+  
+  test("Response has evidence array", function() {
+    expect(res.body.data.evidence).to.be.an('array');
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.body.data._links).to.be.an('array');
+  });
+  
+  test("If evidence exists, each has required fields", function() {
+    var evidences = res.body.data.evidence;
+    if (evidences && evidences.length > 0) {
+      var item = evidences[0];
+      expect(item.id).to.exist;
+      expect(item.image_url).to.exist;
+      expect(item._links).to.exist;
+    }
+  });
+}
+
+docs {
+  # GET /motorcycles/:id/evidence - List Evidence (HU18)
+  
+  Lista todas las evidencias fotográficas de una motocicleta.
+  
+  ## Prerrequisitos
+  1. **Ejecutar Login primero** (01_login_user.bru)
+  2. Configurar `motorcycle_id` con el ID de tu moto
+  
+  ## Comportamiento
+  
+  | Escenario | Respuesta |
+  |-----------|-----------|
+  | Moto con evidencias | 200 OK + array de evidencias |
+  | Moto sin evidencias | 200 OK + array vacío `[]` |
+  | Moto no encontrada | 404 Not Found |
+  | Token inválido | 401 Unauthorized |
+  
+  ## Response Fields (por cada evidencia)
+  
+  | Campo | Descripción |
+  |-------|-------------|
+  | `id` | ID codificado (hashid) de la evidencia |
+  | `motorcycle_id` | ID de la motocicleta |
+  | `image_url` | URL de la imagen en Firebase |
+  | `description` | Descripción de la imagen |
+  | `_links` | Links HATEOAS (self, delete) |
+}

@@ -1,0 +1,42 @@
+meta {
+  name: Create Evidence - Unauthorized
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{base_url}}/motorcycles/{{motorcycle_id}}/evidence
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "image_url": "https://firebasestorage.googleapis.com/v0/b/motogo-app.appspot.com/o/evidence%2Ftest.jpg?alt=media",
+    "description": "Test sin token"
+  }
+}
+
+tests {
+  test("Status code is 401 Unauthorized", function() {
+    expect(res.status).to.equal(401);
+  });
+  
+  test("Response has success false", function() {
+    expect(res.body.success).to.be.false;
+  });
+}
+
+docs {
+  # Create Evidence - Unauthorized Error Case
+  
+  Verifica que el endpoint requiere autenticación.
+  
+  ## Expected Response
+  - **401 Unauthorized**: Token no proporcionado
+}

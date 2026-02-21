@@ -1,0 +1,74 @@
+meta {
+  name: Error - Rating Fuera de Rango
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{base_url}}/completed-services/{{completed_service_id}}/items/{{service_item_id}}/rating
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{user_access_token}}
+}
+
+body:json {
+  {
+    "rating": 0,
+    "comment": "Rating inválido"
+  }
+}
+
+script:pre-request {
+  console.log("🧪 TEST: Enviando rating = 0 (fuera de rango 1-5)...");
+  console.log("   Se espera error: MOD_CS_RATE_RANGE_ERR_00001");
+}
+
+script:post-response {
+  console.log("═══════════════════════════════════════");
+  
+  if (res.status !== 200) {
+    console.log("✅ ERROR ESPERADO — Rating fuera de rango");
+    console.log("  Status:", res.status);
+    console.log("  Código:", res.body.code);
+    if (res.body.message) {
+      console.log("  Mensaje:", res.body.message.content);
+    }
+  } else {
+    console.log("❌ INESPERADO: Se aceptó rating fuera de rango");
+  }
+  
+  console.log("═══════════════════════════════════════");
+}
+
+tests {
+  test("Status code is NOT 200 (invalid range)", function() {
+    expect(res.status).to.not.equal(200);
+  });
+  
+  test("Response has success false", function() {
+    expect(res.body.success).to.be.false;
+  });
+  
+  test("Error code is invalid range", function() {
+    expect(res.body.code).to.equal("MOD_CS_RATE_RANGE_ERR_00001");
+  });
+}
+
+docs {
+  # Error: Rating Fuera de Rango
+  
+  Prueba de error: enviar un rating de 0 (fuera del rango válido 1-5).
+  
+  ## Resultado esperado
+  - **Status:** 400
+  - **Código:** `MOD_CS_RATE_RANGE_ERR_00001`
+  - **Mensaje:** "La calificación debe ser un valor entre 1 y 5"
+}

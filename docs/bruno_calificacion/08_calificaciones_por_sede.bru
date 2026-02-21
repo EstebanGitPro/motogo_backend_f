@@ -1,0 +1,102 @@
+meta {
+  name: Ver Calificaciones por Sede (representante)
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{base_url}}/branches/{{branch_id}}/completed-services
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{representative_access_token}}
+}
+
+script:pre-request {
+  var branchId = bru.getVar("branch_id");
+  if (!branchId) {
+    console.log("⚠️ branch_id no configurado!");
+    console.log("💡 Configúralo en el environment");
+  }
+  
+  var token = bru.getVar("representative_access_token");
+  if (!token) {
+    console.log("⚠️ representative_access_token no configurado!");
+    console.log("💡 Haz login como representante primero");
+  }
+}
+
+script:post-response {
+  if (res.status === 200 && res.body.data) {
+    console.log("═══════════════════════════════════════");
+    console.log("📊 CALIFICACIONES POR SEDE (vista representante)");
+    console.log("═══════════════════════════════════════");
+    
+    var totalRatings = 0;
+    var sumRatings = 0;
+    
+    res.body.data.forEach(function(svc) {
+      console.log("");
+      console.log("🔧 Servicio:", svc.id);
+      console.log("   Moto:", svc.motorcycle_id);
+      console.log("   Estado:", svc.status);
+      
+      if (svc.services && svc.services.length > 0) {
+        svc.services.forEach(function(item) {
+          if (item.rating) {
+            totalRatings++;
+            sumRatings += item.rating;
+            console.log("   ⭐ Rating:", item.rating, "/ 5 -", item.comment || "(sin comentario)");
+          } else {
+            console.log("   ⏳ Sin calificar");
+          }
+        });
+      }
+    });
+    
+    console.log("");
+    if (totalRatings > 0) {
+      console.log("📈 Promedio:", (sumRatings / totalRatings).toFixed(1), "/ 5");
+      console.log("📋 Total calificaciones:", totalRatings);
+    } else {
+      console.log("ℹ️ No hay calificaciones aún");
+    }
+    console.log("═══════════════════════════════════════");
+  }
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response is successful", function() {
+    expect(res.body.success).to.be.true;
+  });
+  
+  test("Data is array", function() {
+    expect(res.body.data).to.be.an("array");
+  });
+}
+
+docs {
+  # Ver Calificaciones por Sede (representante)
+  
+  Lista todos los servicios completados de una sede con las 
+  calificaciones recibidas. Calcula el promedio automáticamente.
+  
+  ## Prerrequisitos
+  1. Login como representante → `representative_access_token`
+  2. Configurar `branch_id` en el environment
+  
+  ## Output
+  - Lista de servicios con sus calificaciones
+  - Promedio de calificación de la sede
+  - Total de calificaciones recibidas
+}

@@ -1,0 +1,66 @@
+meta {
+  name: Create Person
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/persons
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "identity_number": "1834567891",
+    "first_name": "Juan",
+    "last_name": "Pérez",
+    "second_last_name": "García",
+    "email": "admin@motogo.com",
+    "phone_number": "3041812233",
+    "password": "Secret123*",
+    "role": "admin"
+  }
+  
+  
+}
+
+tests {
+  test("Status code is 201", function() {
+    expect(res.status).to.equal(201);
+  });
+  
+  test("Response has message", function() {
+    expect(res.body.message).to.exist;
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.body._links).to.be.an('array');
+  });
+}
+
+docs {
+  # Create Person
+  
+  Registra una nueva persona/usuario en el sistema.
+  
+  ## Campos Requeridos
+  - `identity_number`: Número de identificación
+  - `first_name`: Primer nombre
+  - `last_name`: Primer apellido
+  - `second_last_name`: Segundo apellido
+  - `email`: Correo electrónico
+  - `phone_number`: Número de teléfono
+  - `password`: Contraseña
+  - `role`: Rol del usuario
+  
+  ## Response
+  - Status: 201 Created
+  - Mensaje de confirmación
+  - Links HATEOAS
+}

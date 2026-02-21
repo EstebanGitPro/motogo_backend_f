@@ -1,0 +1,100 @@
+meta {
+  name: Register Motorcycle (HU43) - Success
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}/motorcycles
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "license_plate": "ABC123",
+    "reference_id": "{{reference_id}}",
+    "year": 2023,
+    "current_mileage": 5000,
+    "owner_notes": "Motocicleta en excelente estado"
+  }
+}
+
+script:pre-request {
+  var referenceId = bru.getVar("reference_id");
+  if (!referenceId || referenceId === "REPLACE_WITH_ENCODED_ID") {
+    console.log("⚠️ reference_id not set. Get a valid reference ID from the references catalog!");
+    console.log("💡 Tip: Use the ENCODED ID (hashid), not the UUID");
+  } else {
+    console.log("Using reference_id:", referenceId);
+  }
+}
+
+script:post-response {
+  if (res.status === 200 || res.status === 201) {
+    var motorcycleId = res.body.data.id;
+    bru.setVar("motorcycle_id", motorcycleId);
+    console.log("✅ Motorcycle registered! ID saved to motorcycle_id:", motorcycleId);
+  } else {
+    console.log("❌ Registration failed:", res.body);
+  }
+}
+
+tests {
+  test("Status code is 200 or 201", function() {
+    expect([200, 201]).to.include(res.status);
+  });
+  
+  test("Response has success", function() {
+    expect(res.body.success).to.be.true;
+  });
+  
+  test("Response has motorcycle data", function() {
+    expect(res.body.data.id).to.exist;
+    expect(res.body.data.license_plate).to.exist;
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.body.data._links).to.exist;
+    expect(res.body.data._links.length).to.be.greaterThan(0);
+  });
+}
+
+docs {
+  # Register Motorcycle (HU43) - Success Case
+  
+  Registra una nueva motocicleta para el usuario autenticado.
+  
+  ## Prerrequisitos
+  1. **Ejecutar Login primero** (01_login.bru)
+  2. Configurar `reference_id` con un ID válido del catálogo de referencias (hashid encoded)
+  
+  ## Request Body
+  
+  | Campo | Tipo | Requerido | Descripción |
+  |-------|------|-----------|-------------|
+  | `license_plate` | string | ✅ | Placa de la motocicleta (única) |
+  | `reference_id` | string | ✅ | ID codificado de la referencia del catálogo |
+  | `year` | int | ❌ | Año del modelo |
+  | `current_mileage` | int | ❌ | Kilometraje actual |
+  | `owner_notes` | string | ❌ | Notas del propietario |
+  
+  ## Validaciones
+  - La placa debe ser única (no existir en el sistema)
+  - El `reference_id` debe corresponder a una referencia válida del catálogo
+  
+  ## Respuestas
+  - **201 Created**: Motocicleta registrada exitosamente
+  - **400 Bad Request**: Datos inválidos o incompletos
+  - **401 Unauthorized**: Token inválido/ausente
+  - **409 Conflict**: Placa duplicada o referencia no encontrada
+}

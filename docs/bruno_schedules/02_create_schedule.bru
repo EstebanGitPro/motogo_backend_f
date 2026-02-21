@@ -1,0 +1,95 @@
+meta {
+  name: Crear Horario (HU30)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/branches/{{branch_id}}/schedules
+  body: none
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+script:post-response {
+  if (res.status === 201 && res.body.data && res.body.data.id) {
+    bru.setEnvVar("schedule_id", res.body.data.id);
+    console.log("✅ Schedule ID guardado:", res.body.data.id);
+  }
+}
+
+tests {
+  test("Status code is 201 Created", function() {
+    expect(res.status).to.equal(201);
+  });
+  
+  test("Response has success message", function() {
+    expect(res.body.message).to.exist;
+  });
+  
+  test("Response has schedule ID", function() {
+    expect(res.body.data.id).to.exist;
+  });
+  
+  test("Response has branch_id", function() {
+    expect(res.body.data.branch_id).to.exist;
+  });
+  
+  test("Schedule is active by default", function() {
+    expect(res.body.data.active).to.equal(true);
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.body.data._links).to.exist;
+    expect(res.body.data._links.length).to.be.greaterThan(0);
+  });
+  
+  test("Has self link", function() {
+    var selfLink = res.body.data._links.find(l => l.rel === 'self');
+    expect(selfLink).to.exist;
+    expect(selfLink.method).to.equal('GET');
+  });
+  
+  test("Has activate/deactivate links", function() {
+    var activateLink = res.body.data._links.find(l => l.rel === 'activate');
+    var deactivateLink = res.body.data._links.find(l => l.rel === 'deactivate');
+    expect(activateLink).to.exist;
+    expect(deactivateLink).to.exist;
+  });
+}
+
+docs {
+  # Crear Horario para Sede (HU30)
+  
+  Crea una configuración de horario vacía para una sede específica.
+  
+  > **Nota:** Este endpoint NO recibe body. Solo crea el registro padre del horario.
+  > Los detalles (horas por día) se agregarán en Release 7 con `schedule_details`.
+  
+  ## Requisitos
+  - Usuario autenticado con rol `REPRESENTANTE`
+  - Sede válida perteneciente al representante
+  - La sede NO debe tener un horario ya configurado
+  
+  ## Variables requeridas
+  - `branch_id`: ID encoded de una sede propia (se obtiene de GET /branches)
+  
+  ## Flujo de prueba
+  1. Ejecutar `01_login.bru` primero
+  2. Copiar un `branch_id` de GET /branches
+  3. Ejecutar este request
+  
+  ## Response
+  - **201**: Horario creado exitosamente
+  - **403**: Sede no pertenece al representante
+  - **404**: Sede no encontrada
+  - **409**: La sede ya tiene un horario configurado
+}

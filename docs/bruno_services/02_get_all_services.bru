@@ -1,0 +1,99 @@
+meta {
+  name: Get All Services
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/services
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.getBody().success).to.be.true;
+  });
+  
+  test("Response has services array", function() {
+    expect(res.getBody().data.services).to.be.an('array');
+  });
+  
+  test("Has many services (> 50)", function() {
+    expect(res.getBody().data.services.length).to.be.above(50);
+  });
+  
+  test("Each service has required fields", function() {
+    const services = res.getBody().data.services;
+    if (services.length > 0) {
+      expect(services[0].id).to.exist;
+      expect(services[0].name).to.exist;
+      expect(services[0].service_type).to.exist;
+    }
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.getBody().data._links).to.be.an('array');
+  });
+}
+
+docs {
+  # Get All Services (HU63)
+  
+  Obtiene la lista completa de servicios disponibles en el catálogo.
+  Este es un endpoint **público** (no requiere autenticación).
+  
+  ## Uso:
+  Los usuarios y representantes usan este endpoint para ver todos los 
+  servicios disponibles en el sistema.
+  
+  ## Endpoint:
+  `GET /motogo/api/v1/services`
+  
+  ## No requiere autenticación
+  
+  ## Respuestas:
+  - **200**: Catálogo de servicios obtenido exitosamente
+  - **500**: Error interno del servidor
+  
+  ## Ejemplo de respuesta exitosa:
+  ```json
+  {
+    "success": true,
+    "code": "MOD_S_LIST_EXI_00001",
+    "message": "Lista de servicios recuperada exitosamente.",
+    "data": {
+      "services": [
+        {
+          "id": "uuid-1",
+          "name": "Cambio de aceite",
+          "description": "Cambio de aceite de motor",
+          "service_type": "Mantenimiento"
+        },
+        {
+          "id": "uuid-2",
+          "name": "Reparación de motor",
+          "description": "Reparación de componentes internos del motor",
+          "service_type": "Reparación"
+        }
+      ],
+      "_links": [
+        {"href": ".../services", "rel": "self", "method": "GET"},
+        {"href": ".../service-types", "rel": "service-types", "method": "GET"}
+      ]
+    }
+  }
+  ```
+  
+  ## HATEOAS Links:
+  - `self`: URL del catálogo de servicios
+  - `service-types`: URL para obtener tipos de servicio disponibles
+}

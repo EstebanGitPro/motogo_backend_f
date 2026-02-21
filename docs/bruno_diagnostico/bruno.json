@@ -1,0 +1,8 @@
+{
+  "name": "MotoGo - Diagnóstico CRUD",
+  "version": "1",
+  "type": "collection",
+  "scripts": {
+    "docs": "# MotoGo Diagnóstico CRUD Collection\n\nColección Bruno para gestión de diagnósticos de motocicletas.\n\n## HUs Implementadas\n\n- HU11: Crear diagnóstico\n- HU12: Actualizar diagnóstico\n- HU13: Eliminar diagnóstico\n- HU14: Consultar diagnóstico / Listar diagnósticos\n\n## Flujo de Pruebas\n\n1. Login como usuario\n2. Listar motocicletas → obtener motorcycle_id\n3. Crear diagnóstico para una moto\n4. Listar diagnósticos de la moto\n5. Obtener detalle de un diagnóstico\n6. Actualizar diagnóstico\n7. Eliminar diagnóstico"
+  }
+}

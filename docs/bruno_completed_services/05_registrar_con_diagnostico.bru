@@ -1,0 +1,79 @@
+meta {
+  name: Registrar con Diagnóstico (HU64)
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{base_url}}/completed-services
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "branch_id": "{{branch_id}}",
+    "motorcycle_id": "{{motorcycle_id}}",
+    "diagnostic_id": "{{diagnostic_id}}",
+    "service_ids": [
+      "{{service_id_1}}"
+    ],
+    "representative_notes": "Servicio vinculado al diagnóstico previo. Se reparó el problema reportado por el usuario."
+  }
+}
+
+script:post-response {
+  if (res.status === 200 || res.status === 201) {
+    var completedServiceId = res.body.data.id;
+    bru.setVar("completed_service_id", completedServiceId);
+    console.log("✅ Servicio con diagnóstico registrado! ID:", completedServiceId);
+    console.log("🔗 Diagnóstico vinculado:", res.body.data.diagnostic_id || "N/A");
+  } else {
+    console.log("❌ Error:", res.status, res.body);
+  }
+}
+
+tests {
+  test("Status code is 200 or 201", function() {
+    expect([200, 201]).to.include(res.status);
+  });
+  
+  test("Response has success", function() {
+    expect(res.body.success).to.be.true;
+  });
+  
+  test("Response has diagnostic_id", function() {
+    expect(res.body.data.diagnostic_id).to.exist;
+  });
+  
+  test("Status is PENDIENTE", function() {
+    expect(res.body.data.status).to.equal("PENDIENTE");
+  });
+}
+
+docs {
+  # POST /completed-services - Registrar con Diagnóstico Vinculado (HU64)
+  
+  Variante del registro que vincula el servicio completado con un diagnóstico previo.
+  
+  ## Flujo previo
+  1. Ejecutar `01_login_representante.bru` → `access_token`
+  2. Ejecutar `02_servicios_de_sede.bru` → `service_id_1`
+  3. Ejecutar `03_buscar_moto_por_placa.bru` → `motorcycle_id` + `diagnostic_id`
+  4. Ejecutar este request ✅
+  
+  ## Campos adicionales
+  
+  | Campo | Tipo | Descripción |
+  |-------|------|-------------|
+  | `diagnostic_id` | string | ID ofuscado del diagnóstico vinculado |
+}

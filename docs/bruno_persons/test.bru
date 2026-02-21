@@ -1,0 +1,31 @@
+meta {
+  name: test
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{tunel}}/auth/refresh
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "refresh_token": "{{refresh_token}}"
+  }
+}
+
+script:post-response {
+  if (res.status === 200 && res.body.data) {
+    bru.setEnvVar("access_token", res.body.data.access_token);
+    bru.setEnvVar("refresh_token", res.body.data.refresh_token);
+    console.log("Tokens guardados en environment exitosamente");
+    console.log("Access token expira en: " + res.body.data.expires_in + " segundos");
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

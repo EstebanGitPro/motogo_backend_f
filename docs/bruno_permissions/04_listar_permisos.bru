@@ -1,0 +1,100 @@
+meta {
+  name: Listar Permisos de Moto
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{base_url}}/motorcycles/{{motorcycle_id}}/permissions
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+script:pre-request {
+  var motoId = bru.getVar("motorcycle_id");
+  if (!motoId || motoId === "REPLACE_WITH_MOTORCYCLE_ID") {
+    console.log("⚠️ motorcycle_id no configurado!");
+    console.log("💡 Ejecuta 02_listar_motos.bru primero");
+  }
+}
+
+script:post-response {
+  if (res.status === 200) {
+    var permissions = res.body.data.permissions;
+    if (permissions && permissions.length > 0) {
+      console.log("✅ Permisos encontrados:", permissions.length);
+      permissions.forEach(function(p, i) {
+        console.log("  " + (i+1) + ". Sede:", p.branch_id, "- Desde:", p.granted_at);
+      });
+      // Guardar el branch_id del primer permiso para revocar
+      bru.setVar("permission_branch_id", permissions[0].branch_id);
+      console.log("🔑 permission_branch_id guardado:", permissions[0].branch_id);
+    } else {
+      console.log("ℹ️ No hay permisos para esta moto.");
+    }
+  } else {
+    console.log("❌ Error:", res.body);
+  }
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+
+  test("Response has success", function() {
+    expect(res.body.success).to.be.true;
+  });
+
+  test("Response has permissions array", function() {
+    expect(res.body.data.permissions).to.be.an("array");
+  });
+
+  test("Response has HATEOAS links", function() {
+    expect(res.body.data._links).to.exist;
+  });
+
+  test("Each permission has required fields", function() {
+    var permissions = res.body.data.permissions;
+    if (permissions.length > 0) {
+      var p = permissions[0];
+      expect(p.motorcycle_id).to.exist;
+      expect(p.branch_id).to.exist;
+      expect(p.granted_at).to.exist;
+    }
+  });
+}
+
+docs {
+  # GET /motorcycles/:id/permissions - Listar Permisos de Diagnóstico
+
+  Lista todos los permisos activos de una motocicleta (qué sedes pueden verla).
+  Solo el propietario puede consultar los permisos.
+
+  ## Prerrequisitos
+  1. Ejecutar Login (01_login_usuario.bru)
+  2. Ejecutar Listar Motos (02_listar_motos.bru) → motorcycle_id
+
+  ## Respuesta exitosa
+  Retorna un array `permissions` con cada permiso:
+
+  | Campo | Tipo | Descripción |
+  |-------|------|-------------|
+  | `motorcycle_id` | string | ID ofuscado de la moto |
+  | `branch_id` | string | ID ofuscado de la sede autorizada |
+  | `granted_at` | string | Fecha/hora de concesión (ISO 8601) |
+  | `_links` | object | Enlaces HATEOAS para acciones |
+
+  ## Respuestas
+  - **200**: Array de permisos (puede estar vacío)
+  - **401**: Token inválido
+  - **404**: Moto no encontrada o no es propietario
+}

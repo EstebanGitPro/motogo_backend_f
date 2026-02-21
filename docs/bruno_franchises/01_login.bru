@@ -1,0 +1,39 @@
+meta {
+  name: Login (Obtener Token)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/auth/login
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "email": "amordemadre@yopmail.com",
+    "password": "Secret123*"
+  }
+}
+
+script:post-response {
+  // Guardar el token automáticamente para los siguientes requests
+  if (res.status === 200 && res.body.data && res.body.data.access_token) {
+    bru.setEnvVar("access_token", res.body.data.access_token);
+    console.log("Token guardado automáticamente!");
+  }
+}
+
+docs {
+  # Login para Franquicias
+  
+  **⚠️ Ejecutar primero para obtener el token de autenticación.**
+  
+  El usuario debe ser un REPRESENTANTE para poder crear franquicias.
+}

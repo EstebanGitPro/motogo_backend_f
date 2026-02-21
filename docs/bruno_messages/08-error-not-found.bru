@@ -1,0 +1,37 @@
+meta {
+  name: 08 - Error - Not Found
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{base_url}}/admin/messages/999999
+  body: none
+  auth: none
+}
+
+tests {
+  test("Status code is 404", function() {
+    expect(res.status).to.equal(404);
+  });
+  
+  test("Response has error code", function() {
+    expect(res.body.code).to.exist;
+  });
+  
+  test("Response has error type", function() {
+    expect(res.body.type).to.equal('ERROR');
+  });
+}
+
+docs {
+  # Error Case - Not Found
+  
+  Prueba el manejo de errores cuando se busca un mensaje que no existe.
+  
+  ## Expected Response
+  - Status: 404 Not Found
+  - Error code: MOD_MSG_NOT_FOUND_001
+  - Error type: ERROR
+  - Mensaje indicando que el recurso no existe
+}

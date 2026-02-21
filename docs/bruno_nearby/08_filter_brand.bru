@@ -1,0 +1,70 @@
+meta {
+  name: 08 - Filter by Brand
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{base_url}}/branches/nearby?lat={{latitude}}&lng={{longitude}}&radius={{radius_km}}&brand={{brand_id}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+script:pre-request {
+  var http = require('axios');
+  var loginRes = await http.post(bru.getVar("base_url") + "/auth/login", {
+    "email": "negro@yopmail.com",
+    "password": "Secret123*"
+  });
+  if (loginRes.status === 200) {
+    bru.setVar("access_token", loginRes.data.data.access_token);
+    console.log("✅ Login automático OK");
+  }
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has branches array", function() {
+    expect(res.body.data.branches).to.be.an("array");
+  });
+}
+
+script:post-response {
+  console.log("🏭 Filtrando por marca - brand_id:", bru.getVar("brand_id"));
+  console.log("📍 Encontradas", res.body.data.count, "sedes con esta marca");
+  
+  var branches = res.body.data.branches || [];
+  branches.forEach(function(b, i) {
+    console.log((i+1) + ". " + b.name + " [" + b.establishment_type_label + "] - " + b.distance_km.toFixed(2) + " km");
+  });
+}
+
+docs {
+  # Filter Nearby Branches by Brand
+  
+  Filtra sedes cercanas que trabajan con una marca específica.
+  
+  ## Parámetros
+  
+  | Parámetro | Tipo | Requerido | Descripción |
+  |-----------|------|-----------|-------------|
+  | `lat` | float | ✅ | Latitud |
+  | `lng` | float | ✅ | Longitud |
+  | `radius` | float | ❌ | Radio en km |
+  | `brand` | string | ❌ | UUID de la marca a filtrar |
+  
+  ## Prerrequisitos
+  1. Ejecutar `01_login_user.bru` primero
+  2. Configurar `brand_id` en environment con un UUID válido de marca
+}

@@ -1,0 +1,54 @@
+meta {
+  name: Error - Día Inválido
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{base_url}}/branches/{{branch_id}}/schedules/details
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "day_of_week": 8,
+    "opening_time": "08:00",
+    "closing_time": "12:00",
+    "is_closed": false
+  }
+}
+
+tests {
+  test("Status code is 400 Bad Request", function() {
+    expect(res.status).to.equal(400);
+  });
+  
+  test("Response indicates invalid day", function() {
+    expect(res.body.message.code).to.include("DAY");
+  });
+}
+
+docs {
+  # Error: Día de Semana Inválido
+  
+  Prueba de error cuando se envía un `day_of_week` fuera del rango 1-7.
+  
+  ## Valores válidos
+  - 1 = Lunes
+  - 2 = Martes
+  - 3 = Miércoles
+  - 4 = Jueves
+  - 5 = Viernes
+  - 6 = Sábado
+  - 7 = Domingo
+}

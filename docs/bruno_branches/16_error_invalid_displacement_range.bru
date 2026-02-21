@@ -1,0 +1,61 @@
+meta {
+  name: ERROR - Invalid Displacement Range
+  type: http
+  seq: 16
+}
+
+post {
+  url: {{base_url}}/branches
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "name": "Taller Rango Inválido",
+    "establishment_type": "WORKSHOP",
+    "location": {
+      "department_id": "a1b2c3d4-1111-4000-8000-000000000001",
+      "city_id": "b2c3d4e5-2222-4000-8000-000000000001",
+      "address": "Diagonal 45 #12-34"
+    },
+    "displacement_ranges": ["INVALIDO"]
+  }
+}
+
+tests {
+  test("Status code is 400 Bad Request", function() {
+    expect(res.status).to.equal(400);
+  });
+  
+  test("Response has error", function() {
+    expect(res.body.success).to.be.false;
+  });
+}
+
+docs {
+  # Error Case: Invalid Displacement Range
+  
+  Prueba que el servidor rechaza rangos de cilindraje inválidos.
+  
+  ## Valor Enviado
+  - `INVALIDO` (no existe en el ENUM)
+  
+  ## Valores Válidos
+  - `BAJO` (0 - 200 cc)
+  - `MEDIO` (201 - 400 cc)
+  - `ALTO` (401+ cc)
+  
+  ## Comportamiento Esperado
+  - **Status**: 400 Bad Request
+  - **Error**: Rango de cilindraje inválido
+}

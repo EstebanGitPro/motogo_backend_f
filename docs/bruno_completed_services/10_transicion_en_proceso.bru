@@ -1,0 +1,75 @@
+meta {
+  name: Transición a EN_PROCESO (HU74)
+  type: http
+  seq: 10
+}
+
+patch {
+  url: {{base_url}}/completed-services/{{completed_service_id}}/status
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "status": "EN_PROCESO"
+  }
+}
+
+script:pre-request {
+  var csId = bru.getVar("completed_service_id");
+  
+  if (!csId || csId === "REPLACE_WITH_COMPLETED_SERVICE_ID") {
+    console.log("⚠️ completed_service_id no configurado!");
+    console.log("💡 Ejecuta paso 04 (Registrar Servicio) primero");
+  }
+}
+
+script:post-response {
+  if (res.status === 200) {
+    console.log("✅ Servicio transicionado a EN_PROCESO");
+  } else {
+    console.log("❌ Error:", res.status, res.body);
+  }
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.body.success).to.be.true;
+  });
+}
+
+docs {
+  # PATCH /completed-services/:id/status - Transición a EN_PROCESO (HU74)
+  
+  Transiciona un servicio de **PENDIENTE** a **EN_PROCESO**.
+  
+  ## Flujo previo
+  1. Ejecutar `01_login_representante.bru` → guarda `access_token`
+  2. Ejecutar `04_registrar_servicio.bru` → guarda `completed_service_id`
+  3. Ejecutar este request ✅
+  
+  ## Request Body
+  
+  | Campo | Tipo | Requerido | Descripción |
+  |-------|------|-----------|-------------|
+  | `status` | string | ✅ | Nuevo estado: `EN_PROCESO` |
+  
+  ## Respuestas
+  - **200**: Estado actualizado exitosamente
+  - **400**: Transición de estado no válida
+  - **404**: Servicio no encontrado
+}

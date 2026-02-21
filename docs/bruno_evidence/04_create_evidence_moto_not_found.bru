@@ -1,0 +1,46 @@
+meta {
+  name: Create Evidence - Motorcycle Not Found
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{base_url}}/motorcycles/invalidmotorcycleid123/evidence
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "image_url": "https://firebasestorage.googleapis.com/v0/b/motogo-app.appspot.com/o/evidence%2Ftest.jpg?alt=media",
+    "description": "Test"
+  }
+}
+
+tests {
+  test("Status code is 404 Not Found", function() {
+    expect(res.status).to.equal(404);
+  });
+  
+  test("Response has success false", function() {
+    expect(res.body.success).to.be.false;
+  });
+}
+
+docs {
+  # Create Evidence - Motorcycle Not Found Error Case
+  
+  Verifica que el endpoint retorna 404 cuando la motocicleta no existe.
+  
+  ## Expected Response
+  - **404 Not Found**: Motocicleta no encontrada
+}

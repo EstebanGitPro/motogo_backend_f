@@ -1,0 +1,54 @@
+meta {
+  name: 07. Dissociate Service from Branch
+  type: http
+  seq: 7
+}
+
+delete {
+  url: {{base_url}}/branches/{{branch_id}}/services/{{service_id}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.getBody().success).to.be.true;
+  });
+}
+
+docs {
+  # Dissociate Service from Branch
+  
+  Desasocia un servicio de una sede.
+  
+  ## Requiere autenticación (REPRESENTANTE)
+  Ejecutar `00_login.bru` primero para obtener el token.
+  
+  ## Variables requeridas:
+  - `branch_id`: ID de la sede (codificado)
+  - `service_id`: ID del servicio a desasociar (codificado)
+  
+  ## Endpoint:
+  `DELETE /branches/:id/services/:serviceId`
+  
+  ## Respuesta exitosa:
+  ```json
+  {
+    "success": true,
+    "code": "MOD_S_DISSOC_EXI_00001",
+    "message": "Servicio desasociado exitosamente"
+  }
+  ```
+}

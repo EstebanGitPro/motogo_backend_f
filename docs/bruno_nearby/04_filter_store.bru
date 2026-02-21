@@ -1,0 +1,46 @@
+meta {
+  name: 04 - Filter by Type (STORE)
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{base_url}}/branches/nearby?lat={{latitude}}&lng={{longitude}}&radius=10&type=STORE
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+script:pre-request {
+  console.log("🏪 Buscando solo TIENDAS cercanas...");
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("All branches are STORE type", function() {
+    var branches = res.body.data.branches;
+    branches.forEach(function(branch) {
+      expect(branch.establishment_type).to.equal("STORE");
+    });
+  });
+}
+
+script:post-response {
+  console.log("🏪 Encontradas", res.body.data.count, "tiendas");
+}
+
+docs {
+  # Filter by Type - Solo Tiendas
+  
+  Filtra resultados para mostrar solo tiendas de repuestos (STORE).
+}

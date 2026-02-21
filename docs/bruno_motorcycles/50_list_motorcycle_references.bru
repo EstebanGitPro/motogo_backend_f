@@ -1,0 +1,120 @@
+meta {
+  name: List Motorcycle References (HU50) - Success
+  type: http
+  seq: 17
+}
+
+get {
+  url: {{base_url}}/motorcycle-references
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+script:post-response {
+  if (res.status === 200) {
+    var refs = res.body.data?.references;
+    if (refs && refs.length > 0) {
+      var firstRefId = refs[0].id;
+      bru.setVar("reference_id", firstRefId);  // Used by register tests
+      bru.setVar("motorcycle_reference_id", firstRefId);  // Alternative variable
+      console.log("✅ Found", refs.length, "motorcycle reference(s)");
+      console.log("💾 Saved reference_id:", firstRefId);
+      
+      // Show sample references
+      refs.slice(0, 3).forEach(function(ref, i) {
+        console.log("📋 #" + (i+1) + ":", ref.brand_name, ref.model, "-", ref.category, ref.engine_displacement_cc + "cc");
+      });
+    } else {
+      console.log("⚠️ No motorcycle references found");
+      console.log("💡 Add references to motorcycle_references table first");
+    }
+  }
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.body.success).to.be.true;
+  });
+  
+  test("Response has code MOD_MOT_REF_LIST_EXI_00001", function() {
+    expect(res.body.code).to.equal("MOD_MOT_REF_LIST_EXI_00001");
+  });
+  
+  test("Response has data with references array", function() {
+    expect(res.body.data).to.exist;
+    expect(res.body.data.references).to.be.an('array');
+  });
+  
+  test("If references exist, each has required fields", function() {
+    var refs = res.body.data?.references;
+    if (refs && refs.length > 0) {
+      var ref = refs[0];
+      expect(ref.id).to.exist;
+      expect(ref.brand_id).to.exist;
+      expect(ref.brand_name).to.exist;
+      expect(ref.model).to.exist;
+      expect(ref.category).to.exist;
+      expect(ref.engine_displacement_cc).to.exist;
+    }
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.body.data._links).to.be.an('array');
+    var rels = res.body.data._links.map(function(l) { return l.rel; });
+    expect(rels).to.include('self');
+    expect(rels).to.include('motorcycles');
+  });
+}
+
+docs {
+  # List Motorcycle References (HU50) - Success Case
+  
+  Obtiene el catálogo completo de referencias de motocicletas (marca + modelo).
+  
+  ## Prerrequisitos
+  1. **Ejecutar Login como USER** (Login (Get Token) user.bru)
+  
+  ## Uso Típico
+  
+  Este endpoint permite al usuario seleccionar la marca y modelo de su motocicleta
+  durante el proceso de registro (HU43).
+  
+  ## Comportamiento
+  
+  | Escenario | Respuesta |
+  |-----------|-----------|
+  | Referencias disponibles | 200 OK + array de referencias |
+  | Sin referencias | 200 OK + array vacío `[]` |
+  | Token inválido | 401 Unauthorized |
+  | Sin token | 401 Unauthorized |
+  
+  ## Response Fields (por cada referencia)
+  
+  | Campo | Descripción |
+  |-------|-------------|
+  | `id` | ID codificado (hashid) de la referencia |
+  | `brand_id` | ID codificado de la marca |
+  | `brand_name` | Nombre de la marca (ej: Honda, Yamaha) |
+  | `model` | Modelo (ej: CB 190R, FZ 250) |
+  | `category` | Categoría (Sport, Scooter, Naked, etc.) |
+  | `engine_displacement_cc` | Cilindraje del motor en cc |
+  
+  ## Flow Recomendado
+  
+  1. Ejecutar este endpoint antes de registrar una moto
+  2. Mostrar lista de referencias al usuario
+  3. Guardar el `id` de la referencia seleccionada
+  4. Usar ese `id` como `reference_id` en `02_register_motorcycle.bru`
+}

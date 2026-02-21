@@ -1,0 +1,114 @@
+meta {
+  name: 02 - Get Nearby Branches (Success)
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/branches/nearby?lat={{latitude}}&lng={{longitude}}&radius={{radius_km}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+script:pre-request {
+  console.log("🗺️ Buscando sedes cercanas:");
+  console.log("   📍 Latitud:", bru.getVar("latitude"));
+  console.log("   📍 Longitud:", bru.getVar("longitude"));
+  console.log("   📏 Radio:", bru.getVar("radius_km"), "km");
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.body.success).to.be.true;
+  });
+  
+  test("Response has branches array", function() {
+    expect(res.body.data.branches).to.be.an("array");
+  });
+  
+  test("Response has count", function() {
+    expect(res.body.data.count).to.be.a("number");
+  });
+  
+  test("Response has center coordinates", function() {
+    expect(res.body.data.center).to.exist;
+    expect(res.body.data.center.latitude).to.be.a("number");
+    expect(res.body.data.center.longitude).to.be.a("number");
+  });
+  
+  test("Response has radius_km", function() {
+    expect(res.body.data.radius_km).to.be.a("number");
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.body.data._links).to.exist;
+    expect(res.body.data._links.length).to.be.greaterThan(0);
+  });
+  
+  test("Each branch has required fields", function() {
+    if (res.body.data.branches.length > 0) {
+      var branch = res.body.data.branches[0];
+      expect(branch.id).to.exist;
+      expect(branch.name).to.exist;
+      expect(branch.establishment_type).to.exist;
+      expect(branch.address).to.exist;
+      expect(branch.latitude).to.be.a("number");
+      expect(branch.longitude).to.be.a("number");
+      expect(branch.distance_km).to.be.a("number");
+    }
+  });
+  
+  test("Branches are ordered by distance (closest first)", function() {
+    var branches = res.body.data.branches;
+    if (branches.length > 1) {
+      for (var i = 0; i < branches.length - 1; i++) {
+        expect(branches[i].distance_km).to.be.at.most(branches[i+1].distance_km);
+      }
+    }
+  });
+}
+
+script:post-response {
+  console.log("📍 Encontradas", res.body.data.count, "sedes cercanas");
+  if (res.body.data.branches.length > 0) {
+    console.log("🏪 Sede más cercana:", res.body.data.branches[0].name, 
+                "a", res.body.data.branches[0].distance_km.toFixed(2), "km");
+  }
+}
+
+docs {
+  # Get Nearby Branches (HU89) - Success Case
+  
+  Busca sedes (talleres/tiendas) cercanas a una ubicación geográfica.
+  
+  ## Parámetros
+  
+  | Parámetro | Tipo | Requerido | Descripción |
+  |-----------|------|-----------|-------------|
+  | `lat` | float | ✅ | Latitud (-90 a 90) |
+  | `lng` | float | ✅ | Longitud (-180 a 180) |
+  | `radius` | float | ❌ | Radio en km (default: 5, max: 50) |
+  | `type` | string | ❌ | Filtrar: WORKSHOP, STORE, WORKSHOP_STORE |
+  | `brand` | string | ❌ | ID de marca para filtrar (UUID) |
+  | `displacement_range` | string | ❌ | Rango de cilindraje: BAJO, MEDIO, ALTO |
+  
+  ## Prerrequisitos
+  1. Ejecutar `01_login_user.bru` primero
+  
+  ## Respuestas
+  - **200**: Búsqueda exitosa
+  - **400**: Parámetros inválidos
+  - **401**: Token inválido/ausente
+}

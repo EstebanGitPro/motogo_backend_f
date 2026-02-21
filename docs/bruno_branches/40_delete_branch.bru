@@ -1,0 +1,86 @@
+meta {
+  name: Delete Branch (HU61) - Success
+  type: http
+  seq: 40
+}
+
+delete {
+  url: {{base_url}}/branches/{{branch_id}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.body.success).to.be.true;
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.body.data._links).to.exist;
+    expect(res.body.data._links.length).to.be.greaterThan(0);
+  });
+  
+  test("Has link to list branches", function() {
+    const listLink = res.body.data._links.find(l => l.rel === "list");
+    expect(listLink).to.exist;
+    expect(listLink.method).to.equal("GET");
+  });
+  
+  test("Has link to create branch", function() {
+    const createLink = res.body.data._links.find(l => l.rel === "create");
+    expect(createLink).to.exist;
+    expect(createLink.method).to.equal("POST");
+  });
+  
+  test("Message code is MOD_B_DEL_EXI_00001", function() {
+    expect(res.body.code).to.equal("MOD_B_DEL_EXI_00001");
+  });
+}
+
+docs {
+  # Delete Branch (HU61) - Success Case
+  
+  Elimina una sede existente del representante autenticado.
+  
+  ## Prerrequisitos
+  1. **Ejecutar Login primero** (01_login.bru)
+  2. El usuario debe tener rol `REPRESENTANTE`
+  3. **La sede debe ser del usuario autenticado** (ownership validation)
+  4. **La sede NO debe tener diagnósticos ni servicios realizados**
+  5. Ejecutar 02_register_branch.bru para tener `branch_id`
+  
+  ## Ownership Validation
+  Solo el dueño de la sede puede eliminarla. Si el `representative_id` 
+  de la sede no coincide con el `person_id` del token, retorna 403.
+  
+  ## Cascade Behavior
+  Las siguientes tablas relacionadas se eliminan automáticamente:
+  - `branch_brands` (marcas de la sede)
+  - `locations` (ubicación)
+  - `schedules` (horarios)
+  - `branch_services` (servicios asociados)
+  
+  ## Restrict Behavior
+  La eliminación FALLA si existen registros en:
+  - `diagnostics` (diagnósticos realizados)
+  - `completed_services` (servicios completados)
+  
+  ## Respuestas
+  - **200**: Sede eliminada exitosamente
+  - **401**: Token inválido/ausente
+  - **403**: No eres el dueño de la sede
+  - **404**: Sede no encontrada
+  - **409**: La sede tiene asociaciones que impiden eliminarla
+}

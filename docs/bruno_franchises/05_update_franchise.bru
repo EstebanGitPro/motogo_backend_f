@@ -1,0 +1,47 @@
+meta {
+  name: Actualizar Franquicia
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{base_url}}/franchises/{{franchise_id}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "name": "Motozona Colombia Premium",
+    "description": "Red premium de talleres especializados"
+  }
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+}
+
+docs {
+  # Actualizar Franquicia (HU27)
+  
+  Actualiza el nombre y/o descripción de una franquicia.
+  
+  ## Variables requeridas
+  - `franchise_id`: ID de franquicia a actualizar
+  
+  ## Response
+  - 200: Franquicia actualizada
+  - 404: Franquicia no encontrada
+  - 409: Nombre duplicado
+}

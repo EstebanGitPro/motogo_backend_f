@@ -1,0 +1,105 @@
+meta {
+  name: Consultar Horario (HU32)
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}/branches/{{branch_id}}/schedules
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success message", function() {
+    expect(res.body.message).to.exist;
+  });
+  
+  test("Response has schedule data", function() {
+    expect(res.body.data).to.exist;
+  });
+  
+  test("Response has schedule ID", function() {
+    expect(res.body.data.id).to.exist;
+  });
+  
+  test("Response has branch_id", function() {
+    expect(res.body.data.branch_id).to.exist;
+  });
+  
+  test("Response has active status", function() {
+    expect(res.body.data.active).to.be.a('boolean');
+  });
+  
+  test("Response has start_date", function() {
+    expect(res.body.data.start_date).to.exist;
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.body.data._links).to.exist;
+  });
+  
+  test("Has delete and activate/deactivate actions", function() {
+    var links = res.body.data._links;
+    var hasDelete = links.some(l => l.rel === 'delete');
+    var hasActivate = links.some(l => l.rel === 'activate');
+    expect(hasDelete).to.equal(true);
+    expect(hasActivate).to.equal(true);
+  });
+}
+
+docs {
+  # Consultar Horario de Sede (HU32)
+  
+  Obtiene la configuración de horario para una sede específica.
+  
+  ## Requisitos
+  - Usuario autenticado (cualquier rol)
+  - Sede con horario configurado
+  
+  ## Variables requeridas
+  - `branch_id`: ID encoded de la sede
+  
+  ## Response esperado
+  ```json
+  {
+    "message": "Información del horario de atención obtenida correctamente.",
+    "data": {
+      "id": "encodedScheduleId",
+      "branch_id": "encodedBranchId",
+      "active": true,
+      "start_date": "2026-01-20",
+      "end_date": "2027-12-31",
+      "_links": [
+        {"rel": "self", "href": "...", "method": "GET"},
+        {"rel": "update", "href": "...", "method": "PUT"},
+        {"rel": "delete", "href": "...", "method": "DELETE"},
+        {"rel": "activate", "href": "...", "method": "PUT"},
+        {"rel": "deactivate", "href": "...", "method": "PUT"}
+      ]
+    }
+  }
+  ```
+  
+  ### Campos de respuesta
+  | Campo | Tipo | Descripción |
+  |-------|------|-------------|
+  | start_date | string | Fecha inicio vigencia (YYYY-MM-DD) |
+  | end_date | string | Fecha fin vigencia (null = indefinido) |
+  
+  ## Códigos de respuesta
+  - **200**: Horario obtenido exitosamente
+  - **404**: Horario no encontrado para esta sede
+}

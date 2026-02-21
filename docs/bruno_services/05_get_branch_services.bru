@@ -1,0 +1,68 @@
+meta {
+  name: 05. Get Branch Services
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{base_url}}/branches/{{branch_id}}/services
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("Response has services array", function() {
+    expect(res.getBody().data.services).to.be.an('array');
+  });
+  
+  test("Services have added_at field", function() {
+    const services = res.getBody().data.services;
+    if (services.length > 0) {
+      expect(services[0].added_at).to.exist;
+    }
+  });
+}
+
+docs {
+  # Get Branch Services
+  
+  Obtiene los servicios asociados a una sede específica, incluyendo cuándo fue agregado cada servicio.
+  
+  ## Requiere autenticación
+  Ejecutar `00_login.bru` primero para obtener el token.
+  
+  ## Variables requeridas:
+  - `branch_id`: ID de la sede (codificado)
+  
+  ## Endpoint:
+  `GET /branches/:id/services`
+  
+  ## Respuesta:
+  ```json
+  {
+    "services": [
+      {
+        "id": "abc123",
+        "name": "Cambio de aceite",
+        "description": "...",
+        "service_type": "Mantenimiento",
+        "added_at": "2026-01-15T10:30:00-05:00",
+        "active": true
+      }
+    ],
+    "_links": [...]
+  }
+  ```
+}

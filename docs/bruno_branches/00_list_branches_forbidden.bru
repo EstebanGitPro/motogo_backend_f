@@ -1,0 +1,33 @@
+meta {
+  name: List My Branches (403 Wrong Role)
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/branches
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+docs {
+  # GET /branches - Forbidden for USER role
+  
+  Este test verifica que un usuario con rol USER (no REPRESENTANTE)
+  reciba un error 403 Forbidden al intentar listar sedes.
+  
+  ## Requisitos:
+  - Token JWT válido de un usuario con rol USER (no REPRESENTANTE)
+  
+  ## Respuesta esperada (403 Forbidden):
+  - success: false
+  - error.code: "GEN_FORBIDDEN_ERR_00003"
+  - error.message: Mensaje indicando acceso denegado
+  
+  ## Variable requerida:
+  - {{user_token}}: Token de un usuario con rol USER
+}

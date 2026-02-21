@@ -1,0 +1,68 @@
+meta {
+  name: Login (Obtener Token)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/auth/login
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "email": "amordemadre@yopmail.com",
+    "password": "Secret123*"
+  }
+}
+
+script:post-response {
+  // Guardar el token automáticamente para los siguientes requests
+  if (res.status === 200 && res.body.data && res.body.data.access_token) {
+    bru.setEnvVar("access_token", res.body.data.access_token);
+    console.log("Token guardado automáticamente!");
+  }
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has access_token", function() {
+    expect(res.body.data.access_token).to.exist;
+  });
+  
+  test("Response has role information", function() {
+    // El rol del usuario viene en el token JWT
+    expect(res.body.data.access_token).to.exist;
+  });
+}
+
+docs {
+  # Login (Obtener Token)
+  
+  **⚠️ Ejecutar primero para obtener el token de autenticación.**
+  
+  El token se guarda automáticamente en la variable `access_token` para los siguientes requests.
+  
+  ## Credenciales de Prueba
+  - **email**: Usuario registrado con rol `branch_representative`
+  - **password**: Contraseña del usuario
+  
+  ## Información del Token (JWT)
+  El token JWT contiene:
+  - `sub`: Keycloak User ID
+  - `realm_access.roles`: Roles del usuario (ej: `branch_representative`)
+  
+  ## Response
+  - `access_token`: Token JWT para autenticar requests
+  - `refresh_token`: Token para refrescar el acceso
+  - `expires_in`: Tiempo de expiración (segundos)
+}

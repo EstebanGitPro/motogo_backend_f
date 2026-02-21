@@ -1,0 +1,8 @@
+{
+  "name": "MotoGo - Permisos de Diagnóstico",
+  "version": "1",
+  "type": "collection",
+  "scripts": {
+    "docs": "# MotoGo Permisos de Diagnóstico Collection\n\nColección Bruno para gestión de permisos de diagnóstico por sede (tabla pivote permisos_moto_sede).\n\n## Endpoints\n\n- POST /motorcycles/:id/permissions - Conceder permiso\n- GET /motorcycles/:id/permissions - Listar permisos\n- DELETE /motorcycles/:id/permissions/:branchId - Revocar permiso\n\n## Flujo de Pruebas\n\n1. Login como usuario\n2. Listar motocicletas → obtener motorcycle_id\n3. Conceder permiso a una sede\n4. Listar permisos de la moto\n5. Revocar permiso de una sede"
+  }
+}

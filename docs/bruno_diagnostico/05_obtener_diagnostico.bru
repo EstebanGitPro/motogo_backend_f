@@ -1,0 +1,70 @@
+meta {
+  name: Obtener Diagnóstico (HU14)
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{base_url}}/motorcycles/{{motorcycle_id}}/diagnostics/{{diagnostic_id}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+script:pre-request {
+  var diagId = bru.getVar("diagnostic_id");
+  if (!diagId || diagId === "REPLACE_WITH_DIAGNOSTIC_ID") {
+    console.log("⚠️ diagnostic_id no configurado!");
+    console.log("💡 Ejecuta 03_crear_diagnostico.bru o 04_listar_diagnosticos.bru primero");
+  }
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.body.success).to.be.true;
+  });
+  
+  test("Response has diagnostic detail", function() {
+    expect(res.body.data.id).to.exist;
+    expect(res.body.data.motorcycle_id).to.exist;
+    expect(res.body.data.branch_id).to.exist;
+    expect(res.body.data.date).to.exist;
+  });
+  
+  test("Response has evidence array", function() {
+    expect(res.body.data.evidence).to.be.an("array");
+  });
+}
+
+docs {
+  # GET /motorcycles/:id/diagnostics/:diagnosticId - Obtener Diagnóstico (HU14)
+  
+  Obtiene el detalle de un diagnóstico específico con sus evidencias.
+  
+  ## Prerrequisitos
+  1. Ejecutar Login (01_login_usuario.bru)
+  2. Obtener motorcycle_id y diagnostic_id
+  
+  ## Respuesta incluye
+  - Información del diagnóstico
+  - Descripción del problema
+  - Posible solución (si existe)
+  - Cotizaciones (si existen)
+  - Array de evidencias fotográficas
+  
+  ## Respuestas
+  - **200**: Diagnóstico con evidencias
+  - **401**: Token inválido
+  - **404**: Diagnóstico no encontrado o no es propietario
+}

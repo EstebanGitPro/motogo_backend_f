@@ -1,0 +1,43 @@
+meta {
+  name: Obtener Franquicia por ID
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{base_url}}/franchises/{{franchise_id}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has franchise data", function() {
+    expect(res.body.data.id).to.exist;
+    expect(res.body.data.name).to.exist;
+  });
+}
+
+docs {
+  # Obtener Franquicia por ID (HU29)
+  
+  Obtiene los detalles de una franquicia específica.
+  
+  ## Variables requeridas
+  - `franchise_id`: ID de franquicia (obtenido de /franchises o al crear)
+  
+  ## Response
+  - 200: Franquicia encontrada
+  - 404: Franquicia no encontrada
+}

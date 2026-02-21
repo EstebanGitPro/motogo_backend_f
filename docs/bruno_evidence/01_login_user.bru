@@ -1,0 +1,59 @@
+meta {
+  name: Login (Get Token) user
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/auth/login
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "email": "negro@yopmail.com",
+    "password": "Secret123*"
+  }
+}
+
+script:post-response {
+  if (res.status === 200) {
+    var accessToken = res.body.data.access_token;
+    if (accessToken) {
+      bru.setVar("access_token", accessToken);
+      console.log("✅ Login successful! Token saved to access_token");
+    }
+  } else {
+    console.log("❌ Login failed:", res.body);
+  }
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has access token", function() {
+    expect(res.body.data.access_token).to.exist;
+  });
+}
+
+docs {
+  # Login (Get Token) - USER Role
+  
+  Obtiene un token JWT para un usuario con rol USER.
+  Necesario para ejecutar los endpoints de evidencias.
+  
+  ## Credenciales por defecto
+  - Email: user@test.com
+  - Password: User123!
+  
+  ## Output
+  Guarda el `access_token` automáticamente en la variable de entorno.
+}

@@ -1,0 +1,91 @@
+meta {
+  name: List My Motorcycles (HU46) - Success copy
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/motorcycles
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+script:post-response {
+  if (res.status === 200) {
+    var motorcycles = res.body.data;
+    if (motorcycles && motorcycles.length > 0) {
+      var firstMotorcycleId = motorcycles[0].id;
+      bru.setVar("motorcycle_id", firstMotorcycleId);
+      console.log("✅ Found", motorcycles.length, "motorcycle(s)");
+      console.log("💾 Saved first motorcycle_id:", firstMotorcycleId);
+    } else {
+      console.log("⚠️ No motorcycles found for this user");
+      console.log("💡 Register a motorcycle first using 02_register_motorcycle.bru");
+    }
+  }
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.body.success).to.be.true;
+  });
+  
+  test("Response has data array", function() {
+    expect(res.body.data).to.be.an('array');
+  });
+  
+  test("If motorcycles exist, each has required fields", function() {
+    if (res.body.data && res.body.data.length > 0) {
+      var moto = res.body.data[0];
+      expect(moto.id).to.exist;
+      expect(moto.license_plate).to.exist;
+      expect(moto._links).to.exist;
+    }
+  });
+}
+
+docs {
+  # List My Motorcycles (HU46) - Success Case
+  
+  Lista todas las motocicletas del usuario autenticado.
+  
+  ## Prerrequisitos
+  1. **Ejecutar Login primero** (01_login.bru)
+  
+  ## Comportamiento
+  
+  | Escenario | Respuesta |
+  |-----------|-----------|
+  | Usuario con motos | 200 OK + array de motos |
+  | Usuario sin motos | 200 OK + array vacío `[]` |
+  | Token inválido | 401 Unauthorized |
+  
+  ## Flow Recomendado
+  
+  1. Ejecutar este endpoint para ver tus motos
+  2. Copiar el `id` de una moto
+  3. Usar `10_get_motorcycle.bru` con ese ID
+  
+  ## Response Fields (por cada moto)
+  
+  | Campo | Descripción |
+  |-------|-------------|
+  | `id` | ID codificado (hashid) de la motocicleta |
+  | `license_plate` | Placa de la motocicleta |
+  | `year` | Año del modelo (opcional) |
+  | `current_mileage` | Kilometraje actual (opcional) |
+  | `reference` | Info de marca/modelo |
+  | `_links` | Links HATEOAS (self, update, delete, list) |
+}

@@ -1,0 +1,58 @@
+meta {
+  name: Login Dueño de Moto
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/auth/login
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "email": "negro@yopmail.com",
+    "password": "Secret123*"
+  }
+}
+
+script:post-response {
+  if (res.status === 200) {
+    var accessToken = res.body.data.access_token;
+    bru.setVar("user_access_token", accessToken);
+    console.log("✅ Token de dueño guardado en user_access_token");
+    console.log("🔑 Role:", res.body.data.role || "user");
+  } else {
+    console.log("❌ Login fallido:", res.body);
+  }
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has access_token", function() {
+    expect(res.body.data.access_token).to.exist;
+  });
+}
+
+docs {
+  # Login Dueño de Moto
+  
+  Login con un usuario con rol USER (dueño de motocicleta).
+  Necesario para calificar servicios realizados.
+  
+  ## Credenciales
+  - **Email:** negro@yopmail.com
+  - **Password:** Secret123*
+  
+  ## Output
+  Guarda el token en `user_access_token`.
+}

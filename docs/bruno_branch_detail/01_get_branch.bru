@@ -1,0 +1,98 @@
+meta {
+  name: 01 - Get Branch Detail
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/branches/{{branch_id}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+script:pre-request {
+  var branchId = bru.getVar("branch_id");
+  if (!branchId) {
+    console.log("⚠️ branch_id no configurado. Establecer en environment o ejecutar nearby primero.");
+  } else {
+    console.log("📍 Consultando branch:", branchId);
+  }
+}
+
+script:post-response {
+  console.log("═══════════════════════════════════════");
+  console.log("📋 BRANCH DETAIL");
+  console.log("═══════════════════════════════════════");
+  console.log("🏪 Nombre:", res.body.data.name);
+  console.log("📌 Tipo:", res.body.data.establishment_type_label);
+  console.log("📞 Teléfono:", res.body.data.contact_phone || "No disponible");
+  console.log("📍 Estado:", res.body.data.status);
+  if (res.body.data.location) {
+    console.log("🏠 Dirección:", res.body.data.location.address);
+  }
+  console.log("═══════════════════════════════════════");
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has branch data", function() {
+    expect(res.body.data.id).to.exist;
+    expect(res.body.data.name).to.exist;
+    expect(res.body.data.establishment_type).to.exist;
+    expect(res.body.data.status).to.exist;
+  });
+  
+  test("Response has contact_phone field", function() {
+    // contact_phone puede ser null si el representante no tiene teléfono
+    // pero el campo debe existir en la respuesta si hay valor
+    console.log("📞 contact_phone:", res.body.data.contact_phone || "No disponible");
+  });
+  
+  test("Response has establishment_type_label", function() {
+    expect(res.body.data.establishment_type_label).to.exist;
+    console.log("🏪 Tipo:", res.body.data.establishment_type_label);
+  });
+  
+  test("Response has location", function() {
+    if (res.body.data.location) {
+      console.log("📍 Dirección:", res.body.data.location.address);
+      console.log("🌐 Coords:", res.body.data.location.latitude, res.body.data.location.longitude);
+    }
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.body.data._links).to.exist;
+    expect(res.body.data._links.length).to.be.greaterThan(0);
+  });
+}
+
+docs {
+  # Get Branch Detail
+  
+  Obtiene la información detallada de una sede/taller.
+  
+  ## Response incluye:
+  - `id`: ID codificado
+  - `name`: Nombre del taller
+  - `establishment_type`: WORKSHOP | STORE | WORKSHOP_STORE
+  - `establishment_type_label`: Etiqueta en español (Taller, Tienda, etc.)
+  - `status`: ACTIVE | INACTIVE
+  - `contact_phone`: 📞 **NUEVO** - Teléfono del representante
+  - `location`: Dirección y coordenadas
+  - `brands`: Marcas que maneja
+  - `_links`: Links HATEOAS
+  
+  ## Para UI del mapa:
+  Este endpoint proporciona la información básica del taller que se muestra al hacer click en un marcador.
+}

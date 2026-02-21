@@ -1,0 +1,51 @@
+meta {
+  name: Listar Motos del Usuario
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}/motorcycles
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+script:post-response {
+  if (res.status === 200 && res.body.data && res.body.data.length > 0) {
+    var motorcycleId = res.body.data[0].id;
+    bru.setVar("motorcycle_id", motorcycleId);
+    console.log("✅ Motos encontradas:", res.body.data.length);
+    console.log("🏍️ motorcycle_id guardado:", motorcycleId);
+  } else {
+    console.log("⚠️ No se encontraron motos o error:", res.status);
+  }
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has motorcycle data", function() {
+    expect(res.body.data).to.be.an("array");
+  });
+}
+
+docs {
+  # GET /motorcycles - Listar Motos del Usuario
+  
+  Lista las motos del usuario autenticado para obtener el `motorcycle_id` necesario en los siguientes endpoints.
+  
+  ## Prerrequisitos
+  1. Ejecutar Login (01_login_usuario.bru)
+  
+  El `motorcycle_id` de la primera moto se guarda automáticamente.
+}

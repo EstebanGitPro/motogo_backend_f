@@ -1,0 +1,92 @@
+meta {
+  name: Catálogo Días (HU10)
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{base_url}}/schedules/days
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success message", function() {
+    expect(res.body.message).to.exist;
+  });
+  
+  test("Response has days array", function() {
+    expect(res.body.data.days).to.be.an('array');
+  });
+  
+  test("Days array has exactly 7 items", function() {
+    expect(res.body.data.days.length).to.equal(7);
+  });
+  
+  test("First day is Monday (value=1, name=Lunes)", function() {
+    var monday = res.body.data.days[0];
+    expect(monday.value).to.equal(1);
+    expect(monday.name).to.equal("Lunes");
+  });
+  
+  test("Last day is Sunday (value=7, name=Domingo)", function() {
+    var sunday = res.body.data.days[6];
+    expect(sunday.value).to.equal(7);
+    expect(sunday.name).to.equal("Domingo");
+  });
+  
+  test("All days have value and name", function() {
+    res.body.data.days.forEach(function(day) {
+      expect(day.value).to.be.a('number');
+      expect(day.name).to.be.a('string');
+    });
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.body.data._links).to.exist;
+  });
+}
+
+docs {
+  # Catálogo de Días de la Semana (HU10)
+  
+  Obtiene el catálogo de días para configurar horarios.
+  
+  ## Requisitos
+  - Usuario autenticado
+  
+  ## Response esperado
+  ```json
+  {
+    "message": "Catálogo de días de la semana obtenido correctamente.",
+    "data": {
+      "days": [
+        {"value": 1, "name": "Lunes"},
+        {"value": 2, "name": "Martes"},
+        {"value": 3, "name": "Miércoles"},
+        {"value": 4, "name": "Jueves"},
+        {"value": 5, "name": "Viernes"},
+        {"value": 6, "name": "Sábado"},
+        {"value": 7, "name": "Domingo"}
+      ],
+      "_links": [...]
+    }
+  }
+  ```
+  
+  ## Uso
+  Este catálogo se usará en Release 7 para mostrar un dropdown
+  al configurar las horas de apertura/cierre por día.
+}

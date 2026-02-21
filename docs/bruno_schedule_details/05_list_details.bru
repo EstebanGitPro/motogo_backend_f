@@ -1,0 +1,109 @@
+meta {
+  name: Listar Detalles Horario (HU9)
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{base_url}}/branches/{{branch_id}}/schedules/details
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success message", function() {
+    expect(res.body.message).to.exist;
+  });
+  
+  test("Response has details array", function() {
+    expect(res.body.data.details).to.exist;
+    expect(res.body.data.details).to.be.an('array');
+  });
+  
+  test("Details have required fields", function() {
+    if (res.body.data.details.length > 0) {
+      var detail = res.body.data.details[0];
+      expect(detail.id).to.exist;
+      expect(detail.schedule_id).to.exist;
+      expect(detail.day_of_week).to.exist;
+      expect(detail.day_name).to.exist;
+    }
+  });
+  
+  test("Response has HATEOAS _links at list level", function() {
+    expect(res.body.data._links).to.exist;
+    expect(res.body.data._links.length).to.be.greaterThan(0);
+  });
+  
+  test("Has self link for list", function() {
+    var selfLink = res.body.data._links.find(l => l.rel === 'self');
+    expect(selfLink).to.exist;
+    expect(selfLink.method).to.equal('GET');
+  });
+  
+  test("Has create link", function() {
+    var createLink = res.body.data._links.find(l => l.rel === 'create');
+    expect(createLink).to.exist;
+    expect(createLink.method).to.equal('POST');
+  });
+  
+  test("Each detail has HATEOAS links", function() {
+    if (res.body.data.details.length > 0) {
+      var detail = res.body.data.details[0];
+      expect(detail._links).to.exist;
+      expect(detail._links.length).to.be.greaterThan(0);
+    }
+  });
+}
+
+docs {
+  # Listar Detalles de Horario (HU9)
+  
+  Obtiene todas las franjas horarias configuradas para una sede.
+  
+  ## Requisitos
+  - Usuario autenticado con rol `REPRESENTANTE`
+  - `branch_id` de una sede propia
+  
+  ## Response
+  ```json
+  {
+    "success": true,
+    "message": {...},
+    "data": {
+      "details": [
+        {
+          "id": "encoded_id",
+          "schedule_id": "encoded_schedule_id",
+          "day_of_week": 1,
+          "day_name": "Lunes",
+          "opening_time": "08:00",
+          "closing_time": "12:00",
+          "is_closed": false,
+          "active": true,
+          "_links": [...]
+        }
+      ],
+      "_links": [
+        {"rel": "self", "href": "...", "method": "GET"},
+        {"rel": "create", "href": "...", "method": "POST"}
+      ]
+    }
+  }
+  ```
+  
+  ## Ordenamiento
+  Los resultados vienen ordenados por `day_of_week` y luego por `opening_time`.
+}

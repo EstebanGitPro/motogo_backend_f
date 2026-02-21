@@ -1,0 +1,103 @@
+meta {
+  name: Get Cities By Department
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/departments/{{department_id}}/cities
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+}
+
+vars:pre-request {
+  department_id: yVqpAxRGnnCpN4fn1PCy6Zuezqf2TVTb5w7X
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.getBody().success).to.be.true;
+  });
+  
+  test("Response has cities array", function() {
+    expect(res.getBody().data.cities).to.be.an('array');
+  });
+  
+  test("Each city has id and name", function() {
+    const cities = res.getBody().data.cities;
+    if (cities.length > 0) {
+      expect(cities[0].id).to.exist;
+      expect(cities[0].name).to.exist;
+      // Save first city ID for branch registration
+      bru.setEnvVar("city_id", cities[0].id);
+    }
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.getBody().data._links).to.be.an('array');
+  });
+  
+  test("Has self and departments links", function() {
+    const links = res.getBody().data._links;
+    const selfLink = links.find(link => link.rel === 'self');
+    const deptLink = links.find(link => link.rel === 'departments');
+    expect(selfLink).to.exist;
+    expect(deptLink).to.exist;
+  });
+}
+
+docs {
+  # Get Cities By Department
+  
+  Obtiene la lista de ciudades pertenecientes a un departamento específico.
+  Este es un endpoint **público** (no requiere autenticación).
+  
+  ## Uso:
+  Después de que el usuario selecciona un departamento, se usa este endpoint
+  para cargar las ciudades disponibles en ese departamento.
+  
+  ## Endpoint:
+  `GET /motogo/api/v1/departments/{id}/cities`
+  
+  ## Parámetros de ruta:
+  - `id`: UUID del departamento (obtenido del endpoint anterior)
+  
+  ## No requiere autenticación
+  
+  ## Respuestas:
+  - **200**: Lista de ciudades obtenida exitosamente
+  - **404**: Departamento no encontrado
+  - **500**: Error interno del servidor
+  
+  ## Ejemplo de respuesta exitosa:
+  ```json
+  {
+    "success": true,
+    "code": "MOD_L_CIT_EXI_00001",
+    "message": "Ciudades obtenidas",
+    "data": {
+      "cities": [
+        {"id": "uuid-medellin", "name": "Medellín"},
+        {"id": "uuid-envigado", "name": "Envigado"},
+        {"id": "uuid-bello", "name": "Bello"}
+      ],
+      "_links": [
+        {"href": "/motogo/api/v1/departments/{id}/cities", "rel": "self", "method": "GET"},
+        {"href": "/motogo/api/v1/departments", "rel": "departments", "method": "GET"}
+      ]
+    }
+  }
+  ```
+  
+  ## Nota:
+  - Ejecuta primero `01_get_all_departments.bru` para obtener un `department_id` válido
+  - O usa directamente un UUID de departamento de tu base de datos
+}

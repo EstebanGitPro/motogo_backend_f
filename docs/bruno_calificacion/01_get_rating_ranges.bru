@@ -1,0 +1,113 @@
+meta {
+  name: Get Rating Ranges
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/rating-ranges
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.getBody().success).to.be.true;
+  });
+  
+  test("Response has message code", function() {
+    expect(res.getBody().code).to.equal("MOD_MOT_RATE_LIST_EXI_00001");
+  });
+  
+  test("Response has ratings array with 5 items", function() {
+    const ratings = res.getBody().data.ratings;
+    expect(ratings).to.be.an('array');
+    expect(ratings).to.have.lengthOf(5);
+  });
+  
+  test("Each rating has value and label", function() {
+    const ratings = res.getBody().data.ratings;
+    ratings.forEach(r => {
+      expect(r.value).to.be.a('number');
+      expect(r.label).to.be.a('string');
+    });
+  });
+  
+  test("Rating values are 1 to 5", function() {
+    const ratings = res.getBody().data.ratings;
+    const values = ratings.map(r => r.value);
+    expect(values).to.deep.equal([1, 2, 3, 4, 5]);
+  });
+  
+  test("Rating labels are correct", function() {
+    const ratings = res.getBody().data.ratings;
+    const expectedLabels = ["Very bad", "Bad", "Average", "Good", "Excellent"];
+    const labels = ratings.map(r => r.label);
+    expect(labels).to.deep.equal(expectedLabels);
+  });
+  
+  test("Response has HATEOAS links", function() {
+    const links = res.getBody().data._links;
+    expect(links).to.be.an('array');
+    const selfLink = links.find(link => link.rel === 'self');
+    expect(selfLink).to.exist;
+    expect(selfLink.method).to.equal('GET');
+  });
+  
+  test("HATEOAS links include displacements and categories", function() {
+    const links = res.getBody().data._links;
+    const dispLink = links.find(link => link.rel === 'displacements');
+    const catLink = links.find(link => link.rel === 'categories');
+    expect(dispLink).to.exist;
+    expect(catLink).to.exist;
+  });
+}
+
+docs {
+  # Get Rating Ranges (HU48)
+  
+  Obtiene los rangos de calificación válidos para evaluar servicios.
+  Endpoint **público** (no requiere autenticación).
+  
+  ## Rangos:
+  | Valor | Etiqueta |
+  |-------|----------|
+  | 1 | Very bad |
+  | 2 | Bad |
+  | 3 | Average |
+  | 4 | Good |
+  | 5 | Excellent |
+  
+  ## Endpoint:
+  `GET /motogo/api/v1/rating-ranges`
+  
+  ## Ejemplo de respuesta:
+  ```json
+  {
+    "success": true,
+    "code": "MOD_MOT_RATE_LIST_EXI_00001",
+    "data": {
+      "ratings": [
+        {"value": 1, "label": "Very bad"},
+        {"value": 2, "label": "Bad"},
+        {"value": 3, "label": "Average"},
+        {"value": 4, "label": "Good"},
+        {"value": 5, "label": "Excellent"}
+      ],
+      "_links": [
+        {"href": ".../rating-ranges", "rel": "self", "method": "GET"},
+        {"href": ".../engine-displacements", "rel": "displacements", "method": "GET"},
+        {"href": ".../motorcycle-categories", "rel": "categories", "method": "GET"}
+      ]
+    }
+  }
+  ```
+}

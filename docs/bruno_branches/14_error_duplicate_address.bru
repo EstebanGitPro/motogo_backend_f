@@ -1,0 +1,61 @@
+meta {
+  name: ERROR - Duplicate Address
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{base_url}}/branches
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "name": "Otro Taller Misma Dirección",
+    "establishment_type": "STORE",
+    "location": {
+      "department_id": "a1b2c3d4-1111-4000-8000-000000000001",
+      "city_id": "b2c3d4e5-2222-4000-8000-000000000001",
+      "address": "Calle 50 #10-20, Barrio Centro"
+    }
+  }
+}
+
+tests {
+  test("Status code is 409 Conflict", function() {
+    expect(res.status).to.equal(409);
+  });
+  
+  test("Response has error about duplicate", function() {
+    expect(res.body.success).to.be.false;
+  });
+}
+
+docs {
+  # Error Case: Duplicate Address
+  
+  Prueba que el servidor rechaza direcciones duplicadas.
+  
+  ## Prerrequisito
+  - **Ejecutar primero** `02_register_branch.bru` para crear una sede con esta dirección
+  
+  ## Dirección Duplicada
+  - `Calle 50 #10-20, Barrio Centro` (ya existe)
+  
+  ## Comportamiento Esperado
+  - **Status**: 409 Conflict
+  - **Error**: Dirección ya registrada
+  
+  ## Nota
+  La comparación es case-insensitive y ignora espacios al inicio/final.
+}

@@ -1,0 +1,50 @@
+meta {
+  name: Login (Auth)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/auth/login
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "email": "amordemadre@yopmail.com",
+    "password": "Secret123*"
+  }
+}
+
+script:post-response {
+  if (res.status === 200 && res.body.data && res.body.data.access_token) {
+    bru.setEnvVar("access_token", res.body.data.access_token);
+    console.log("✅ Token guardado para siguientes requests");
+  }
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has access token", function() {
+    expect(res.body.data.access_token).to.exist;
+  });
+}
+
+docs {
+  # Login para Schedule Details
+  
+  Autentica al usuario representante para poder ejecutar las pruebas.
+  
+  ## Credenciales de prueba
+  - Email: representante@motogo.com
+  - Password: Test123!
+}

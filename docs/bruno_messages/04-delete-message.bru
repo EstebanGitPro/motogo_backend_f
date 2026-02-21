@@ -1,0 +1,39 @@
+meta {
+  name: 04 - Delete Message
+  type: http
+  seq: 6
+}
+
+delete {
+  url: {{base_url}}/admin/messages/1
+  body: none
+  auth: none
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success message", function() {
+    expect(res.body.message).to.include('eliminado');
+  });
+}
+
+docs {
+  # Delete Message
+  
+  Elimina un mensaje del sistema.
+  
+  ## URL Parameter
+  - `id`: ID del mensaje a eliminar
+  
+  ## Response Success (200)
+  - Mensaje de confirmación
+  
+  ## Response Error (404)
+  - Mensaje no encontrado
+  
+  ## Nota
+  - Después de eliminar, un GET al mismo ID debe retornar 404
+}

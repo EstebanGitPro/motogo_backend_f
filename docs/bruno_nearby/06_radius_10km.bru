@@ -1,0 +1,51 @@
+meta {
+  name: 06 - Change Radius (10km)
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{base_url}}/branches/nearby?lat={{latitude}}&lng={{longitude}}&radius=10
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+script:pre-request {
+  console.log("📏 Buscando con radio de 10 km...");
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Radius in response is 10", function() {
+    expect(res.body.data.radius_km).to.equal(10);
+  });
+  
+  test("All branches within 10km", function() {
+    var branches = res.body.data.branches;
+    branches.forEach(function(branch) {
+      expect(branch.distance_km).to.be.at.most(10);
+    });
+  });
+}
+
+script:post-response {
+  bru.setVar("count_10km", res.body.data.count);
+  console.log("📍 Con 10km: encontradas", res.body.data.count, "sedes");
+}
+
+docs {
+  # Change Radius - 10km
+  
+  Búsqueda con radio de 10 kilómetros.
+}

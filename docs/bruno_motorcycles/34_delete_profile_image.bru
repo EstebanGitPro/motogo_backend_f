@@ -1,0 +1,69 @@
+meta {
+  name: Delete Profile Image (HU39)
+  type: http
+  seq: 20
+}
+
+delete {
+  url: {{base_url}}/motorcycles/{{motorcycle_id}}/profile-image
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+script:pre-request {
+  var motorcycleId = bru.getVar("motorcycle_id");
+  if (!motorcycleId) {
+    console.log("⚠️ motorcycle_id not set. Register a motorcycle first!");
+  }
+}
+
+script:post-response {
+  if (res.status === 200) {
+    console.log("✅ Profile image deleted successfully!");
+    console.log("📋 Motorcycle:", res.body.data.motorcycle_id);
+  }
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.body.success).to.be.true;
+  });
+  
+  test("Response has motorcycle_id", function() {
+    expect(res.body.data.motorcycle_id).to.exist;
+  });
+  
+  test("Profile image URL is empty after deletion", function() {
+    expect(res.body.data.profile_image_url).to.be.oneOf([null, undefined, ""]);
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.body.data._links).to.exist;
+  });
+}
+
+docs {
+  # Delete Profile Image (HU39)
+  
+  ## Description
+  Removes the profile image from a motorcycle.
+  
+  ## Response
+  The profile image URL will be null/empty after deletion.
+  
+  ## Prerequisites
+  1. Run Login first
+  2. Have a motorcycle with an existing profile image
+}

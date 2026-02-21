@@ -1,0 +1,51 @@
+meta {
+  name: ERROR - Missing Location
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{base_url}}/branches
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "name": "Taller Sin Ubicación",
+    "establishment_type": "WORKSHOP",
+    "brands": ["f6a7b8c9-6666-4000-8000-000000000001"]
+  }
+}
+
+tests {
+  test("Status code is 400 Bad Request", function() {
+    expect(res.status).to.equal(400);
+  });
+  
+  test("Response has error about location", function() {
+    expect(res.body.success).to.be.false;
+  });
+}
+
+docs {
+  # Error Case: Missing Location
+  
+  Prueba que el servidor rechaza una solicitud sin el campo `location`.
+  
+  ## Comportamiento Esperado
+  - **Status**: 400 Bad Request
+  - **Error**: Campo `location` es requerido
+  
+  ## Campos Omitidos
+  - `location` (ahora es obligatorio)
+}

@@ -1,0 +1,104 @@
+meta {
+  name: Test Geocoding
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{base_url}}/location/geocode
+  body: json
+  auth: none
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "address": "Carrera 45 # 32-12",
+    "city_name": "Medellín",
+    "department_name": "Antioquia"
+  }
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.getBody().success).to.be.true;
+  });
+  
+  test("Response has coordinates or error", function() {
+    const data = res.getBody().data;
+    if (data.geocoded) {
+      expect(data.latitude).to.exist;
+      expect(data.longitude).to.exist;
+      console.log(`Coordinates: ${data.latitude}, ${data.longitude}`);
+    } else {
+      expect(data.error).to.exist;
+      console.log(`Geocoding failed: ${data.error}`);
+    }
+  });
+  
+  test("Response has formatted address", function() {
+    const data = res.getBody().data;
+    if (data.geocoded) {
+      expect(data.formatted_address).to.exist;
+    }
+  });
+}
+
+docs {
+  # Test Geocoding Endpoint
+  
+  Endpoint de prueba para verificar el servicio de geocodificación 
+  sin necesidad de crear una sede completa.
+  
+  ## Endpoint:
+  `POST /motogo/api/v1/location/geocode`
+  
+  ## No requiere autenticación
+  (Solo disponible en entorno local/desarrollo)
+  
+  ## Body:
+  ```json
+  {
+    "address": "Carrera 45 # 32-12",
+    "city_name": "Medellín",
+    "department_name": "Antioquia"
+  }
+  ```
+  
+  ## Respuesta exitosa:
+  ```json
+  {
+    "success": true,
+    "data": {
+      "geocoded": true,
+      "latitude": 6.2442,
+      "longitude": -75.5812,
+      "formatted_address": "Carrera 45 # 32-12, Medellín, Antioquia, Colombia",
+      "confidence": 0.85
+    }
+  }
+  ```
+  
+  ## Respuesta fallida:
+  ```json
+  {
+    "success": true,
+    "data": {
+      "geocoded": false,
+      "error": "No results found for the given address"
+    }
+  }
+  ```
+  
+  ## Nota:
+  Este endpoint usa el servicio OpenCage configurado en el backend.
+  Útil para probar direcciones antes de registrar sedes.
+}

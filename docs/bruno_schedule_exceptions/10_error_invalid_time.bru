@@ -1,0 +1,48 @@
+meta {
+  name: Error - Hora Inválida
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{base_url}}/branches/{{branch_id}}/schedules/exceptions
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "exception_date": "2026-12-31",
+    "opening_time": "18:00",
+    "closing_time": "09:00",
+    "is_closed": false
+  }
+}
+
+tests {
+  test("Status code is 400 Bad Request", function() {
+    expect(res.status).to.equal(400);
+  });
+  
+  test("Error message indicates invalid time", function() {
+    expect(res.body.message).to.exist;
+  });
+}
+
+docs {
+  # Error - Hora Inválida
+  
+  Intenta crear una excepción con hora de cierre antes de apertura.
+  
+  ## Expected Response
+  - **400 Bad Request**: Hora de cierre debe ser posterior a hora de apertura
+}

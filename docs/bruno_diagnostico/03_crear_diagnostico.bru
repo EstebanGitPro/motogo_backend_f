@@ -1,0 +1,105 @@
+meta {
+  name: Crear Diagnóstico (HU11)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{base_url}}/motorcycles/{{motorcycle_id}}/diagnostics
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "branch_id": "{{branch_id}}",
+    "problem_description": "La moto presenta ruido en el motor al acelerar",
+    "evidence_urls": [
+      "https://firebasestorage.googleapis.com/v0/b/motogo-app.appspot.com/o/diagnostics%2Fmotor-ruido-1.jpg?alt=media",
+      "https://firebasestorage.googleapis.com/v0/b/motogo-app.appspot.com/o/diagnostics%2Fmotor-ruido-2.jpg?alt=media"
+    ]
+  }
+}
+
+script:pre-request {
+  var motoId = bru.getVar("motorcycle_id");
+  var branchId = bru.getVar("branch_id");
+  if (!motoId || motoId === "REPLACE_WITH_MOTORCYCLE_ID") {
+    console.log("⚠️ motorcycle_id no configurado!");
+    console.log("💡 Ejecuta 02_listar_motos.bru primero");
+  }
+  if (!branchId || branchId === "REPLACE_WITH_BRANCH_ID") {
+    console.log("⚠️ branch_id no configurado!");
+    console.log("💡 Configura branch_id en el environment");
+  }
+}
+
+script:post-response {
+  if (res.status === 200 || res.status === 201) {
+    var diagnosticId = res.body.data.id;
+    bru.setVar("diagnostic_id", diagnosticId);
+    console.log("✅ Diagnóstico creado! ID:", diagnosticId);
+  } else {
+    console.log("❌ Error:", res.body);
+  }
+}
+
+tests {
+  test("Status code is 200 or 201", function() {
+    expect([200, 201]).to.include(res.status);
+  });
+  
+  test("Response has success", function() {
+    expect(res.body.success).to.be.true;
+  });
+  
+  test("Response has diagnostic data", function() {
+    expect(res.body.data.id).to.exist;
+    expect(res.body.data.motorcycle_id).to.exist;
+    expect(res.body.data.branch_id).to.exist;
+    expect(res.body.data.date).to.exist;
+  });
+  
+  test("Response has problem_description", function() {
+    expect(res.body.data.problem_description).to.exist;
+  });
+  
+  test("Response has evidence array", function() {
+    expect(res.body.data.evidence).to.be.an("array");
+    expect(res.body.data.evidence.length).to.equal(2);
+  });
+}
+
+docs {
+  # POST /motorcycles/:id/diagnostics - Crear Diagnóstico (HU11)
+  
+  Crea un nuevo diagnóstico para una motocicleta, opcionalmente con evidencias fotográficas.
+  
+  ## Prerrequisitos
+  1. Ejecutar Login (01_login_usuario.bru)
+  2. Ejecutar Listar Motos (02_listar_motos.bru) → motorcycle_id
+  3. Configurar branch_id en el environment
+  
+  ## Request Body
+  
+  | Campo | Tipo | Requerido | Descripción |
+  |-------|------|-----------|-------------|
+  | `branch_id` | string | ✅ | ID ofuscado de la sede |
+  | `problem_description` | string | ❌ | Descripción del problema |
+  | `evidence_urls` | []string | ❌ | URLs de las fotos de evidencia |
+  
+  ## Respuestas
+  - **200/201**: Diagnóstico creado con evidencias
+  - **400**: Datos inválidos
+  - **401**: Token inválido
+  - **404**: Moto o sede no encontrada
+}

@@ -1,0 +1,99 @@
+meta {
+  name: Update Profile (HU52)
+  type: http
+  seq: 11
+}
+
+put {
+  url: {{base_url}}/persons/me
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJuNzF6Sk9reGRvZE9wTXp2eEtMYXRsU2N0RnZkbDRfVjNZQktaekQ1LWh3In0.eyJleHAiOjE3Njc0Njc2MTgsImlhdCI6MTc2NzQ2NzMxOCwianRpIjoib25ydHJvOmQ1YjI3Y2IzLTc3MjUtMGM3NC00YWQ0LTc2OTVkMmY3ZDFjZiIsImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODA4MC9yZWFsbXMvbW90b2dvIiwiYXVkIjoiYWNjb3VudCIsInN1YiI6ImUyZGQ1YWIyLWE1M2YtNDM2OC1hZjBiLTM5MWViMTc5M2VmYSIsInR5cCI6IkJlYXJlciIsImF6cCI6InN0aWZsZXIiLCJzaWQiOiI2ZGIyYWQxMi1mODhmLTYyYzQtYjA2Yy0zN2I4NTIxZDc5Y2UiLCJhY3IiOiIxIiwiYWxsb3dlZC1vcmlnaW5zIjpbImh0dHA6Ly9sb2NhbGhvc3Q6ODA4NSJdLCJyZWFsbV9hY2Nlc3MiOnsicm9sZXMiOlsiZGVmYXVsdC1yb2xlcy1tb3RvZ28iLCJvZmZsaW5lX2FjY2VzcyIsInVtYV9hdXRob3JpemF0aW9uIiwidXNlciJdfSwicmVzb3VyY2VfYWNjZXNzIjp7ImFjY291bnQiOnsicm9sZXMiOlsibWFuYWdlLWFjY291bnQiLCJtYW5hZ2UtYWNjb3VudC1saW5rcyIsInZpZXctcHJvZmlsZSJdfX0sInNjb3BlIjoib3BlbmlkIHByb2ZpbGUgZW1haWwiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwibmFtZSI6Ik51ZWxpdG8gRGVtbyIsInByZWZlcnJlZF91c2VybmFtZSI6ImFtb3JkZW1hZHJlQHlvcG1haWwuY29tIiwiZ2l2ZW5fbmFtZSI6Ik51ZWxpdG8iLCJmYW1pbHlfbmFtZSI6IkRlbW8iLCJlbWFpbCI6ImFtb3JkZW1hZHJlQHlvcG1haWwuY29tIn0.p180M4NpdLi-s6gB1t6uBGcQFssTCcIGtOI-xocuI9J7y9NPREHtEFKLd2_WYW9uTc3z37QpFih3Wjq_d7_ISBK2ayAqBeQ81Vk2uP5RQ3IctFv3N6OHQqJmAUpbeoNgnsha7qVR-KZnWiQGkiwKa5rkYmTccY8z6vUNHO3mAVzvE_2kv59HjD4H1ztPNXzcHA70eKscd3QBnetUArHozJMZRVpqjNiSUEPVs6yoADUrz3hW6gvEaGwfIjb_5mcX9cTY4vgoQrR5OkeShQPCZVmr-3kYAKTS0MSwJMUgzgYYYdDz7Ncj84NfdeIIHJx37c19IzQbi8vzDOADBWIAlA
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "first_name": "Nuelo",
+    "last_name": "Demoleitor",
+    "phone_number": "3009998877"
+  }
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.getBody().success).to.be.true;
+  });
+  
+  test("Response has updated data", function() {
+    expect(res.getBody().data.first_name).to.equal("Juan Carlos");
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.getBody().data._links).to.exist;
+  });
+}
+
+docs {
+  # Update Profile (HU52)
+  
+  Permite a un usuario autenticado modificar su información personal.
+  
+  ## Prerrequisitos:
+  1. **Ejecutar Login primero** para obtener el `access_token`
+  2. Copiar el `access_token` de la respuesta del login
+  3. Reemplazar `PEGA_AQUI_TU_ACCESS_TOKEN` en el header Authorization
+  
+  ## Campos Modificables (todos opcionales):
+  - `identity_number`: Número de identificación
+  - `first_name`: Primer nombre
+  - `last_name`: Primer apellido
+  - `second_last_name`: Segundo apellido
+  - `phone_number`: Número de teléfono
+  
+  > ⚠️ **Nota:** Al menos un campo es requerido para la actualización.
+  
+  ## Campos NO Modificables (por este endpoint):
+  - `email`: Se modifica por otro proceso
+  - `password`: Usar PUT /persons/me/password
+  - `role`: No modificable por el usuario
+  
+  ## Respuestas:
+  - **200**: Perfil actualizado exitosamente
+  - **400**: Formato inválido o sin campos a actualizar
+  - **401**: Token inválido o expirado
+  - **404**: Usuario no encontrado
+  
+  ## Ejemplo de respuesta exitosa:
+  ```json
+  {
+    "success": true,
+    "message": {
+      "codigo_mensaje": "MOD_P_UPD_EXI_00002",
+      "titulo": "Persona actualizada",
+      "contenido": "La información fue actualizada."
+    },
+    "data": {
+      "id": "xyz123...",
+      "identity_number": "1234567890",
+      "email": "usuario@email.com",
+      "first_name": "Juan Carlos",
+      "last_name": "Pérez",
+      "phone_number": "3009998877",
+      "role": "representative",
+      "_links": [...]
+    }
+  }
+  ```
+}

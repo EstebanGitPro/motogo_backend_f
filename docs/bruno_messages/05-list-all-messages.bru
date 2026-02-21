@@ -1,0 +1,52 @@
+meta {
+  name: 05 - List All Messages
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{base_url}}/admin/messages
+  body: none
+  auth: none
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has messages array", function() {
+    expect(res.body.messages).to.be.an('array');
+  });
+  
+  test("Response has count", function() {
+    expect(res.body.count).to.exist;
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.body._links).to.be.an('array');
+  });
+  
+  test("Has self and create links", function() {
+    const selfLink = res.body._links.find(link => link.rel === 'self');
+    const createLink = res.body._links.find(link => link.rel === 'create');
+    expect(selfLink).to.exist;
+    expect(createLink).to.exist;
+  });
+}
+
+docs {
+  # List All Messages
+  
+  Obtiene todos los mensajes del sistema sin filtros.
+  
+  ## Response
+  - `messages`: Array de mensajes
+  - `count`: Número total de mensajes
+  - `_links`: Links HATEOAS (self, create)
+  
+  ## Cada mensaje incluye
+  - id, code, type, category, module
+  - title, content, active
+  - created_at, updated_at
+}

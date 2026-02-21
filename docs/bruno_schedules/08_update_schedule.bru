@@ -1,0 +1,115 @@
+meta {
+  name: Modificar Horario (HU31)
+  type: http
+  seq: 8
+}
+
+put {
+  url: {{base_url}}/branches/{{branch_id}}/schedules
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "active": true,
+    "start_date": "2026-01-20",
+    "end_date": "2027-12-31"
+  }
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success message", function() {
+    expect(res.body.message).to.exist;
+  });
+  
+  test("Response has updated schedule data", function() {
+    expect(res.body.data).to.exist;
+  });
+  
+  test("Response has start_date", function() {
+    expect(res.body.data.start_date).to.exist;
+  });
+  
+  test("Response has end_date", function() {
+    expect(res.body.data.end_date).to.exist;
+  });
+  
+  test("start_date matches request", function() {
+    expect(res.body.data.start_date).to.equal("2026-01-20");
+  });
+}
+
+docs {
+  # Modificar Horario de Sede (HU31)
+  
+  Actualiza la configuración de horario para una sede, incluyendo:
+  - Estado activo/inactivo
+  - Fecha de inicio de vigencia
+  - Fecha de fin de vigencia
+  
+  ## Requisitos
+  - Usuario autenticado con rol REPRESENTATIVE
+  - Ser el dueño de la sede
+  - Sede con horario existente
+  
+  ## Variables requeridas
+  - `branch_id`: ID encoded de la sede
+  
+  ## Body Request
+  ```json
+  {
+    "active": true,
+    "start_date": "2026-01-20",
+    "end_date": "2027-12-31"
+  }
+  ```
+  
+  ### Campos
+  | Campo | Tipo | Requerido | Descripción |
+  |-------|------|-----------|-------------|
+  | active | boolean | ❌ | Activar/desactivar el horario |
+  | start_date | string (YYYY-MM-DD) | ❌ | Fecha inicio vigencia |
+  | end_date | string (YYYY-MM-DD) | ❌ | Fecha fin vigencia (null = indefinido) |
+  
+  ## Response esperado
+  ```json
+  {
+    "message": "Horario de atención modificado correctamente.",
+    "data": {
+      "id": "encodedScheduleId",
+      "branch_id": "encodedBranchId",
+      "active": true,
+      "start_date": "2026-01-20",
+      "end_date": "2027-12-31",
+      "_links": [
+        {"rel": "self", "href": "...", "method": "GET"},
+        {"rel": "delete", "href": "...", "method": "DELETE"}
+      ]
+    }
+  }
+  ```
+  
+  ## Validaciones
+  - `end_date` debe ser >= `start_date` (si se proporciona)
+  - Formato de fecha: YYYY-MM-DD
+  
+  ## Códigos de respuesta
+  - **200**: Horario modificado exitosamente
+  - **400**: Datos de entrada inválidos
+  - **403**: No tiene permisos para modificar este horario
+  - **404**: Horario no encontrado
+}

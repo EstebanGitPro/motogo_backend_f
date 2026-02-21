@@ -1,0 +1,87 @@
+meta {
+  name: Get Public Contact (HU55)
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{base_url}}/persons/{{person_id}}/contact
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+}
+
+vars:pre-request {
+  person_id: PEGA_AQUI_EL_ID_OFUSCADO
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.getBody().success).to.be.true;
+  });
+  
+  test("Response has phone_number", function() {
+    expect(res.getBody().data.phone_number).to.exist;
+  });
+  
+  test("Response does NOT have sensitive data", function() {
+    expect(res.getBody().data.email).to.not.exist;
+    expect(res.getBody().data.identity_number).to.not.exist;
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.getBody().data._links).to.exist;
+  });
+}
+
+docs {
+  # Get Public Contact (HU55)
+  
+  Permite consultar la información de contacto pública de un representante de sede.
+  Este es un endpoint **público** (no requiere autenticación).
+  
+  ## Uso:
+  Los motociclistas usan este endpoint para obtener el número de contacto 
+  del representante de una sede.
+  
+  ## Parámetros:
+  - `person_id`: ID ofuscado del representante (obtenido de la información de la sede)
+  
+  ## Información Retornada:
+  - `phone_number`: Número de teléfono del representante
+  
+  ## Información NO Retornada (privada):
+  - `email`: Privado
+  - `identity_number`: Documento sensible
+  - `keycloak_user_id`: Interno del sistema
+  
+  ## Respuestas:
+  - **200**: Información obtenida exitosamente
+  - **400**: ID inválido o mal formateado
+  - **404**: Persona no encontrada
+  
+  ## Ejemplo de respuesta exitosa:
+  ```json
+  {
+    "success": true,
+    "message": {
+      "codigo_mensaje": "MOD_P_CONTACT_EXI_00001",
+      "titulo": "Información de contacto obtenida",
+      "contenido": "Se ha obtenido la información de contacto del representante."
+    },
+    "data": {
+      "phone_number": "3001234567",
+      "_links": [
+        {"href": ".../persons/xyz123/contact", "rel": "self", "method": "GET"}
+      ]
+    }
+  }
+  ```
+}

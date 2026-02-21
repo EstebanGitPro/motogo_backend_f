@@ -1,0 +1,54 @@
+meta {
+  name: 05 - Change Radius (5km)
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{base_url}}/branches/nearby?lat={{latitude}}&lng={{longitude}}&radius=5
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+script:pre-request {
+  console.log("📏 Buscando con radio de 5 km...");
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Radius in response is 5", function() {
+    expect(res.body.data.radius_km).to.equal(5);
+  });
+  
+  test("All branches within 5km", function() {
+    var branches = res.body.data.branches;
+    branches.forEach(function(branch) {
+      expect(branch.distance_km).to.be.at.most(5);
+    });
+  });
+}
+
+script:post-response {
+  bru.setVar("count_5km", res.body.data.count);
+  console.log("📍 Con 5km: encontradas", res.body.data.count, "sedes");
+}
+
+docs {
+  # Change Radius - 5km
+  
+  Búsqueda con radio de 5 kilómetros.
+  
+  ## Comparar con otros radios
+  Ejecuta este test y luego 06 (10km) y 07 (20km) para ver cómo el count aumenta.
+}

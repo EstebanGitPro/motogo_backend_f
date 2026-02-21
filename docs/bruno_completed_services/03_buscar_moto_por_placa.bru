@@ -1,0 +1,94 @@
+meta {
+  name: Buscar Moto por Placa (Helper)
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}/motorcycles/lookup?plate={{license_plate}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+script:pre-request {
+  var plate = bru.getVar("license_plate");
+  if (!plate || plate === "REPLACE_WITH_PLATE") {
+    console.log("⚠️ license_plate no configurado!");
+    console.log("💡 Configura license_plate en el environment (ej: ABC123)");
+  }
+}
+
+script:post-response {
+  if (res.status === 200) {
+    var moto = res.body.data;
+    bru.setVar("motorcycle_id", moto.id);
+    console.log("═══════════════════════════════════════");
+    console.log("✅ MOTO ENCONTRADA");
+    console.log("═══════════════════════════════════════");
+    console.log("🏍️ motorcycle_id:", moto.id);
+    console.log("📋 Placa:", moto.license_plate);
+    console.log("🏭 Referencia:", (moto.reference ? moto.reference.brand_name + " " + moto.reference.model : "N/A"));
+    console.log("📅 Año:", moto.year || "N/A");
+    console.log("");
+    
+    if (moto.diagnostics && moto.diagnostics.length > 0) {
+      console.log("🩺 DIAGNÓSTICOS (" + moto.diagnostics.length + "):");
+      moto.diagnostics.forEach(function(d, i) {
+        console.log("  [" + i + "] diagnostic_id:", d.id);
+        console.log("      Problema:", d.problem_description || "(sin descripción)");
+        console.log("      Fecha:", d.date);
+      });
+      bru.setVar("diagnostic_id", moto.diagnostics[0].id);
+      console.log("");
+      console.log("💡 diagnostic_id guardado (primer diagnóstico):", moto.diagnostics[0].id);
+    } else {
+      console.log("ℹ️ Sin diagnósticos registrados");
+    }
+    
+    console.log("═══════════════════════════════════════");
+    console.log("📌 COPIAR PARA EL REQUEST DE REGISTRO:");
+    console.log("   motorcycle_id → " + moto.id);
+    console.log("═══════════════════════════════════════");
+  } else if (res.status === 403) {
+    console.log("🚫 Sede no autorizada para consultar esta motocicleta");
+  } else if (res.status === 404) {
+    console.log("❌ Moto no encontrada con placa:", bru.getVar("license_plate"));
+  } else {
+    console.log("❌ Error:", res.status, res.body);
+  }
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has motorcycle data", function() {
+    expect(res.body.data.id).to.exist;
+    expect(res.body.data.license_plate).to.exist;
+  });
+}
+
+docs {
+  # Buscar Moto por Placa (Helper)
+  
+  Busca una motocicleta por su placa y guarda el `motorcycle_id` automáticamente.
+  También guarda el `diagnostic_id` del primer diagnóstico (si existe).
+  
+  ## Prerrequisitos
+  1. Ejecutar Login Representante (01_login_representante.bru)
+  2. Configurar `license_plate` en el environment
+  3. La sede del representante debe tener permiso activo para esa moto
+  
+  ## Variables que guarda
+  - `motorcycle_id` → ID ofuscado de la motocicleta
+  - `diagnostic_id` → ID del primer diagnóstico (si existe)
+}

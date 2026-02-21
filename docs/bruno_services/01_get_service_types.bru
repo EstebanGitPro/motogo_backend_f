@@ -1,0 +1,99 @@
+meta {
+  name: Get All Service Types
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/service-types
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.getBody().success).to.be.true;
+  });
+  
+  test("Response has types array", function() {
+    expect(res.getBody().data.types).to.be.an('array');
+  });
+  
+  test("Has 8 service types", function() {
+    expect(res.getBody().data.types).to.have.length(8);
+  });
+  
+  test("Each type has value", function() {
+    const types = res.getBody().data.types;
+    types.forEach(t => {
+      expect(t.value).to.exist;
+    });
+  });
+  
+  test("Includes Mantenimiento type", function() {
+    const types = res.getBody().data.types;
+    const maintenance = types.find(t => t.value === 'Mantenimiento');
+    expect(maintenance).to.exist;
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.getBody().data._links).to.be.an('array');
+  });
+}
+
+docs {
+  # Get All Service Types (HU75)
+  
+  Obtiene la lista completa de tipos de servicio disponibles en el sistema.
+  Este es un endpoint **público** (no requiere autenticación).
+  
+  ## Uso:
+  Los usuarios usan este endpoint para obtener los tipos de servicio disponibles
+  para filtrar el catálogo de servicios.
+  
+  ## Endpoint:
+  `GET /motogo/api/v1/service-types`
+  
+  ## No requiere autenticación
+  
+  ## Respuestas:
+  - **200**: Lista de tipos de servicio obtenida exitosamente
+  - **500**: Error interno del servidor
+  
+  ## Ejemplo de respuesta exitosa:
+  ```json
+  {
+    "success": true,
+    "code": "MOD_S_TYPES_EXI_00001",
+    "message": "Lista de tipos de servicio recuperada exitosamente.",
+    "data": {
+      "types": [
+        {"value": "Mantenimiento"},
+        {"value": "Reparación"},
+        {"value": "Llantas"},
+        {"value": "Diagnóstico"},
+        {"value": "Estética"},
+        {"value": "Accesorios"},
+        {"value": "Eléctrico"},
+        {"value": "Legal"}
+      ],
+      "_links": [
+        {"href": ".../service-types", "rel": "self", "method": "GET"},
+        {"href": ".../services", "rel": "services", "method": "GET"}
+      ]
+    }
+  }
+  ```
+  
+  ## HATEOAS Links:
+  - `self`: URL para obtener los tipos de servicio
+  - `services`: URL para listar el catálogo de servicios
+}

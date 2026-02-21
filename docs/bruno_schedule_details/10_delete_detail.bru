@@ -1,0 +1,56 @@
+meta {
+  name: Eliminar Detalle Horario (HU8)
+  type: http
+  seq: 10
+}
+
+delete {
+  url: {{base_url}}/schedule-details/{{detail_id}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success message", function() {
+    expect(res.body.message).to.exist;
+  });
+  
+  test("Response has navigation links", function() {
+    expect(res.body.data._links).to.exist;
+  });
+  
+  test("Has list link for next action", function() {
+    var listLink = res.body.data._links.find(l => l.rel === 'details-list');
+    expect(listLink).to.exist;
+  });
+}
+
+docs {
+  # Eliminar Detalle de Horario (HU8)
+  
+  Elimina permanentemente una franja horaria.
+  
+  ## Requisitos
+  - Usuario autenticado con rol `REPRESENTANTE`
+  - `detail_id` de un detalle perteneciente a una sede propia
+  
+  ## Response
+  - Retorna enlaces HATEOAS para navegación post-eliminación
+  
+  ## Response Codes
+  - **200**: Franja horaria eliminada
+  - **403**: No autorizado (sede no pertenece al representante)
+  - **404**: Detalle horario no encontrado
+}
