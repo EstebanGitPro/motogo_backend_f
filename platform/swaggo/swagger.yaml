@@ -292,9 +292,17 @@ definitions:
     type: object
   handlers.CompletedServiceItemResponse:
     properties:
+      comment:
+        type: string
       id:
         type: string
+      rated_at:
+        type: string
+      rating:
+        type: integer
       service_id:
+        type: string
+      service_name:
         type: string
     type: object
   handlers.CompletedServiceResponse:
@@ -352,10 +360,6 @@ definitions:
     properties:
       branch_id:
         type: string
-      evidence_urls:
-        items:
-          type: string
-        type: array
       problem_description:
         type: string
     required:
@@ -420,17 +424,6 @@ definitions:
       name:
         type: string
     type: object
-  handlers.DiagnosticEvidenceResponse:
-    properties:
-      created_at:
-        type: string
-      description:
-        type: string
-      id:
-        type: string
-      image_url:
-        type: string
-    type: object
   handlers.DiagnosticPermissionResponse:
     properties:
       _links:
@@ -456,10 +449,6 @@ definitions:
         type: string
       date:
         type: string
-      evidence:
-        items:
-          $ref: '#/definitions/handlers.DiagnosticEvidenceResponse'
-        type: array
       id:
         type: string
       motorcycle_id:
@@ -826,6 +815,10 @@ definitions:
         type: string
       profile_image_url:
         type: string
+      service_names:
+        items:
+          type: string
+        type: array
     type: object
   handlers.NearbyBranchesResponse:
     properties:
@@ -908,6 +901,15 @@ definitions:
         type: array
       phone_number:
         type: string
+    type: object
+  handlers.RateServiceItemRequest:
+    properties:
+      comment:
+        type: string
+      rating:
+        type: integer
+    required:
+    - rating
     type: object
   handlers.RatingRangeItemResponse:
     properties:
@@ -1212,6 +1214,8 @@ definitions:
     type: object
   handlers.UpdateStatusRequest:
     properties:
+      final_price:
+        type: number
       status:
         type: string
     required:
@@ -2618,6 +2622,61 @@ paths:
       security:
       - BearerAuth: []
       summary: Delete a completed service
+  /completed-services/{id}/items/{itemId}/rating:
+    post:
+      consumes:
+      - application/json
+      description: Submits a rating (1-5) and optional comment for a completed service
+        item. Comments are moderated.
+      parameters:
+      - description: Completed service ID (obfuscated)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Service item ID (obfuscated)
+        in: path
+        name: itemId
+        required: true
+        type: string
+      - description: Rating data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.RateServiceItemRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Rating created
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "400":
+          description: Invalid rating or already rated
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "404":
+          description: Service item not found
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "409":
+          description: Service not finalized
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: Rate a completed service item
+      tags:
+      - Ratings
   /completed-services/{id}/status:
     patch:
       consumes:
@@ -3437,8 +3496,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Creates a diagnostic request for a motorcycle. Optionally includes
-        evidence photo URLs.
+      description: Creates a diagnostic request for a motorcycle.
       parameters:
       - description: Motorcycle ID (obfuscated)
         in: path
@@ -3484,7 +3542,7 @@ paths:
       summary: Create motorcycle diagnostic
   /motorcycles/{id}/diagnostics/{diagnosticId}:
     delete:
-      description: Deletes a diagnostic and its evidence. Only the owner can delete.
+      description: Deletes a diagnostic. Only the owner can delete.
       parameters:
       - description: Motorcycle ID (obfuscated)
         in: path
@@ -4463,6 +4521,40 @@ paths:
       summary: Get all services
       tags:
       - Services
+  /services/{id}/reviews:
+    get:
+      description: Returns aggregated reviews (average, breakdown, individual reviews)
+        for a service type
+      parameters:
+      - description: Service ID (obfuscated)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Reviews retrieved
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "400":
+          description: Invalid service ID
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: Get reviews for a service type
+      tags:
+      - Ratings
 securityDefinitions:
   BearerAuth:
     description: Type "Bearer" followed by a space and JWT token.

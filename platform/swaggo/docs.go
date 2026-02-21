@@ -2193,6 +2193,89 @@ const docTemplate = `{
                 }
             }
         },
+        "/completed-services/{id}/items/{itemId}/rating": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Submits a rating (1-5) and optional comment for a completed service item. Comments are moderated.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Ratings"
+                ],
+                "summary": "Rate a completed service item",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Completed service ID (obfuscated)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Service item ID (obfuscated)",
+                        "name": "itemId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Rating data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.RateServiceItemRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Rating created",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid rating or already rated",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Service item not found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Service not finalized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/completed-services/{id}/status": {
             "patch": {
                 "security": [
@@ -3585,7 +3668,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Creates a diagnostic request for a motorcycle. Optionally includes evidence photo URLs.",
+                "description": "Creates a diagnostic request for a motorcycle.",
                 "consumes": [
                     "application/json"
                 ],
@@ -3814,7 +3897,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Deletes a diagnostic and its evidence. Only the owner can delete.",
+                "description": "Deletes a diagnostic. Only the owner can delete.",
                 "produces": [
                     "application/json"
                 ],
@@ -5159,6 +5242,58 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/services/{id}/reviews": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns aggregated reviews (average, breakdown, individual reviews) for a service type",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Ratings"
+                ],
+                "summary": "Get reviews for a service type",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Service ID (obfuscated)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Reviews retrieved",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid service ID",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -5602,10 +5737,22 @@ const docTemplate = `{
         "handlers.CompletedServiceItemResponse": {
             "type": "object",
             "properties": {
+                "comment": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "string"
                 },
+                "rated_at": {
+                    "type": "string"
+                },
+                "rating": {
+                    "type": "integer"
+                },
                 "service_id": {
+                    "type": "string"
+                },
+                "service_name": {
                     "type": "string"
                 }
             }
@@ -5694,12 +5841,6 @@ const docTemplate = `{
             "properties": {
                 "branch_id": {
                     "type": "string"
-                },
-                "evidence_urls": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 },
                 "problem_description": {
                     "type": "string"
@@ -5794,23 +5935,6 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.DiagnosticEvidenceResponse": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "image_url": {
-                    "type": "string"
-                }
-            }
-        },
         "handlers.DiagnosticPermissionResponse": {
             "type": "object",
             "properties": {
@@ -5848,12 +5972,6 @@ const docTemplate = `{
                 },
                 "date": {
                     "type": "string"
-                },
-                "evidence": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/handlers.DiagnosticEvidenceResponse"
-                    }
                 },
                 "id": {
                     "type": "string"
@@ -6406,6 +6524,12 @@ const docTemplate = `{
                 },
                 "profile_image_url": {
                     "type": "string"
+                },
+                "service_names": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
@@ -6533,6 +6657,20 @@ const docTemplate = `{
                 },
                 "phone_number": {
                     "type": "string"
+                }
+            }
+        },
+        "handlers.RateServiceItemRequest": {
+            "type": "object",
+            "required": [
+                "rating"
+            ],
+            "properties": {
+                "comment": {
+                    "type": "string"
+                },
+                "rating": {
+                    "type": "integer"
                 }
             }
         },
@@ -6992,6 +7130,9 @@ const docTemplate = `{
                 "status"
             ],
             "properties": {
+                "final_price": {
+                    "type": "number"
+                },
                 "status": {
                     "type": "string"
                 }
