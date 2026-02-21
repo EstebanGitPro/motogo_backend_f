@@ -1,6 +1,7 @@
 *.log
 .env
-docs/
+# Documentación personal (NUNCA subir)
+documents_motogo/
 config/local-config.json
 local-config.json
 .vscode/

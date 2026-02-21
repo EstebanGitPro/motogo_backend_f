@@ -7,10 +7,10 @@
         "username": "root",
         "password": "0000",
         "name": "motogoDb",
-        "max_connections" : 20,
-        "max_idle_connections": 10,
-        "max_lifetime": 27000,
-        "max_idle_time": 26000
+        "max_open_conns": 25,
+        "max_idle_conns": 10,
+        "conn_max_lifetime": 300,
+        "conn_max_idle_time": 60
 
     },
     "server": {
