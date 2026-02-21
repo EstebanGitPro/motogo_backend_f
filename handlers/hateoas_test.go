@@ -120,16 +120,6 @@ func TestBuildResourceLinks(t *testing.T) {
 	assert.Equal(t, "http://localhost:8080/motogo/api/v1/accounts", collectionLink.Href)
 }
 
-func TestBuildAccountLinks(t *testing.T) {
-	// Act
-	links := handlers.BuildAccountLinks("http://localhost:8080", "account-123")
-
-	// Assert
-	assert.Len(t, links, 4)
-	selfLink := findLinkByRel(links, "self")
-	assert.Contains(t, selfLink.Href, "accounts/account-123")
-}
-
 func TestBuildMessageLinks(t *testing.T) {
 	// Act
 	links := handlers.BuildMessageLinks("http://localhost:8080", "msg-123")
@@ -137,7 +127,7 @@ func TestBuildMessageLinks(t *testing.T) {
 	// Assert
 	assert.Len(t, links, 4)
 	selfLink := findLinkByRel(links, "self")
-	assert.Contains(t, selfLink.Href, "messages/msg-123")
+	assert.Contains(t, selfLink.Href, "/admin/messages/msg-123")
 }
 
 func TestBuildMessageCreatedLinks(t *testing.T) {
@@ -150,10 +140,12 @@ func TestBuildMessageCreatedLinks(t *testing.T) {
 	selfLink := findLinkByRel(links, "self")
 	assert.NotNil(t, selfLink)
 	assert.Equal(t, "GET", selfLink.Method)
+	assert.Contains(t, selfLink.Href, "/admin/messages/msg-123")
 
 	listLink := findLinkByRel(links, "list")
 	assert.NotNil(t, listLink)
 	assert.Equal(t, "GET", listLink.Method)
+	assert.Contains(t, listLink.Href, "/admin/messages")
 }
 
 func TestBuildMessageUpdatedLinks(t *testing.T) {
@@ -163,6 +155,7 @@ func TestBuildMessageUpdatedLinks(t *testing.T) {
 	// Assert
 	assert.Len(t, links, 3)
 	assert.NotNil(t, findLinkByRel(links, "self"))
+	assert.Contains(t, findLinkByRel(links, "self").Href, "/admin/messages/msg-123")
 	assert.NotNil(t, findLinkByRel(links, "delete"))
 	assert.NotNil(t, findLinkByRel(links, "list"))
 }
@@ -176,7 +169,7 @@ func TestBuildMessageListLinks(t *testing.T) {
 
 	selfLink := findLinkByRel(links, "self")
 	assert.NotNil(t, selfLink)
-	assert.Contains(t, selfLink.Href, "/messages")
+	assert.Contains(t, selfLink.Href, "/admin/messages")
 
 	createLink := findLinkByRel(links, "create")
 	assert.NotNil(t, createLink)
@@ -192,7 +185,7 @@ func TestBuildLoginLinks(t *testing.T) {
 
 	profileLink := findLinkByRel(links, "profile")
 	assert.NotNil(t, profileLink)
-	assert.Contains(t, profileLink.Href, "/auth/me") // Login still points to /auth/me as it's a public reference
+	assert.Contains(t, profileLink.Href, "/persons/me") // Corrected: points to actual profile endpoint
 
 	resetLink := findLinkByRel(links, "password-reset")
 	assert.NotNil(t, resetLink)
@@ -219,15 +212,11 @@ func TestBuildAuthMeLinks(t *testing.T) {
 }
 
 func TestBuildAccountCreatedLinks(t *testing.T) {
-	// Act
-	links := handlers.BuildAccountCreatedLinks("http://localhost:8080", "acct-xyz")
+	// Act — no longer takes accountID since /accounts/ resource doesn't exist
+	links := handlers.BuildAccountCreatedLinks("http://localhost:8080")
 
-	// Assert
-	assert.Len(t, links, 3)
-
-	selfLink := findLinkByRel(links, "self")
-	assert.NotNil(t, selfLink)
-	assert.Contains(t, selfLink.Href, "accounts/acct-xyz")
+	// Assert — only login and verify-email links (no phantom self to /accounts/)
+	assert.Len(t, links, 2)
 
 	loginLink := findLinkByRel(links, "login")
 	assert.NotNil(t, loginLink)
