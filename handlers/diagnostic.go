@@ -53,6 +53,7 @@ type DiagnosticResponse struct {
 	ID                 string  `json:"id"`
 	MotorcycleID       string  `json:"motorcycle_id"`
 	BranchID           string  `json:"branch_id"`
+	BranchName         string  `json:"branch_name"`
 	Date               string  `json:"date"`
 	ProblemDescription *string `json:"problem_description,omitempty"`
 	PossibleSolution   *string `json:"possible_solution,omitempty"`
@@ -65,6 +66,7 @@ func ToDiagnosticResponse(d *domain.Diagnostic) DiagnosticResponse {
 		ID:                 d.ID,
 		MotorcycleID:       d.MotorcycleID,
 		BranchID:           d.BranchID,
+		BranchName:         d.BranchName,
 		Date:               d.Date.Format(time.RFC3339),
 		ProblemDescription: d.ProblemDescription,
 		PossibleSolution:   d.PossibleSolution,

@@ -25,6 +25,7 @@ func TestDiagnostic_ToDomain_WithNullableFields(t *testing.T) {
 		ID:                 "diag-001",
 		MotorcycleID:       "moto-001",
 		BranchID:           "branch-001",
+		BranchName:         sql.NullString{String: "Taller Norte", Valid: true},
 		Date:               now,
 		ProblemDescription: sql.NullString{String: desc, Valid: true},
 		PossibleSolution:   sql.NullString{String: sol, Valid: true},
@@ -35,6 +36,7 @@ func TestDiagnostic_ToDomain_WithNullableFields(t *testing.T) {
 	assert.Equal(t, "diag-001", result.ID)
 	assert.Equal(t, "moto-001", result.MotorcycleID)
 	assert.Equal(t, "branch-001", result.BranchID)
+	assert.Equal(t, "Taller Norte", result.BranchName)
 	assert.Equal(t, now, result.Date)
 	assert.NotNil(t, result.ProblemDescription)
 	assert.Equal(t, desc, *result.ProblemDescription)
@@ -49,6 +51,7 @@ func TestDiagnostic_ToDomain_NullFields(t *testing.T) {
 		ID:                 "diag-002",
 		MotorcycleID:       "moto-002",
 		BranchID:           "branch-002",
+		BranchName:         sql.NullString{Valid: false},
 		Date:               now,
 		ProblemDescription: sql.NullString{Valid: false},
 		PossibleSolution:   sql.NullString{Valid: false},
@@ -57,6 +60,7 @@ func TestDiagnostic_ToDomain_NullFields(t *testing.T) {
 	result := d.ToDomain()
 
 	assert.Equal(t, "diag-002", result.ID)
+	assert.Equal(t, "", result.BranchName)
 	assert.Nil(t, result.ProblemDescription)
 	assert.Nil(t, result.PossibleSolution)
 }
@@ -120,9 +124,9 @@ func TestNewRepository_Success(t *testing.T) {
 	mock.ExpectPrepare("INSERT INTO diagnostics")
 	mock.ExpectPrepare("UPDATE diagnostics")
 	mock.ExpectPrepare("DELETE FROM diagnostics")
-	mock.ExpectPrepare("SELECT id, motorcycle_id.*WHERE id")
-	mock.ExpectPrepare("SELECT id, motorcycle_id.*WHERE motorcycle_id")
-	mock.ExpectPrepare("SELECT id, motorcycle_id.*WHERE motorcycle_id .* AND branch_id")
+	mock.ExpectPrepare("SELECT d.id, d.motorcycle_id.*WHERE d.id")
+	mock.ExpectPrepare("SELECT d.id, d.motorcycle_id.*WHERE d.motorcycle_id")
+	mock.ExpectPrepare("SELECT d.id, d.motorcycle_id.*WHERE d.motorcycle_id .* AND d.branch_id")
 
 	repo, err := NewRepository(db)
 
@@ -187,7 +191,7 @@ func TestNewRepository_PrepareError_GetByID(t *testing.T) {
 	mock.ExpectPrepare("INSERT INTO diagnostics")
 	mock.ExpectPrepare("UPDATE diagnostics")
 	mock.ExpectPrepare("DELETE FROM diagnostics")
-	mock.ExpectPrepare("SELECT id, motorcycle_id.*WHERE id").
+	mock.ExpectPrepare("SELECT d.id, d.motorcycle_id.*WHERE d.id").
 		WillReturnError(sql.ErrConnDone)
 
 	repo, err := NewRepository(db)
@@ -205,8 +209,8 @@ func TestNewRepository_PrepareError_GetByMotorcycleID(t *testing.T) {
 	mock.ExpectPrepare("INSERT INTO diagnostics")
 	mock.ExpectPrepare("UPDATE diagnostics")
 	mock.ExpectPrepare("DELETE FROM diagnostics")
-	mock.ExpectPrepare("SELECT id, motorcycle_id.*WHERE id")
-	mock.ExpectPrepare("SELECT id, motorcycle_id.*WHERE motorcycle_id").
+	mock.ExpectPrepare("SELECT d.id, d.motorcycle_id.*WHERE d.id")
+	mock.ExpectPrepare("SELECT d.id, d.motorcycle_id.*WHERE d.motorcycle_id").
 		WillReturnError(sql.ErrConnDone)
 
 	repo, err := NewRepository(db)
@@ -224,9 +228,9 @@ func TestNewRepository_PrepareError_GetByMotorcycleAndBranch(t *testing.T) {
 	mock.ExpectPrepare("INSERT INTO diagnostics")
 	mock.ExpectPrepare("UPDATE diagnostics")
 	mock.ExpectPrepare("DELETE FROM diagnostics")
-	mock.ExpectPrepare("SELECT id, motorcycle_id.*WHERE id")
-	mock.ExpectPrepare("SELECT id, motorcycle_id.*WHERE motorcycle_id")
-	mock.ExpectPrepare("SELECT id, motorcycle_id.*WHERE motorcycle_id .* AND branch_id").
+	mock.ExpectPrepare("SELECT d.id, d.motorcycle_id.*WHERE d.id")
+	mock.ExpectPrepare("SELECT d.id, d.motorcycle_id.*WHERE d.motorcycle_id")
+	mock.ExpectPrepare("SELECT d.id, d.motorcycle_id.*WHERE d.motorcycle_id .* AND d.branch_id").
 		WillReturnError(sql.ErrConnDone)
 
 	repo, err := NewRepository(db)
@@ -282,16 +286,16 @@ func TestGetByID_Success(t *testing.T) {
 	defer db.Close()
 
 	now := time.Now()
-	rows := sqlmock.NewRows([]string{"id", "motorcycle_id", "branch_id", "date", "problem_description", "possible_solution"}).
-		AddRow("diag-100", "moto-100", "branch-100", now, "Ruido en motor", nil)
+	rows := sqlmock.NewRows([]string{"id", "motorcycle_id", "branch_id", "branch_name", "date", "problem_description", "possible_solution"}).
+		AddRow("diag-100", "moto-100", "branch-100", "Taller Norte", now, "Ruido en motor", nil)
 
-	stmt := mock.ExpectPrepare("SELECT id, motorcycle_id")
+	stmt := mock.ExpectPrepare("SELECT d.id, d.motorcycle_id")
 	stmt.ExpectQuery().
 		WithArgs("diag-100").
 		WillReturnRows(rows)
 
 	repo := &repository{db: db}
-	repo.stmtGetByID, _ = db.Prepare("SELECT id, motorcycle_id, branch_id, date, problem_description, possible_solution FROM diagnostics WHERE id = ?")
+	repo.stmtGetByID, _ = db.Prepare("SELECT d.id, d.motorcycle_id, d.branch_id, b.name AS branch_name, d.date, d.problem_description, d.possible_solution FROM diagnostics d LEFT JOIN branches b ON b.id = d.branch_id WHERE d.id = ?")
 
 	result, err := repo.GetByID(context.Background(), "diag-100")
 
@@ -299,6 +303,7 @@ func TestGetByID_Success(t *testing.T) {
 	assert.NotNil(t, result)
 	assert.Equal(t, "diag-100", result.ID)
 	assert.Equal(t, "moto-100", result.MotorcycleID)
+	assert.Equal(t, "Taller Norte", result.BranchName)
 	assert.NotNil(t, result.ProblemDescription)
 	assert.Equal(t, "Ruido en motor", *result.ProblemDescription)
 	assert.Nil(t, result.PossibleSolution)
@@ -309,13 +314,13 @@ func TestGetByID_NotFound(t *testing.T) {
 	assert.NoError(t, err)
 	defer db.Close()
 
-	stmt := mock.ExpectPrepare("SELECT id, motorcycle_id")
+	stmt := mock.ExpectPrepare("SELECT d.id, d.motorcycle_id")
 	stmt.ExpectQuery().
 		WithArgs("not-found").
 		WillReturnError(sql.ErrNoRows)
 
 	repo := &repository{db: db}
-	repo.stmtGetByID, _ = db.Prepare("SELECT id, motorcycle_id, branch_id, date, problem_description, possible_solution FROM diagnostics WHERE id = ?")
+	repo.stmtGetByID, _ = db.Prepare("SELECT d.id, d.motorcycle_id, d.branch_id, b.name AS branch_name, d.date, d.problem_description, d.possible_solution FROM diagnostics d LEFT JOIN branches b ON b.id = d.branch_id WHERE d.id = ?")
 
 	result, err := repo.GetByID(context.Background(), "not-found")
 
@@ -328,13 +333,13 @@ func TestGetByID_DBError(t *testing.T) {
 	assert.NoError(t, err)
 	defer db.Close()
 
-	stmt := mock.ExpectPrepare("SELECT id, motorcycle_id")
+	stmt := mock.ExpectPrepare("SELECT d.id, d.motorcycle_id")
 	stmt.ExpectQuery().
 		WithArgs("error-id").
 		WillReturnError(sql.ErrConnDone)
 
 	repo := &repository{db: db}
-	repo.stmtGetByID, _ = db.Prepare("SELECT id, motorcycle_id, branch_id, date, problem_description, possible_solution FROM diagnostics WHERE id = ?")
+	repo.stmtGetByID, _ = db.Prepare("SELECT d.id, d.motorcycle_id, d.branch_id, b.name AS branch_name, d.date, d.problem_description, d.possible_solution FROM diagnostics d LEFT JOIN branches b ON b.id = d.branch_id WHERE d.id = ?")
 
 	result, err := repo.GetByID(context.Background(), "error-id")
 
@@ -352,17 +357,17 @@ func TestGetByMotorcycleID_Success(t *testing.T) {
 	defer db.Close()
 
 	now := time.Now()
-	rows := sqlmock.NewRows([]string{"id", "motorcycle_id", "branch_id", "date", "problem_description", "possible_solution"}).
-		AddRow("diag-1", "moto-200", "branch-1", now, "Problema 1", nil).
-		AddRow("diag-2", "moto-200", "branch-2", now, nil, "Solución 2")
+	rows := sqlmock.NewRows([]string{"id", "motorcycle_id", "branch_id", "branch_name", "date", "problem_description", "possible_solution"}).
+		AddRow("diag-1", "moto-200", "branch-1", "Taller Norte", now, "Problema 1", nil).
+		AddRow("diag-2", "moto-200", "branch-2", "Taller Sur", now, nil, "Solución 2")
 
-	stmt := mock.ExpectPrepare("SELECT id, motorcycle_id")
+	stmt := mock.ExpectPrepare("SELECT d.id, d.motorcycle_id")
 	stmt.ExpectQuery().
 		WithArgs("moto-200").
 		WillReturnRows(rows)
 
 	repo := &repository{db: db}
-	repo.stmtGetByMotorcycleID, _ = db.Prepare("SELECT id, motorcycle_id, branch_id, date, problem_description, possible_solution FROM diagnostics WHERE motorcycle_id = ?")
+	repo.stmtGetByMotorcycleID, _ = db.Prepare("SELECT d.id, d.motorcycle_id, d.branch_id, b.name AS branch_name, d.date, d.problem_description, d.possible_solution FROM diagnostics d LEFT JOIN branches b ON b.id = d.branch_id WHERE d.motorcycle_id = ?")
 
 	results, err := repo.GetByMotorcycleID(context.Background(), "moto-200")
 
@@ -377,15 +382,15 @@ func TestGetByMotorcycleID_Empty(t *testing.T) {
 	assert.NoError(t, err)
 	defer db.Close()
 
-	rows := sqlmock.NewRows([]string{"id", "motorcycle_id", "branch_id", "date", "problem_description", "possible_solution"})
+	rows := sqlmock.NewRows([]string{"id", "motorcycle_id", "branch_id", "branch_name", "date", "problem_description", "possible_solution"})
 
-	stmt := mock.ExpectPrepare("SELECT id, motorcycle_id")
+	stmt := mock.ExpectPrepare("SELECT d.id, d.motorcycle_id")
 	stmt.ExpectQuery().
 		WithArgs("no-diags").
 		WillReturnRows(rows)
 
 	repo := &repository{db: db}
-	repo.stmtGetByMotorcycleID, _ = db.Prepare("SELECT id, motorcycle_id, branch_id, date, problem_description, possible_solution FROM diagnostics WHERE motorcycle_id = ?")
+	repo.stmtGetByMotorcycleID, _ = db.Prepare("SELECT d.id, d.motorcycle_id, d.branch_id, b.name AS branch_name, d.date, d.problem_description, d.possible_solution FROM diagnostics d LEFT JOIN branches b ON b.id = d.branch_id WHERE d.motorcycle_id = ?")
 
 	results, err := repo.GetByMotorcycleID(context.Background(), "no-diags")
 
@@ -398,13 +403,13 @@ func TestGetByMotorcycleID_DBError(t *testing.T) {
 	assert.NoError(t, err)
 	defer db.Close()
 
-	stmt := mock.ExpectPrepare("SELECT id, motorcycle_id")
+	stmt := mock.ExpectPrepare("SELECT d.id, d.motorcycle_id")
 	stmt.ExpectQuery().
 		WithArgs("error-moto").
 		WillReturnError(sql.ErrConnDone)
 
 	repo := &repository{db: db}
-	repo.stmtGetByMotorcycleID, _ = db.Prepare("SELECT id, motorcycle_id, branch_id, date, problem_description, possible_solution FROM diagnostics WHERE motorcycle_id = ?")
+	repo.stmtGetByMotorcycleID, _ = db.Prepare("SELECT d.id, d.motorcycle_id, d.branch_id, b.name AS branch_name, d.date, d.problem_description, d.possible_solution FROM diagnostics d LEFT JOIN branches b ON b.id = d.branch_id WHERE d.motorcycle_id = ?")
 
 	results, err := repo.GetByMotorcycleID(context.Background(), "error-moto")
 
@@ -422,16 +427,16 @@ func TestGetByMotorcycleAndBranch_Success(t *testing.T) {
 	defer db.Close()
 
 	now := time.Now()
-	rows := sqlmock.NewRows([]string{"id", "motorcycle_id", "branch_id", "date", "problem_description", "possible_solution"}).
-		AddRow("diag-300", "moto-300", "branch-300", now, "Problema combo", nil)
+	rows := sqlmock.NewRows([]string{"id", "motorcycle_id", "branch_id", "branch_name", "date", "problem_description", "possible_solution"}).
+		AddRow("diag-300", "moto-300", "branch-300", "Taller Centro", now, "Problema combo", nil)
 
-	stmt := mock.ExpectPrepare("SELECT id, motorcycle_id")
+	stmt := mock.ExpectPrepare("SELECT d.id, d.motorcycle_id")
 	stmt.ExpectQuery().
 		WithArgs("moto-300", "branch-300").
 		WillReturnRows(rows)
 
 	repo := &repository{db: db}
-	repo.stmtGetByMotorcycleAndBranch, _ = db.Prepare("SELECT id, motorcycle_id, branch_id, date, problem_description, possible_solution FROM diagnostics WHERE motorcycle_id = ? AND branch_id = ?")
+	repo.stmtGetByMotorcycleAndBranch, _ = db.Prepare("SELECT d.id, d.motorcycle_id, d.branch_id, b.name AS branch_name, d.date, d.problem_description, d.possible_solution FROM diagnostics d LEFT JOIN branches b ON b.id = d.branch_id WHERE d.motorcycle_id = ? AND d.branch_id = ?")
 
 	result, err := repo.GetByMotorcycleAndBranch(context.Background(), "moto-300", "branch-300")
 
@@ -445,13 +450,13 @@ func TestGetByMotorcycleAndBranch_NoRows(t *testing.T) {
 	assert.NoError(t, err)
 	defer db.Close()
 
-	stmt := mock.ExpectPrepare("SELECT id, motorcycle_id")
+	stmt := mock.ExpectPrepare("SELECT d.id, d.motorcycle_id")
 	stmt.ExpectQuery().
 		WithArgs("moto-none", "branch-none").
 		WillReturnError(sql.ErrNoRows)
 
 	repo := &repository{db: db}
-	repo.stmtGetByMotorcycleAndBranch, _ = db.Prepare("SELECT id, motorcycle_id, branch_id, date, problem_description, possible_solution FROM diagnostics WHERE motorcycle_id = ? AND branch_id = ?")
+	repo.stmtGetByMotorcycleAndBranch, _ = db.Prepare("SELECT d.id, d.motorcycle_id, d.branch_id, b.name AS branch_name, d.date, d.problem_description, d.possible_solution FROM diagnostics d LEFT JOIN branches b ON b.id = d.branch_id WHERE d.motorcycle_id = ? AND d.branch_id = ?")
 
 	result, err := repo.GetByMotorcycleAndBranch(context.Background(), "moto-none", "branch-none")
 
@@ -464,13 +469,13 @@ func TestGetByMotorcycleAndBranch_DBError(t *testing.T) {
 	assert.NoError(t, err)
 	defer db.Close()
 
-	stmt := mock.ExpectPrepare("SELECT id, motorcycle_id")
+	stmt := mock.ExpectPrepare("SELECT d.id, d.motorcycle_id")
 	stmt.ExpectQuery().
 		WithArgs("error-moto", "error-branch").
 		WillReturnError(sql.ErrConnDone)
 
 	repo := &repository{db: db}
-	repo.stmtGetByMotorcycleAndBranch, _ = db.Prepare("SELECT id, motorcycle_id, branch_id, date, problem_description, possible_solution FROM diagnostics WHERE motorcycle_id = ? AND branch_id = ?")
+	repo.stmtGetByMotorcycleAndBranch, _ = db.Prepare("SELECT d.id, d.motorcycle_id, d.branch_id, b.name AS branch_name, d.date, d.problem_description, d.possible_solution FROM diagnostics d LEFT JOIN branches b ON b.id = d.branch_id WHERE d.motorcycle_id = ? AND d.branch_id = ?")
 
 	result, err := repo.GetByMotorcycleAndBranch(context.Background(), "error-moto", "error-branch")
 

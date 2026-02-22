@@ -23,6 +23,7 @@ func (r *repository) GetByMotorcycleID(ctx context.Context, motorcycleID string)
 			&diag.ID,
 			&diag.MotorcycleID,
 			&diag.BranchID,
+			&diag.BranchName,
 			&diag.Date,
 			&diag.ProblemDescription,
 			&diag.PossibleSolution,

@@ -11,6 +11,7 @@ type Diagnostic struct {
 	ID                 string    // UUID primary key
 	MotorcycleID       string    // FK to motorcycle
 	BranchID           string    // FK to branch issuing diagnostic
+	BranchName         string    // Resolved branch name (from JOIN)
 	Date               time.Time // Diagnostic date
 	ProblemDescription *string   // User description of the problem
 	PossibleSolution   *string   // Response from the branch

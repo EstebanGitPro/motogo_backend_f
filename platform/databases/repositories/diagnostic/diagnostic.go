@@ -12,6 +12,7 @@ type Diagnostic struct {
 	ID                 string         `db:"id"`
 	MotorcycleID       string         `db:"motocicleta_id"`
 	BranchID           string         `db:"sede_id"`
+	BranchName         sql.NullString `db:"branch_name"`
 	Date               time.Time      `db:"fecha"`
 	ProblemDescription sql.NullString `db:"descripcion_problema"` //nolint:misspell // Spanish DB column
 	PossibleSolution   sql.NullString `db:"posible_solucion"`
@@ -24,6 +25,10 @@ func (d *Diagnostic) ToDomain() domain.Diagnostic {
 		MotorcycleID: d.MotorcycleID,
 		BranchID:     d.BranchID,
 		Date:         d.Date,
+	}
+
+	if d.BranchName.Valid {
+		diagnostic.BranchName = d.BranchName.String
 	}
 
 	if d.ProblemDescription.Valid {

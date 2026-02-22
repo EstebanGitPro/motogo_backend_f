@@ -27,23 +27,26 @@ const (
 	`
 
 	queryGetByID = `
-		SELECT id, motorcycle_id, branch_id, date, problem_description, possible_solution
-		FROM diagnostics
-		WHERE id = ?
+		SELECT d.id, d.motorcycle_id, d.branch_id, b.name AS branch_name, d.date, d.problem_description, d.possible_solution
+		FROM diagnostics d
+		LEFT JOIN branches b ON b.id = d.branch_id
+		WHERE d.id = ?
 	`
 
 	queryGetByMotorcycleID = `
-		SELECT id, motorcycle_id, branch_id, date, problem_description, possible_solution
-		FROM diagnostics
-		WHERE motorcycle_id = ?
-		ORDER BY date DESC
+		SELECT d.id, d.motorcycle_id, d.branch_id, b.name AS branch_name, d.date, d.problem_description, d.possible_solution
+		FROM diagnostics d
+		LEFT JOIN branches b ON b.id = d.branch_id
+		WHERE d.motorcycle_id = ?
+		ORDER BY d.date DESC
 	`
 
 	queryGetByMotorcycleAndBranch = `
-		SELECT id, motorcycle_id, branch_id, date, problem_description, possible_solution
-		FROM diagnostics
-		WHERE motorcycle_id = ? AND branch_id = ?
-		ORDER BY date DESC
+		SELECT d.id, d.motorcycle_id, d.branch_id, b.name AS branch_name, d.date, d.problem_description, d.possible_solution
+		FROM diagnostics d
+		LEFT JOIN branches b ON b.id = d.branch_id
+		WHERE d.motorcycle_id = ? AND d.branch_id = ?
+		ORDER BY d.date DESC
 		LIMIT 1
 	`
 )
