@@ -343,6 +343,7 @@ func TestLookupMotorcycleByPlate_Integration_FullFlow(t *testing.T) {
 			ID:           diagID,
 			MotorcycleID: motoID,
 			BranchID:     branchID1,
+			BranchName:   "Taller Norte",
 		},
 	}
 
@@ -399,6 +400,8 @@ func TestLookupMotorcycleByPlate_Integration_FullFlow(t *testing.T) {
 	// IDs should be encoded (not raw UUIDs)
 	assert.NotEqual(t, diagID, d["id"])
 	assert.NotEqual(t, branchID1, d["branch_id"])
+	// Branch name should be present
+	assert.Equal(t, "Taller Norte", d["branch_name"])
 
 	// Motorcycle evidence
 	motoEvid := data["evidence"].([]interface{})
