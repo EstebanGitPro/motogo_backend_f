@@ -100,4 +100,4 @@ volumes:
 
 networks:
   motogo-network:
-    driver: bridge
+    external: true
