@@ -579,6 +579,9 @@ var (
 	ErrServiceNotFinalized     = errors.New("ERR_SERVICE_NOT_FINALIZED")
 	ErrServiceItemNotInService = errors.New("ERR_SERVICE_ITEM_NOT_IN_SERVICE")
 	ErrRatingCannotSave        = errors.New("ERR_RATING_CANNOT_SAVE")
+
+	// Moderation sentinel — NOT a real error, signals that the comment was offensive but the rating was saved
+	ErrOffensiveCommentFiltered = errors.New("OFFENSIVE_COMMENT_FILTERED")
 )
 
 // Completed Service Module (MOD_CS_*) - HU64/HU65/HU73/HU74
@@ -593,8 +596,9 @@ const (
 	MsgCompletedServiceDetailsUpdated = "MOD_CS_DETAILS_UPD_EXI_00001"
 
 	// Rating Success (RELEASE_14 / HU48)
-	MsgRatingCreated    = "MOD_CS_RATE_EXI_00001"
-	MsgRatingsRetrieved = "MOD_CS_RATE_LIST_EXI_00001"
+	MsgRatingCreated          = "MOD_CS_RATE_EXI_00001"
+	MsgRatingCreatedOffensive = "MOD_CS_RATE_OFFENSIVE_EXI_00001" // Rating saved, comment filtered
+	MsgRatingsRetrieved       = "MOD_CS_RATE_LIST_EXI_00001"
 
 	// Error messages
 	MsgCompletedServiceNotFound     = "MOD_CS_NOT_FOUND_ERR_00001"

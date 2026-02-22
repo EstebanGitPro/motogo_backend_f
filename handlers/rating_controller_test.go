@@ -27,6 +27,7 @@ func createRatingMessageCache() *messagingCache.MessageCache {
 	mockRepo.On("GetAllActiveForCache", mock.Anything).Return([]messagingCache.CachedMessage{
 		// Rating success
 		{Code: "MOD_CS_RATE_EXI_00001", Type: "EXITO", Title: "Calificado", Content: "Servicio calificado exitosamente", Active: true},
+		{Code: "MOD_CS_RATE_OFFENSIVE_EXI_00001", Type: "EXITO", Title: "Calificado", Content: "Tu calificación fue registrada. El comentario contiene lenguaje inapropiado.", Active: true},
 		// Rating errors
 		{Code: "MOD_CS_ITEM_NF_ERR_00001", Type: "ERROR", Title: "Item no encontrado", Content: "El item de servicio no fue encontrado", Active: true},
 		{Code: "MOD_CS_RATE_DUP_ERR_00001", Type: "ERROR", Title: "Ya calificado", Content: "El item ya fue calificado", Active: true},
@@ -294,4 +295,61 @@ func TestRateServiceItem_Controller_ServiceNotFinalized(t *testing.T) {
 	var response map[string]interface{}
 	_ = json.Unmarshal(w.Body.Bytes(), &response)
 	assert.False(t, response["success"].(bool))
+}
+
+// ==============================================
+// RateServiceItem — Offensive comment (success with filtered message)
+// ==============================================
+
+func TestRateServiceItem_Controller_OffensiveComment(t *testing.T) {
+	mockSvc := new(mocks.MockRatingService)
+	mockTx := new(mocks.MockTx)
+	encoder := createTestEncoder()
+
+	serviceUUID := "a1111111-1111-4000-8000-111111111111"
+	itemUUID := "a2222222-2222-4000-8000-222222222222"
+	encodedServiceID, _ := encoder.Encode(serviceUUID)
+	encodedItemID, _ := encoder.Encode(itemUUID)
+
+	item := &domain.CompletedServiceItem{
+		ID:                 itemUUID,
+		CompletedServiceID: "cs-1",
+		Rating:             nil,
+	}
+	cs := &domain.CompletedService{ID: "cs-1", Status: domain.ServiceStatusCompleted}
+
+	mockSvc.On("GetItemByID", mock.Anything, itemUUID).Return(item, nil)
+	mockSvc.On("GetCompletedServiceByID", mock.Anything, "cs-1").Return(cs, nil)
+	mockSvc.On("BeginTx", mock.Anything).Return(mockTx, nil)
+	comment := "Servicio horrible malditos"
+	// Service returns sentinel because comment is offensive
+	mockSvc.On("RateServiceItem", mock.Anything, mockTx, itemUUID, 1, &comment).Return(domain.ErrOffensiveCommentFiltered)
+	mockTx.On("Commit").Return(nil)
+
+	router, w := setupRatingHandler(t, mockSvc)
+
+	reqBody := map[string]interface{}{
+		"rating":  1,
+		"comment": "Servicio horrible malditos",
+	}
+	bodyJSON, _ := json.Marshal(reqBody)
+
+	req, _ := http.NewRequest("POST",
+		"/completed-services/"+encodedServiceID+"/items/"+encodedItemID+"/rating",
+		bytes.NewBuffer(bodyJSON))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+
+	// Should be 200 (success) — the rating WAS saved
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.True(t, response["success"].(bool))
+	// The message code should be the offensive variant
+	assert.Equal(t, "MOD_CS_RATE_OFFENSIVE_EXI_00001", response["code"])
+
+	mockSvc.AssertExpectations(t)
+	mockTx.AssertExpectations(t)
 }

@@ -2,6 +2,7 @@ package interactor
 
 import (
 	"context"
+	"errors"
 
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/input"
@@ -66,9 +67,16 @@ func (i *RatingInteractor) RateServiceItem(ctx context.Context, itemID string, r
 	defer deferRollback(tx, &err, log, logger.LogCSInteractorRateRbErr, logger.LogCSInteractorRateRbOK)()
 
 	// STEP 6: Delegate to service (handles moderation + persistence)
+	wasOffensive := false
 	if err = i.service.RateServiceItem(ctx, tx, itemID, rating, comment); err != nil {
-		log.Error(logger.LogCSInteractorRateUpdErr, "item_id", itemID, "error", err)
-		return domain.ErrRatingCannotSave
+		// Offensive sentinel is NOT a real error — the data was saved successfully
+		if errors.Is(err, domain.ErrOffensiveCommentFiltered) {
+			wasOffensive = true
+			err = nil // Clear so deferRollback does not trigger
+		} else {
+			log.Error(logger.LogCSInteractorRateUpdErr, "item_id", itemID, "error", err)
+			return domain.ErrRatingCannotSave
+		}
 	}
 
 	// STEP 7: Commit
@@ -79,7 +87,11 @@ func (i *RatingInteractor) RateServiceItem(ctx context.Context, itemID string, r
 
 	log.Success(logger.LogCSInteractorRateSuccess, "item_id", itemID)
 
+	// Propagate offensive sentinel to handler (if applicable)
 	err = nil
+	if wasOffensive {
+		return domain.ErrOffensiveCommentFiltered
+	}
 	return nil
 }
 

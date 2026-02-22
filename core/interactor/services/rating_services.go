@@ -35,7 +35,13 @@ func (s *ratingService) RateServiceItem(ctx context.Context, tx output.Tx, itemI
 	if comment != nil && *comment != "" {
 		isOffensive = moderation.IsOffensive(*comment)
 	}
-	return s.ratingRepo.RateServiceItem(ctx, tx, itemID, rating, comment, isOffensive)
+	if err := s.ratingRepo.RateServiceItem(ctx, tx, itemID, rating, comment, isOffensive); err != nil {
+		return err
+	}
+	if isOffensive {
+		return domain.ErrOffensiveCommentFiltered
+	}
+	return nil
 }
 
 // GetItemByID retrieves a single completed service item by ID (RELEASE_14 / HU48)

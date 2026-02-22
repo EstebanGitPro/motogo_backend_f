@@ -64,6 +64,13 @@ func (h *handler) RateServiceItem() gin.HandlerFunc {
 			req.Rating,
 			req.Comment,
 		); err != nil {
+			// Offensive sentinel: rating saved, but comment was filtered
+			if errors.Is(err, domain.ErrOffensiveCommentFiltered) {
+				Logger.Success(logger.LogCSControllerRateSuccess, "offensive_filtered", true)
+				h.Response.Success(c, domain.MsgRatingCreatedOffensive)
+				return
+			}
+
 			Logger.Error(logger.LogCSControllerRateError, "error", err)
 
 			switch {
