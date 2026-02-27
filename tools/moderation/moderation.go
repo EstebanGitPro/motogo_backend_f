@@ -120,7 +120,7 @@ var offensiveWords = map[string]bool{
 	"inepta":       true,
 	"inutil":       true,
 	"mediocre":     true,
-	"incompetente": true,
+	"incompetente": true, //nolint:misspell // Spanish word
 	"inservible":   true,
 	"patetico":     true,
 	"patetica":     true,
@@ -247,7 +247,7 @@ var offensiveWords = map[string]bool{
 	"tramposa":     true,
 	"mentiroso":    true,
 	"mentirosa":    true,
-	"corrupto":     true,
+	"corrupto":     true, //nolint:misspell // Spanish word
 	"corrupta":     true,
 	"sinverguenza": true,
 	"cínico":       true,

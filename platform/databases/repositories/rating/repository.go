@@ -197,7 +197,11 @@ func (r *repository) GetReviewsByServiceID(ctx context.Context, serviceID string
 		log.Error(logger.LogCSRepoGetReviewsErr, err)
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Error(logger.LogCSRepoGetReviewsErr, err)
+		}
+	}()
 
 	var reviews []domain.ServiceReview
 	var serviceName string
