@@ -57,22 +57,22 @@ Unlike Yelp, Google Maps, or Yellow Pages, MotoGo provides access to a **service
 
 ## 🛠 Technology Stack
 
-| Category | Technology |
-|----------|-----------|
-| **Language** | Go 1.25.2 |
-| **Web Framework** | [Gin](https://github.com/gin-gonic/gin) |
-| **Database** | MySQL 8.0 |
+| Category                      | Technology                                                  |
+| ----------------------------- | ----------------------------------------------------------- |
+| **Language**            | Go 1.25.2                                                   |
+| **Web Framework**       | [Gin](https://github.com/gin-gonic/gin)                        |
+| **Database**            | MySQL 8.0                                                   |
 | **Identity Management** | [Keycloak](https://www.keycloak.org/) (OIDC + JWKS validation) |
-| **File Storage** | Firebase Storage |
-| **Email** | [Resend](https://resend.com/) |
-| **Metrics** | Prometheus |
-| **Dashboards** | Grafana |
-| **Log Aggregation** | Loki + Promtail |
-| **Structured Logging** | `log/slog` |
-| **API Docs** | Swagger (swaggo) |
-| **Code Quality** | SonarCloud, golangci-lint, staticcheck |
-| **Load Testing** | k6 |
-| **Containerization** | Docker + Docker Compose |
+| **File Storage**        | Firebase Storage                                            |
+| **Email**               | [Resend](https://resend.com/)                                  |
+| **Metrics**             | Prometheus                                                  |
+| **Dashboards**          | Grafana                                                     |
+| **Log Aggregation**     | Loki + Promtail                                             |
+| **Structured Logging**  | `log/slog`                                                |
+| **API Docs**            | Swagger (swaggo)                                            |
+| **Code Quality**        | SonarCloud, golangci-lint, staticcheck                      |
+| **Load Testing**        | k6                                                          |
+| **Containerization**    | Docker + Docker Compose                                     |
 
 ---
 
@@ -97,6 +97,7 @@ MotoGo Backend follows a **Clean / Hexagonal Architecture** (Ports & Adapters) w
 ```
 
 **Key principles:**
+
 - Dependencies point **inward** — `platform` implements `core/ports` interfaces
 - Business logic in `core/interactor` is **framework-agnostic**
 - `handlers` only orchestrate HTTP request/response mapping
@@ -164,13 +165,13 @@ motogo_backend_f/
 
 ### Prerequisites
 
-| Tool | Version | Purpose |
-|------|---------|---------|
-| **Go** | ≥ 1.25 | Language runtime |
-| **Docker** | ≥ 24.0 | Container runtime |
-| **Docker Compose** | ≥ 2.20 | Multi-container orchestration |
-| **Make** | Any | Build automation (pre-installed on macOS/Linux) |
-| **Git** | Any | Version control |
+| Tool                     | Version | Purpose                                         |
+| ------------------------ | ------- | ----------------------------------------------- |
+| **Go**             | ≥ 1.25 | Language runtime                                |
+| **Docker**         | ≥ 24.0 | Container runtime                               |
+| **Docker Compose** | ≥ 2.20 | Multi-container orchestration                   |
+| **Make**           | Any     | Build automation (pre-installed on macOS/Linux) |
+| **Git**            | Any     | Version control                                 |
 
 ### Step 1: Clone the Repository
 
@@ -188,6 +189,7 @@ docker compose -f docker-compose.mysql.yml up -d
 ```
 
 **Verification:**
+
 ```bash
 docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 # Expected: motogo-mysql-app (healthy), motogo-mysql-keycloak (healthy)
@@ -217,16 +219,16 @@ cp .env.example .env
 
 The `.env.example` contains the following sections:
 
-| Section | Key Variables | Purpose |
-|---------|-------------|----------|
-| **Database** | `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`, `DB_NAME` | MySQL connection |
-| **Server** | `SERVER_HOST`, `SERVER_PORT` | API server binding |
-| **Resend** | `RESEND_API_KEY`, `RESEND_FROM_EMAIL` | Email delivery (password reset, verification) |
-| **Keycloak** | `KEYCLOAK_SERVER_URL`, `KEYCLOAK_REALM`, `KEYCLOAK_CLIENT_SECRET` | Identity provider |
-| **Firebase** | `FIREBASE_CREDENTIALS_PATH` | File storage service account path |
-| **ID Encoder** | `ID_ENCODER_SECRET`, `ID_ENCODER_MIN_LENGTH` | HashID encoding |
-| **Geocoding** | `GEOCODING_PROVIDER`, `GEOCODING_API_KEY`, `GEOCODING_COUNTRY_CODE` | Address resolution (Google / Mapbox) |
-| **Verification** | `VERIFICATION_BASE_URL` | Email verification callback URL |
+| Section                | Key Variables                                                             | Purpose                                       |
+| ---------------------- | ------------------------------------------------------------------------- | --------------------------------------------- |
+| **Database**     | `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`, `DB_NAME`   | MySQL connection                              |
+| **Server**       | `SERVER_HOST`, `SERVER_PORT`                                          | API server binding                            |
+| **Resend**       | `RESEND_API_KEY`, `RESEND_FROM_EMAIL`                                 | Email delivery (password reset, verification) |
+| **Keycloak**     | `KEYCLOAK_SERVER_URL`, `KEYCLOAK_REALM`, `KEYCLOAK_CLIENT_SECRET`   | Identity provider                             |
+| **Firebase**     | `FIREBASE_CREDENTIALS_PATH`                                             | File storage service account path             |
+| **ID Encoder**   | `ID_ENCODER_SECRET`, `ID_ENCODER_MIN_LENGTH`                          | HashID encoding                               |
+| **Geocoding**    | `GEOCODING_PROVIDER`, `GEOCODING_API_KEY`, `GEOCODING_COUNTRY_CODE` | Address resolution (Google / Mapbox)          |
+| **Verification** | `VERIFICATION_BASE_URL`                                                 | Email verification callback URL               |
 
 > **Tip:** Environment variables override JSON config file settings. See `config/config.go` for details.
 
@@ -234,10 +236,10 @@ The `.env.example` contains the following sections:
 
 The application also supports JSON-based configuration for each environment:
 
-| Environment | Config File | Trigger |
-|-------------|------------|---------|
+| Environment               | Config File                  | Trigger                        |
+| ------------------------- | ---------------------------- | ------------------------------ |
 | **Local** (default) | `config/local-config.json` | `APP_ENV` unset or `local` |
-| **Production** | `config/prod-config.json` | `APP_ENV=production` |
+| **Production**      | `config/prod-config.json`  | `APP_ENV=production`         |
 
 Edit `config/local-config.json` to set values not already overridden by `.env`.
 
@@ -280,12 +282,12 @@ go run ./cmd/api
 
 ### ✅ Verification
 
-| Check | How to Verify |
-|-------|---------------|
-| **Server running** | Console shows `Listening on 0.0.0.0:8085` |
-| **Health endpoint** | `curl http://localhost:8085/health` returns `200 OK` |
-| **Metrics endpoint** | `curl http://localhost:8085/metrics` returns Prometheus data |
-| **Swagger UI** | Open [http://localhost:8085/swagger/index.html](http://localhost:8085/swagger/index.html) |
+| Check                      | How to Verify                                                                         |
+| -------------------------- | ------------------------------------------------------------------------------------- |
+| **Server running**   | Console shows `Listening on 0.0.0.0:8085`                                           |
+| **Health endpoint**  | `curl http://localhost:8085/health` returns `200 OK`                              |
+| **Metrics endpoint** | `curl http://localhost:8085/metrics` returns Prometheus data                        |
+| **Swagger UI**       | Open[http://localhost:8085/swagger/index.html](http://localhost:8085/swagger/index.html) |
 
 ---
 
@@ -323,25 +325,25 @@ GEOCODING_API_KEY=your-google-maps-key
 
 All project automation is available through the `Makefile`:
 
-| Command | Description |
-|---------|-------------|
-| `make help` | Show all available targets |
-| `make run` | Run the application (`go run ./cmd/api`) |
-| `make build` | Build binary to `bin/motogo-api` |
-| `make test` | Run all tests with verbose output |
-| `make test-short` | Run tests without verbose output |
-| `make coverage` | Generate HTML coverage report |
-| `make coverage-check` | Verify coverage meets 65% minimum threshold |
-| `make lint` | Run `go vet` + `staticcheck` |
-| `make lint-full` | Run `golangci-lint` with full rule set |
-| `make fmt` | Format all Go source files |
-| `make tidy` | Run `go mod tidy` |
-| `make clean` | Remove build artifacts and coverage files |
-| `make pre-commit` | Run full pre-commit suite (fmt + vet + staticcheck + test) |
-| `make pre-push` | Run tests with average coverage threshold enforcement |
-| `make setup-hooks` | Install Git pre-commit hook |
-| `make setup-hooks-all` | Install both pre-commit and pre-push hooks |
-| `make install-tools` | Install `staticcheck` and prompt for `golangci-lint` |
+| Command                  | Description                                                |
+| ------------------------ | ---------------------------------------------------------- |
+| `make help`            | Show all available targets                                 |
+| `make run`             | Run the application (`go run ./cmd/api`)                 |
+| `make build`           | Build binary to `bin/motogo-api`                         |
+| `make test`            | Run all tests with verbose output                          |
+| `make test-short`      | Run tests without verbose output                           |
+| `make coverage`        | Generate HTML coverage report                              |
+| `make coverage-check`  | Verify coverage meets 65% minimum threshold                |
+| `make lint`            | Run `go vet` + `staticcheck`                           |
+| `make lint-full`       | Run `golangci-lint` with full rule set                   |
+| `make fmt`             | Format all Go source files                                 |
+| `make tidy`            | Run `go mod tidy`                                        |
+| `make clean`           | Remove build artifacts and coverage files                  |
+| `make pre-commit`      | Run full pre-commit suite (fmt + vet + staticcheck + test) |
+| `make pre-push`        | Run tests with average coverage threshold enforcement      |
+| `make setup-hooks`     | Install Git pre-commit hook                                |
+| `make setup-hooks-all` | Install both pre-commit and pre-push hooks                 |
+| `make install-tools`   | Install `staticcheck` and prompt for `golangci-lint`   |
 
 ---
 
@@ -355,13 +357,13 @@ docker compose -f docker-compose.grafana.yml up -d
 
 This starts **5 services**:
 
-| Service | Port | Purpose |
-|---------|------|---------|
-| **Grafana** | [localhost:3000](http://localhost:3000) | Dashboards and visualization |
-| **Prometheus** | [localhost:9091](http://localhost:9091) | Metrics scraping and storage |
-| **Loki** | localhost:3100 | Log aggregation |
-| **Promtail** | — | Log shipping agent |
-| **Log Rotator** | — | Automatic log rotation (7-day retention) |
+| Service               | Port                                 | Purpose                                  |
+| --------------------- | ------------------------------------ | ---------------------------------------- |
+| **Grafana**     | [localhost:3000](http://localhost:3000) | Dashboards and visualization             |
+| **Prometheus**  | [localhost:9091](http://localhost:9091) | Metrics scraping and storage             |
+| **Loki**        | localhost:3100                       | Log aggregation                          |
+| **Promtail**    | —                                   | Log shipping agent                       |
+| **Log Rotator** | —                                   | Automatic log rotation (7-day retention) |
 
 > Grafana default credentials: `admin` / `admin`
 
@@ -436,14 +438,14 @@ docker compose -f docker-compose.k6-influxdb.yml up -d
 
 Production deployment files are in the `deploy/` directory:
 
-| File | Purpose |
-|------|---------|
+| File                              | Purpose                                      |
+| --------------------------------- | -------------------------------------------- |
 | `docker-compose.production.yml` | Production MySQL (app + keycloak) + Keycloak |
-| `.env.production.example` | Template for production secrets |
-| `deploy.sh` | Automated deployment script |
-| `nginx-motogo.conf` | Nginx reverse proxy configuration |
-| `motogo-api.service` | systemd service file for the Go binary |
-| `ssh.sh` | SSH connection helper |
+| `.env.production.example`       | Template for production secrets              |
+| `deploy.sh`                     | Automated deployment script                  |
+| `nginx-motogo.conf`             | Nginx reverse proxy configuration            |
+| `motogo-api.service`            | systemd service file for the Go binary       |
+| `ssh.sh`                        | SSH connection helper                        |
 
 ### Quick Deploy
 
@@ -464,18 +466,18 @@ openssl rand -base64 24  # Use for each password field
 
 ## 🔌 Port Reference
 
-| Port | Service | Environment |
-|------|---------|-------------|
-| `8085` | MotoGo API | Local + Production |
-| `3306` | MySQL (Application) | Local |
-| `3309` | MySQL (Keycloak) | Local |
-| `8080` | Keycloak (HTTP) | Local + Production |
-| `8443` | Keycloak (HTTPS) | Production |
+| Port     | Service                   | Environment        |
+| -------- | ------------------------- | ------------------ |
+| `8085` | MotoGo API                | Local + Production |
+| `3306` | MySQL (Application)       | Local              |
+| `3309` | MySQL (Keycloak)          | Local              |
+| `8080` | Keycloak (HTTP)           | Local + Production |
+| `8443` | Keycloak (HTTPS)          | Production         |
 | `9000` | Keycloak (Health/Metrics) | Local + Production |
-| `3000` | Grafana | Local |
-| `9091` | Prometheus | Local |
-| `3100` | Loki | Local |
-| `3001` | Swagger UI (standalone) | Local |
+| `3000` | Grafana                   | Local              |
+| `9091` | Prometheus                | Local              |
+| `3100` | Loki                      | Local              |
+| `3001` | Swagger UI (standalone)   | Local              |
 
 ---
 
@@ -505,5 +507,6 @@ This project is licensed under the [MIT License](LICENSE).
 ---
 
 <p align="center">
-  <sub>Built with ❤️ by the MotoGo team</sub>
+  <sub>Built with ❤️ by Esteban Agudelo
+</sub>
 </p>
