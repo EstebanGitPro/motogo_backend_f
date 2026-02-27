@@ -38,7 +38,7 @@ GitHub → git pull en VPS → docker compose build → containers
 
 ### Opción C: Dokploy ✅ (elegida)
 
-Plataforma de deploy self-hosted con UI web:
+Plataforma de deploy self-hosted (panel de administración web para gestión de deploys):
 
 ```
 GitHub Push → Dokploy detecta → Docker Build → Deploy automático → Traefik SSL
@@ -218,9 +218,9 @@ En **General** → habilitar **Auto Deploy** → cada push a `main` trigerea dep
 ```
 Dokploy (1 instancia)
 ├── Project: MotoGo
-│   └── App: motogo-api → api.tudominio.com:8085
+│   └── App: motogo-api → api.tudominio.com
 ├── Project: Alertax
-│   └── App: alertax-api → api-alertax.tudominio.com:8085
+│   └── App: alertax-api → api-alertax.tudominio.com
 └── Traefik (maneja routing + SSL de todas las apps)
 ```
 

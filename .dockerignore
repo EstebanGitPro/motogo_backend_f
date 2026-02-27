@@ -59,12 +59,10 @@ temp/
 
 # Observabilidad (servicios separados, no van en la API)
 platform/grafana/
-platform/prometheus/
 platform/promtail/
 platform/loki/
 platform/log-rotator/
 platform/k6/
-platform/swaggo/
 
 # Deploy scripts (concern separado)
 deploy/
