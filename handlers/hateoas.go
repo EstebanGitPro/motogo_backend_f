@@ -16,6 +16,8 @@ const (
 	personsProfilePath       = "%s/motogo/api/v1/persons/me"
 	personsPasswordPath      = "%s/motogo/api/v1/persons/me/password"
 	authLoginPath            = "%s/motogo/api/v1/auth/login"
+	adminMessagesPath        = "%s/motogo/api/v1/admin/messages"
+	adminMessageIDPath       = "%s/motogo/api/v1/admin/messages/%s"
 )
 
 type Link struct {
@@ -106,20 +108,41 @@ func BuildResourceLinks(baseURL, resource, resourceID string) []Link {
 	}
 }
 
-// BuildAccountLinks construye links específicos para cuentas (wrapper para compatibilidad)
-func BuildAccountLinks(baseURL, accountID string) []Link {
-	return BuildResourceLinks(baseURL, "accounts", accountID)
-}
-
 // BuildMessageLinks construye links HATEOAS para un mensaje específico
+// Uses /admin/messages/ path matching actual routes in server.go
 func BuildMessageLinks(baseURL, messageID string) []Link {
-	return BuildResourceLinks(baseURL, "messages", messageID)
+	resourceURL := fmt.Sprintf(adminMessageIDPath, baseURL, messageID)
+	collectionURL := fmt.Sprintf(adminMessagesPath, baseURL)
+
+	return []Link{
+		{
+			Href:   resourceURL,
+			Rel:    "self",
+			Method: "GET",
+		},
+		{
+			Href:   resourceURL,
+			Rel:    "update",
+			Method: "PUT",
+		},
+		{
+			Href:   resourceURL,
+			Rel:    "delete",
+			Method: "DELETE",
+		},
+		{
+			Href:   collectionURL,
+			Rel:    "collection",
+			Method: "GET",
+		},
+	}
 }
 
 // BuildMessageCreatedLinks construye links para un mensaje recién creado
+// Uses /admin/messages/ path matching actual routes in server.go
 func BuildMessageCreatedLinks(baseURL, messageID string) []Link {
-	resourceURL := BuildResourceURL(baseURL, "messages", messageID)
-	collectionURL := BuildCollectionURL(baseURL, "messages")
+	resourceURL := fmt.Sprintf(adminMessageIDPath, baseURL, messageID)
+	collectionURL := fmt.Sprintf(adminMessagesPath, baseURL)
 
 	return []Link{
 		{
@@ -146,9 +169,10 @@ func BuildMessageCreatedLinks(baseURL, messageID string) []Link {
 }
 
 // BuildMessageUpdatedLinks construye links para un mensaje actualizado
+// Uses /admin/messages/ path matching actual routes in server.go
 func BuildMessageUpdatedLinks(baseURL, messageID string) []Link {
-	resourceURL := BuildResourceURL(baseURL, "messages", messageID)
-	collectionURL := BuildCollectionURL(baseURL, "messages")
+	resourceURL := fmt.Sprintf(adminMessageIDPath, baseURL, messageID)
+	collectionURL := fmt.Sprintf(adminMessagesPath, baseURL)
 
 	return []Link{
 		{
@@ -170,8 +194,9 @@ func BuildMessageUpdatedLinks(baseURL, messageID string) []Link {
 }
 
 // BuildMessageListLinks construye links para la lista de mensajes
+// Uses /admin/messages path matching actual routes in server.go
 func BuildMessageListLinks(baseURL string) []Link {
-	collectionURL := BuildCollectionURL(baseURL, "messages")
+	collectionURL := fmt.Sprintf(adminMessagesPath, baseURL)
 
 	return []Link{
 		{
@@ -197,7 +222,7 @@ func BuildMessageListLinks(baseURL string) []Link {
 func BuildLoginLinks(baseURL string) []Link {
 	return []Link{
 		{
-			Href:   fmt.Sprintf("%s/motogo/api/v1/auth/me", baseURL),
+			Href:   fmt.Sprintf(personsProfilePath, baseURL),
 			Rel:    "profile",
 			Method: "GET",
 		},
@@ -232,16 +257,9 @@ func BuildAuthMeLinks(baseURL string) []Link {
 }
 
 // BuildAccountCreatedLinks constructs HATEOAS links for newly created account
-// Replaces the generic BuildAccountLinks with context-specific links for registration
-func BuildAccountCreatedLinks(baseURL, accountID string) []Link {
-	resourceURL := BuildResourceURL(baseURL, "accounts", accountID)
-
+// After registration, the user should login and then access their profile
+func BuildAccountCreatedLinks(baseURL string) []Link {
 	return []Link{
-		{
-			Href:   resourceURL,
-			Rel:    "self",
-			Method: "GET",
-		},
 		{
 			Href:   fmt.Sprintf(authLoginPath, baseURL),
 			Rel:    "login",

@@ -1,0 +1,93 @@
+meta {
+  name: Get All Brands
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/brands
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.getBody().success).to.be.true;
+  });
+  
+  test("Response has brands array", function() {
+    expect(res.getBody().data.brands).to.be.an('array');
+  });
+  
+  test("Each brand has id and name", function() {
+    const brands = res.getBody().data.brands;
+    if (brands.length > 0) {
+      expect(brands[0].id).to.exist;
+      expect(brands[0].name).to.exist;
+    }
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.getBody().data._links).to.be.an('array');
+  });
+  
+  test("Has self and create-branch links", function() {
+    const links = res.getBody().data._links;
+    const selfLink = links.find(link => link.rel === 'self');
+    const createBranchLink = links.find(link => link.rel === 'create-branch');
+    expect(selfLink).to.exist;
+    expect(createBranchLink).to.exist;
+  });
+}
+
+docs {
+  # Get All Brands (Catalog)
+  
+  Obtiene la lista completa de marcas de motocicletas disponibles en el sistema.
+  Este es un endpoint **público** (no requiere autenticación).
+  
+  ## Uso:
+  Los representantes de sede usan este endpoint para obtener las marcas disponibles
+  antes de registrar una nueva sede (branch).
+  
+  ## Endpoint:
+  `GET /motogo/api/v1/brands`
+  
+  ## No requiere autenticación
+  
+  ## Respuestas:
+  - **200**: Lista de marcas obtenida exitosamente
+  - **500**: Error interno del servidor
+  
+  ## Ejemplo de respuesta exitosa:
+  ```json
+  {
+    "success": true,
+    "code": "MOD_B_BRD_EXI_00001",
+    "message": "Lista de marcas de motocicletas obtenida exitosamente.",
+    "data": {
+      "brands": [
+        {"id": "f6a7b8c9-6666-4000-8000-000000000001", "name": "Honda"},
+        {"id": "f6a7b8c9-6666-4000-8000-000000000002", "name": "Yamaha"},
+        {"id": "f6a7b8c9-6666-4000-8000-000000000003", "name": "Suzuki"}
+      ],
+      "_links": [
+        {"href": ".../brands", "rel": "self", "method": "GET"},
+        {"href": ".../branches", "rel": "create-branch", "method": "POST"}
+      ]
+    }
+  }
+  ```
+  
+  ## HATEOAS Links:
+  - `self`: URL para obtener el catálogo de marcas
+  - `create-branch`: URL para registrar una nueva sede con las marcas seleccionadas
+}

@@ -320,7 +320,6 @@ func TestLookupMotorcycleByPlate_Integration_FullFlow(t *testing.T) {
 	branchID2 := "d4444444-4444-4000-8000-444444444444"
 	motoID := "b2222222-2222-4000-8000-222222222222"
 	diagID := "e5555555-5555-4000-8000-555555555555"
-	evidID := "f6666666-6666-4000-8000-666666666666"
 	motoEvidID := "a7777777-7777-4000-8000-777777777777"
 
 	motorcycle := &domain.Motorcycle{
@@ -344,9 +343,7 @@ func TestLookupMotorcycleByPlate_Integration_FullFlow(t *testing.T) {
 			ID:           diagID,
 			MotorcycleID: motoID,
 			BranchID:     branchID1,
-			Evidence: []domain.DiagnosticEvidence{
-				{ID: evidID, DiagnosticID: diagID, ImageURL: "https://example.com/photo.jpg"},
-			},
+			BranchName:   "Taller Norte",
 		},
 	}
 
@@ -366,7 +363,6 @@ func TestLookupMotorcycleByPlate_Integration_FullFlow(t *testing.T) {
 
 	// 4) ListDiagnosticsByMotorcycleID (concrete DiagnosticInteractor delegates to service)
 	mockDiagSvc.On("GetByMotorcycleID", mock.Anything, motoID).Return(diagnostics, nil)
-	mockDiagSvc.On("LoadEvidenceForDiagnostics", mock.Anything, mock.AnythingOfType("[]domain.Diagnostic")).Return(nil)
 
 	// 5) LookupEvidence (interface)
 	mockEvidInt.On("LookupEvidence", mock.Anything, motoID).Return(motoEvidences, nil)
@@ -404,10 +400,8 @@ func TestLookupMotorcycleByPlate_Integration_FullFlow(t *testing.T) {
 	// IDs should be encoded (not raw UUIDs)
 	assert.NotEqual(t, diagID, d["id"])
 	assert.NotEqual(t, branchID1, d["branch_id"])
-
-	// Evidence within diagnostic
-	diagEvidence := d["evidence"].([]interface{})
-	assert.Len(t, diagEvidence, 1)
+	// Branch name should be present
+	assert.Equal(t, "Taller Norte", d["branch_name"])
 
 	// Motorcycle evidence
 	motoEvid := data["evidence"].([]interface{})
@@ -603,7 +597,6 @@ func TestLookupMotorcycleByPlate_EvidenceError(t *testing.T) {
 		[]domain.DiagnosticPermission{{ID: "p1", MotorcycleID: motoID, BranchID: branchID, Active: true}}, nil)
 	// Diagnostics succeed (no diagnostics)
 	mockDiagSvc.On("GetByMotorcycleID", mock.Anything, motoID).Return([]domain.Diagnostic{}, nil)
-	mockDiagSvc.On("LoadEvidenceForDiagnostics", mock.Anything, mock.AnythingOfType("[]domain.Diagnostic")).Return(nil)
 	// Evidence returns error — non-fatal
 	mockEvidInt.On("LookupEvidence", mock.Anything, motoID).Return(
 		([]domain.MotorcycleEvidence)(nil), errors.New("storage error"))

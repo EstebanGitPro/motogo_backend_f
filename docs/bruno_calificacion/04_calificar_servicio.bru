@@ -1,0 +1,116 @@
+meta {
+  name: Calificar Servicio (POST)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{base_url}}/completed-services/{{completed_service_id}}/items/{{service_item_id}}/rating
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{user_access_token}}
+}
+
+body:json {
+  {
+    "rating": 5,
+    "comment": "Excelente servicio, rápido y profesional"
+  }
+}
+
+script:pre-request {
+  var token = bru.getVar("user_access_token");
+  if (!token) {
+    console.log("⚠️ user_access_token no configurado!");
+    console.log("💡 Ejecuta 02_login_dueno.bru primero");
+  }
+  
+  var csId = bru.getVar("completed_service_id");
+  var itemId = bru.getVar("service_item_id");
+  
+  if (!csId) {
+    console.log("⚠️ completed_service_id no configurado!");
+    console.log("💡 Ejecuta 03_listar_servicios.bru para obtener IDs automáticamente");
+  }
+  if (!itemId) {
+    console.log("⚠️ service_item_id no configurado!");
+    console.log("💡 Ejecuta 03_listar_servicios.bru para obtener IDs automáticamente");
+  }
+  
+  console.log("📤 Calificando item:", itemId, "del servicio:", csId);
+}
+
+script:post-response {
+  console.log("═══════════════════════════════════════");
+  
+  if (res.status === 200) {
+    console.log("⭐ CALIFICACIÓN REGISTRADA EXITOSAMENTE");
+    console.log("  Código:", res.body.code);
+    console.log("  Mensaje:", res.body.message.content);
+  } else {
+    console.log("❌ ERROR AL CALIFICAR");
+    console.log("  Status:", res.status);
+    console.log("  Código:", res.body.code);
+    if (res.body.message) {
+      console.log("  Título:", res.body.message.title);
+      console.log("  Detalle:", res.body.message.content);
+    }
+  }
+  
+  console.log("═══════════════════════════════════════");
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.body.success).to.be.true;
+  });
+  
+  test("Response code is MOD_CS_RATE_EXI_00001", function() {
+    expect(res.body.code).to.equal("MOD_CS_RATE_EXI_00001");
+  });
+}
+
+docs {
+  # POST /completed-services/:id/items/:itemId/rating — Calificar Servicio (HU48)
+  
+  Califica un ítem de servicio completado. 
+  El servicio debe estar en estado **FINALIZADO** y el ítem no debe haber sido calificado previamente.
+  
+  ## Prerrequisitos
+  1. Ejecutar `02_login_dueno.bru` → guarda `user_access_token`
+  2. Ejecutar `03_listar_servicios.bru` → guarda `completed_service_id` y `service_item_id`
+  
+  ## Request Body
+  ```json
+  {
+    "rating": 5,          // Obligatorio: 1-5
+    "comment": "Excelente" // Opcional
+  }
+  ```
+  
+  ## Reglas de negocio
+  - Rating: 1 (Very bad) a 5 (Excellent)
+  - Solo se puede calificar una vez por ítem
+  - Solo si el servicio está FINALIZADO
+  
+  ## Respuestas
+  | Código | Mensaje del sistema | Descripción |
+  |--------|---------------------|-------------|
+  | 200 | MOD_CS_RATE_EXI_00001 | Calificación exitosa |
+  | 400 | MOD_CS_RATE_RANGE_ERR_00001 | Rating fuera de rango |
+  | 400 | MOD_CS_RATE_DUP_ERR_00001 | Ya calificado |
+  | 404 | MOD_CS_ITEM_NF_ERR_00001 | Ítem no encontrado |
+  | 409 | MOD_CS_RATE_STATUS_ERR_00001 | Servicio no finalizado |
+}

@@ -1,0 +1,55 @@
+meta {
+  name: 02 - Get Message by ID
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/admin/messages/1
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has message data", function() {
+    expect(res.body.id).to.exist;
+    expect(res.body.code).to.exist;
+    expect(res.body.type).to.exist;
+    expect(res.body.title).to.exist;
+    expect(res.body.content).to.exist;
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.body._links).to.be.an('array');
+  });
+  
+  test("Has self link", function() {
+    const selfLink = res.body._links.find(link => link.rel === 'self');
+    expect(selfLink).to.exist;
+  });
+}
+
+docs {
+  # Get Message by ID
+  
+  Obtiene un mensaje específico por su ID.
+  
+  ## URL Parameter
+  - `id`: ID del mensaje (numérico)
+  
+  ## Response Success (200)
+  - Todos los campos del mensaje
+  - Timestamps (created_at, updated_at)
+  - Links HATEOAS
+  
+  ## Response Error (404)
+  - Mensaje no encontrado
+}

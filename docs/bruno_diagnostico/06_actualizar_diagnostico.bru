@@ -1,0 +1,74 @@
+meta {
+  name: Actualizar Diagnóstico (HU12)
+  type: http
+  seq: 6
+}
+
+put {
+  url: ç
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "problem_description": "Ruido en el motor al acelerar - actualizado con más detalle",
+    "possible_solution": "Revisar cadena de distribución y ajustar válvulas"
+  }
+}
+
+script:pre-request {
+  var diagId = bru.getVar("diagnostic_id");
+  if (!diagId || diagId === "REPLACE_WITH_DIAGNOSTIC_ID") {
+    console.log("⚠️ diagnostic_id no configurado!");
+    console.log("💡 Ejecuta 03_crear_diagnostico.bru o 04_listar_diagnosticos.bru primero");
+  }
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.body.success).to.be.true;
+  });
+  
+  test("Response has updated diagnostic", function() {
+    expect(res.body.data.id).to.exist;
+    expect(res.body.data.problem_description).to.exist;
+    expect(res.body.data.possible_solution).to.exist;
+  });
+}
+
+docs {
+  # PUT /motorcycles/:id/diagnostics/:diagnosticId - Actualizar Diagnóstico (HU12)
+  
+  Actualiza un diagnóstico existente. Solo el propietario de la moto puede actualizar.
+  
+  ## Prerrequisitos
+  1. Ejecutar Login (01_login_usuario.bru)
+  2. Obtener motorcycle_id y diagnostic_id
+  
+  ## Request Body (todos opcionales)
+  
+  | Campo | Tipo | Descripción |
+  |-------|------|-------------|
+  | `problem_description` | string | Descripción del problema |
+  | `possible_solution` | string | Solución propuesta |
+  
+  ## Respuestas
+  - **200**: Diagnóstico actualizado
+  - **400**: Datos inválidos
+  - **401**: Token inválido
+  - **404**: Diagnóstico no encontrado o no es propietario
+}

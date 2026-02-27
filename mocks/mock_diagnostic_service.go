@@ -40,8 +40,8 @@ func (m *MockDiagnosticService) ValidateBranchExists(ctx context.Context, branch
 
 // Diagnostic CRUD
 
-func (m *MockDiagnosticService) RegisterOrUpdateDiagnostic(ctx context.Context, tx output.Tx, motorcycleID, branchID string, problemDescription *string, evidenceURLs []string) (*domain.Diagnostic, error) {
-	args := m.Called(ctx, tx, motorcycleID, branchID, problemDescription, evidenceURLs)
+func (m *MockDiagnosticService) RegisterOrUpdateDiagnostic(ctx context.Context, tx output.Tx, motorcycleID, branchID string, problemDescription *string) (*domain.Diagnostic, error) {
+	args := m.Called(ctx, tx, motorcycleID, branchID, problemDescription)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
@@ -80,20 +80,5 @@ func (m *MockDiagnosticService) DeleteDiagnostic(ctx context.Context, tx output.
 
 func (m *MockDiagnosticService) SetSolution(ctx context.Context, tx output.Tx, diagnosticID string, solution string) error {
 	args := m.Called(ctx, tx, diagnosticID, solution)
-	return args.Error(0)
-}
-
-// Evidence
-
-func (m *MockDiagnosticService) LoadEvidence(ctx context.Context, diagnosticID string) ([]domain.DiagnosticEvidence, error) {
-	args := m.Called(ctx, diagnosticID)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).([]domain.DiagnosticEvidence), args.Error(1)
-}
-
-func (m *MockDiagnosticService) LoadEvidenceForDiagnostics(ctx context.Context, diagnostics []domain.Diagnostic) error {
-	args := m.Called(ctx, diagnostics)
 	return args.Error(0)
 }

@@ -1,0 +1,8 @@
+{
+  "name": "MotoGo - Servicios Completados (HU64)",
+  "version": "1",
+  "type": "collection",
+  "scripts": {
+    "docs": "# MotoGo Servicios Completados Collection\n\nColección Bruno para la gestión de servicios realizados en sedes.\n\n## HUs Implementadas\n\n- HU64: Registrar información del servicio realizado\n\n## Flujo Representante\n\n1. Login representante (01)\n2. Obtener servicios de la sede (02) → guarda service_ids\n3. Buscar moto por placa (03) → guarda motorcycle_id\n4. Registrar servicio (04) o con diagnóstico (05)\n5. Listar por sede (06) o lookup con servicios (07)\n\n## Flujo Dueño\n\n8. Login dueño (08)\n9. Ver servicios de mi moto (09)"
+  }
+}

@@ -1,0 +1,67 @@
+meta {
+  name: Activar Horario (HU34)
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{base_url}}/branches/{{branch_id}}/schedules/activate
+  body: none
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success message", function() {
+    expect(res.body.message).to.exist;
+  });
+  
+  test("Schedule is now active", function() {
+    expect(res.body.data.active).to.equal(true);
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.body.data._links).to.exist;
+  });
+  
+  test("Has deactivate link for toggle action", function() {
+    var deactivateLink = res.body.data._links.find(l => l.rel === 'deactivate');
+    expect(deactivateLink).to.exist;
+    expect(deactivateLink.method).to.equal('PUT');
+  });
+}
+
+docs {
+  # Activar Horario (HU34)
+  
+  Activa el horario de una sede. Los horarios activos 
+  **se muestran a los clientes** en la app.
+  
+  > **Caso de uso:** El representante quiere volver a mostrar 
+  > su horario después de haberlo desactivado.
+  
+  ## Requisitos
+  - Usuario con rol `REPRESENTANTE`
+  - Sede válida perteneciente al representante
+  - Horario existente (puede estar activo o inactivo)
+  
+  ## Variables requeridas
+  - `branch_id`: ID encoded de la sede
+  
+  ## Response
+  - **200**: Horario activado exitosamente
+  - **403**: Sede no pertenece al representante
+  - **404**: Horario no encontrado
+}

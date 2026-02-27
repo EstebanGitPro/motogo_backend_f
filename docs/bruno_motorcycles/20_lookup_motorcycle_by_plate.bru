@@ -1,0 +1,150 @@
+meta {
+  name: Lookup Motorcycle by Plate (HU47) - Representative
+  type: http
+  seq: 12
+}
+
+get {
+  url: {{base_url}}/motorcycles/lookup?plate={{license_plate}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+script:post-response {
+  if (res.status === 200) {
+    var motorcycle = res.body.data;
+    console.log("✅ Motorcycle found by plate");
+    console.log("📋 License Plate:", motorcycle.license_plate);
+    console.log("🏍️ Reference:", motorcycle.reference?.brand_name, motorcycle.reference?.model);
+    bru.setVar("found_motorcycle_id", motorcycle.id);
+
+    if (motorcycle.diagnostics && motorcycle.diagnostics.length > 0) {
+      console.log("🩺 Diagnostics:", motorcycle.diagnostics.length);
+      motorcycle.diagnostics.forEach(function(d, i) {
+        console.log("  📋 Diagnostic " + (i+1) + ":", d.problem_description || "(sin descripción)");
+        console.log("     📅 Fecha:", d.date);
+        console.log("     💊 Solución:", d.possible_solution || "(pendiente)");
+        if (d.evidence && d.evidence.length > 0) {
+          console.log("     📸 Evidencias:", d.evidence.length);
+        }
+        bru.setVar("diagnostic_id", d.id);
+      });
+    } else {
+      console.log("ℹ️ No diagnostics found for this motorcycle");
+    }
+  } else if (res.status === 403) {
+    console.log("🚫 Sede no autorizada para consultar esta motocicleta");
+  } else if (res.status === 404) {
+    console.log("❌ Motorcycle not found for plate:", bru.getVar("license_plate"));
+  }
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+
+  test("Response has success", function() {
+    expect(res.body.success).to.be.true;
+  });
+
+  test("Response has motorcycle data", function() {
+    expect(res.body.data).to.exist;
+    expect(res.body.data.id).to.exist;
+    expect(res.body.data.license_plate).to.exist;
+  });
+
+  test("Motorcycle has reference info", function() {
+    expect(res.body.data.reference).to.exist;
+    expect(res.body.data.reference.brand_name).to.exist;
+  });
+
+  test("Diagnostics is an array", function() {
+    expect(res.body.data.diagnostics).to.be.an("array");
+  });
+
+  test("Diagnostic has expected fields", function() {
+    if (res.body.data.diagnostics && res.body.data.diagnostics.length > 0) {
+      var diag = res.body.data.diagnostics[0];
+      expect(diag.id).to.exist;
+      expect(diag.date).to.exist;
+      expect(diag.date).to.match(/^\d{4}-\d{2}-\d{2}$/);
+    }
+  });
+
+  test("Diagnostic evidence is array if present", function() {
+    if (res.body.data.diagnostics && res.body.data.diagnostics.length > 0) {
+      var diag = res.body.data.diagnostics[0];
+      if (diag.evidence) {
+        expect(diag.evidence).to.be.an("array");
+      }
+    }
+  });
+}
+
+docs {
+  # Lookup Motorcycle by Plate (HU47)
+
+  Permite a un representante (taller/supervisor) consultar información de una
+  motocicleta usando su placa. Incluye la información de diagnósticos con
+  evidencias fotográficas asociadas.
+
+  ## Prerrequisitos
+  1. **Ejecutar Login como REPRESENTANTE** (rol taller)
+  2. **Configurar `license_plate`** en variables de entorno
+  3. **La sede del representante debe tener permiso activo** para esa motocicleta
+
+  ## Control de Acceso
+
+  | Rol | Acceso |
+  |-----|--------|
+  | Usuario (propietario) | ❌ Forbidden |
+  | Representante (taller) | ✅ Permitido (si su sede tiene permiso) |
+
+  ## Parámetros
+
+  | Parámetro | Tipo | Requerido | Descripción |
+  |-----------|------|-----------|-------------|
+  | `plate` | query | Sí | Placa exacta de la motocicleta |
+
+  ## Respuestas
+
+  | Código | Escenario |
+  |--------|-----------|
+  | 200 OK | Motocicleta encontrada |
+  | 400 Bad Request | Falta parámetro `plate` |
+  | 401 Unauthorized | Token inválido |
+  | 403 Forbidden | Sede no autorizada (MOD_MOT_PERM_ERR_00001) |
+  | 404 Not Found | Motocicleta no existe |
+
+  ## Response Fields
+
+  | Campo | Descripción |
+  |-------|-------------|
+  | `id` | ID codificado (hashid) de la motocicleta |
+  | `license_plate` | Placa de la motocicleta |
+  | `year` | Año del modelo (opcional) |
+  | `current_mileage` | Kilometraje actual (opcional) |
+  | `profile_image_url` | URL de la foto de perfil (opcional) |
+  | `reference` | Info de marca/modelo (brand_name, model, category, engine_displacement_cc) |
+  | `diagnostics` | Array de diagnósticos asociados |
+  | `diagnostics[].date` | Fecha del diagnóstico (formato YYYY-MM-DD) |
+  | `diagnostics[].problem_description` | Descripción del problema reportado |
+  | `diagnostics[].possible_solution` | Solución propuesta (null si pendiente) |
+  | `diagnostics[].evidence` | Array de fotos del problema |
+  | `diagnostics[].evidence[].image_url` | URL de la imagen |
+  | `diagnostics[].evidence[].description` | Descripción de la foto |
+
+  ## Notas
+  - La búsqueda es por coincidencia exacta de placa
+  - Se valida que la sede del representante tenga un permiso activo para la motocicleta
+  - Si la sede no tiene permiso, retorna 403 con MOD_MOT_PERM_ERR_00001
+}

@@ -1,0 +1,66 @@
+meta {
+  name: Get Motorcycle (HU46) - Not Owner
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{base_url}}/motorcycles/{{other_user_motorcycle_id}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+vars:pre-request {
+  other_user_motorcycle_id: PyrbGWjUKmEiqJACBZZuA8vtYv8uakmSjR7x
+}
+
+script:pre-request {
+  var motorcycleId = bru.getVar("other_user_motorcycle_id");
+  if (!motorcycleId || motorcycleId === "REPLACE_WITH_OTHER_USER_MOTORCYCLE_ID") {
+    console.log("⚠️ Set other_user_motorcycle_id to a motorcycle ID that belongs to ANOTHER user");
+    console.log("💡 This tests the ownership validation - should return 404");
+  }
+}
+
+tests {
+  test("Status code is 404 Not Found (security by obscurity)", function() {
+    expect(res.status).to.equal(404);
+  });
+  
+  test("Response has success false", function() {
+    expect(res.body.success).to.be.false;
+  });
+  
+  test("Response has no data (motorcycle not revealed)", function() {
+    expect(res.body.data).to.be.undefined;
+  });
+}
+
+docs {
+  # Get Motorcycle (HU46) - Not Owner Case
+  
+  Prueba de seguridad: verificar que un usuario NO puede consultar una motocicleta que pertenece a otro usuario.
+  
+  ## Configuración
+  1. **Ejecutar Login primero** con un usuario (ej: usuario_a@test.com)
+  2. Configurar `other_user_motorcycle_id` con el ID codificado de una motocicleta que pertenezca a OTRO usuario (usuario_b)
+  
+  ## Comportamiento Esperado
+  
+  | Escenario | Respuesta |
+  |-----------|-----------|
+  | Usuario no es dueño | 404 Not Found |
+  
+  **Nota**: Se retorna 404 (no 403) para no revelar la existencia de la motocicleta (Security by Obscurity).
+  
+  ## Códigos de Mensaje
+  - `MOD_MOT_NOT_FOUND_ERR_00001` - Motocicleta no encontrada (o no es dueño)
+}

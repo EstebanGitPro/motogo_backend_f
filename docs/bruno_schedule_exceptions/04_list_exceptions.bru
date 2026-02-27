@@ -1,0 +1,83 @@
+meta {
+  name: Listar Excepciones (HU23)
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{base_url}}/branches/{{branch_id}}/schedules/exceptions
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success message", function() {
+    expect(res.body.message).to.exist;
+  });
+  
+  test("Response has exceptions array", function() {
+    expect(res.body.data.exceptions).to.be.an('array');
+  });
+  
+  test("Exceptions are ordered by start date", function() {
+    var exceptions = res.body.data.exceptions;
+    if (exceptions.length > 1) {
+      for (var i = 1; i < exceptions.length; i++) {
+        expect(exceptions[i].exception_start_date >= exceptions[i-1].exception_start_date).to.be.true;
+      }
+    }
+  });
+  
+  test("Each exception has required fields", function() {
+    var exceptions = res.body.data.exceptions;
+    exceptions.forEach(function(exc) {
+      expect(exc.id).to.exist;
+      expect(exc.exception_start_date).to.exist;
+      expect(exc.exception_end_date).to.exist;
+      expect(exc._links).to.exist;
+    });
+  });
+  
+  test("Response has HATEOAS list links", function() {
+    expect(res.body.data._links).to.exist;
+  });
+  
+  test("Has create link", function() {
+    var createLink = res.body.data._links.find(l => l.rel === 'create');
+    expect(createLink).to.exist;
+    expect(createLink.method).to.equal('POST');
+  });
+}
+
+docs {
+  # Listar Excepciones de Horario (HU23)
+  
+  Obtiene todas las excepciones de horario para una sede.
+  
+  ## Requisitos previos
+  1. Usuario autenticado con rol `REPRESENTANTE`
+  2. `branch_id` de una sede propia
+  
+  ## Response
+  - Lista de excepciones ordenadas por fecha de inicio
+  - Cada excepción incluye `exception_start_date` y `exception_end_date`
+  - Cada excepción incluye enlaces HATEOAS individuales
+  - La respuesta incluye enlace para crear nuevas excepciones
+  
+  ## Response Codes
+  - **200**: Lista obtenida exitosamente
+  - **403**: Sede no pertenece al representante
+  - **404**: Sede o horario no encontrado
+}

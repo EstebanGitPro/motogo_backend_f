@@ -1,0 +1,95 @@
+meta {
+  name: Refresh Token
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{base_url}}/auth/refresh
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "refresh_token": "{{refresh_token}}"
+  }
+}
+
+script:pre-request {
+  // Obtener refresh_token guardado previamente por login
+  const refreshToken = bru.getVar("refresh_token");
+  if (!refreshToken) {
+    console.log("⚠️ No hay refresh_token guardado. Ejecuta Login primero.");
+  }
+}
+
+script:post-response {
+  if (res.status === 200) {
+    // Guardar los nuevos tokens
+    bru.setVar("access_token", res.body.data.access_token);
+    bru.setVar("refresh_token", res.body.data.refresh_token);
+    console.log("✅ Tokens actualizados exitosamente");
+    console.log("Access token expira en: " + res.body.data.expires_in + " segundos");
+  }
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has new access_token", function() {
+    expect(res.body.data.access_token).to.exist;
+  });
+  
+  test("Response has new refresh_token", function() {
+    expect(res.body.data.refresh_token).to.exist;
+  });
+  
+  test("Response has expires_in", function() {
+    expect(res.body.data.expires_in).to.be.a('number');
+  });
+  
+  test("Response has token_type Bearer", function() {
+    expect(res.body.data.token_type).to.equal("Bearer");
+  });
+}
+
+docs {
+  # Refresh Token
+  
+  Obtiene un nuevo access_token usando el refresh_token actual.
+  
+  ## Cuándo Usar
+  1. Cuando el access_token ha expirado (recibes 401 Unauthorized)
+  2. De forma proactiva antes de que expire
+  
+  ## Flujo de Prueba
+  1. Ejecuta **Login** primero para obtener tokens
+  2. Ejecuta este request para refrescar
+  3. Los nuevos tokens se guardan automáticamente
+  
+  ## Request
+  - `refresh_token`: Token de refresco del login anterior
+  
+  ## Response Exitosa (200 OK)
+  - `access_token`: Nuevo token de acceso JWT
+  - `refresh_token`: Nuevo refresh token (el anterior ya no sirve)
+  - `expires_in`: Tiempo de expiración en segundos
+  - `token_type`: "Bearer"
+  
+  ## Response Error (401 Unauthorized)
+  - Refresh token inválido o expirado
+  - El usuario debe volver a hacer login
+  
+  ## Notas
+  - Cada refresh genera un NUEVO refresh_token (rotación de tokens)
+  - El refresh_token anterior queda invalidado
+  - Si recibes 401 aquí, redirige al usuario al login
+}

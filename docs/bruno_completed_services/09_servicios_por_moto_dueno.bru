@@ -1,0 +1,110 @@
+meta {
+  name: Servicios Completados por Moto (Dueño)
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{base_url}}/motorcycles/{{motorcycle_id}}/completed-services
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{user_access_token}}
+}
+
+script:pre-request {
+  var motoId = bru.getVar("motorcycle_id");
+  if (!motoId || motoId === "REPLACE_WITH_MOTORCYCLE_ID") {
+    console.log("⚠️ motorcycle_id no configurado!");
+    console.log("💡 Usa 05_buscar_moto_por_placa.bru para obtener el motorcycle_id");
+  }
+  
+  var token = bru.getVar("user_access_token");
+  if (!token || token === "REPLACE_WITH_YOUR_TOKEN") {
+    console.log("⚠️ user_access_token no configurado!");
+    console.log("💡 Ejecuta 08_login_dueno.bru primero");
+  }
+}
+
+script:post-response {
+  if (res.status === 200) {
+    console.log("═══════════════════════════════════════");
+    console.log("✅ SERVICIOS COMPLETADOS (DUEÑO)");
+    console.log("═══════════════════════════════════════");
+    
+    if (res.body.data && res.body.data.length > 0) {
+      console.log("📋 Total servicios:", res.body.data.length);
+      console.log("");
+      res.body.data.forEach(function(svc, i) {
+        console.log("  [" + i + "] ID:", svc.id);
+        console.log("      Status:", svc.status);
+        console.log("      Fecha:", svc.request_date);
+        console.log("      Sede:", svc.branch_id);
+        if (svc.services && svc.services.length > 0) {
+          console.log("      Servicios:", svc.services.map(function(s) { return s.name; }).join(", "));
+        }
+        if (svc.representative_notes) {
+          console.log("      Notas:", svc.representative_notes);
+        }
+        console.log("");
+      });
+    } else {
+      console.log("ℹ️ No hay servicios completados para esta moto.");
+    }
+    
+    console.log("═══════════════════════════════════════");
+  } else if (res.status === 404) {
+    console.log("❌ Moto no encontrada o no eres el dueño");
+  } else if (res.status === 401) {
+    console.log("🚫 Token inválido. Ejecuta 08_login_dueno.bru");
+  } else {
+    console.log("❌ Error:", res.status, res.body);
+  }
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.body.success).to.be.true;
+  });
+  
+  test("Response data is array", function() {
+    expect(res.body.data).to.be.an("array");
+  });
+  
+  test("Each completed service has required fields", function() {
+    if (res.body.data.length > 0) {
+      var cs = res.body.data[0];
+      expect(cs.id).to.exist;
+      expect(cs.branch_id).to.exist;
+      expect(cs.motorcycle_id).to.exist;
+      expect(cs.status).to.exist;
+      expect(cs.request_date).to.exist;
+    }
+  });
+}
+
+docs {
+  # GET /motorcycles/:id/completed-services — Dueño (HU64)
+  
+  Consulta los servicios completados de una moto como dueño.
+  Solo el dueño de la moto puede acceder a este endpoint.
+  
+  ## Prerrequisitos
+  1. Ejecutar Login Dueño (08_login_dueno.bru) → guarda `user_access_token`
+  2. Configurar `motorcycle_id` en el environment (o usar 05_buscar_moto_por_placa.bru)
+  
+  ## Respuestas
+  - **200**: Array de servicios completados
+  - **401**: Token inválido
+  - **404**: Moto no encontrada o no eres el dueño
+}

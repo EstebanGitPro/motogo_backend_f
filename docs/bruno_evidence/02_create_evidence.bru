@@ -1,0 +1,95 @@
+meta {
+  name: Create Evidence (HU16) - Success
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{base_url}}/motorcycles/{{motorcycle_id}}/evidence
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "image_url": "https://firebasestorage.googleapis.com/v0/b/motogo-app.appspot.com/o/evidence%2Ftest-image-001.jpg?alt=media",
+    "description": "Foto frontal de la motocicleta en buen estado"
+  }
+}
+
+script:pre-request {
+  var motorcycleId = bru.getVar("motorcycle_id");
+  if (!motorcycleId || motorcycleId === "REPLACE_WITH_MOTORCYCLE_ID") {
+    console.log("⚠️ motorcycle_id not set!");
+    console.log("💡 Tip: Run 14_list_motorcycles.bru in bruno_motorcycles first");
+  } else {
+    console.log("Using motorcycle_id:", motorcycleId);
+  }
+}
+
+script:post-response {
+  if (res.status === 200 || res.status === 201) {
+    var evidenceId = res.body.data.id;
+    bru.setVar("evidence_id", evidenceId);
+    console.log("✅ Evidence created! ID saved to evidence_id:", evidenceId);
+  } else {
+    console.log("❌ Creation failed:", res.body);
+  }
+}
+
+tests {
+  test("Status code is 200 or 201", function() {
+    expect([200, 201]).to.include(res.status);
+  });
+  
+  test("Response has success", function() {
+    expect(res.body.success).to.be.true;
+  });
+  
+  test("Response has evidence data", function() {
+    expect(res.body.data.id).to.exist;
+    expect(res.body.data.image_url).to.exist;
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.body.data._links).to.exist;
+    expect(res.body.data._links.length).to.be.greaterThan(0);
+  });
+}
+
+docs {
+  # POST /motorcycles/:id/evidence - Create Evidence (HU16)
+  
+  Carga una nueva evidencia fotográfica para una motocicleta.
+  
+  ## Prerrequisitos
+  1. **Ejecutar Login primero** (01_login_user.bru)
+  2. Configurar `motorcycle_id` con el ID de tu moto
+  
+  ## Request Body
+  
+  | Campo | Tipo | Requerido | Descripción |
+  |-------|------|-----------|-------------|
+  | `image_url` | string | ✅ | URL de Firebase Storage |
+  | `description` | string | ❌ | Descripción de la imagen |
+  
+  ## Validaciones
+  - La URL debe ser de Firebase Storage
+  - Máximo 5 evidencias por motocicleta
+  - Solo el propietario puede agregar evidencias
+  
+  ## Respuestas
+  - **200/201**: Evidencia creada exitosamente
+  - **400**: URL inválida o límite excedido
+  - **401**: Token inválido/ausente  
+  - **404**: Motocicleta no encontrada
+}

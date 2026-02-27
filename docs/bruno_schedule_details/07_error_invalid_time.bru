@@ -1,0 +1,50 @@
+meta {
+  name: Error - Hora Inválida
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{base_url}}/branches/{{branch_id}}/schedules/details
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "day_of_week": 2,
+    "opening_time": "25:00",
+    "closing_time": "12:00",
+    "is_closed": false
+  }
+}
+
+tests {
+  test("Status code is 400 Bad Request", function() {
+    expect(res.status).to.equal(400);
+  });
+  
+  test("Response indicates invalid time", function() {
+    expect(res.body.message.code).to.include("TIME");
+  });
+}
+
+docs {
+  # Error: Formato de Hora Inválido
+  
+  Prueba de error cuando se envía un formato de hora inválido.
+  
+  ## Formato válido
+  - `HH:MM` en formato 24 horas
+  - Ejemplos válidos: "08:00", "14:30", "23:59"
+  - Ejemplos inválidos: "25:00", "8:00", "14:60"
+}

@@ -1,0 +1,57 @@
+meta {
+  name: 08_remove_branch_from_franchise
+  type: http
+  seq: 8
+}
+
+delete {
+  url: {{base_url}}/franchises/{{franchise_id}}/branches/{{branch_id}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+vars:post-response {
+  response_code: res.body.code
+}
+
+tests {
+  test("Response status is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success code", function() {
+    expect(res.body.code).to.include("MOD_F_BRANCH_REM");
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.body.data).to.have.property("_links");
+  });
+}
+
+docs {
+  # Desvincular Sede de Franquicia
+  
+  Este endpoint desvincula una sede de una franquicia.
+  
+  ## Prerequisitos
+  - Token de acceso válido (ejecutar login primero)
+  - ID de franquicia válido en variable `franchise_id`
+  - ID de sede válido en variable `branch_id`
+  
+  ## Nota Importante
+  La franquicia debe tener al menos 2 sedes para poder desvincular una.
+  Si solo queda una sede, el endpoint retornará error `MOD_F_MIN_BRANCHES_ERR_00001`.
+  
+  ## Respuestas
+  - **200**: Sede desvinculada exitosamente
+  - **400**: No se puede desvincular la última sede
+  - **404**: Franquicia o sede no encontrada
+}

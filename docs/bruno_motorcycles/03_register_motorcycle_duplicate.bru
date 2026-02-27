@@ -1,0 +1,56 @@
+meta {
+  name: Register Motorcycle (HU43) - Duplicate Plate
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{base_url}}/motorcycles
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "license_plate": "ABC123",
+    "reference_id": "{{reference_id}}",
+    "year": 2024
+  }
+}
+
+tests {
+  test("Status code is 409 Conflict", function() {
+    expect(res.status).to.equal(409);
+  });
+  
+  test("Response has success false", function() {
+    expect(res.body.success).to.be.false;
+  });
+  
+  test("Response has error message", function() {
+    expect(res.body.message).to.exist;
+  });
+}
+
+docs {
+  # Register Motorcycle (HU43) - Duplicate License Plate
+  
+  Prueba el caso de error cuando la placa ya está registrada.
+  
+  ## Prerrequisitos
+  1. **Ejecutar Login primero** (01_login.bru)
+  2. **Ejecutar registro exitoso** (02_register_motorcycle.bru)
+  3. Ejecutar este request con la MISMA placa
+  
+  ## Respuesta Esperada
+  - **409 Conflict**: La placa ya está registrada en el sistema
+}

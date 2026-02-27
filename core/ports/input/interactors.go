@@ -60,4 +60,6 @@ type CompletedServiceInteractorInterface interface {
 	GetCompletedServiceByID(ctx context.Context, serviceID string) (*domain.CompletedService, error)
 	GetCompletedServicesByBranch(ctx context.Context, branchID string) ([]domain.CompletedService, error)
 	GetCompletedServicesByMotorcycle(ctx context.Context, motorcycleID string) ([]domain.CompletedService, error)
+	TransitionStatus(ctx context.Context, serviceID string, newStatus string, personID string, finalPrice *float64) error
+	UpdateCompletedServiceDetails(ctx context.Context, serviceID string, quotedPrice, finalPrice *float64, notes *string) error
 }

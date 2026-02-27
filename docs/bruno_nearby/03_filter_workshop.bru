@@ -1,0 +1,50 @@
+meta {
+  name: 03 - Filter by Type (WORKSHOP)
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}/branches/nearby?lat={{latitude}}&lng={{longitude}}&radius=10&type=WORKSHOP
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+script:pre-request {
+  console.log("🔧 Buscando solo TALLERES cercanos...");
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("All branches are WORKSHOP type", function() {
+    var branches = res.body.data.branches;
+    branches.forEach(function(branch) {
+      expect(branch.establishment_type).to.equal("WORKSHOP");
+    });
+  });
+}
+
+script:post-response {
+  console.log("🔧 Encontrados", res.body.data.count, "talleres");
+}
+
+docs {
+  # Filter by Type - Solo Talleres
+  
+  Filtra resultados para mostrar solo talleres (WORKSHOP).
+  
+  ## Otros valores de type
+  - `STORE` - Solo tiendas
+  - `WORKSHOP_STORE` - Solo combinados
+}

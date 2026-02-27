@@ -63,10 +63,12 @@ const (
 	`
 
 	queryGetItemsByCompletedServiceID = `
-		SELECT id, completed_service_id, service_id,
-			rating, comment, rated_at, is_offensive_comment
-		FROM completed_service_items
-		WHERE completed_service_id = ?
+		SELECT csi.id, csi.completed_service_id, csi.service_id,
+			s.name AS service_name,
+			csi.rating, csi.comment, csi.rated_at, csi.is_offensive_comment
+		FROM completed_service_items csi
+		LEFT JOIN services s ON s.id = csi.service_id
+		WHERE csi.completed_service_id = ?
 	`
 
 	queryValidateBranchServices = `
@@ -92,6 +94,18 @@ const (
 	queryUpdateStatus = `
 		UPDATE completed_services
 		SET status = ?, completion_date = ?
+		WHERE id = ?
+	`
+
+	queryUpdateStatusWithPrice = `
+		UPDATE completed_services
+		SET status = ?, completion_date = ?, final_price = ?
+		WHERE id = ?
+	`
+
+	queryUpdateDetails = `
+		UPDATE completed_services
+		SET quoted_price = ?, final_price = ?, representative_notes = ?
 		WHERE id = ?
 	`
 

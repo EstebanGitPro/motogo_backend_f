@@ -1,0 +1,59 @@
+meta {
+  name: 11. Error - Invalid Service Type
+  type: http
+  seq: 11
+}
+
+put {
+  url: {{base_url}}/admin/services/{{service_id}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{admin_token}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "name": "Test Service",
+    "description": "Test description",
+    "service_type": "TipoInvalido"
+  }
+}
+
+tests {
+  test("Status code is 400", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+  
+  test("Error message code is correct", function() {
+    expect(res.getBody().message_code).to.equal("MOD_S_TYPE_ERR_00001");
+  });
+}
+
+docs {
+  # Error: Tipo de Servicio Inválido (HU68)
+  
+  Verifica el manejo de error cuando se intenta actualizar un servicio
+  con un tipo de servicio que no es válido.
+  
+  ## Pre-requisitos:
+  1. Ejecutar `08_admin_login.bru` para obtener el `admin_token`
+  2. Tener un `service_id` válido en variables de entorno
+  
+  ## Respuesta esperada:
+  - Status: `400 Bad Request`
+  - Message code: `MOD_S_TYPE_ERR_00001` (MsgServiceInvalidType)
+  
+  ## Tipos válidos:
+  - `Mantenimiento`
+  - `Reparación`
+  - `Personalización`
+  - `Diagnóstico`
+}

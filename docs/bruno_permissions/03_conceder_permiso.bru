@@ -1,0 +1,98 @@
+meta {
+  name: Conceder Permiso a Sede
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}/motorcycles/{{motorcycle_id}}/permissions
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "branch_id": "{{branch_id}}"
+  }
+}
+
+script:pre-request {
+  var motoId = bru.getVar("motorcycle_id");
+  var branchId = bru.getVar("branch_id");
+  if (!motoId || motoId === "REPLACE_WITH_MOTORCYCLE_ID") {
+    console.log("⚠️ motorcycle_id no configurado!");
+    console.log("💡 Ejecuta 02_listar_motos.bru primero");
+  }
+  if (!branchId || branchId === "REPLACE_WITH_BRANCH_ID") {
+    console.log("⚠️ branch_id no configurado!");
+    console.log("💡 Configura branch_id en el environment o usa un ID ofuscado conocido");
+  }
+}
+
+script:post-response {
+  if (res.status === 200 || res.status === 201) {
+    console.log("✅ Permiso concedido exitosamente!");
+    console.log("🏢 Sede:", res.body.data.branch_id);
+    console.log("🏍️ Moto:", res.body.data.motorcycle_id);
+    if (res.body.data._links) {
+      console.log("🔗 HATEOAS links disponibles");
+    }
+  } else if (res.status === 409) {
+    console.log("⚠️ El permiso ya existe para esta moto/sede.");
+  } else {
+    console.log("❌ Error:", res.body);
+  }
+}
+
+tests {
+  test("Status code is 200 or 201", function() {
+    expect([200, 201]).to.include(res.status);
+  });
+
+  test("Response has success", function() {
+    expect(res.body.success).to.be.true;
+  });
+
+  test("Response has permission data", function() {
+    expect(res.body.data.motorcycle_id).to.exist;
+    expect(res.body.data.branch_id).to.exist;
+  });
+
+  test("Response has HATEOAS links", function() {
+    expect(res.body.data._links).to.exist;
+  });
+}
+
+docs {
+  # POST /motorcycles/:id/permissions - Conceder Permiso de Diagnóstico
+
+  Concede permiso a una sede específica para ver y diagnosticar esta motocicleta.
+  Solo el propietario de la moto puede conceder permisos.
+
+  ## Prerrequisitos
+  1. Ejecutar Login (01_login_usuario.bru)
+  2. Ejecutar Listar Motos (02_listar_motos.bru) → motorcycle_id
+  3. Configurar `branch_id` en el environment (ID ofuscado de la sede)
+
+  ## Request Body
+
+  | Campo | Tipo | Requerido | Descripción |
+  |-------|------|-----------|-------------|
+  | `branch_id` | string | ✅ | ID ofuscado de la sede a autorizar |
+
+  ## Respuestas
+  - **200/201**: Permiso concedido exitosamente
+  - **400**: Datos inválidos
+  - **401**: Token inválido
+  - **404**: Moto no encontrada o no es propietario
+  - **409**: El permiso ya existe
+}

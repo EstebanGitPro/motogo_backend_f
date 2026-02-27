@@ -1,0 +1,49 @@
+meta {
+  name: 12 - Error Invalid Latitude
+  type: http
+  seq: 12
+}
+
+get {
+  url: {{base_url}}/branches/nearby?lat=100&lng=-74.07&radius=5
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+tests {
+  test("Status code is 400 Bad Request", function() {
+    expect(res.status).to.equal(400);
+  });
+  
+  test("Response has error", function() {
+    expect(res.body.success).to.be.false;
+  });
+  
+  test("Error code is latitude invalid", function() {
+    expect(res.body.message.code).to.equal("MOD_V_GEO_LAT_INV_ERR_00001");
+  });
+}
+
+docs {
+  # Error: Invalid Latitude (out of range)
+  
+  Prueba de validación cuando la latitud está fuera del rango válido.
+  
+  ## Rango válido
+  - Latitud: -90 a 90
+  
+  ## Este test
+  - Envía `lat=100` (inválido, mayor a 90)
+  
+  ## Respuesta esperada
+  - **400 Bad Request**
+  - Código: `MOD_V_GEO_LAT_INV_ERR_00001`
+}

@@ -79,6 +79,7 @@ func (r *repository) GetItemsByCompletedServiceID(ctx context.Context, completed
 	for rows.Next() {
 		var item CompletedServiceItem
 		if err := rows.Scan(&item.ID, &item.CompletedServiceID, &item.ServiceID,
+			&item.ServiceName,
 			&item.Rating, &item.Comment, &item.RatedAt, &item.IsOffensiveComment); err != nil {
 			log.Error(logger.LogCSRepoScanItemErr, err)
 			return nil, err

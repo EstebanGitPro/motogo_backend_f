@@ -1,0 +1,90 @@
+meta {
+  name: Delete Self (HU53)
+  type: http
+  seq: 12
+}
+
+delete {
+  url: {{base_url}}/persons/me
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+tests {
+  test("Status code is 200 for successful deletion", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.getBody().success).to.be.true;
+  });
+  
+  test("Response has deletion message", function() {
+    expect(res.getBody().message).to.exist;
+    expect(res.getBody().message.codigo_mensaje).to.equal("MOD_P_DEL_EXI_00001");
+  });
+}
+
+docs {
+  # Delete Self / Eliminar Cuenta Propia (HU53)
+  
+  Permite al usuario autenticado eliminar su propia cuenta del sistema.
+  
+  ## ⚠️ ADVERTENCIA: Esta acción es IRREVERSIBLE
+  
+  El usuario será eliminado tanto de la base de datos local como de Keycloak.
+  
+  ## Prerrequisitos:
+  1. **Ejecutar Login primero** para obtener el `access_token`
+  2. El usuario **NO debe tener sedes registradas** (409 Conflict)
+  3. El usuario **NO debe tener motocicletas registradas** (409 Conflict)
+  
+  ## Flujo:
+  1. Backend valida el JWT token del header Authorization
+  2. Verifica que el usuario no tenga sedes activas (branches)
+  3. Verifica que el usuario no tenga motocicletas registradas
+  4. Elimina el usuario de Keycloak
+  5. Elimina el usuario de la base de datos local
+  
+  ## Respuestas:
+  - **200**: Cuenta eliminada exitosamente
+  - **401**: Token inválido o ausente
+  - **409**: Usuario tiene sedes o motocicletas registradas
+  
+  ## Códigos de mensaje:
+  - `MOD_P_DEL_EXI_00001`: Eliminación exitosa
+  - `MOD_P_HAS_BRANCHES_ERR_00001`: No se puede eliminar, el usuario tiene sedes
+  - `MOD_P_DEL_ERR_00001`: Error genérico de eliminación
+  
+  ## Ejemplo de éxito:
+  ```json
+  {
+    "success": true,
+    "message": {
+      "codigo_mensaje": "MOD_P_DEL_EXI_00001",
+      "titulo": "Cuenta eliminada",
+      "contenido": "Su cuenta ha sido eliminada exitosamente del sistema."
+    }
+  }
+  ```
+  
+  ## Ejemplo de error (tiene sedes):
+  ```json
+  {
+    "success": false,
+    "message": {
+      "codigo_mensaje": "MOD_P_HAS_BRANCHES_ERR_00001",
+      "titulo": "No se puede eliminar",
+      "contenido": "Debe eliminar todas las sedes registradas antes de eliminar su cuenta."
+    }
+  }
+  ```
+}

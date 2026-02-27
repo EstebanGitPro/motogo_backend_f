@@ -12,18 +12,10 @@ type Diagnostic struct {
 	ID                 string         `db:"id"`
 	MotorcycleID       string         `db:"motocicleta_id"`
 	BranchID           string         `db:"sede_id"`
+	BranchName         sql.NullString `db:"branch_name"`
 	Date               time.Time      `db:"fecha"`
 	ProblemDescription sql.NullString `db:"descripcion_problema"` //nolint:misspell // Spanish DB column
 	PossibleSolution   sql.NullString `db:"posible_solucion"`
-}
-
-// DiagnosticEvidence represents the database model for evidencias_diagnostico table
-type DiagnosticEvidence struct {
-	ID           string         `db:"id"`
-	DiagnosticID string         `db:"diagnostico_id"`
-	ImageURL     string         `db:"url_imagen"`
-	Description  sql.NullString `db:"descripcion"` //nolint:misspell // Spanish DB column
-	CreatedAt    time.Time      `db:"created_at"`
 }
 
 // ToDomain converts the database Diagnostic model to domain entity
@@ -33,6 +25,10 @@ func (d *Diagnostic) ToDomain() domain.Diagnostic {
 		MotorcycleID: d.MotorcycleID,
 		BranchID:     d.BranchID,
 		Date:         d.Date,
+	}
+
+	if d.BranchName.Valid {
+		diagnostic.BranchName = d.BranchName.String
 	}
 
 	if d.ProblemDescription.Valid {
@@ -66,37 +62,4 @@ func FromDomain(diagnostic *domain.Diagnostic) *Diagnostic {
 	}
 
 	return d
-}
-
-// EvidenceToDomain converts the database DiagnosticEvidence model to domain entity
-func (e *DiagnosticEvidence) EvidenceToDomain() domain.DiagnosticEvidence {
-	evidence := domain.DiagnosticEvidence{
-		ID:           e.ID,
-		DiagnosticID: e.DiagnosticID,
-		ImageURL:     e.ImageURL,
-		CreatedAt:    e.CreatedAt,
-	}
-
-	if e.Description.Valid {
-		desc := e.Description.String
-		evidence.Description = &desc
-	}
-
-	return evidence
-}
-
-// EvidenceFromDomain converts a domain DiagnosticEvidence entity to database model
-func EvidenceFromDomain(evidence *domain.DiagnosticEvidence) *DiagnosticEvidence {
-	e := &DiagnosticEvidence{
-		ID:           evidence.ID,
-		DiagnosticID: evidence.DiagnosticID,
-		ImageURL:     evidence.ImageURL,
-		CreatedAt:    evidence.CreatedAt,
-	}
-
-	if evidence.Description != nil {
-		e.Description = sql.NullString{String: *evidence.Description, Valid: true}
-	}
-
-	return e
 }

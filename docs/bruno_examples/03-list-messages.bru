@@ -1,0 +1,44 @@
+meta {
+  name: 03 - List All Messages
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}/admin/messages
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has messages array", function() {
+    expect(res.body.messages).to.be.an('array');
+  });
+  
+  test("Response has count", function() {
+    expect(res.body.count).to.exist;
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.body._links).to.be.an('array');
+  });
+}
+
+docs {
+  # List All Messages
+  
+  Obtiene todos los mensajes del sistema.
+  
+  ## Response
+  - `messages`: Array de mensajes
+  - `count`: Número total
+  - `_links`: Links HATEOAS
+}

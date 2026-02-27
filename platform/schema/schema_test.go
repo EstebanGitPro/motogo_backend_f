@@ -56,6 +56,7 @@ var allSchemaFiles = []string{
 	"branch_services_schema.json",
 	"franchise_branch_schema.json",
 	"update_status_schema.json",
+	"rate_service_item_schema.json",
 }
 
 // buildMockReader creates a MockFileReader that returns valid schemas for all files.

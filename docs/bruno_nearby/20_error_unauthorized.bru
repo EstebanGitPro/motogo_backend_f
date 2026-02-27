@@ -1,0 +1,37 @@
+meta {
+  name: 20 - Error Unauthorized (No Token)
+  type: http
+  seq: 20
+}
+
+get {
+  url: {{base_url}}/branches/nearby?lat=4.71&lng=-74.07&radius=5
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+}
+
+tests {
+  test("Status code is 401 Unauthorized", function() {
+    expect(res.status).to.equal(401);
+  });
+  
+  test("Response has error", function() {
+    expect(res.body.success).to.be.false;
+  });
+}
+
+docs {
+  # Error: Unauthorized (No Token)
+  
+  Prueba de autenticación: el endpoint requiere token válido.
+  
+  ## Este test
+  - No envía token de autenticación
+  
+  ## Respuesta esperada
+  - **401 Unauthorized**
+}

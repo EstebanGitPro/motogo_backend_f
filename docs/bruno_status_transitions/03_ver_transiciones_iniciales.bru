@@ -1,0 +1,77 @@
+meta {
+  name: Ver Transiciones Iniciales (HU73)
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}/completed-services/{{completed_service_id}}/transitions
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+script:pre-request {
+  var csId = bru.getVar("completed_service_id");
+  if (!csId || csId === "REPLACE_WITH_COMPLETED_SERVICE_ID") {
+    console.log("⚠️ completed_service_id no configurado!");
+    console.log("💡 Ejecuta paso 02 (Registrar Servicio) primero");
+  }
+}
+
+script:post-response {
+  if (res.status === 200) {
+    var transitions = res.body.data;
+    console.log("✅ Transiciones encontradas:", transitions.length);
+    transitions.forEach(function(t, i) {
+      console.log("  " + (i+1) + ". " + (t.previous_status || "null") + " → " + t.new_status + " (" + t.created_at + ")");
+    });
+  } else {
+    console.log("❌ Error:", res.status, res.body);
+  }
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has data array", function() {
+    expect(res.body.data).to.be.an("array");
+  });
+  
+  test("Primera transición es null → PENDIENTE", function() {
+    if (res.body.data.length > 0) {
+      var first = res.body.data[0];
+      expect(first.previous_status).to.be.null;
+      expect(first.new_status).to.equal("PENDIENTE");
+    }
+  });
+}
+
+docs {
+  # GET /completed-services/:id/transitions (HU73)
+  
+  Consulta el historial de transiciones de estado de un servicio.
+  Después de registrar, debería haber **1 transición**: `null → PENDIENTE`.
+  
+  ## Response Data
+  ```json
+  [
+    {
+      "id": "uuid",
+      "previous_status": null,
+      "new_status": "PENDIENTE",
+      "created_by": "person-uuid",
+      "created_at": "2026-02-16 21:00:00"
+    }
+  ]
+  ```
+}

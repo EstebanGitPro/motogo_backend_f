@@ -1,0 +1,44 @@
+meta {
+  name: Desactivar Excepción (HU25)
+  type: http
+  seq: 7
+}
+
+put {
+  url: {{base_url}}/schedule-exceptions/{{exception_id}}/deactivate
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success message", function() {
+    expect(res.body.message).to.exist;
+  });
+  
+  test("Exception is now inactive", function() {
+    expect(res.body.data.active).to.equal(false);
+  });
+}
+
+docs {
+  # Desactivar Excepción de Horario (HU25)
+  
+  Desactiva una excepción de horario sin eliminarla.
+  
+  ## Response Codes
+  - **200**: Excepción desactivada
+  - **403**: No autorizado
+  - **404**: Excepción no encontrada
+}

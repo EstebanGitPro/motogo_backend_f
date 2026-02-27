@@ -1,0 +1,8 @@
+{
+  "name": "MotoGo - Nearby Branches API (HU89)",
+  "version": "1",
+  "type": "collection",
+  "scripts": {
+    "docs": "# MotoGo Nearby Branches Collection\n\nColección Bruno para endpoint de búsqueda de sedes cercanas.\n\n## HU89: Buscar Sedes Cercanas\n\nPermite a usuarios (motociclistas) encontrar talleres y tiendas cercanas.\n\n## Autenticación\n\nEste endpoint requiere autenticación con rol USER.\n\n## Uso\n\n1. Ejecutar 01_login_user.bru primero\n2. Ejecutar cualquier test de nearby"
+  }
+}

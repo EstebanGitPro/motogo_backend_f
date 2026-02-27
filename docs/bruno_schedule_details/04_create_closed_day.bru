@@ -1,0 +1,59 @@
+meta {
+  name: Crear Día Cerrado (Domingo)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{base_url}}/branches/{{branch_id}}/schedules/details
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "day_of_week": 7,
+    "is_closed": true
+  }
+}
+
+tests {
+  test("Status code is 201 Created", function() {
+    expect(res.status).to.equal(201);
+  });
+  
+  test("Day is Sunday (7)", function() {
+    expect(res.body.data.day_of_week).to.equal(7);
+    expect(res.body.data.day_name).to.equal("Domingo");
+  });
+  
+  test("Is marked as closed", function() {
+    expect(res.body.data.is_closed).to.equal(true);
+  });
+  
+  test("No opening/closing time when closed", function() {
+    expect(res.body.data.opening_time).to.be.oneOf([null, undefined]);
+    expect(res.body.data.closing_time).to.be.oneOf([null, undefined]);
+  });
+}
+
+docs {
+  # Crear Día Cerrado (HU6 - Caso Especial)
+  
+  Registra un día en que la sede está completamente cerrada.
+  
+  ## Body
+  - `day_of_week`: 7 (Domingo)
+  - `is_closed`: true
+  
+  **No se requieren** `opening_time` ni `closing_time` cuando `is_closed = true`.
+}

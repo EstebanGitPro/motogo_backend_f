@@ -30,16 +30,16 @@ func TestLoadConfig_DefaultLocal_Success(t *testing.T) {
 
 func TestLoadConfig_RailwayEnv_FallsBackToLocal(t *testing.T) {
 	// Set APP_ENV to "railway" — railway-config.json doesn't exist,
-	// so it should fall back to local-config.json
+	// so it should fall back to local-config.json for defaults,
+	// but APP_ENV override sets environment to "railway"
 	t.Setenv("APP_ENV", "railway")
 
 	cfg, err := config.LoadConfig()
 
 	assert.NoError(t, err)
 	assert.NotNil(t, cfg)
-	// Even though env was "railway", the file loaded is local-config.json
-	// which has environment: "local"
-	assert.Equal(t, "local", cfg.Environment)
+	// APP_ENV env var overrides the JSON environment field
+	assert.Equal(t, "railway", cfg.Environment)
 }
 
 func TestLoadConfig_KeycloakEnvOverrides(t *testing.T) {
@@ -85,6 +85,75 @@ func TestLoadConfig_PartialKeycloakOverrides(t *testing.T) {
 	// These should retain the values from local-config.json
 	assert.Equal(t, "motogo", cfg.Keycloak.Realm)
 	assert.Equal(t, "stifler", cfg.Keycloak.ClientID)
+}
+
+func TestLoadConfig_DatabaseEnvOverrides(t *testing.T) {
+	t.Setenv("APP_ENV", "")
+	t.Setenv("DB_HOST", "db.production.com")
+	t.Setenv("DB_PORT", "3306")
+	t.Setenv("DB_USERNAME", "prod_user")
+	t.Setenv("DB_PASSWORD", "prod_secret")
+	t.Setenv("DB_NAME", "motogo_prod")
+	t.Setenv("DB_MAX_OPEN_CONNS", "50")
+
+	cfg, err := config.LoadConfig()
+
+	assert.NoError(t, err)
+	assert.Equal(t, "db.production.com", cfg.Database.Host)
+	assert.Equal(t, "3306", cfg.Database.Port)
+	assert.Equal(t, "prod_user", cfg.Database.Username)
+	assert.Equal(t, "prod_secret", cfg.Database.Password)
+	assert.Equal(t, "motogo_prod", cfg.Database.Name)
+	assert.Equal(t, 50, cfg.Database.MaxOpenConns)
+}
+
+func TestLoadConfig_ServerEnvOverrides(t *testing.T) {
+	t.Setenv("APP_ENV", "")
+	t.Setenv("SERVER_PORT", "9090")
+	t.Setenv("SERVER_HOST", "127.0.0.1")
+
+	cfg, err := config.LoadConfig()
+
+	assert.NoError(t, err)
+	assert.Equal(t, "9090", cfg.Server.Port)
+	assert.Equal(t, "127.0.0.1", cfg.Server.Host)
+}
+
+func TestLoadConfig_ResendEnvOverrides(t *testing.T) {
+	t.Setenv("APP_ENV", "")
+	t.Setenv("RESEND_API_KEY", "re_prod_key")
+	t.Setenv("RESEND_FROM_EMAIL", "no-reply@motogo.com")
+
+	cfg, err := config.LoadConfig()
+
+	assert.NoError(t, err)
+	assert.Equal(t, "re_prod_key", cfg.Resend.APIKey)
+	assert.Equal(t, "no-reply@motogo.com", cfg.Resend.FromEmail)
+}
+
+func TestLoadConfig_GeocodingEnvOverrides(t *testing.T) {
+	t.Setenv("APP_ENV", "")
+	t.Setenv("GEOCODING_API_KEY", "prod-google-key")
+	t.Setenv("GEOCODING_TIMEOUT", "10")
+	t.Setenv("GEOCODING_FALLBACK_API_KEY", "prod-mapbox-key")
+
+	cfg, err := config.LoadConfig()
+
+	assert.NoError(t, err)
+	assert.Equal(t, "prod-google-key", cfg.Geocoding.APIKey)
+	assert.Equal(t, 10, cfg.Geocoding.TimeoutSeconds)
+	assert.Equal(t, "prod-mapbox-key", cfg.Geocoding.FallbackAPIKey)
+}
+
+func TestLoadConfig_InvalidIntEnvFallsBackToJSON(t *testing.T) {
+	t.Setenv("APP_ENV", "")
+	t.Setenv("DB_MAX_OPEN_CONNS", "not-a-number")
+
+	cfg, err := config.LoadConfig()
+
+	assert.NoError(t, err)
+	// Should keep the JSON default (25) since the env var is invalid
+	assert.Equal(t, 25, cfg.Database.MaxOpenConns)
 }
 
 func TestGetMySQLDSN_WithSSL(t *testing.T) {

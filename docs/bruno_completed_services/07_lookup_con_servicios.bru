@@ -1,0 +1,103 @@
+meta {
+  name: Lookup con Servicios Completados (HU64)
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{base_url}}/motorcycles/lookup?plate={{license_plate}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+script:pre-request {
+  var plate = bru.getVar("license_plate");
+  if (!plate || plate === "REPLACE_WITH_PLATE") {
+    console.log("⚠️ license_plate no configurado!");
+    console.log("💡 Configura license_plate en el environment");
+  }
+}
+
+script:post-response {
+  if (res.status === 200) {
+    var moto = res.body.data;
+    console.log("═══════════════════════════════════════");
+    console.log("✅ LOOKUP CON SERVICIOS COMPLETADOS");
+    console.log("═══════════════════════════════════════");
+    console.log("🏍️ motorcycle_id:", moto.id);
+    console.log("📋 Placa:", moto.license_plate);
+    console.log("");
+    
+    if (moto.completed_services && moto.completed_services.length > 0) {
+      console.log("🔧 SERVICIOS COMPLETADOS (" + moto.completed_services.length + "):");
+      moto.completed_services.forEach(function(svc, i) {
+        console.log("  [" + i + "] ID:", svc.id);
+        console.log("      Status:", svc.status);
+        console.log("      Fecha:", svc.request_date);
+        console.log("      Sede:", svc.branch_id);
+        if (svc.services && svc.services.length > 0) {
+          console.log("      Servicios:", svc.services.map(function(s) { return s.name; }).join(", "));
+        }
+      });
+    } else {
+      console.log("ℹ️ Sin servicios completados para esta moto.");
+    }
+    
+    if (moto.diagnostics && moto.diagnostics.length > 0) {
+      console.log("");
+      console.log("🩺 Diagnósticos:", moto.diagnostics.length);
+    }
+    
+    if (moto.evidence && moto.evidence.length > 0) {
+      console.log("📸 Evidencias:", moto.evidence.length);
+    }
+    
+    console.log("═══════════════════════════════════════");
+  } else {
+    console.log("❌ Error:", res.status, res.body);
+  }
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.body.success).to.be.true;
+  });
+  
+  test("Response has motorcycle data", function() {
+    expect(res.body.data.id).to.exist;
+    expect(res.body.data.license_plate).to.exist;
+  });
+  
+  test("completed_services is array or null", function() {
+    if (res.body.data.completed_services) {
+      expect(res.body.data.completed_services).to.be.an("array");
+    }
+  });
+}
+
+docs {
+  # Lookup con Servicios Completados (HU64)
+  
+  Verifica que el endpoint de lookup por placa ahora incluye el campo
+  `completed_services` en la respuesta, junto con `diagnostics` y `evidence`.
+  
+  ## Prerrequisitos
+  1. Ejecutar Login Representante (01_login_representante.bru)
+  2. Configurar `license_plate` en el environment
+  3. La sede debe tener permiso activo para esa moto
+  
+  ## Respuesta esperada
+  El campo `completed_services` aparece como array (puede estar vacío/null).
+}

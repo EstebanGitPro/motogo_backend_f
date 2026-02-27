@@ -1,0 +1,89 @@
+meta {
+  name: Update Profile Image (HU36/37)
+  type: http
+  seq: 18
+}
+
+put {
+  url: {{base_url}}/motorcycles/{{motorcycle_id}}/profile-image
+  body: json
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "image_url": "https://firebasestorage.googleapis.com/v0/b/motogo-test.appspot.com/o/motorcycles%2Ftest-profile.jpg?alt=media"
+  }
+}
+
+script:post-response {
+  if (res.status === 200) {
+    console.log("✅ Profile image updated successfully");
+    console.log("📸 Image URL:", res.body.data.profile_image_url);
+  }
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.body.success).to.be.true;
+  });
+  
+  test("Response has data object", function() {
+    expect(res.body.data).to.be.an('object');
+  });
+  
+  test("Profile image URL is returned", function() {
+    expect(res.body.data.profile_image_url).to.exist;
+    expect(res.body.data.profile_image_url).to.include("firebasestorage.googleapis.com");
+  });
+  
+  test("Response includes HATEOAS links", function() {
+    expect(res.body.data._links).to.be.an('array');
+    expect(res.body.data._links.length).to.be.greaterThan(0);
+  });
+}
+
+docs {
+  # PUT /motorcycles/:id - Update Profile Image (HU36)
+  
+  ## Description
+  Updates the profile image URL of a motorcycle. The image must be pre-uploaded to Firebase Storage.
+  
+  ## Authentication
+  Requires valid JWT token with USER role.
+  
+  ## Request Body
+  ```json
+  {
+    "profile_image_url": "https://firebasestorage.googleapis.com/..."
+  }
+  ```
+  
+  ## Notes
+  - The image URL must be from Firebase Storage
+  - Profile image is optional - can be set/removed anytime
+  - Set to null to remove the profile image
+  
+  ## Responses
+  - 200: Profile image updated successfully
+  - 401: Not authenticated
+  - 404: Motorcycle not found or not owner
+  - 500: Server error
+  
+  ## Prerequisites
+  1. Run 14_list_motorcycles.bru to get motorcycle_id
+  2. Ensure you're authenticated as the motorcycle owner
+}

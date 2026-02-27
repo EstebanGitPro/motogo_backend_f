@@ -67,6 +67,15 @@ const (
 	`
 	queryDeleteBranchDisplacementRanges = "DELETE FROM branch_displacement_ranges WHERE branch_id = ?"
 	queryGetBranchDisplacementRanges    = "SELECT displacement_range FROM branch_displacement_ranges WHERE branch_id = ? AND active = TRUE"
+
+	// Service names for nearby search
+	queryGetBranchServiceNames = `
+		SELECT s.name
+		FROM branch_services bs
+		JOIN services s ON s.id = bs.service_id
+		WHERE bs.branch_id = ? AND bs.active = TRUE
+		ORDER BY s.name
+	`
 )
 
 var log logger.Logger = logger.NewSlogLogger()
@@ -87,6 +96,9 @@ type repository struct {
 	stmtSaveBranchDisplacementRange    *sql.Stmt
 	stmtDeleteBranchDisplacementRanges *sql.Stmt
 	stmtGetBranchDisplacementRanges    *sql.Stmt
+
+	// Service names for nearby search
+	stmtGetBranchServiceNames *sql.Stmt
 }
 
 // NewRepository creates a new BranchRepository with prepared statements (fail-fast pattern)
@@ -167,6 +179,12 @@ func NewRepository(db *sql.DB) (output.BranchRepository, error) {
 		return nil, fmt.Errorf("error preparing stmtGetBranchDisplacementRanges: %w", err)
 	}
 
+	stmtGetBranchServiceNames, err := db.Prepare(queryGetBranchServiceNames)
+	if err != nil {
+		log.Error(logger.LogDatabaseUnavailable, "error preparing stmtGetBranchServiceNames", err)
+		return nil, fmt.Errorf("error preparing stmtGetBranchServiceNames: %w", err)
+	}
+
 	return &repository{
 		db:                              db,
 		stmtSaveBranch:                  stmtSaveBranch,
@@ -182,6 +200,8 @@ func NewRepository(db *sql.DB) (output.BranchRepository, error) {
 		stmtSaveBranchDisplacementRange:    stmtSaveBranchDisplacementRange,
 		stmtDeleteBranchDisplacementRanges: stmtDeleteBranchDisplacementRanges,
 		stmtGetBranchDisplacementRanges:    stmtGetBranchDisplacementRanges,
+
+		stmtGetBranchServiceNames: stmtGetBranchServiceNames,
 	}, nil
 }
 

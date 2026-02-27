@@ -1,0 +1,87 @@
+meta {
+  name: Actualizar Detalles del Servicio (HU75)
+  type: http
+  seq: 11
+}
+
+patch {
+  url: {{base_url}}/completed-services/{{completed_service_id}}
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "quoted_price": 200000,
+    "final_price": 185000,
+    "representative_notes": "Se ajustó el precio final tras aplicar descuento por cliente frecuente. Se incluyó revisión adicional de frenos."
+  }
+}
+
+script:pre-request {
+  var csId = bru.getVar("completed_service_id");
+  
+  if (!csId || csId === "REPLACE_WITH_COMPLETED_SERVICE_ID") {
+    console.log("⚠️ completed_service_id no configurado!");
+    console.log("💡 Ejecuta paso 04 (Registrar Servicio) primero");
+  }
+}
+
+script:post-response {
+  if (res.status === 200) {
+    console.log("✅ Detalles del servicio actualizados exitosamente");
+  } else {
+    console.log("❌ Error:", res.status, res.body);
+  }
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.body.success).to.be.true;
+  });
+  
+  test("Message code is MOD_CS_DETAILS_UPD_EXI_00001", function() {
+    expect(res.body.message_code).to.equal("MOD_CS_DETAILS_UPD_EXI_00001");
+  });
+}
+
+docs {
+  # PATCH /completed-services/:id - Actualizar Detalles (HU75)
+  
+  Actualiza precios y/o notas de un servicio en estado **PENDIENTE** o **EN_PROCESO**.
+  Se requiere al menos un campo en el body.
+  
+  ## Flujo previo
+  1. Ejecutar `01_login_representante.bru` → guarda `access_token`
+  2. Ejecutar `04_registrar_servicio.bru` → guarda `completed_service_id`
+  3. (Opcional) Ejecutar `10_transicion_en_proceso.bru`
+  4. Ejecutar este request ✅
+  
+  ## Request Body
+  
+  | Campo | Tipo | Requerido | Descripción |
+  |-------|------|-----------|-------------|
+  | `quoted_price` | number | ❌ | Precio cotizado (COP) |
+  | `final_price` | number | ❌ | Precio final cobrado (COP) |
+  | `representative_notes` | string | ❌ | Observaciones del representante |
+  
+  > **Nota:** Al menos uno de los tres campos debe estar presente.
+  
+  ## Respuestas
+  - **200**: Detalles actualizados exitosamente
+  - **400**: Sin campos, formato inválido, o servicio en estado FINALIZADO
+  - **404**: Servicio no encontrado
+}

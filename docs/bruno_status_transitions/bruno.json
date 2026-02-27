@@ -1,0 +1,8 @@
+{
+  "name": "MotoGo - Transiciones de Estado (HU73/HU74)",
+  "version": "1",
+  "type": "collection",
+  "scripts": {
+    "docs": "# MotoGo Transiciones de Estado\n\nColección Bruno para gestión de transiciones de estado de servicios realizados.\n\n## HUs Implementadas\n\n- HU73: Consultar historial de transiciones\n- HU74: Actualizar estado del servicio\n\n## Flujo de Pruebas\n\n1. Login representante (01) → token\n2. Registrar servicio (02) → completed_service_id en PENDIENTE\n3. Ver transiciones iniciales (03) → 1 entrada\n4. Transicionar a EN_PROCESO (04)\n5. Ver transiciones (05) → 2 entradas\n6. Transicionar a FINALIZADO (06)\n7. Ver transiciones (07) → 3 entradas\n8. Intentar transición inválida (08) → error"
+  }
+}

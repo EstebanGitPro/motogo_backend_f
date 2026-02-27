@@ -1,0 +1,56 @@
+meta {
+  name: Ver Transiciones (3 entradas)
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{base_url}}/completed-services/{{completed_service_id}}/transitions
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+script:post-response {
+  if (res.status === 200) {
+    var transitions = res.body.data;
+    console.log("✅ Transiciones encontradas:", transitions.length);
+    transitions.forEach(function(t, i) {
+      console.log("  " + (i+1) + ". " + (t.previous_status || "null") + " → " + t.new_status);
+    });
+  } else {
+    console.log("❌ Error:", res.status, res.body);
+  }
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Hay 3 transiciones", function() {
+    expect(res.body.data).to.have.length(3);
+  });
+  
+  test("Tercera transición es EN_PROCESO → FINALIZADO", function() {
+    var last = res.body.data[res.body.data.length - 1];
+    expect(last.previous_status).to.equal("EN_PROCESO");
+    expect(last.new_status).to.equal("FINALIZADO");
+  });
+}
+
+docs {
+  # Ver Transiciones después de FINALIZADO
+  
+  Verificamos que ahora hay **3 transiciones**:
+  1. `null → PENDIENTE`
+  2. `PENDIENTE → EN_PROCESO`
+  3. `EN_PROCESO → FINALIZADO`
+}

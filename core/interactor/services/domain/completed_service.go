@@ -86,6 +86,7 @@ type CompletedServiceItem struct {
 	ID                 string     // UUID primary key
 	CompletedServiceID string     // FK to completed_services
 	ServiceID          string     // FK to services
+	ServiceName        *string    // Service name (populated via JOIN for listing endpoints)
 	Rating             *int       // Rating 1-5 (NULL until rated by motorcyclist)
 	Comment            *string    // Optional customer review text
 	RatedAt            *time.Time // When rating was submitted
@@ -110,4 +111,23 @@ type ServiceStatusHistory struct {
 // SetID generates a UUID for the history entry
 func (h *ServiceStatusHistory) SetID() {
 	h.ID = uuid.Generate()
+}
+
+// ServiceReview represents a single review for a service type (HU48 - reviews endpoint)
+type ServiceReview struct {
+	ReviewerName    string    // "Carlos M." (first name + last initial for privacy)
+	Rating          int       // 1-5
+	Comment         *string   // Optional review text
+	RatedAt         time.Time // When the review was submitted
+	MotorcycleModel *string   // e.g., "Honda CB 160F" (reference name)
+}
+
+// ServiceReviewSummary is the aggregate response for GET /services/:id/reviews
+type ServiceReviewSummary struct {
+	ServiceID     string          // Service UUID
+	ServiceName   string          // e.g., "Ajuste general de tornillería"
+	AverageRating float64         // e.g., 4.7
+	TotalReviews  int             // Total count of rated items
+	Breakdown     map[int]int     // {5: 18, 4: 7, 3: 2, 2: 1, 1: 0}
+	Reviews       []ServiceReview // Individual reviews
 }

@@ -1,0 +1,74 @@
+meta {
+  name: Register Branch with Geocoding
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{base_url}}/branches
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "name": "Taller Chapinero",
+    "establishment_type": "WORKSHOP",
+    "location": {
+      "department_id": "a1b2c3d4-1111-4000-8000-000000000001",
+      "city_id": "b2c3d4e5-2222-4000-8000-000000000001",
+      "city_name": "Bogotá",
+      "department_name": "Cundinamarca",
+      "address": "Carrera 13 #63-21, Chapinero"
+    },
+    "brands": [
+      "f6a7b8c9-6666-4000-8000-000000000003",
+      "f6a7b8c9-6666-4000-8000-000000000005"
+    ]
+  }
+}
+
+tests {
+  test("Status code is 201 Created", function() {
+    expect(res.status).to.equal(201);
+  });
+  
+  test("Response has geocoding status", function() {
+    expect(res.body.data.geocoding_status).to.exist;
+  });
+  
+  test("Geocoding was attempted", function() {
+    // El status puede ser SUCCESS o FAILED dependiendo de la API key
+    expect(["SUCCESS", "FAILED", "SKIPPED"]).to.include(res.body.data.geocoding_status);
+  });
+}
+
+docs {
+  # Register Branch with Geocoding
+  
+  Prueba el proceso de geocodificación automática.
+  
+  ## Campos para Geocoding
+  - `city_name`: Nombre de la ciudad para construir la query
+  - `department_name`: Nombre del departamento para construir la query
+  - **NO** se envía `latitude`/`longitude` - el backend los genera
+  
+  ## Geocoding Status
+  | Status | Descripción |
+  |--------|-------------|
+  | `SUCCESS` | Coordenadas obtenidas de OpenCage API |
+  | `FAILED` | Error al geocodificar (pero sede se creó) |
+  | `SKIPPED` | El usuario ya envió lat/lng |
+  
+  ## Nota
+  Si `OPENCAGE_API_KEY` no está configurada, el status será `FAILED` pero la sede se crea igual.
+}

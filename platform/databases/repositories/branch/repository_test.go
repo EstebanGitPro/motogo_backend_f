@@ -40,6 +40,7 @@ func TestNewRepository_Success(t *testing.T) {
 	mock.ExpectPrepare("INSERT INTO branch_displacement_ranges")
 	mock.ExpectPrepare("DELETE FROM branch_displacement_ranges")
 	mock.ExpectPrepare("SELECT displacement_range FROM branch_displacement_ranges")
+	mock.ExpectPrepare("SELECT s.name FROM branch_services")
 
 	repo, err := NewRepository(db)
 
@@ -467,11 +468,13 @@ func TestGetBranchesNearby_Success(t *testing.T) {
 	// 1. Expect prepared statements for hydration
 	stmtBrands := mock.ExpectPrepare("SELECT brand_id FROM branch_brands")
 	stmtDR := mock.ExpectPrepare("SELECT displacement_range FROM branch_displacement_ranges")
+	stmtSN := mock.ExpectPrepare("SELECT s.name FROM branch_services")
 
 	// 2. Set up repo with real prepared statements
 	repo := &repository{db: db}
 	repo.stmtGetBranchBrands, _ = db.Prepare("SELECT brand_id FROM branch_brands WHERE branch_id = ?")
 	repo.stmtGetBranchDisplacementRanges, _ = db.Prepare("SELECT displacement_range FROM branch_displacement_ranges WHERE branch_id = ?")
+	repo.stmtGetBranchServiceNames, _ = db.Prepare("SELECT s.name FROM branch_services bs JOIN services s ON s.id = bs.service_id WHERE bs.branch_id = ?")
 
 	// 3. Expect main nearby query
 	rows := sqlmock.NewRows([]string{
@@ -491,12 +494,16 @@ func TestGetBranchesNearby_Success(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{"brand_id"}).AddRow("brand-A").AddRow("brand-B"))
 	stmtDR.ExpectQuery().WithArgs("branch-001").
 		WillReturnRows(sqlmock.NewRows([]string{"displacement_range"}).AddRow("BAJO").AddRow("MEDIO"))
+	stmtSN.ExpectQuery().WithArgs("branch-001").
+		WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow("Cambio de aceite").AddRow("Sincronización"))
 
 	// 5. Expect hydration queries for branch-002
 	stmtBrands.ExpectQuery().WithArgs("branch-002").
 		WillReturnRows(sqlmock.NewRows([]string{"brand_id"}))
 	stmtDR.ExpectQuery().WithArgs("branch-002").
 		WillReturnRows(sqlmock.NewRows([]string{"displacement_range"}).AddRow("ALTO"))
+	stmtSN.ExpectQuery().WithArgs("branch-002").
+		WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow("Venta de repuestos"))
 
 	branches, err := repo.GetBranchesNearby(
 		context.Background(),
@@ -515,8 +522,10 @@ func TestGetBranchesNearby_Success(t *testing.T) {
 	// Verify hydrated data
 	assert.Equal(t, []string{"brand-A", "brand-B"}, branches[0].Brands)
 	assert.Equal(t, []domain.DisplacementRange{"BAJO", "MEDIO"}, branches[0].DisplacementRanges)
+	assert.Equal(t, []string{"Cambio de aceite", "Sincronización"}, branches[0].ServiceNames)
 	assert.Empty(t, branches[1].Brands)
 	assert.Equal(t, []domain.DisplacementRange{"ALTO"}, branches[1].DisplacementRanges)
+	assert.Equal(t, []string{"Venta de repuestos"}, branches[1].ServiceNames)
 }
 
 func TestGetBranchesNearby_Empty(t *testing.T) {
@@ -1304,11 +1313,17 @@ func TestGetBranchesByRepresentative_Success_WithData(t *testing.T) {
 	)
 	stmtMain.ExpectQuery().WillReturnRows(rows)
 
-	// 4. During rows iteration, Go re-prepares hydration stmts on new connections
-	reBrands := mock.ExpectPrepare("SELECT brand_id FROM branch_brands")
-	reBrands.ExpectQuery().WillReturnRows(sqlmock.NewRows([]string{"brand_id"}).AddRow("brand-A"))
-	reDR := mock.ExpectPrepare("SELECT displacement_range FROM branch_displacement_ranges")
-	reDR.ExpectQuery().WillReturnRows(sqlmock.NewRows([]string{"displacement_range"}).AddRow("BAJO"))
+	// 4. Hydration queries — during row iteration, sqlmock re-prepares on busy conn
+	// Hydration for branch-001
+	mock.ExpectPrepare("SELECT brand_id FROM branch_brands").
+		ExpectQuery().WillReturnRows(sqlmock.NewRows([]string{"brand_id"}).AddRow("brand-A"))
+	mock.ExpectPrepare("SELECT displacement_range FROM branch_displacement_ranges").
+		ExpectQuery().WillReturnRows(sqlmock.NewRows([]string{"displacement_range"}).AddRow("BAJO"))
+	// Hydration for branch-002
+	mock.ExpectPrepare("SELECT brand_id FROM branch_brands").
+		ExpectQuery().WillReturnRows(sqlmock.NewRows([]string{"brand_id"}))
+	mock.ExpectPrepare("SELECT displacement_range FROM branch_displacement_ranges").
+		ExpectQuery().WillReturnRows(sqlmock.NewRows([]string{"displacement_range"}))
 
 	branches, err := repo.GetBranchesByRepresentative(context.Background(), "rep-123")
 

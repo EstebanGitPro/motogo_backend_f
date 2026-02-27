@@ -1,0 +1,88 @@
+meta {
+  name: Get All Departments
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/departments
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.getBody().success).to.be.true;
+  });
+  
+  test("Response has departments array", function() {
+    expect(res.getBody().data.departments).to.be.an('array');
+  });
+  
+  test("Each department has id and name", function() {
+    const departments = res.getBody().data.departments;
+    if (departments.length > 0) {
+      expect(departments[0].id).to.exist;
+      expect(departments[0].name).to.exist;
+      // Save first department ID for next request
+      bru.setEnvVar("department_id", departments[0].id);
+    }
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.getBody().data._links).to.be.an('array');
+  });
+}
+
+docs {
+  # Get All Departments (Catalog)
+  
+  Obtiene la lista completa de departamentos colombianos.
+  Este es un endpoint **público** (no requiere autenticación).
+  
+  ## Uso:
+  Los representantes de sede usan este endpoint para obtener los departamentos 
+  disponibles durante el registro de una nueva sede.
+  
+  ## Endpoint:
+  `GET /motogo/api/v1/departments`
+  
+  ## No requiere autenticación
+  
+  ## Respuestas:
+  - **200**: Lista de departamentos obtenida exitosamente
+  - **500**: Error interno del servidor
+  
+  ## Ejemplo de respuesta exitosa:
+  ```json
+  {
+    "success": true,
+    "code": "MOD_L_DEP_EXI_00001",
+    "message": "Departamentos obtenidos",
+    "data": {
+      "departments": [
+        {"id": "uuid-antioquia", "name": "Antioquia"},
+        {"id": "uuid-cundinamarca", "name": "Cundinamarca"},
+        {"id": "uuid-valle", "name": "Valle del Cauca"}
+      ],
+      "_links": [
+        {"href": "/motogo/api/v1/departments", "rel": "self", "method": "GET"}
+      ]
+    }
+  }
+  ```
+  
+  ## Flujo sugerido:
+  1. Obtener lista de departamentos
+  2. Al seleccionar un departamento, llamar a GET /departments/{id}/cities
+  3. Seleccionar ciudad
+  4. Enviar IDs en el registro de sede
+}

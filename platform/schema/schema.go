@@ -37,6 +37,7 @@ type Validators struct {
 	BranchServicesValidator          *jsonschema.Schema // branch services association
 	FranchiseBranchValidator         *jsonschema.Schema // franchise branch association
 	UpdateStatusValidator            *jsonschema.Schema // HU74 (update status)
+	RateServiceItemValidator         *jsonschema.Schema // HU48 (rate service item)
 }
 
 type FileReader interface {
@@ -98,6 +99,7 @@ func NewValidator(fileReader FileReader) (*Validators, error) {
 		{&validator.BranchServicesValidator, "branch_services_schema.json"},
 		{&validator.FranchiseBranchValidator, "franchise_branch_schema.json"},
 		{&validator.UpdateStatusValidator, "update_status_schema.json"},
+		{&validator.RateServiceItemValidator, "rate_service_item_schema.json"},
 	}
 
 	for _, s := range schemas {
@@ -180,6 +182,20 @@ func (v *Validators) ValidateUpdateMotorcycle(data interface{}) error {
 	}
 
 	result := v.UpdateMotorcycleValidator.Validate(data)
+	if !result.IsValid() {
+		return ErrValidationFailed
+	}
+
+	return nil
+}
+
+// ValidateRateServiceItem validates data against the rate service item schema (HU48)
+func (v *Validators) ValidateRateServiceItem(data interface{}) error {
+	if v.RateServiceItemValidator == nil {
+		return ErrSchemaEmpty
+	}
+
+	result := v.RateServiceItemValidator.Validate(data)
 	if !result.IsValid() {
 		return ErrValidationFailed
 	}

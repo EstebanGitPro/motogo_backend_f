@@ -1,0 +1,121 @@
+meta {
+  name: Register Branch (HU59) - Success
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/branches
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "name": "Mi Taller Central",
+    "establishment_type": "WORKSHOP",
+    "location": {
+      "department_id": "a1b2c3d4-1111-4000-8000-000000000001",
+      "city_id": "b2c3d4e5-2222-4000-8000-000000000001",
+      "city_name": "Bogotá",
+      "department_name": "Cundinamarca",
+      "address": "Calle 50 #10-20, Barrio Centro"
+    },
+    "brands": ["f6a7b8c9-6666-4000-8000-000000000001"],
+    "displacement_ranges": ["BAJO", "MEDIO","ALTO"]
+  }
+}
+
+script:post-response {
+  // Save the encoded branch_id for use in GET /branches/:id
+  if (res.body.data && res.body.data.id) {
+    bru.setVar("branch_id", res.body.data.id);
+    console.log("Saved branch_id:", res.body.data.id);
+  }
+}
+
+tests {
+  test("Status code is 201 Created", function() {
+    expect(res.status).to.equal(201);
+  });
+  
+  test("Response has success", function() {
+    expect(res.body.success).to.be.true;
+  });
+  
+  test("Response has branch ID", function() {
+    expect(res.body.data.id).to.exist;
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.body.data._links).to.exist;
+    expect(res.body.data._links.length).to.be.greaterThan(0);
+  });
+  
+  test("Response has Location header", function() {
+    expect(res.headers['location']).to.exist;
+  });
+  
+  test("Branch has correct establishment type", function() {
+    expect(res.body.data.establishment_type).to.equal("WORKSHOP");
+  });
+  
+  test("Branch status is ACTIVE", function() {
+    expect(res.body.data.status).to.equal("ACTIVE");
+  });
+  
+  test("Response has geocoding status", function() {
+    expect(res.body.data.geocoding_status).to.exist;
+  });
+}
+
+docs {
+  # Register Branch (HU59) - Success Case
+  
+  Registra una nueva sede para el representante autenticado.
+  
+  ## Prerrequisitos
+  1. **Ejecutar Login primero** (01_login.bru)
+  2. El usuario debe tener rol `REPRESENTANTE`
+  3. Ejecutar dummy_data.sql para tener los catálogos
+  
+  ## Campos Requeridos
+  | Campo | Tipo | Descripción |
+  |-------|------|-------------|
+  | `name` | string | Nombre de la sede |
+  | `establishment_type` | enum | `WORKSHOP` o `STORE` |
+  | `location.department_id` | UUID | ID del departamento |
+  | `location.city_id` | UUID | ID de la ciudad |
+  | `location.address` | string | Dirección (5-150 chars) |
+  
+  ## Campos Opcionales
+  | Campo | Tipo | Descripción |
+  |-------|------|-------------|
+  | `franchise_id` | UUID | Franquicia asociada |
+  | `profile_image_url` | URL | Imagen de perfil |
+  | `location.city_name` | string | Nombre ciudad (geocoding) |
+  | `location.department_name` | string | Nombre departamento (geocoding) |
+  | `location.latitude` | number | Latitud (-90 a 90) |
+  | `location.longitude` | number | Longitud (-180 a 180) |
+  | `brands` | array | UUIDs de marcas |
+  | `displacement_ranges` | array | Rangos de cilindraje: `BAJO`, `MEDIO`, `ALTO` |
+  
+  ## Geocoding
+  Si no envías lat/lng, el backend intentará geocodificar usando OpenCage API.
+  El campo `geocoding_status` indica: SUCCESS, SKIPPED, o FAILED.
+  
+  ## Respuestas
+  - **201**: Sede creada exitosamente
+  - **400**: Datos inválidos
+  - **401**: Token inválido/ausente
+  - **409**: Nombre duplicado o dirección duplicada
+}

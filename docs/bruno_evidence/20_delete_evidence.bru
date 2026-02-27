@@ -1,0 +1,92 @@
+meta {
+  name: Delete Evidence (HU19) - Success
+  type: http
+  seq: 10
+}
+
+delete {
+  url: {{base_url}}/motorcycles/{{motorcycle_id}}/evidence/{{evidence_id}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+script:pre-request {
+  var evidenceId = bru.getVar("evidence_id");
+  if (!evidenceId || evidenceId === "REPLACE_WITH_EVIDENCE_ID") {
+    console.log("⚠️ evidence_id not set!");
+    console.log("💡 Run 10_list_evidence.bru first to get an evidence_id");
+  } else {
+    console.log("Deleting evidence_id:", evidenceId);
+  }
+}
+
+script:post-response {
+  if (res.status === 200) {
+    console.log("✅ Evidence deleted successfully");
+    console.log("📋 HATEOAS links for next actions:");
+    if (res.body.data && res.body.data._links) {
+      res.body.data._links.forEach(link => {
+        console.log("   -", link.rel, ":", link.method, link.href);
+      });
+    }
+  }
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.body.success).to.be.true;
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.body.data).to.be.an('object');
+    expect(res.body.data._links).to.be.an('array');
+  });
+  
+  test("HATEOAS includes list link", function() {
+    var listLink = res.body.data._links.find(l => l.rel === 'evidence-list');
+    expect(listLink).to.exist;
+    expect(listLink.method).to.equal('GET');
+  });
+  
+  test("HATEOAS includes create link", function() {
+    var createLink = res.body.data._links.find(l => l.rel === 'evidence-create');
+    expect(createLink).to.exist;
+    expect(createLink.method).to.equal('POST');
+  });
+}
+
+docs {
+  # DELETE /motorcycles/:id/evidence/:evidenceId - Delete Evidence (HU19)
+  
+  Elimina una evidencia fotográfica de una motocicleta.
+  
+  ## Prerrequisitos
+  1. **Ejecutar Login primero** (01_login_user.bru)
+  2. Configurar `motorcycle_id` y `evidence_id`
+  
+  ## Richardson Maturity Model Level 3
+  La respuesta incluye links HATEOAS guiando al cliente a:
+  - Listar evidencias restantes
+  - Crear nueva evidencia
+  
+  ## Seguridad
+  - Solo el propietario de la moto puede eliminar evidencias
+  - Retorna 404 para no-propietarios (security by obscurity)
+  
+  ## Respuestas
+  - **200 OK**: Evidencia eliminada con links HATEOAS
+  - **401**: No autenticado
+  - **404**: Evidencia no encontrada o no es propietario
+}

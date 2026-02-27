@@ -1,0 +1,46 @@
+meta {
+  name: Create Evidence - Invalid URL
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{base_url}}/motorcycles/{{motorcycle_id}}/evidence
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "image_url": "https://example.com/not-firebase/image.jpg",
+    "description": "Esta URL no es de Firebase"
+  }
+}
+
+tests {
+  test("Status code is 400 Bad Request", function() {
+    expect(res.status).to.equal(400);
+  });
+  
+  test("Response has success false", function() {
+    expect(res.body.success).to.be.false;
+  });
+}
+
+docs {
+  # Create Evidence - Invalid URL Error Case
+  
+  Verifica que el endpoint rechaza URLs que no son de Firebase Storage.
+  
+  ## Expected Response
+  - **400 Bad Request**: URL de imagen inválida
+}

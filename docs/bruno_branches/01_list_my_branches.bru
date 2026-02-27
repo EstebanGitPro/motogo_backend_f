@@ -1,0 +1,86 @@
+meta {
+  name: List My Branches (200)
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/branches
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.body.success).to.be.true;
+  });
+  
+  test("Response has branches array", function() {
+    expect(res.body.data.branches).to.be.an('array');
+  });
+  
+  test("Response has count", function() {
+    expect(res.body.data.count).to.be.a('number');
+  });
+  
+  test("First branch has department_id in location", function() {
+    if (res.body.data.branches.length > 0) {
+      const branch = res.body.data.branches[0];
+      if (branch.location) {
+        expect(branch.location.department_id).to.exist;
+        expect(branch.location.department_id).to.not.equal("");
+      }
+    }
+  });
+}
+
+script:post-response {
+  // Automatically save the FIRST branch_id for UPDATE/DELETE tests
+  if (res.body.data && res.body.data.branches && res.body.data.branches.length > 0) {
+    const firstBranch = res.body.data.branches[0];
+    bru.setVar("branch_id", firstBranch.id);
+    console.log("✅ Saved branch_id from first branch:", firstBranch.id);
+    console.log("   Branch name:", firstBranch.name);
+  } else {
+    console.log("⚠️ No branches found. Create one first with 02_register_branch.bru");
+  }
+}
+
+docs {
+  # GET /branches - Listar mis sedes (HU62)
+  
+  Este endpoint retorna todas las sedes del representante autenticado.
+  
+  ## Flujo Recomendado
+  1. Ejecutar `01_login.bru` → obtiene access_token
+  2. Ejecutar este request → **automáticamente guarda `branch_id`**
+  3. Ejecutar `30_update_branch.bru` o `40_delete_branch.bru`
+  
+  ## Requisitos:
+  - Token JWT válido de un usuario con rol REPRESENTANTE
+  - Header Authorization: Bearer {token}
+  
+  ## Respuesta esperada (200 OK):
+  - success: true
+  - data.branches: Array de sedes con location y brands
+  - data.count: Número total de sedes
+  - data._links: HATEOAS links (self, create, brands, branch-types)
+  
+  ## Cada sede incluye:
+  - id (encoded) ← **Este se guarda automáticamente**
+  - name
+  - establishment_type
+  - status
+  - profile_image_url (opcional)
+  - location { city_id, **department_id**, address, latitude, longitude }
+  - brands: ["marca1", "marca2"]
+  - _links (self, update, delete, list)
+}

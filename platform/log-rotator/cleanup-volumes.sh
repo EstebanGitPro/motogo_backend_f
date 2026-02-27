@@ -29,7 +29,7 @@ cleanup_prometheus() {
         find /prometheus -maxdepth 1 -type d -name "01*" -mtime +$RETENTION_DAYS | while read -r block; do
             log "  Eliminando bloque Prometheus: $(basename "$block")"
             rm -rf "$block"
-            ((deleted++))
+            ((deleted++)) || true
         done
         
         # Limpiar WAL antiguo
@@ -57,7 +57,7 @@ cleanup_loki() {
             find /loki/chunks -type f -mtime +$RETENTION_DAYS | while read -r chunk; do
                 log "  Eliminando chunk Loki: $(basename "$chunk")"
                 rm -f "$chunk"
-                ((deleted++))
+                ((deleted++)) || true
             done
         fi
         

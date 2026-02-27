@@ -1,0 +1,65 @@
+meta {
+  name: Update Branch (HU60) - Forbidden (Not Owner)
+  type: http
+  seq: 31
+}
+
+put {
+  url: {{base_url}}/branches/{{branch_id}}
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{user_token}}
+}
+
+body:json {
+  {
+    "name": "Intento de Hackeo",
+    "establishment_type": "WORKSHOP",
+    "location": {
+      "department_id": "a1b2c3d4-1111-4000-8000-000000000001",
+      "city_id": "b2c3d4e5-2222-4000-8000-000000000001",
+      "address": "Calle Falsa 123"
+    },
+    "brands": []
+  }
+}
+
+tests {
+  test("Status code is 403 Forbidden", function() {
+    expect(res.status).to.equal(403);
+  });
+  
+  test("Response has error", function() {
+    expect(res.body.success).to.be.false;
+  });
+  
+  test("Message code is GEN_FORBIDDEN_ERR_00003", function() {
+    expect(res.body.code).to.equal("GEN_FORBIDDEN_ERR_00003");
+  });
+}
+
+docs {
+  # Update Branch (HU60) - Forbidden Case
+  
+  Intenta modificar una sede que NO pertenece al usuario autenticado.
+  
+  ## Escenario
+  Un usuario con un token diferente (no es el dueño de la sede)
+  intenta modificar la sede de otro representante.
+  
+  ## Prerrequisitos
+  1. Tener un `branch_id` de una sede existente
+  2. Usar `user_token` de un usuario que NO es el dueño
+  
+  ## Respuesta Esperada
+  - **403 Forbidden**: No tienes permiso para modificar esta sede
+  - Código: `GEN_FORBIDDEN_ERR_00003`
+}

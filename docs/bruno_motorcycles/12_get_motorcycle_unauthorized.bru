@@ -1,0 +1,34 @@
+meta {
+  name: Get Motorcycle (HU46) - Unauthorized
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{base_url}}/motorcycles/any-id
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+}
+
+tests {
+  test("Status code is 401 Unauthorized", function() {
+    expect(res.status).to.equal(401);
+  });
+  
+  test("Response has success false", function() {
+    expect(res.body.success).to.be.false;
+  });
+}
+
+docs {
+  # Get Motorcycle (HU46) - Unauthorized Case
+  
+  Prueba el caso de error cuando no se envía token de autenticación.
+  
+  ## Respuesta Esperada
+  - **401 Unauthorized**: Token no proporcionado
+}

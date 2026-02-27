@@ -1,0 +1,62 @@
+meta {
+  name: Crear Excepción Día Cerrado (HU20)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}/branches/{{branch_id}}/schedules/exceptions
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "exception_start_date": "2026-12-25",
+    "is_closed": true
+  }
+}
+
+tests {
+  test("Status code is 201 Created", function() {
+    expect(res.status).to.equal(201);
+  });
+  
+  test("Exception is marked as closed", function() {
+    expect(res.body.data.is_closed).to.equal(true);
+  });
+  
+  test("No opening_time when closed", function() {
+    expect(res.body.data.opening_time).to.be.empty;
+  });
+  
+  test("No closing_time when closed", function() {
+    expect(res.body.data.closing_time).to.be.empty;
+  });
+  
+  test("Exception end date defaults to start date", function() {
+    expect(res.body.data.exception_end_date).to.equal(res.body.data.exception_start_date);
+  });
+}
+
+docs {
+  # Crear Excepción - Día Cerrado (HU20)
+  
+  Crea una excepción para un día de cierre completo (ej: Navidad).
+  
+  ## Body
+  - `exception_start_date`: "2026-12-25" (requerido)
+  - `exception_end_date`: Opcional, si no se envía usa start_date
+  - `is_closed`: true
+  
+  Cuando `is_closed` es true, no se requieren `opening_time` ni `closing_time`.
+}

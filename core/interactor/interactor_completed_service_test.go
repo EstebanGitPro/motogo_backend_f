@@ -470,7 +470,7 @@ func TestTransitionStatus_Success_PendienteToEnProceso(t *testing.T) {
 	svc.On("SaveStatusHistory", ctx, mockTx, mock.AnythingOfType("*domain.ServiceStatusHistory")).Return(nil)
 	mockTx.On("Commit").Return(nil)
 
-	err := ci.TransitionStatus(ctx, "cs-1", "EN_PROCESO", "person-1")
+	err := ci.TransitionStatus(ctx, "cs-1", "EN_PROCESO", "person-1", nil)
 
 	assert.NoError(t, err)
 	svc.AssertExpectations(t)
@@ -492,7 +492,7 @@ func TestTransitionStatus_Success_EnProcesoToFinalizado(t *testing.T) {
 	svc.On("SaveStatusHistory", ctx, mockTx, mock.AnythingOfType("*domain.ServiceStatusHistory")).Return(nil)
 	mockTx.On("Commit").Return(nil)
 
-	err := ci.TransitionStatus(ctx, "cs-1", "FINALIZADO", "person-1")
+	err := ci.TransitionStatus(ctx, "cs-1", "FINALIZADO", "person-1", nil)
 
 	assert.NoError(t, err)
 	svc.AssertExpectations(t)
@@ -504,7 +504,7 @@ func TestTransitionStatus_NotFound(t *testing.T) {
 
 	svc.On("GetByID", ctx, "cs-bad").Return(nil, errors.New("not found"))
 
-	err := ci.TransitionStatus(ctx, "cs-bad", "EN_PROCESO", "person-1")
+	err := ci.TransitionStatus(ctx, "cs-bad", "EN_PROCESO", "person-1", nil)
 
 	assert.Error(t, err)
 	assert.Equal(t, domain.ErrCompletedServiceNotFound, err)
@@ -518,7 +518,7 @@ func TestTransitionStatus_InvalidTransition(t *testing.T) {
 	cs := &domain.CompletedService{ID: "cs-1", Status: domain.ServiceStatusPending}
 	svc.On("GetByID", ctx, "cs-1").Return(cs, nil)
 
-	err := ci.TransitionStatus(ctx, "cs-1", "FINALIZADO", "person-1")
+	err := ci.TransitionStatus(ctx, "cs-1", "FINALIZADO", "person-1", nil)
 
 	assert.Error(t, err)
 	assert.Equal(t, domain.ErrInvalidStatusTransition, err)
@@ -532,7 +532,7 @@ func TestTransitionStatus_BeginTxError(t *testing.T) {
 	svc.On("GetByID", ctx, "cs-1").Return(cs, nil)
 	svc.On("BeginTx", ctx).Return(nil, errors.New("tx error"))
 
-	err := ci.TransitionStatus(ctx, "cs-1", "EN_PROCESO", "person-1")
+	err := ci.TransitionStatus(ctx, "cs-1", "EN_PROCESO", "person-1", nil)
 
 	assert.Error(t, err)
 	assert.Equal(t, domain.ErrInvalidStatusTransition, err)
@@ -549,7 +549,7 @@ func TestTransitionStatus_UpdateError_RollsBack(t *testing.T) {
 	svc.On("UpdateStatus", ctx, mockTx, "cs-1", "EN_PROCESO", mock.Anything).Return(errors.New("update error"))
 	mockTx.On("Rollback").Return(nil)
 
-	err := ci.TransitionStatus(ctx, "cs-1", "EN_PROCESO", "person-1")
+	err := ci.TransitionStatus(ctx, "cs-1", "EN_PROCESO", "person-1", nil)
 
 	assert.Error(t, err)
 	mockTx.AssertCalled(t, "Rollback")
@@ -567,7 +567,7 @@ func TestTransitionStatus_SaveHistoryError_RollsBack(t *testing.T) {
 	svc.On("SaveStatusHistory", ctx, mockTx, mock.AnythingOfType("*domain.ServiceStatusHistory")).Return(errors.New("history error"))
 	mockTx.On("Rollback").Return(nil)
 
-	err := ci.TransitionStatus(ctx, "cs-1", "EN_PROCESO", "person-1")
+	err := ci.TransitionStatus(ctx, "cs-1", "EN_PROCESO", "person-1", nil)
 
 	assert.Error(t, err)
 	mockTx.AssertCalled(t, "Rollback")
@@ -586,7 +586,7 @@ func TestTransitionStatus_CommitError_RollsBack(t *testing.T) {
 	mockTx.On("Commit").Return(errors.New("commit error"))
 	mockTx.On("Rollback").Return(nil)
 
-	err := ci.TransitionStatus(ctx, "cs-1", "EN_PROCESO", "person-1")
+	err := ci.TransitionStatus(ctx, "cs-1", "EN_PROCESO", "person-1", nil)
 
 	assert.Error(t, err)
 	mockTx.AssertCalled(t, "Rollback")
@@ -640,4 +640,95 @@ func TestGetStatusHistory_HistoryError(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Nil(t, result)
+}
+
+// ============================================
+// UpdateCompletedServiceDetails (HU78)
+// ============================================
+
+func TestUpdateCompletedServiceDetails_Success(t *testing.T) {
+	ctx := context.Background()
+	ci, svc := setupCompletedServiceInteractor()
+
+	cs := &domain.CompletedService{ID: "cs-1", Status: domain.ServiceStatusPending}
+	svc.On("GetByID", ctx, "cs-1").Return(cs, nil)
+
+	mockTx := new(mocks.MockTx)
+	svc.On("BeginTx", ctx).Return(mockTx, nil)
+
+	quoted := 150000.0
+	final := 140000.0
+	notes := "Todo revisado"
+	svc.On("UpdateDetails", ctx, mockTx, "cs-1", &quoted, &final, &notes).Return(nil)
+	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil)
+
+	err := ci.UpdateCompletedServiceDetails(ctx, "cs-1", &quoted, &final, &notes)
+
+	assert.NoError(t, err)
+	svc.AssertCalled(t, "UpdateDetails", ctx, mockTx, "cs-1", &quoted, &final, &notes)
+	mockTx.AssertCalled(t, "Commit")
+}
+
+func TestUpdateCompletedServiceDetails_NotFound(t *testing.T) {
+	ctx := context.Background()
+	ci, svc := setupCompletedServiceInteractor()
+
+	svc.On("GetByID", ctx, "cs-missing").Return(nil, errors.New("not found"))
+
+	quoted := 100000.0
+	err := ci.UpdateCompletedServiceDetails(ctx, "cs-missing", &quoted, nil, nil)
+
+	assert.Error(t, err)
+	assert.Equal(t, domain.ErrCompletedServiceNotFound, err)
+}
+
+func TestUpdateCompletedServiceDetails_CannotUpdate_CompletedStatus(t *testing.T) {
+	ctx := context.Background()
+	ci, svc := setupCompletedServiceInteractor()
+
+	cs := &domain.CompletedService{ID: "cs-1", Status: domain.ServiceStatusCompleted}
+	svc.On("GetByID", ctx, "cs-1").Return(cs, nil)
+
+	quoted := 100000.0
+	err := ci.UpdateCompletedServiceDetails(ctx, "cs-1", &quoted, nil, nil)
+
+	assert.Error(t, err)
+	assert.Equal(t, domain.ErrCompletedServiceCannotUpdate, err)
+}
+
+func TestUpdateCompletedServiceDetails_BeginTxError(t *testing.T) {
+	ctx := context.Background()
+	ci, svc := setupCompletedServiceInteractor()
+
+	cs := &domain.CompletedService{ID: "cs-1", Status: domain.ServiceStatusInProgress}
+	svc.On("GetByID", ctx, "cs-1").Return(cs, nil)
+	svc.On("BeginTx", ctx).Return(nil, errors.New("tx error"))
+
+	quoted := 100000.0
+	err := ci.UpdateCompletedServiceDetails(ctx, "cs-1", &quoted, nil, nil)
+
+	assert.Error(t, err)
+	assert.Equal(t, domain.ErrCompletedServiceCannotUpdate, err)
+}
+
+func TestUpdateCompletedServiceDetails_UpdateDetailsError_RollsBack(t *testing.T) {
+	ctx := context.Background()
+	ci, svc := setupCompletedServiceInteractor()
+
+	cs := &domain.CompletedService{ID: "cs-1", Status: domain.ServiceStatusPending}
+	svc.On("GetByID", ctx, "cs-1").Return(cs, nil)
+
+	mockTx := new(mocks.MockTx)
+	svc.On("BeginTx", ctx).Return(mockTx, nil)
+
+	quoted := 100000.0
+	svc.On("UpdateDetails", ctx, mockTx, "cs-1", &quoted, mock.Anything, mock.Anything).Return(errors.New("update err"))
+	mockTx.On("Rollback").Return(nil)
+
+	err := ci.UpdateCompletedServiceDetails(ctx, "cs-1", &quoted, nil, nil)
+
+	assert.Error(t, err)
+	assert.Equal(t, domain.ErrCompletedServiceCannotUpdate, err)
+	mockTx.AssertCalled(t, "Rollback")
 }

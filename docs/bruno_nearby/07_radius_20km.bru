@@ -1,0 +1,51 @@
+meta {
+  name: 07 - Change Radius (20km)
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{base_url}}/branches/nearby?lat={{latitude}}&lng={{longitude}}&radius=20
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+script:pre-request {
+  console.log("📏 Buscando con radio de 20 km...");
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Radius in response is 20", function() {
+    expect(res.body.data.radius_km).to.equal(20);
+  });
+  
+  test("All branches within 20km", function() {
+    var branches = res.body.data.branches;
+    branches.forEach(function(branch) {
+      expect(branch.distance_km).to.be.at.most(20);
+    });
+  });
+}
+
+script:post-response {
+  bru.setVar("count_20km", res.body.data.count);
+  console.log("📍 Con 20km: encontradas", res.body.data.count, "sedes");
+}
+
+docs {
+  # Change Radius - 20km
+  
+  Búsqueda con radio de 20 kilómetros.
+}

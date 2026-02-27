@@ -1,0 +1,47 @@
+meta {
+  name: Lookup Motorcycle by Plate (HU47) - Not Found
+  type: http
+  seq: 13
+}
+
+get {
+  url: {{base_url}}/motorcycles/lookup?plate=NOEXIST999
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+tests {
+  test("Status code is 404 Not Found", function() {
+    expect(res.status).to.equal(404);
+  });
+  
+  test("Response has success false", function() {
+    expect(res.body.success).to.be.false;
+  });
+  
+  test("Response has error message", function() {
+    expect(res.body.message).to.exist;
+  });
+}
+
+docs {
+  # Lookup Motorcycle by Plate (HU47) - Not Found Error
+  
+  Caso de error cuando la placa no existe en el sistema.
+  
+  ## Prerrequisitos
+  1. **Ejecutar Login como REPRESENTANTE**
+  
+  ## Respuesta Esperada
+  - Código: 404 Not Found
+  - `success`: false
+  - `message`: Mensaje de motocicleta no encontrada
+}

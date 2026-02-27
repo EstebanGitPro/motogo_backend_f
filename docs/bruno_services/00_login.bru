@@ -1,0 +1,58 @@
+meta {
+  name: 00. Login (Get Token)
+  type: http
+  seq: 0
+}
+
+post {
+  url: {{base_url}}/auth/login
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "email": "representante@example.com",
+    "password": "Secret123*"
+  }
+}
+
+script:post-response {
+  // Store the access token in environment variables
+  if (res.getStatus() === 200 && res.getBody().data && res.getBody().data.access_token) {
+    bru.setEnvVar("access_token", res.getBody().data.access_token);
+    console.log("✅ Token saved to environment");
+  }
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("Response has access_token", function() {
+    expect(res.getBody().data.access_token).to.exist;
+  });
+}
+
+docs {
+  # Login - Obtener Token
+  
+  Este request obtiene un token de autenticación y lo guarda automáticamente
+  en la variable de entorno `access_token` para usar en otros requests.
+  
+  ## Importante:
+  Ejecutar este request **PRIMERO** antes de usar los endpoints protegidos.
+  
+  ## Credenciales de prueba:
+  - Email: `representante@example.com`
+  - Password: `Secret123*`
+  
+  ## Post-response Script:
+  El token se guarda automáticamente en `{{access_token}}` después de login exitoso.
+}

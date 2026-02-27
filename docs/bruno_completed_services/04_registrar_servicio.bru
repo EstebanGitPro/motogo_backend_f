@@ -1,0 +1,134 @@
+meta {
+  name: Registrar Servicio Completado (HU64)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{base_url}}/completed-services
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "branch_id": "{{branch_id}}",
+    "motorcycle_id": "{{motorcycle_id}}",
+    "service_ids": [
+      "{{service_id_1}}",
+      "{{service_id_2}}"
+    ],
+    "quoted_price": 185000,
+    "final_price": 175000,
+    "representative_notes": "Se realizó cambio de aceite y revisión general de frenos. La moto presentaba desgaste en las pastillas. Se aplicó descuento por cliente frecuente."
+  }
+}
+
+script:pre-request {
+  var branchId = bru.getVar("branch_id");
+  var motoId = bru.getVar("motorcycle_id");
+  var svcId1 = bru.getVar("service_id_1");
+  
+  if (!branchId || branchId === "REPLACE_WITH_BRANCH_ID") {
+    console.log("⚠️ branch_id no configurado!");
+    console.log("💡 Configura branch_id en el environment");
+  }
+  if (!motoId || motoId === "REPLACE_WITH_MOTORCYCLE_ID") {
+    console.log("⚠️ motorcycle_id no configurado!");
+    console.log("💡 Ejecuta paso 03 (Buscar Moto por Placa) primero");
+  }
+  if (!svcId1 || svcId1 === "REPLACE_WITH_SERVICE_ID_1") {
+    console.log("⚠️ service_id_1 no configurado!");
+    console.log("💡 Ejecuta paso 02 (Servicios de la Sede) primero");
+  }
+}
+
+script:post-response {
+  if (res.status === 200 || res.status === 201) {
+    var completedServiceId = res.body.data.id;
+    bru.setVar("completed_service_id", completedServiceId);
+    console.log("✅ Servicio completado registrado! ID:", completedServiceId);
+    console.log("📋 Estado:", res.body.data.status);
+    console.log("📅 Fecha de solicitud:", res.body.data.request_date);
+    if (res.body.data.services) {
+      console.log("🔧 Servicios asociados:", res.body.data.services.length);
+    }
+  } else {
+    console.log("❌ Error:", res.status, res.body);
+  }
+}
+
+tests {
+  test("Status code is 200 or 201", function() {
+    expect([200, 201]).to.include(res.status);
+  });
+  
+  test("Response has success", function() {
+    expect(res.body.success).to.be.true;
+  });
+  
+  test("Response has completed service data", function() {
+    expect(res.body.data.id).to.exist;
+    expect(res.body.data.branch_id).to.exist;
+    expect(res.body.data.motorcycle_id).to.exist;
+    expect(res.body.data.status).to.exist;
+    expect(res.body.data.request_date).to.exist;
+  });
+  
+  test("Status is PENDIENTE (initial)", function() {
+    expect(res.body.data.status).to.equal("PENDIENTE");
+  });
+  
+  test("Response has services array", function() {
+    expect(res.body.data.services).to.be.an("array");
+    expect(res.body.data.services.length).to.be.greaterThan(0);
+  });
+  
+  test("Each service item has required fields", function() {
+    if (res.body.data.services && res.body.data.services.length > 0) {
+      var item = res.body.data.services[0];
+      expect(item.id).to.exist;
+      expect(item.service_id).to.exist;
+    }
+  });
+}
+
+docs {
+  # POST /completed-services - Registrar Servicio Completado (HU64)
+  
+  Registra un nuevo servicio realizado por un representante de sede para una motocicleta.
+  El estado inicial es **PENDIENTE** y la fecha de solicitud se asigna automáticamente.
+  
+  ## Flujo previo
+  1. Ejecutar `01_login_representante.bru` → guarda `access_token`
+  2. Ejecutar `02_servicios_de_sede.bru` → guarda `service_id_1`, `service_id_2`
+  3. Ejecutar `03_buscar_moto_por_placa.bru` → guarda `motorcycle_id`
+  4. Ejecutar este request ✅
+  
+  ## Request Body
+  
+  | Campo | Tipo | Requerido | Descripción |
+  |-------|------|-----------|-------------|
+  | `branch_id` | string | ✅ | ID ofuscado de la sede |
+  | `motorcycle_id` | string | ✅ | ID ofuscado de la motocicleta |
+  | `service_ids` | []string | ✅ | Array de IDs ofuscados de servicios (mínimo 1) |
+  | `quoted_price` | number | ❌ | Precio cotizado antes del servicio (COP) |
+  | `final_price` | number | ❌ | Precio final cobrado al cliente (COP) |
+  | `diagnostic_id` | string | ❌ | ID ofuscado del diagnóstico vinculado |
+  | `representative_notes` | string | ❌ | Observaciones del representante |
+  
+  ## Respuestas
+  - **200/201**: Servicio registrado exitosamente con status PENDIENTE
+  - **400**: Datos inválidos o servicios no pertenecen a la sede
+  - **401**: Token inválido o no autorizado
+  - **404**: Sede o motocicleta no encontrada
+}

@@ -209,10 +209,10 @@ func TestBuildScheduleDetailLinks(t *testing.T) {
 	// Act
 	links := handlers.BuildScheduleDetailLinks("http://api", "branch-1", "detail-1")
 
-	// Assert
+	// Assert — self GET was removed (no GET /schedule-details/:id route exists)
 	assert.GreaterOrEqual(t, len(links), 3)
 
-	expectedRels := []string{"self", "update", "delete", "schedule", "details-list"}
+	expectedRels := []string{"update", "delete", "schedule", "details-list"}
 	foundRels := make(map[string]bool)
 	for _, l := range links {
 		foundRels[l.Rel] = true

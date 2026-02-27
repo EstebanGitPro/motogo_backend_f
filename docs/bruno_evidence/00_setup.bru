@@ -1,0 +1,62 @@
+meta {
+  name: 00 - Setup (Login + Fetch Motorcycles)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}/auth/login
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "email": "negro@yopmail.com",
+    "password": "Secret123*"
+  }
+}
+
+script:post-response {
+  if (res.status === 200) {
+    var accessToken = res.body.data.access_token;
+    if (accessToken) {
+      bru.setVar("access_token", accessToken);
+      console.log("✅ Login successful! Token saved");
+      
+      // Now fetch motorcycles to get motorcycle_id
+      console.log("🔄 Fetching motorcycles to get motorcycle_id...");
+    }
+  } else {
+    console.log("❌ Login failed:", res.body);
+  }
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has access token", function() {
+    expect(res.body.data.access_token).to.exist;
+  });
+}
+
+docs {
+  # 00 - Setup: Login + Prepare Variables
+  
+  Este endpoint hace login y prepara las variables necesarias.
+  
+  ## Después de ejecutar este script:
+  1. Ve al folder bruno_motorcycles
+  2. Ejecuta 14_list_motorcycles.bru  
+  3. Esto guardará automáticamente el motorcycle_id
+  
+  ## O configura manualmente:
+  - Edita environments/local.bru y pon tu motorcycle_id
+}

@@ -1,0 +1,8 @@
+{
+  "name": "MotoGo - Evidence API",
+  "version": "1",
+  "type": "collection",
+  "scripts": {
+    "docs": "# MotoGo Evidence Collection\n\nColección Bruno para endpoints de gestión de evidencias fotográficas de motocicletas.\n\n## HUs Implementadas\n\n- HU16: Cargar evidencia fotográfica\n- HU18: Listar evidencias\n- HU19: Eliminar evidencia"
+  }
+}

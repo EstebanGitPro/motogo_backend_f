@@ -1,0 +1,142 @@
+meta {
+  name: Verify Email
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{base_url}}/auth/verify-email
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "token": "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJYc3IwNWVVdkdnRUl6YXRNeExFT0FPcnNEczJJckJLblgxOWhpOGRNRkZFIn0.eyJleHAiOjE3MzQ0NTE5MTMsImlhdCI6MTczNDQ1MTYxMywianRpIjoiNDdhYmM5NmUtZGU2NC00ZmNiLWE4ZTItMjJhYjNmMDM5ZTMwIiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL3JlYWxtcy9tb3RvZ28iLCJhdWQiOlsibW90b2dvQXBwIiwiYWNjb3VudCJdLCJzdWIiOiI3MTk4YzYzYy1lNGNlLTRjMTctYTk3YS1jMTg3YTU2YWMzMjUiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJtb3RvZ29BcHAiLCJzaWQiOiIwNGVlZGE3MC1hNzliLTQ2MDgtYmExMC02ZWJiNThhNGI5ZTkiLCJhY3IiOiIxIiwiYWxsb3dlZC1vcmlnaW5zIjpbIioiXSwicmVhbG1fYWNjZXNzIjp7InJvbGVzIjpbImRlZmF1bHQtcm9sZXMtbW90b2dvIiwib2ZmbGluZV9hY2Nlc3MiLCJ1bWFfYXV0aG9yaXphdGlvbiJdfSwicmVzb3VyY2VfYWNjZXNzIjp7Im1vdG9nb0FwcCI6eyJyb2xlcyI6WyJ1c2VyIl19LCJhY2NvdW50Ijp7InJvbGVzIjpbIm1hbmFnZS1hY2NvdW50IiwibWFuYWdlLWFjY291bnQtbGlua3MiLCJ2aWV3LXByb2ZpbGUiXX19LCJzY29wZSI6InByb2ZpbGUgZW1haWwiLCJlbWFpbF92ZXJpZmllZCI6ZmFsc2UsIm5hbWUiOiJKdWFuIFDDqXJleiIsInByZWZlcnJlZF91c2VybmFtZSI6ImFtb3JkZW1hZHJlQHlvcG1haWwuY29tIiwiZ2l2ZW5fbmFtZSI6Ikp1YW4iLCJmYW1pbHlfbmFtZSI6IlDDqXJleiIsImVtYWlsIjoiYW1vcmRlbWFkcmVAeW9wbWFpbC5jb20ifQ.token_firma_aqui"
+  }
+}
+
+tests {
+  test("Status code is 200 or 409", function() {
+    expect([200, 409]).to.include(res.status);
+  });
+  
+  test("Response has success field", function() {
+    expect(res.body.success).to.exist;
+  });
+  
+  test("Response has message", function() {
+    expect(res.body.message).to.exist;
+  });
+  
+  test("If 200, has email in data", function() {
+    if (res.status === 200) {
+      expect(res.body.data.email).to.exist;
+      expect(res.body.data.verified).to.equal(true);
+    }
+  });
+}
+
+docs {
+  # Verify Email
+  
+  Verifica el email de un usuario usando el token JWT que se envía en el correo de verificación.
+  
+  ## ⚠️ IMPORTANTE: Cómo obtener el token para probar
+  
+  ### Opción 1: Desde el correo de verificación (PRODUCCIÓN)
+  
+  1. **Registra un usuario** usando el request "Create Person"
+  2. **Revisa el correo** que se envió al email registrado
+  3. **Copia el token** del link que viene en el correo
+     - El link es algo como: `http://localhost:8000/verify-email?token=eyJhbGc...`
+     - Copia todo lo que viene después de `token=`
+  4. **Pega el token** en el campo `token` del body de este request
+  
+  ### Opción 2: Desde los logs del servidor (DESARROLLO)
+  
+  1. **Registra un usuario** usando "Create Person"
+  2. **Ve a los logs del backend** (terminal donde corre el server)
+  3. **Busca el log** que dice "Email de verificación enviado"
+  4. En ese log debería estar el **token JWT completo**
+  5. **Copia el token** y pégalo en el campo `token` del body
+  
+  ### Opción 3: Simular con token de login (TESTING)
+  
+  Si solo quieres probar que funciona:
+  
+  1. **Haz login** usando el request "Login" con un usuario ya creado
+  2. **Copia el access_token** de la respuesta del login
+  3. **Pega ese token** en el campo `token` del body
+  4. El sistema extraerá el email del token y lo marcará como verificado
+  
+  ## Campos Requeridos
+  - `token`: Token JWT que contiene el email del usuario a verificar
+  
+  ## Responses
+  
+  ### ✅ 200 OK - Email verificado exitosamente
+  ```json
+  {
+    "success": true,
+    "message": {
+      "codigo": "...",
+      "titulo": "Email Verificado",
+      "contenido": "Su email ha sido verificado exitosamente."
+    },
+    "data": {
+      "verified": true,
+      "email": "usuario@ejemplo.com"
+    }
+  }
+  ```
+  
+  ### ⚠️ 409 Conflict - Email ya estaba verificado
+  ```json
+  {
+    "success": false,
+    "message": {
+      "codigo": "MOD_KC_EMAIL_ALREADY_VERIFIED_WARN_00001",
+      "titulo": "Email Ya Verificado",
+      "contenido": "Su correo electrónico ya ha sido verificado anteriormente."
+    }
+  }
+  ```
+  
+  ### ❌ 400 Bad Request - Token inválido o expirado
+  ```json
+  {
+    "success": false,
+    "message": {
+      "codigo": "...",
+      "titulo": "Token Inválido",
+      "contenido": "El token de verificación es inválido o ha expirado."
+    }
+  }
+  ```
+  
+  ### ❌ 404 Not Found - Usuario no encontrado
+  ```json
+  {
+    "success": false,
+    "message": {
+      "codigo": "...",
+      "titulo": "Usuario No Encontrado",
+      "contenido": "No se encontró el usuario asociado a este email."
+    }
+  }
+  ```
+  
+  ## 🔍 Notas de Desarrollo
+  
+  - El token JWT debe contener el email del usuario en el claim `email`
+  - El sistema extrae el email del token automáticamente
+  - No es necesario decodificar el token manualmente
+  - El token puede ser el mismo que se usa para autenticación (access_token)
+  - El endpoint es público (no requiere autenticación)
+}

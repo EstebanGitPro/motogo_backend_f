@@ -1,0 +1,41 @@
+meta {
+  name: Eliminar Franquicia
+  type: http
+  seq: 6
+}
+
+delete {
+  url: {{base_url}}/franchises/{{franchise_id}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+}
+
+docs {
+  # Eliminar Franquicia (HU28)
+  
+  Elimina una franquicia. Las sedes asociadas quedan con `franchise_id = NULL`.
+  
+  ## Variables requeridas
+  - `franchise_id`: ID de franquicia a eliminar
+  
+  ## Response
+  - 200: Franquicia eliminada, sedes disociadas
+  - 404: Franquicia no encontrada
+  
+  ## Nota Importante
+  Al eliminar una franquicia, las sedes NO se eliminan, solo se disocian (quedan independientes).
+}

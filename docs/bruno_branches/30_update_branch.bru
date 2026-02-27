@@ -1,0 +1,110 @@
+meta {
+  name: Update Branch (HU60) - Success
+  type: http
+  seq: 30
+}
+
+put {
+  url: {{base_url}}/branches/{{branch_id}}
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "name": "Mi Taller Central - Actualizado",
+    "establishment_type": "STORE",
+    "location": {
+      "department_id": "a1b2c3d4-1111-4000-8000-000000000001",
+      "city_id": "b2c3d4e5-2222-4000-8000-000000000001",
+      "city_name": "Bogotá",
+      "department_name": "Cundinamarca",
+      "address": "Calle 60 #15-30, Barrio Norte"
+    },
+    "brands": ["f6a7b8c9-6666-4000-8000-000000000001", "f6a7b8c9-6666-4000-8000-000000000002"],
+    "displacement_ranges": ["BAJO", "ALTO"]
+  }
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.body.success).to.be.true;
+  });
+  
+  test("Response has branch ID", function() {
+    expect(res.body.data.id).to.exist;
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.body.data._links).to.exist;
+    expect(res.body.data._links.length).to.be.greaterThan(0);
+  });
+  
+  test("Branch name was updated", function() {
+    expect(res.body.data.name).to.contain("Actualizado");
+  });
+  
+  test("Establishment type was updated", function() {
+    expect(res.body.data.establishment_type).to.equal("STORE");
+  });
+  
+  test("Branch status is ACTIVE", function() {
+    expect(res.body.data.status).to.equal("ACTIVE");
+  });
+  
+  test("Response has geocoding status", function() {
+    expect(res.body.data.geocoding_status).to.exist;
+  });
+  
+  test("Message code is MOD_B_UPD_EXI_00001", function() {
+    expect(res.body.code).to.equal("MOD_B_UPD_EXI_00001");
+  });
+}
+
+docs {
+  # Update Branch (HU60) - Success Case
+  
+  Modifica una sede existente del representante autenticado.
+  
+  ## Prerrequisitos
+  1. **Ejecutar Login primero** (01_login.bru)
+  2. El usuario debe tener rol `REPRESENTANTE`
+  3. **La sede debe ser del usuario autenticado** (ownership validation)
+  4. Ejecutar 02_register_branch.bru para tener `branch_id`
+  
+  ## Ownership Validation
+  Solo el dueño de la sede puede modificarla. Si el `representative_id` 
+  de la sede no coincide con el `person_id` del token, retorna 403.
+  
+  ## Request Body
+  Mismo formato que Register Branch (HU59):
+  - `name`: Nombre de la sede
+  - `establishment_type`: WORKSHOP, STORE o WORKSHOP_STORE
+  - `location`: Objeto de ubicación
+  - `brands`: Array de UUIDs de marcas
+  - `displacement_ranges`: Array de rangos (`BAJO`, `MEDIO`, `ALTO`)
+  
+  ## Geocoding
+  Si cambias la dirección y no envías lat/lng, el backend
+  reintentará geocodificar automáticamente.
+  
+  ## Respuestas
+  - **200**: Sede actualizada exitosamente
+  - **400**: Datos inválidos / Marca no encontrada
+  - **401**: Token inválido/ausente
+  - **403**: No eres el dueño de la sede
+  - **404**: Sede no encontrada
+}

@@ -2,6 +2,8 @@ package interactor
 
 import (
 	"context"
+	"net/url"
+	"strings"
 
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/input"
@@ -326,6 +328,8 @@ func (i *BranchInteractor) validateBranchInputs(ctx context.Context, branch doma
 }
 
 // cleanupOldProfileImage deletes the old profile image from Firebase Storage if it was replaced.
+// It compares storage object paths (not full URLs) to avoid deleting an overwritten file
+// whose download URL changed only by its token query parameter.
 func (i *BranchInteractor) cleanupOldProfileImage(ctx context.Context, branch domain.Branch, existingBranch *domain.Branch, log logger.Logger) {
 	if branch.ProfileImageURL == nil || *branch.ProfileImageURL == "" {
 		return
@@ -333,7 +337,9 @@ func (i *BranchInteractor) cleanupOldProfileImage(ctx context.Context, branch do
 	if existingBranch.ProfileImageURL == nil || *existingBranch.ProfileImageURL == "" {
 		return
 	}
-	if *branch.ProfileImageURL == *existingBranch.ProfileImageURL {
+	// Compare by storage object path, not full URL (tokens change on overwrite)
+	if sameStoragePath(*branch.ProfileImageURL, *existingBranch.ProfileImageURL) {
+		log.Info(logger.LogBranchInteractorUpdateComplete, "action", "same_storage_path_skip_delete")
 		return
 	}
 	if i.storageClient == nil {
@@ -345,4 +351,37 @@ func (i *BranchInteractor) cleanupOldProfileImage(ctx context.Context, branch do
 	} else {
 		log.Info(logger.LogBranchInteractorUpdateComplete, "action", "old_storage_file_deleted", "url", *existingBranch.ProfileImageURL)
 	}
+}
+
+// sameStoragePath compares two Firebase Storage download URLs by their object path,
+// ignoring query parameters (like token) that change when a file is overwritten in place.
+func sameStoragePath(url1, url2 string) bool {
+	path1 := extractStoragePath(url1)
+	path2 := extractStoragePath(url2)
+	if path1 == "" || path2 == "" {
+		// Fallback to full string comparison if paths can't be extracted
+		return url1 == url2
+	}
+	return path1 == path2
+}
+
+// extractStoragePath extracts the object path from a Firebase Storage download URL.
+// Input:  https://firebasestorage.googleapis.com/v0/b/bucket/o/branches%2Fid%2Fprofile.jpg?alt=media&token=xxx
+// Output: branches/id/profile.jpg
+func extractStoragePath(rawURL string) string {
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return ""
+	}
+	// Expected path format: /v0/b/{bucket}/o/{encoded-object-path}
+	parts := strings.Split(parsed.Path, "/")
+	if len(parts) < 5 || parts[1] != "v0" || parts[2] != "b" || parts[4] != "o" {
+		return ""
+	}
+	objectPathEncoded := strings.Join(parts[5:], "/")
+	objectPath, err := url.PathUnescape(objectPathEncoded)
+	if err != nil {
+		return ""
+	}
+	return objectPath
 }

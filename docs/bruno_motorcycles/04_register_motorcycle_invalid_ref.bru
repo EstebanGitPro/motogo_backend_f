@@ -1,0 +1,51 @@
+meta {
+  name: Register Motorcycle (HU43) - Invalid Reference
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{base_url}}/motorcycles
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "license_plate": "XYZ999",
+    "reference_id": "invalid-reference-id",
+    "year": 2024
+  }
+}
+
+tests {
+  test("Status code is 404 Not Found", function() {
+    expect(res.status).to.equal(404);
+  });
+  
+  test("Response has success false", function() {
+    expect(res.body.success).to.be.false;
+  });
+  
+  test("Response has error message", function() {
+    expect(res.body.message).to.exist;
+  });
+}
+
+docs {
+  # Register Motorcycle (HU43) - Invalid Reference
+  
+  Prueba el caso de error cuando la referencia de motocicleta no existe.
+  
+  ## Respuesta Esperada
+  - **404 Not Found**: La referencia no existe en el catálogo
+}

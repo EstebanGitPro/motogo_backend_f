@@ -1,0 +1,51 @@
+meta {
+  name: Delete Branch (HU61) - Not Found
+  type: http
+  seq: 42
+}
+
+delete {
+  url: {{base_url}}/branches/nonexistent-branch-id-xyz
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+tests {
+  test("Status code is 404 Not Found", function() {
+    expect(res.status).to.equal(404);
+  });
+  
+  test("Response has error", function() {
+    expect(res.body.success).to.be.false;
+  });
+  
+  test("Message code is MOD_B_NOT_FOUND_ERR_00001", function() {
+    expect(res.body.code).to.equal("MOD_B_NOT_FOUND_ERR_00001");
+  });
+}
+
+docs {
+  # Delete Branch (HU61) - Not Found Case
+  
+  Intenta eliminar una sede que no existe.
+  
+  ## Escenario
+  Se envía un ID de sede que no existe en la base de datos,
+  o un ID malformado.
+  
+  ## Prerrequisitos
+  1. Ejecutar Login primero (01_login.bru)
+  2. El usuario debe tener rol `REPRESENTANTE`
+  
+  ## Respuesta Esperada
+  - **404 Not Found**: Sede no encontrada
+  - Código: `MOD_B_NOT_FOUND_ERR_00001`
+}

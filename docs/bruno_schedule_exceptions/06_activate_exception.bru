@@ -1,0 +1,44 @@
+meta {
+  name: Activar Excepción (HU24)
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{base_url}}/schedule-exceptions/{{exception_id}}/activate
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success message", function() {
+    expect(res.body.message).to.exist;
+  });
+  
+  test("Exception is now active", function() {
+    expect(res.body.data.active).to.equal(true);
+  });
+}
+
+docs {
+  # Activar Excepción de Horario (HU24)
+  
+  Activa una excepción de horario previamente desactivada.
+  
+  ## Response Codes
+  - **200**: Excepción activada
+  - **403**: No autorizado
+  - **404**: Excepción no encontrada
+}

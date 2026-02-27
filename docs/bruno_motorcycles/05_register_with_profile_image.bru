@@ -1,0 +1,94 @@
+meta {
+  name: Register Motorcycle with Profile Image (HU36)
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{base_url}}/motorcycles
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "license_plate": "IMG456",
+    "reference_id": "{{reference_id}}",
+    "year": 2024,
+    "current_mileage": 1000,
+    "owner_notes": "Moto con imagen de perfil",
+    "profile_image_url": "https://firebasestorage.googleapis.com/v0/b/motogo-test.appspot.com/o/motorcycles%2Fprofile.jpg?alt=media"
+  }
+}
+
+script:pre-request {
+  var referenceId = bru.getVar("reference_id");
+  if (!referenceId || referenceId === "REPLACE_WITH_ENCODED_ID") {
+    console.log("⚠️ reference_id not set. Get a valid reference ID!");
+  }
+}
+
+script:post-response {
+  if (res.status === 200 || res.status === 201) {
+    var motorcycleId = res.body.data.id;
+    bru.setVar("motorcycle_with_image_id", motorcycleId);
+    console.log("✅ Motorcycle with profile image registered! ID:", motorcycleId);
+    console.log("📸 Profile Image:", res.body.data.profile_image_url);
+  }
+}
+
+tests {
+  test("Status code is 200 or 201", function() {
+    expect([200, 201]).to.include(res.status);
+  });
+  
+  test("Response has success", function() {
+    expect(res.body.success).to.be.true;
+  });
+  
+  test("Response has motorcycle data", function() {
+    expect(res.body.data.id).to.exist;
+    expect(res.body.data.license_plate).to.equal("IMG456");
+  });
+  
+  test("Profile image URL is returned", function() {
+    expect(res.body.data.profile_image_url).to.exist;
+    expect(res.body.data.profile_image_url).to.include("firebasestorage.googleapis.com");
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.body.data._links).to.exist;
+    expect(res.body.data._links.length).to.be.greaterThan(0);
+  });
+}
+
+docs {
+  # Register Motorcycle with Profile Image (HU36)
+  
+  ## Description
+  Registers a new motorcycle with a profile image URL.
+  
+  ## Request Body
+  
+  | Campo | Tipo | Requerido | Descripción |
+  |-------|------|-----------|-------------|
+  | `license_plate` | string | ✅ | Placa de la motocicleta |
+  | `reference_id` | string | ✅ | ID de referencia del catálogo |
+  | `year` | int | ❌ | Año del modelo |
+  | `current_mileage` | int | ❌ | Kilometraje actual |
+  | `owner_notes` | string | ❌ | Notas del propietario |
+  | `profile_image_url` | string | ❌ | **HU36** URL de imagen de perfil (Firebase) |
+  
+  ## Prerequisites
+  1. Run Login first
+  2. Get a valid reference_id from catalog
+}

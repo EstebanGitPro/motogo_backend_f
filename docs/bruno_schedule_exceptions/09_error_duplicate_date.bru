@@ -1,0 +1,53 @@
+meta {
+  name: Error - Fecha Duplicada/Solapada
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{base_url}}/branches/{{branch_id}}/schedules/exceptions
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "exception_start_date": "2026-12-24",
+    "exception_end_date": "2026-12-26",
+    "opening_time": "08:00",
+    "closing_time": "12:00",
+    "is_closed": false
+  }
+}
+
+tests {
+  test("Status code is 409 Conflict", function() {
+    expect(res.status).to.equal(409);
+  });
+  
+  test("Error message indicates date conflict", function() {
+    expect(res.body.message).to.exist;
+  });
+}
+
+docs {
+  # Error - Fecha Duplicada/Solapada
+  
+  Intenta crear una excepción para un rango que se solapa con una excepción existente.
+  
+  ## Ejemplo de solapamiento
+  Si existe excepción para 2026-12-24, intentar crear:
+  - Rango 2026-12-24 → 2026-12-26 (solapa con el 24)
+  
+  ## Expected Response
+  - **409 Conflict**: Ya existe una excepción que se solapa con estas fechas
+}

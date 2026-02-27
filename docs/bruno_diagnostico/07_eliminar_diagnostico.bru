@@ -1,0 +1,64 @@
+meta {
+  name: Eliminar Diagnóstico (HU13)
+  type: http
+  seq: 8
+}
+
+delete {
+  url: {{base_url}}/motorcycles/{{motorcycle_id}}/diagnostics/{{diagnostic_id}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+script:pre-request {
+  var diagId = bru.getVar("diagnostic_id");
+  if (!diagId || diagId === "REPLACE_WITH_DIAGNOSTIC_ID") {
+    console.log("⚠️ diagnostic_id no configurado!");
+    console.log("💡 Ejecuta 03_crear_diagnostico.bru o 04_listar_diagnosticos.bru primero");
+  }
+}
+
+script:post-response {
+  if (res.status === 200) {
+    console.log("✅ Diagnóstico eliminado exitosamente.");
+    bru.setVar("diagnostic_id", "REPLACE_WITH_DIAGNOSTIC_ID");
+  } else {
+    console.log("❌ Error:", res.body);
+  }
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.body.success).to.be.true;
+  });
+}
+
+docs {
+  # DELETE /motorcycles/:id/diagnostics/:diagnosticId - Eliminar Diagnóstico (HU13)
+  
+  Elimina un diagnóstico y todas sus evidencias (CASCADE). Solo el propietario puede eliminar.
+  
+  ## Prerrequisitos
+  1. Ejecutar Login (01_login_usuario.bru)
+  2. Obtener motorcycle_id y diagnostic_id
+  
+  ## Respuestas
+  - **200**: Diagnóstico eliminado
+  - **401**: Token inválido
+  - **404**: Diagnóstico no encontrado o no es propietario
+  
+  ## ⚠️ Nota
+  Esta acción es irreversible. Se eliminan el diagnóstico y todas sus evidencias asociadas.
+}

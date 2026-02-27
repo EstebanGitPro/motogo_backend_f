@@ -1,0 +1,102 @@
+meta {
+  name: Verificar Calificación (vista dueño)
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{base_url}}/motorcycles/{{motorcycle_id}}/completed-services
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{user_access_token}}
+}
+
+script:post-response {
+  if (res.status === 200 && res.body.data) {
+    console.log("═══════════════════════════════════════");
+    console.log("📊 CALIFICACIONES POR MOTO (vista dueño)");
+    console.log("═══════════════════════════════════════");
+    
+    res.body.data.forEach(function(svc) {
+      if (svc.status !== "FINALIZADO") return;
+      
+      console.log("");
+      console.log("🔧 Servicio:", svc.id);
+      console.log("   Sede:", svc.branch_name || svc.branch_id);
+      console.log("   Fecha:", svc.request_date);
+      
+      if (svc.services && svc.services.length > 0) {
+        svc.services.forEach(function(item) {
+          if (item.rating) {
+            console.log("   ⭐ Ítem:", item.id);
+            console.log("      Rating:", item.rating, "/ 5");
+            console.log("      Comentario:", item.comment || "(sin comentario)");
+            console.log("      Calificado:", item.rated_at);
+          } else {
+            console.log("   ⏳ Ítem:", item.id, "→ SIN CALIFICAR");
+          }
+        });
+      } else {
+        console.log("   (sin ítems)");
+      }
+    });
+    
+    console.log("");
+    console.log("═══════════════════════════════════════");
+  }
+}
+
+tests {
+  test("Status 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response is successful", function() {
+    expect(res.body.success).to.be.true;
+  });
+
+  test("Servicios FINALIZADOS tienen ítems", function() {
+    var finalizados = res.body.data.filter(s => s.status === "FINALIZADO");
+    finalizados.forEach(function(svc) {
+      expect(svc.services).to.be.an("array");
+      expect(svc.services.length).to.be.greaterThan(0);
+    });
+  });
+}
+
+docs {
+  # Verificar Calificación (vista dueño)
+  
+  Consulta los servicios completados de la moto y muestra 
+  las calificaciones de cada ítem.
+  
+  ## Prerrequisitos
+  1. Ejecutar `02_login_dueno.bru` → token
+  2. Configurar `motorcycle_id` en el environment
+  
+  ## Uso
+  - Ejecutar **después** de calificar (`04_calificar_servicio.bru`)
+  - Verificar que el ítem ahora muestra `rating`, `comment` y `rated_at`
+  
+  ## Respuesta esperada
+  ```json
+  {
+    "services": [
+      {
+        "id": "...",
+        "service_id": "...",
+        "rating": 5,
+        "comment": "Excelente servicio",
+        "rated_at": "2026-02-17"
+      }
+    ]
+  }
+  ```
+}

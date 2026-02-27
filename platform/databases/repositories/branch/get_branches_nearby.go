@@ -132,6 +132,12 @@ func (r *repository) GetBranchesNearby(
 			log.Warn("Error obteniendo rangos de cilindraje de sede cercana", "branch_id", branches[i].ID, "error", err)
 		}
 		branches[i].DisplacementRanges = ranges
+
+		serviceNames, err := r.getBranchServiceNames(ctx, branches[i].ID)
+		if err != nil {
+			log.Warn("Error obteniendo servicios de sede cercana", "branch_id", branches[i].ID, "error", err)
+		}
+		branches[i].ServiceNames = serviceNames
 	}
 
 	return branches, nil

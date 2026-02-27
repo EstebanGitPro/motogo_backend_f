@@ -1,0 +1,129 @@
+meta {
+  name: Crear Detalle Horario (HU6)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/branches/{{branch_id}}/schedules/details
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "day_of_week": 1,
+    "opening_time": "08:00¿",
+    "closing_time": "12:00",
+    "is_closed": false
+  }
+}
+
+script:post-response {
+  if (res.status === 201 && res.body.data && res.body.data.id) {
+    bru.setEnvVar("detail_id", res.body.data.id);
+    console.log("✅ Detail ID guardado:", res.body.data.id);
+  }
+}
+
+tests {
+  test("Status code is 201 Created", function() {
+    expect(res.status).to.equal(201);
+  });
+  
+  test("Response has success message", function() {
+    expect(res.body.message).to.exist;
+  });
+  
+  test("Response has detail ID", function() {
+    expect(res.body.data.id).to.exist;
+  });
+  
+  test("Response has schedule_id", function() {
+    expect(res.body.data.schedule_id).to.exist;
+  });
+  
+  test("Day of week matches request", function() {
+    expect(res.body.data.day_of_week).to.equal(1);
+  });
+  
+  test("Has day_name in Spanish", function() {
+    expect(res.body.data.day_name).to.equal("Lunes");
+  });
+  
+  test("Opening time matches request", function() {
+    expect(res.body.data.opening_time).to.equal("08:00");
+  });
+  
+  test("Closing time matches request", function() {
+    expect(res.body.data.closing_time).to.equal("12:00");
+  });
+  
+  test("Is active by default", function() {
+    expect(res.body.data.active).to.equal(true);
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.body.data._links).to.exist;
+    expect(res.body.data._links.length).to.be.greaterThan(0);
+  });
+  
+  test("Has self link", function() {
+    var selfLink = res.body.data._links.find(l => l.rel === 'self');
+    expect(selfLink).to.exist;
+    expect(selfLink.method).to.equal('GET');
+  });
+  
+  test("Has update link", function() {
+    var updateLink = res.body.data._links.find(l => l.rel === 'update');
+    expect(updateLink).to.exist;
+    expect(updateLink.method).to.equal('PUT');
+  });
+  
+  test("Has delete link", function() {
+    var deleteLink = res.body.data._links.find(l => l.rel === 'delete');
+    expect(deleteLink).to.exist;
+    expect(deleteLink.method).to.equal('DELETE');
+  });
+  
+  test("Has schedule link", function() {
+    var scheduleLink = res.body.data._links.find(l => l.rel === 'schedule');
+    expect(scheduleLink).to.exist;
+  });
+}
+
+docs {
+  # Crear Detalle de Horario (HU6)
+  
+  Crea una franja horaria (time slot) para un día específico de la semana.
+  
+  ## Requisitos previos
+  1. Usuario autenticado con rol `REPRESENTANTE`
+  2. Sede con horario creado (`POST /branches/:id/schedules`)
+  3. `branch_id` de una sede propia
+  
+  ## Body
+  - `day_of_week`: 1=Lunes a 7=Domingo
+  - `opening_time`: Hora de apertura en formato HH:MM (24h)
+  - `closing_time`: Hora de cierre en formato HH:MM (24h)
+  - `is_closed`: true si está cerrado ese día
+  
+  ## Permite múltiples franjas por día
+  Ejemplo: Mañana 08:00-12:00, Tarde 14:00-18:00
+  
+  ## Response
+  - **201**: Franja horaria creada exitosamente
+  - **400**: Formato inválido de hora o día
+  - **403**: Sede no pertenece al representante
+  - **404**: Sede o horario no encontrado
+  - **409**: Conflicto de horarios (franjas superpuestas)
+}

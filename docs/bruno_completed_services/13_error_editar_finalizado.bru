@@ -1,0 +1,74 @@
+meta {
+  name: Error - Editar Servicio Finalizado (HU75)
+  type: http
+  seq: 13
+}
+
+patch {
+  url: {{base_url}}/completed-services/{{completed_service_id}}
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "quoted_price": 250000
+  }
+}
+
+script:pre-request {
+  var csId = bru.getVar("completed_service_id");
+  
+  if (!csId || csId === "REPLACE_WITH_COMPLETED_SERVICE_ID") {
+    console.log("⚠️ completed_service_id no configurado!");
+    console.log("💡 Ejecuta el flujo completo (04 → 10 → 12) para tener un servicio FINALIZADO");
+  }
+  
+  console.log("🧪 Este test espera un error 400 porque el servicio ya fue FINALIZADO");
+}
+
+script:post-response {
+  if (res.status === 400) {
+    console.log("✅ Error esperado: no se puede editar un servicio FINALIZADO");
+    console.log("📋 Código:", res.body.message_code);
+  } else {
+    console.log("❌ Se esperaba 400, recibió:", res.status, res.body);
+  }
+}
+
+tests {
+  test("Status code is 400 (cannot edit finalized)", function() {
+    expect(res.status).to.equal(400);
+  });
+  
+  test("Response indicates failure", function() {
+    expect(res.body.success).to.be.false;
+  });
+  
+  test("Message code is MOD_CS_UPDATE_ERR_00001", function() {
+    expect(res.body.message_code).to.equal("MOD_CS_UPDATE_ERR_00001");
+  });
+}
+
+docs {
+  # PATCH /completed-services/:id - Error: Editar Servicio Finalizado (HU75)
+  
+  Verifica que un servicio en estado **FINALIZADO** no puede ser editado.
+  Se espera un error `400` con código `MOD_CS_UPDATE_ERR_00001`.
+  
+  ## Flujo previo
+  1. Ejecutar `01_login_representante.bru` → guarda `access_token`
+  2. Ejecutar `04_registrar_servicio.bru` → guarda `completed_service_id`
+  3. Ejecutar `10_transicion_en_proceso.bru` → EN_PROCESO
+  4. Ejecutar `12_finalizar_con_precio.bru` → FINALIZADO
+  5. Ejecutar este request ✅ (espera error 400)
+}

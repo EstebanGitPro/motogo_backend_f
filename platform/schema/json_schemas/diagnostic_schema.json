@@ -18,11 +18,9 @@
       "type": "array",
       "items": {
         "type": "string",
-        "format": "uri",
-        "maxLength": 255,
-        "pattern": "^https://firebasestorage\\.googleapis\\.com/.*$"
+        "maxLength": 500
       },
-      "description": "Firebase Storage URLs for diagnostic evidence photos — VARCHAR(255)"
+      "description": "Firebase Storage URLs for diagnostic evidence photos"
     }
   },
   "required": ["branch_id"],

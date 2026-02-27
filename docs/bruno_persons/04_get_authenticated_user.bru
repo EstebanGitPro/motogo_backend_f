@@ -1,0 +1,100 @@
+meta {
+  name: Get Authenticated User
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{base_url}}/persons/me
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.getBody().success).to.be.true;
+  });
+  
+  test("Response has user data", function() {
+    expect(res.getBody().data.email).to.exist;
+    expect(res.getBody().data.first_name).to.exist;
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.getBody().data._links).to.exist;
+    expect(res.getBody().data._links.length).to.be.greaterThan(0);
+  });
+  
+  test("Response includes change-password link", function() {
+    const links = res.getBody().data._links;
+    const changePasswordLink = links.find(l => l.rel === "change-password");
+    expect(changePasswordLink).to.exist;
+    expect(changePasswordLink.method).to.equal("PUT");
+  });
+}
+
+docs {
+  # Get Authenticated User (HU54)
+  
+  Obtiene el perfil del usuario autenticado usando el token JWT.
+  
+  ## Prerrequisitos:
+  1. **Ejecutar Login primero** para obtener el `access_token`
+  2. Copiar el `access_token` de la respuesta
+  3. Reemplazar `PEGA_AQUI_TU_ACCESS_TOKEN` en el header Authorization
+  
+  ## Flujo:
+  1. Backend valida el JWT token del header Authorization
+  2. Extrae el Keycloak User ID del token
+  3. Busca el perfil en la base de datos
+  4. Retorna los datos del usuario con HATEOAS links
+  
+  ## Respuestas:
+  - **200**: Perfil obtenido exitosamente
+  - **401**: Token inválido o ausente
+  - **404**: Usuario no encontrado
+  
+  ## HATEOAS Links en la respuesta:
+  - `self`: GET /persons/me - Este endpoint
+  - `change-password`: PUT /persons/me/password - Cambiar contraseña
+  - `login`: POST /auth/login - Login
+  
+  ## Ejemplo de respuesta:
+  ```json
+  {
+    "success": true,
+    "message": {
+      "codigo_mensaje": "MOD_AUTH_PROFILE_EXI_00001",
+      "titulo": "Perfil obtenido",
+      "contenido": "..."
+    },
+    "data": {
+      "id": "encoded_id_here",
+      "identity_number": "1234567890",
+      "email": "usuario@example.com",
+      "first_name": "Juan",
+      "last_name": "Pérez",
+      "second_last_name": "García",
+      "phone_number": "3001234567",
+      "role": "branch_representative",
+      "_links": [
+        {"href": ".../persons/me", "rel": "self", "method": "GET"},
+        {"href": ".../persons/me/password", "rel": "change-password", "method": "PUT"},
+        {"href": ".../auth/login", "rel": "login", "method": "POST"}
+      ]
+    }
+  }
+  ```
+}

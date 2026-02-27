@@ -1,0 +1,67 @@
+meta {
+  name: Lookup Motorcycle by Plate (HU47) - Branch Not Authorized
+  type: http
+  seq: 15
+}
+
+get {
+  url: {{base_url}}/motorcycles/lookup?plate={{unauthorized_plate}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+script:pre-request {
+  var plate = bru.getVar("unauthorized_plate");
+  if (!plate || plate === "REPLACE_WITH_UNAUTHORIZED_PLATE") {
+    console.log("⚠️ unauthorized_plate no configurado!");
+    console.log("💡 Configura una placa válida para una moto sin permiso para tu sede");
+  }
+}
+
+script:post-response {
+  if (res.status === 403) {
+    console.log("✅ Test passed: Sede correctamente rechazada");
+    console.log("📋 Message:", res.body.message);
+  } else if (res.status === 200) {
+    console.log("⚠️ La sede SÍ tiene permiso para esta moto. Usa otra placa sin permiso");
+  }
+}
+
+tests {
+  test("Status code is 403 Forbidden", function() {
+    expect(res.status).to.equal(403);
+  });
+
+  test("Response has success false", function() {
+    expect(res.body.success).to.be.false;
+  });
+
+  test("Response has error message", function() {
+    expect(res.body.message).to.exist;
+  });
+}
+
+docs {
+  # Lookup Motorcycle by Plate (HU47) - Sede No Autorizada
+
+  Caso de error cuando la sede del representante NO tiene permiso activo
+  para consultar la motocicleta.
+
+  ## Prerrequisitos
+  1. **Ejecutar Login como REPRESENTANTE**
+  2. **Configurar `unauthorized_plate`** con una placa de moto que exista
+     pero para la cual tu sede NO tenga permiso
+
+  ## Respuesta Esperada
+  - Código: 403 Forbidden
+  - `success`: false
+  - `message`: "Sede No Autorizada" (MOD_MOT_PERM_ERR_00001)
+}

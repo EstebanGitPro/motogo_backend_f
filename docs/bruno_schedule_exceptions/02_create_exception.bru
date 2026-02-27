@@ -1,0 +1,136 @@
+meta {
+  name: Crear Excepción de Horario (HU20)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/branches/{{branch_id}}/schedules/exceptions
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "exception_start_date": "2026-12-24",
+    "exception_end_date": "2026-12-24",
+    "opening_time": "09:00",
+    "closing_time": "14:00",
+    "is_closed": false
+  }
+}
+
+script:post-response {
+  if (res.status === 201 && res.body.data && res.body.data.id) {
+    bru.setEnvVar("exception_id", res.body.data.id);
+    console.log("✅ Exception ID guardado:", res.body.data.id);
+  }
+}
+
+tests {
+  test("Status code is 201 Created", function() {
+    expect(res.status).to.equal(201);
+  });
+  
+  test("Response has success message", function() {
+    expect(res.body.message).to.exist;
+  });
+  
+  test("Response has exception ID", function() {
+    expect(res.body.data.id).to.exist;
+  });
+  
+  test("Response has schedule_id", function() {
+    expect(res.body.data.schedule_id).to.exist;
+  });
+  
+  test("Exception start date matches request", function() {
+    expect(res.body.data.exception_start_date).to.equal("2026-12-24");
+  });
+  
+  test("Exception end date matches request", function() {
+    expect(res.body.data.exception_end_date).to.equal("2026-12-24");
+  });
+  
+  test("Has formatted date in Spanish", function() {
+    expect(res.body.data.exception_start_date_formatted).to.exist;
+  });
+  
+  test("Has day_name in Spanish", function() {
+    expect(res.body.data.day_name).to.exist;
+  });
+  
+  test("Opening time matches request", function() {
+    expect(res.body.data.opening_time).to.equal("09:00");
+  });
+  
+  test("Closing time matches request", function() {
+    expect(res.body.data.closing_time).to.equal("14:00");
+  });
+  
+  test("Is active by default", function() {
+    expect(res.body.data.active).to.equal(true);
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.body.data._links).to.exist;
+    expect(res.body.data._links.length).to.be.greaterThan(0);
+  });
+  
+  test("Has self link", function() {
+    var selfLink = res.body.data._links.find(l => l.rel === 'self');
+    expect(selfLink).to.exist;
+    expect(selfLink.method).to.equal('GET');
+  });
+  
+  test("Has activate link", function() {
+    var activateLink = res.body.data._links.find(l => l.rel === 'activate');
+    expect(activateLink).to.exist;
+    expect(activateLink.method).to.equal('PUT');
+  });
+  
+  test("Has deactivate link", function() {
+    var deactivateLink = res.body.data._links.find(l => l.rel === 'deactivate');
+    expect(deactivateLink).to.exist;
+    expect(deactivateLink.method).to.equal('PUT');
+  });
+}
+
+docs {
+  # Crear Excepción de Horario (HU20)
+  
+  Crea una excepción de horario para un rango de fechas (o una fecha única).
+  
+  ## Requisitos previos
+  1. Usuario autenticado con rol `REPRESENTANTE`
+  2. Sede con horario creado
+  3. `branch_id` de una sede propia
+  
+  ## Body
+  - `exception_start_date`: Fecha inicio del rango (YYYY-MM-DD) - REQUERIDO
+  - `exception_end_date`: Fecha fin del rango (YYYY-MM-DD) - Opcional, si no se envía usa start_date
+  - `opening_time`: Hora de apertura (HH:MM) - opcional si is_closed=true
+  - `closing_time`: Hora de cierre (HH:MM) - opcional si is_closed=true
+  - `is_closed`: true si está cerrado ese día/rango
+  
+  ## Casos de uso
+  - Vacaciones de Navidad: start=24/12, end=01/01
+  - Día festivo único: start=end=25/12
+  - Eventos especiales con horario extendido
+  
+  ## Response
+  - **201**: Excepción creada exitosamente
+  - **400**: Formato inválido de fecha u hora
+  - **403**: Sede no pertenece al representante
+  - **404**: Sede o horario no encontrado
+  - **409**: Ya existe excepción que se solapa con estas fechas
+}

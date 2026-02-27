@@ -24,6 +24,7 @@ type handler struct {
 	EvidenceInteractor         input.EvidenceInteractorInterface      // Evidence CRUD (HU16-19)
 	DiagnosticInteractor       *interactor.DiagnosticInteractor       // Diagnostic CRUD (HU11-14)
 	CompletedServiceInteractor *interactor.CompletedServiceInteractor // Completed Service (HU64)
+	RatingInteractor           *interactor.RatingInteractor           // Rating (HU48)
 	FirebaseClient             output.CustomTokenProvider             // Firebase Auth
 	MessagingCache             *messagingCache.MessageCache
 	IDEncoder                  *idencoder.HashidsEncoder
@@ -43,6 +44,7 @@ type HandlerConfig struct {
 	EvidenceInteractor         input.EvidenceInteractorInterface
 	DiagnosticInteractor       *interactor.DiagnosticInteractor
 	CompletedServiceInteractor *interactor.CompletedServiceInteractor
+	RatingInteractor           *interactor.RatingInteractor
 	FirebaseClient             output.CustomTokenProvider
 	MessagingCache             *messagingCache.MessageCache
 	IDEncoder                  *idencoder.HashidsEncoder
@@ -62,6 +64,7 @@ func New(cfg HandlerConfig) *handler {
 		EvidenceInteractor:         cfg.EvidenceInteractor,
 		DiagnosticInteractor:       cfg.DiagnosticInteractor,
 		CompletedServiceInteractor: cfg.CompletedServiceInteractor,
+		RatingInteractor:           cfg.RatingInteractor,
 		FirebaseClient:             cfg.FirebaseClient,
 		MessagingCache:             cfg.MessagingCache,
 		IDEncoder:                  cfg.IDEncoder,

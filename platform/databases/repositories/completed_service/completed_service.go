@@ -30,6 +30,7 @@ type CompletedServiceItem struct {
 	ID                 string         `db:"id"`
 	CompletedServiceID string         `db:"completed_service_id"`
 	ServiceID          string         `db:"service_id"`
+	ServiceName        sql.NullString `db:"service_name"`
 	Rating             sql.NullInt32  `db:"rating"`
 	Comment            sql.NullString `db:"comment"`
 	RatedAt            sql.NullTime   `db:"rated_at"`
@@ -128,6 +129,9 @@ func (i *CompletedServiceItem) ItemToDomain() domain.CompletedServiceItem {
 		CompletedServiceID: i.CompletedServiceID,
 		ServiceID:          i.ServiceID,
 		IsOffensiveComment: i.IsOffensiveComment,
+	}
+	if i.ServiceName.Valid {
+		result.ServiceName = &i.ServiceName.String
 	}
 	if i.Rating.Valid {
 		rating := int(i.Rating.Int32)

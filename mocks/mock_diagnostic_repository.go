@@ -36,11 +36,6 @@ func (m *MockDiagnosticRepository) Delete(ctx context.Context, tx output.Tx, dia
 	return args.Error(0)
 }
 
-func (m *MockDiagnosticRepository) SaveEvidence(ctx context.Context, tx output.Tx, evidence *domain.DiagnosticEvidence) error {
-	args := m.Called(ctx, tx, evidence)
-	return args.Error(0)
-}
-
 func (m *MockDiagnosticRepository) GetByID(ctx context.Context, diagnosticID string) (*domain.Diagnostic, error) {
 	args := m.Called(ctx, diagnosticID)
 	if args.Get(0) == nil {
@@ -57,23 +52,10 @@ func (m *MockDiagnosticRepository) GetByMotorcycleID(ctx context.Context, motorc
 	return args.Get(0).([]domain.Diagnostic), args.Error(1)
 }
 
-func (m *MockDiagnosticRepository) GetEvidenceByDiagnosticID(ctx context.Context, diagnosticID string) ([]domain.DiagnosticEvidence, error) {
-	args := m.Called(ctx, diagnosticID)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).([]domain.DiagnosticEvidence), args.Error(1)
-}
-
 func (m *MockDiagnosticRepository) GetByMotorcycleAndBranch(ctx context.Context, motorcycleID, branchID string) (*domain.Diagnostic, error) {
 	args := m.Called(ctx, motorcycleID, branchID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
 	return args.Get(0).(*domain.Diagnostic), args.Error(1)
-}
-
-func (m *MockDiagnosticRepository) DeleteEvidenceByDiagnosticID(ctx context.Context, tx output.Tx, diagnosticID string) error {
-	args := m.Called(ctx, tx, diagnosticID)
-	return args.Error(0)
 }

@@ -1,0 +1,45 @@
+meta {
+  name: Conceder Permiso - Moto No Encontrada
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{base_url}}/motorcycles/INVALID_ID_12345/permissions
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "branch_id": "{{branch_id}}"
+  }
+}
+
+tests {
+  test("Status code is 404 or 400", function() {
+    expect([400, 404]).to.include(res.status);
+  });
+
+  test("Response has error", function() {
+    expect(res.body.success).to.be.false;
+  });
+}
+
+docs {
+  # POST /motorcycles/:id/permissions - Error: Moto No Encontrada
+
+  Caso de error: intento de conceder permiso con un motorcycle_id inválido.
+
+  ## Resultado esperado
+  - **400/404**: ID inválido o moto no encontrada
+}

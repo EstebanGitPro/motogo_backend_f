@@ -1,0 +1,60 @@
+meta {
+  name: Login Representante sede (Diagnósticos)
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{base_url}}/auth/login
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "email": "amordemadre@yopmail.com",
+    "password": "Secret123*"
+  }
+}
+
+script:post-response {
+  if (res.status === 200) {
+    var accessToken = res.body.data.access_token;
+    bru.setVar("access_token", accessToken);
+    console.log("✅ Admin token guardado en access_token");
+    console.log("🔑 Role:", res.body.data.role || "Verificar manualmente");
+  } else {
+    console.log("❌ Login fallido:", res.body);
+  }
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has access_token", function() {
+    expect(res.body.data.access_token).to.exist;
+  });
+}
+
+docs {
+  # Login Admin (Diagnósticos)
+  
+  Autenticación con usuario administrador para probar el endpoint
+  `PATCH /admin/diagnostics/:id/solution`.
+  
+  ## Flujo de prueba
+  1. Ejecutar este request para obtener token admin
+  2. El token se guarda automáticamente en `access_token`
+  3. Ejecutar `07_responder_solucion` que usa ese token
+  
+  ## Credenciales
+  - **Email:** admin@motogo.com
+  - **Password:** Admin123*
+}

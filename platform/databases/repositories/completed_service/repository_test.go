@@ -34,7 +34,7 @@ func TestNewRepository_Success(t *testing.T) {
 	mock.ExpectPrepare("SELECT id, branch_id, motorcycle_id.*WHERE id")
 	mock.ExpectPrepare("SELECT cs.id.*WHERE cs.motorcycle_id")
 	mock.ExpectPrepare("SELECT cs.id.*WHERE cs.branch_id")
-	mock.ExpectPrepare("SELECT id, completed_service_id, service_id")
+	mock.ExpectPrepare("SELECT csi.id, csi.completed_service_id, csi.service_id")
 	mock.ExpectPrepare("SELECT COUNT.*FROM completed_services")
 	mock.ExpectPrepare("DELETE FROM completed_services")
 	mock.ExpectPrepare("UPDATE completed_services SET deleted_at")
@@ -164,7 +164,7 @@ func TestNewRepository_PrepareError_GetItemsByCSID(t *testing.T) {
 	mock.ExpectPrepare("SELECT id, branch_id, motorcycle_id.*WHERE id")
 	mock.ExpectPrepare("SELECT cs.id.*WHERE cs.motorcycle_id")
 	mock.ExpectPrepare("SELECT cs.id.*WHERE cs.branch_id")
-	mock.ExpectPrepare("SELECT id, completed_service_id, service_id").
+	mock.ExpectPrepare("SELECT csi.id, csi.completed_service_id, csi.service_id").
 		WillReturnError(sql.ErrConnDone)
 
 	repo, err := NewRepository(db)
@@ -185,7 +185,7 @@ func TestNewRepository_PrepareError_HasActiveService(t *testing.T) {
 	mock.ExpectPrepare("SELECT id, branch_id, motorcycle_id.*WHERE id")
 	mock.ExpectPrepare("SELECT cs.id.*WHERE cs.motorcycle_id")
 	mock.ExpectPrepare("SELECT cs.id.*WHERE cs.branch_id")
-	mock.ExpectPrepare("SELECT id, completed_service_id, service_id")
+	mock.ExpectPrepare("SELECT csi.id, csi.completed_service_id, csi.service_id")
 	mock.ExpectPrepare("SELECT COUNT.*FROM completed_services").
 		WillReturnError(sql.ErrConnDone)
 
@@ -207,7 +207,7 @@ func TestNewRepository_PrepareError_Delete(t *testing.T) {
 	mock.ExpectPrepare("SELECT id, branch_id, motorcycle_id.*WHERE id")
 	mock.ExpectPrepare("SELECT cs.id.*WHERE cs.motorcycle_id")
 	mock.ExpectPrepare("SELECT cs.id.*WHERE cs.branch_id")
-	mock.ExpectPrepare("SELECT id, completed_service_id, service_id")
+	mock.ExpectPrepare("SELECT csi.id, csi.completed_service_id, csi.service_id")
 	mock.ExpectPrepare("SELECT COUNT.*FROM completed_services")
 	mock.ExpectPrepare("DELETE FROM completed_services").
 		WillReturnError(sql.ErrConnDone)
@@ -230,7 +230,7 @@ func TestNewRepository_PrepareError_SoftDelete(t *testing.T) {
 	mock.ExpectPrepare("SELECT id, branch_id, motorcycle_id.*WHERE id")
 	mock.ExpectPrepare("SELECT cs.id.*WHERE cs.motorcycle_id")
 	mock.ExpectPrepare("SELECT cs.id.*WHERE cs.branch_id")
-	mock.ExpectPrepare("SELECT id, completed_service_id, service_id")
+	mock.ExpectPrepare("SELECT csi.id, csi.completed_service_id, csi.service_id")
 	mock.ExpectPrepare("SELECT COUNT.*FROM completed_services")
 	mock.ExpectPrepare("DELETE FROM completed_services")
 	mock.ExpectPrepare("UPDATE completed_services SET deleted_at").
@@ -254,7 +254,7 @@ func TestNewRepository_PrepareError_UpdateStatus(t *testing.T) {
 	mock.ExpectPrepare("SELECT id, branch_id, motorcycle_id.*WHERE id")
 	mock.ExpectPrepare("SELECT cs.id.*WHERE cs.motorcycle_id")
 	mock.ExpectPrepare("SELECT cs.id.*WHERE cs.branch_id")
-	mock.ExpectPrepare("SELECT id, completed_service_id, service_id")
+	mock.ExpectPrepare("SELECT csi.id, csi.completed_service_id, csi.service_id")
 	mock.ExpectPrepare("SELECT COUNT.*FROM completed_services")
 	mock.ExpectPrepare("DELETE FROM completed_services")
 	mock.ExpectPrepare("UPDATE completed_services SET deleted_at")
@@ -279,7 +279,7 @@ func TestNewRepository_PrepareError_GetStatusHistory(t *testing.T) {
 	mock.ExpectPrepare("SELECT id, branch_id, motorcycle_id.*WHERE id")
 	mock.ExpectPrepare("SELECT cs.id.*WHERE cs.motorcycle_id")
 	mock.ExpectPrepare("SELECT cs.id.*WHERE cs.branch_id")
-	mock.ExpectPrepare("SELECT id, completed_service_id, service_id")
+	mock.ExpectPrepare("SELECT csi.id, csi.completed_service_id, csi.service_id")
 	mock.ExpectPrepare("SELECT COUNT.*FROM completed_services")
 	mock.ExpectPrepare("DELETE FROM completed_services")
 	mock.ExpectPrepare("UPDATE completed_services SET deleted_at")
@@ -592,29 +592,34 @@ func TestGetItemsByCompletedServiceID_Success(t *testing.T) {
 	now := time.Now()
 	rows := sqlmock.NewRows([]string{
 		"id", "completed_service_id", "service_id",
+		"service_name",
 		"rating", "comment", "rated_at", "is_offensive_comment",
 	}).
-		AddRow("item-1", "cs-500", "svc-1", 5, "Excelente servicio", now, false).
-		AddRow("item-2", "cs-500", "svc-2", nil, nil, nil, false)
+		AddRow("item-1", "cs-500", "svc-1", "Cambio de aceite", 5, "Excelente servicio", now, false).
+		AddRow("item-2", "cs-500", "svc-2", "Revisión de frenos", nil, nil, nil, false)
 
-	stmt := mock.ExpectPrepare("SELECT id, completed_service_id")
+	stmt := mock.ExpectPrepare("SELECT csi.id")
 	stmt.ExpectQuery().
 		WithArgs("cs-500").
 		WillReturnRows(rows)
 
 	repo := &repository{db: db}
-	repo.stmtGetItemsByCSID, _ = db.Prepare("SELECT id, completed_service_id, service_id, rating, comment, rated_at, is_offensive_comment FROM completed_service_items WHERE completed_service_id = ?")
+	repo.stmtGetItemsByCSID, _ = db.Prepare("SELECT csi.id, csi.completed_service_id, csi.service_id, s.name AS service_name, csi.rating, csi.comment, csi.rated_at, csi.is_offensive_comment FROM completed_service_items csi LEFT JOIN services s ON s.id = csi.service_id WHERE csi.completed_service_id = ?")
 
 	results, err := repo.GetItemsByCompletedServiceID(context.Background(), "cs-500")
 
 	assert.NoError(t, err)
 	assert.Len(t, results, 2)
 	assert.Equal(t, "item-1", results[0].ID)
+	assert.NotNil(t, results[0].ServiceName)
+	assert.Equal(t, "Cambio de aceite", *results[0].ServiceName)
 	assert.NotNil(t, results[0].Rating)
 	assert.Equal(t, 5, *results[0].Rating)
 	assert.NotNil(t, results[0].Comment)
 	assert.Equal(t, "Excelente servicio", *results[0].Comment)
 	assert.Equal(t, "item-2", results[1].ID)
+	assert.NotNil(t, results[1].ServiceName)
+	assert.Equal(t, "Revisión de frenos", *results[1].ServiceName)
 	assert.Nil(t, results[1].Rating)
 	assert.Nil(t, results[1].Comment)
 }
@@ -626,16 +631,17 @@ func TestGetItemsByCompletedServiceID_Empty(t *testing.T) {
 
 	rows := sqlmock.NewRows([]string{
 		"id", "completed_service_id", "service_id",
+		"service_name",
 		"rating", "comment", "rated_at", "is_offensive_comment",
 	})
 
-	stmt := mock.ExpectPrepare("SELECT id, completed_service_id")
+	stmt := mock.ExpectPrepare("SELECT csi.id")
 	stmt.ExpectQuery().
 		WithArgs("cs-empty").
 		WillReturnRows(rows)
 
 	repo := &repository{db: db}
-	repo.stmtGetItemsByCSID, _ = db.Prepare("SELECT id, completed_service_id, service_id, rating, comment, rated_at, is_offensive_comment FROM completed_service_items WHERE completed_service_id = ?")
+	repo.stmtGetItemsByCSID, _ = db.Prepare("SELECT csi.id, csi.completed_service_id, csi.service_id, s.name AS service_name, csi.rating, csi.comment, csi.rated_at, csi.is_offensive_comment FROM completed_service_items csi LEFT JOIN services s ON s.id = csi.service_id WHERE csi.completed_service_id = ?")
 
 	results, err := repo.GetItemsByCompletedServiceID(context.Background(), "cs-empty")
 
@@ -648,13 +654,13 @@ func TestGetItemsByCompletedServiceID_DBError(t *testing.T) {
 	assert.NoError(t, err)
 	defer db.Close()
 
-	stmt := mock.ExpectPrepare("SELECT id, completed_service_id")
+	stmt := mock.ExpectPrepare("SELECT csi.id")
 	stmt.ExpectQuery().
 		WithArgs("cs-error").
 		WillReturnError(sql.ErrConnDone)
 
 	repo := &repository{db: db}
-	repo.stmtGetItemsByCSID, _ = db.Prepare("SELECT id, completed_service_id, service_id FROM completed_service_items WHERE completed_service_id = ?")
+	repo.stmtGetItemsByCSID, _ = db.Prepare("SELECT csi.id, csi.completed_service_id, csi.service_id, s.name AS service_name FROM completed_service_items csi LEFT JOIN services s ON s.id = csi.service_id WHERE csi.completed_service_id = ?")
 
 	results, err := repo.GetItemsByCompletedServiceID(context.Background(), "cs-error")
 
@@ -1286,4 +1292,159 @@ func TestGetStatusHistory_DBError(t *testing.T) {
 
 	assert.Nil(t, results)
 	assert.Error(t, err)
+}
+
+// ============================================
+// UpdateStatusWithPrice Tests (Cluster 4)
+// ============================================
+
+func TestUpdateStatusWithPrice_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	now := time.Now()
+	price := 150000.0
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE completed_services").
+		WithArgs("FINALIZADO", sqlmock.AnyArg(), sqlmock.AnyArg(), "cs-1").
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	sqlTx, _ := db.Begin()
+	tx := common.NewSQLTx(sqlTx)
+
+	repo := &repository{db: db}
+
+	err = repo.UpdateStatusWithPrice(context.Background(), tx, "cs-1", "FINALIZADO", &now, &price)
+	assert.NoError(t, err)
+}
+
+func TestUpdateStatusWithPrice_NilOptionals(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE completed_services").
+		WithArgs("EN_PROCESO", sqlmock.AnyArg(), sqlmock.AnyArg(), "cs-2").
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	sqlTx, _ := db.Begin()
+	tx := common.NewSQLTx(sqlTx)
+
+	repo := &repository{db: db}
+
+	err = repo.UpdateStatusWithPrice(context.Background(), tx, "cs-2", "EN_PROCESO", nil, nil)
+	assert.NoError(t, err)
+}
+
+func TestUpdateStatusWithPrice_InvalidTx(t *testing.T) {
+	db, _, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	repo := &repository{db: db}
+
+	err = repo.UpdateStatusWithPrice(context.Background(), nil, "cs-1", "FINALIZADO", nil, nil)
+	assert.Error(t, err)
+	assert.Equal(t, domain.ErrInvalidTransaction, err)
+}
+
+func TestUpdateStatusWithPrice_DBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE completed_services").
+		WithArgs("FINALIZADO", sqlmock.AnyArg(), sqlmock.AnyArg(), "cs-err").
+		WillReturnError(sql.ErrConnDone)
+
+	sqlTx, _ := db.Begin()
+	tx := common.NewSQLTx(sqlTx)
+
+	repo := &repository{db: db}
+
+	err = repo.UpdateStatusWithPrice(context.Background(), tx, "cs-err", "FINALIZADO", nil, nil)
+	assert.Error(t, err)
+	assert.Equal(t, sql.ErrConnDone, err)
+}
+
+// ============================================
+// UpdateDetails Tests (Cluster 4)
+// ============================================
+
+func TestUpdateDetails_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	qp := 100000.0
+	fp := 120000.0
+	notes := "Revisión completa"
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE completed_services").
+		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), "cs-1").
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	sqlTx, _ := db.Begin()
+	tx := common.NewSQLTx(sqlTx)
+
+	repo := &repository{db: db}
+
+	err = repo.UpdateDetails(context.Background(), tx, "cs-1", &qp, &fp, &notes)
+	assert.NoError(t, err)
+}
+
+func TestUpdateDetails_NilOptionals(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE completed_services").
+		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), "cs-2").
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	sqlTx, _ := db.Begin()
+	tx := common.NewSQLTx(sqlTx)
+
+	repo := &repository{db: db}
+
+	err = repo.UpdateDetails(context.Background(), tx, "cs-2", nil, nil, nil)
+	assert.NoError(t, err)
+}
+
+func TestUpdateDetails_InvalidTx(t *testing.T) {
+	db, _, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	repo := &repository{db: db}
+
+	err = repo.UpdateDetails(context.Background(), nil, "cs-1", nil, nil, nil)
+	assert.Error(t, err)
+	assert.Equal(t, domain.ErrInvalidTransaction, err)
+}
+
+func TestUpdateDetails_DBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE completed_services").
+		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), "cs-err").
+		WillReturnError(sql.ErrConnDone)
+
+	sqlTx, _ := db.Begin()
+	tx := common.NewSQLTx(sqlTx)
+
+	repo := &repository{db: db}
+
+	err = repo.UpdateDetails(context.Background(), tx, "cs-err", nil, nil, nil)
+	assert.Error(t, err)
+	assert.Equal(t, sql.ErrConnDone, err)
 }

@@ -8,6 +8,12 @@
       "type": "string",
       "enum": ["PENDIENTE", "EN_PROCESO", "FINALIZADO", "CANCELADO"],
       "description": "New status for the completed service"
+    },
+    "final_price": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 9999999999.99,
+      "description": "Optional final price — sent when transitioning to FINALIZADO"
     }
   },
   "required": ["status"],

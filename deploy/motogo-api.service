@@ -1,0 +1,67 @@
+[Unit]
+Description=MotoGo Backend API
+Documentation=https://github.com/EstebanGitPro/motogo-backend
+After=network.target mysql.service docker.service
+Wants=network-online.target
+
+[Service]
+# ── Proceso ──────────────────────────────────
+Type=simple
+User=motogo
+Group=motogo
+WorkingDirectory=/home/motogo/motogo-backend
+
+# ── Ejecutable ───────────────────────────────
+ExecStart=/home/motogo/motogo-backend/motogo-api
+
+# ── Variables de entorno ─────────────────────
+# Lee TODAS las variables desde el archivo .env
+EnvironmentFile=/home/motogo/motogo-backend/.env
+
+# ── Reinicio automático ──────────────────────
+# always = reinicia sin importar el código de salida
+# RestartSec = espera 5 segundos antes de reiniciar
+# StartLimitBurst = máximo 5 reinicios en 60 segundos
+#   (si se cae 5 veces seguidas, deja de intentar)
+Restart=always
+RestartSec=5
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+# ── Logs ─────────────────────────────────────
+# Los logs van a journald (ver con: journalctl -u motogo-api)
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=motogo-api
+
+# ── Seguridad (hardening) ────────────────────
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/motogo/motogo-backend
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+
+# ============================================
+# COMANDOS ÚTILES (no son parte del service)
+# ============================================
+#
+# Instalar:
+#   sudo cp motogo-api.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable motogo-api
+#   sudo systemctl start motogo-api
+#
+# Operar:
+#   sudo systemctl status motogo-api    → ver estado
+#   sudo systemctl restart motogo-api   → reiniciar
+#   sudo systemctl stop motogo-api      → detener
+#
+# Logs:
+#   journalctl -u motogo-api -f         → logs en tiempo real
+#   journalctl -u motogo-api --since today
+#   journalctl -u motogo-api -n 100     → últimas 100 líneas
+#
+# ============================================

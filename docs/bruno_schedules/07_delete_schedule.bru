@@ -1,0 +1,75 @@
+meta {
+  name: Eliminar Horario (HU33)
+  type: http
+  seq: 7
+}
+
+delete {
+  url: {{base_url}}/branches/{{branch_id}}/schedules
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success message", function() {
+    expect(res.body.message).to.exist;
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.body.data._links).to.exist;
+  });
+  
+  test("Has create link for next action", function() {
+    var createLink = res.body.data._links.find(l => l.rel === 'create');
+    expect(createLink).to.exist;
+    expect(createLink.method).to.equal('POST');
+  });
+  
+  test("Has branch link", function() {
+    var branchLink = res.body.data._links.find(l => l.rel === 'branch');
+    expect(branchLink).to.exist;
+  });
+}
+
+docs {
+  # Eliminar Horario (HU33)
+  
+  Elimina completamente la configuración de horario de una sede.
+  
+  > **⚠️ Acción destructiva:** Esto también eliminará todos los 
+  > detalles de horario asociados (CASCADE DELETE en la BD).
+  
+  ## Requisitos
+  - Usuario con rol `REPRESENTANTE`
+  - Sede válida perteneciente al representante
+  - Horario existente
+  
+  ## Variables requeridas
+  - `branch_id`: ID encoded de la sede
+  
+  ## Response
+  - **200**: Horario eliminado exitosamente
+  - **403**: Sede no pertenece al representante
+  - **404**: Horario no encontrado
+  
+  ## HATEOAS Links de respuesta
+  - `create`: Enlace para crear un nuevo horario
+  - `branch`: Enlace a la información de la sede
+  
+  ## Flujo típico después de eliminar
+  1. Usuario elimina horario
+  2. Respuesta incluye link `create` para volver a configurar
+  3. Usuario puede ejecutar POST para crear nuevo horario
+}

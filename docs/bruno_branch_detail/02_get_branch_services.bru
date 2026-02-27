@@ -1,0 +1,70 @@
+meta {
+  name: 02 - Get Branch Services
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/branches/{{branch_id}}/services
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+script:post-response {
+  console.log("═══════════════════════════════════════");
+  console.log("🔧 SERVICIOS DEL TALLER");
+  console.log("═══════════════════════════════════════");
+  
+  var services = res.body.data.services || [];
+  if (services.length === 0) {
+    console.log("⚠️ Sin servicios registrados");
+  } else {
+    services.forEach(function(s, i) {
+      console.log((i+1) + ". " + s.name);
+      if (s.service_type) console.log("   Tipo: " + s.service_type);
+    });
+  }
+  console.log("═══════════════════════════════════════");
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has services array", function() {
+    expect(res.body.data.services).to.be.an('array');
+  });
+  
+  test("Response has count", function() {
+    expect(res.body.data.count).to.be.a('number');
+    console.log("🔧 Total servicios:", res.body.data.count);
+  });
+}
+
+docs {
+  # Get Branch Services
+  
+  Obtiene los servicios asociados a una sede/taller.
+  
+  ## Response incluye:
+  - `services[]`: Array de servicios
+    - `id`: ID codificado
+    - `name`: Nombre del servicio
+    - `description`: Descripción
+    - `service_type`: Tipo (Mantenimiento, Reparación, etc.)
+    - `added_at`: Fecha de asociación
+  - `count`: Total de servicios
+  - `_links`: Links HATEOAS
+  
+  ## Para UI del mapa:
+  Muestra los servicios que ofrece el taller.
+}

@@ -16,6 +16,7 @@ func (r *repository) GetByID(ctx context.Context, diagnosticID string) (*domain.
 		&diag.ID,
 		&diag.MotorcycleID,
 		&diag.BranchID,
+		&diag.BranchName,
 		&diag.Date,
 		&diag.ProblemDescription,
 		&diag.PossibleSolution,

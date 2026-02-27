@@ -1,0 +1,55 @@
+meta {
+  name: Login Usuario
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/auth/login
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "email": "negro@yopmail.com",
+    "password": "Secret123*"
+  }
+}
+
+script:post-response {
+  if (res.status === 200) {
+    var token = res.body.data.access_token;
+    bru.setVar("access_token", token);
+    console.log("✅ Login exitoso! Token guardado.");
+  } else {
+    console.log("❌ Login fallido:", res.body);
+  }
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has access_token", function() {
+    expect(res.body.data.access_token).to.exist;
+  });
+}
+
+docs {
+  # POST /auth/login - Login de Usuario
+  
+  Autentica un usuario y obtiene el token de acceso.
+  
+  ## Credenciales de prueba
+  - Email: user@test.com
+  - Password: Test1234!
+  
+  El token se guarda automáticamente en `access_token`.
+}

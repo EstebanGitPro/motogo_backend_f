@@ -1,0 +1,39 @@
+meta {
+  name: List Evidence - Empty List
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{base_url}}/motorcycles/{{motorcycle_id}}/evidence
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has evidence array (potentially empty)", function() {
+    expect(res.body.data.evidence).to.be.an('array');
+  });
+}
+
+docs {
+  # List Evidence - Empty List Case
+  
+  Verifica que un motorcycle sin evidencias retorna un array vacío.
+  
+  ## Note
+  Este test puede usarse después de eliminar todas las evidencias
+  para verificar que la lista está vacía.
+}

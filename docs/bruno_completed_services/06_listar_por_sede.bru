@@ -1,0 +1,85 @@
+meta {
+  name: Listar Servicios por Sede (HU64)
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{base_url}}/branches/{{branch_id}}/completed-services
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+script:pre-request {
+  var branchId = bru.getVar("branch_id");
+  if (!branchId || branchId === "REPLACE_WITH_BRANCH_ID") {
+    console.log("⚠️ branch_id no configurado!");
+    console.log("💡 Configura branch_id en el environment");
+  }
+}
+
+script:post-response {
+  if (res.status === 200 && res.body.data && res.body.data.length > 0) {
+    var firstId = res.body.data[0].id;
+    bru.setVar("completed_service_id", firstId);
+    console.log("✅ Servicios completados encontrados:", res.body.data.length);
+    console.log("🔧 Primer completed_service_id guardado:", firstId);
+    
+    res.body.data.forEach(function(svc, idx) {
+      console.log("  📋 [" + idx + "] ID:", svc.id, "| Status:", svc.status, "| Fecha:", svc.request_date);
+    });
+  } else if (res.status === 200) {
+    console.log("ℹ️ No hay servicios completados para esta sede.");
+  } else {
+    console.log("❌ Error:", res.status, res.body);
+  }
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.body.success).to.be.true;
+  });
+  
+  test("Response data is array", function() {
+    expect(res.body.data).to.be.an("array");
+  });
+  
+  test("Each completed service has required fields", function() {
+    if (res.body.data.length > 0) {
+      var cs = res.body.data[0];
+      expect(cs.id).to.exist;
+      expect(cs.branch_id).to.exist;
+      expect(cs.motorcycle_id).to.exist;
+      expect(cs.status).to.exist;
+      expect(cs.request_date).to.exist;
+    }
+  });
+}
+
+docs {
+  # GET /branches/:id/completed-services - Listar Servicios por Sede (HU64)
+  
+  Lista todos los servicios completados registrados en una sede.
+  Solo accesible por representantes de sede autenticados.
+  
+  ## Prerrequisitos
+  1. Ejecutar Login Representante (01_login_representante.bru)
+  2. Configurar `branch_id` en el environment
+  
+  ## Respuestas
+  - **200**: Array de servicios completados con sus datos y servicios asociados
+  - **401**: Token inválido
+  - **404**: Sede no encontrada
+}

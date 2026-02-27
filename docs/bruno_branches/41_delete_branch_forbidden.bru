@@ -1,0 +1,55 @@
+meta {
+  name: Delete Branch (HU61) - Forbidden (Not Owner)
+  type: http
+  seq: 41
+}
+
+delete {
+  url: {{base_url}}/branches/{{branch_id}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+vars:pre-request {
+  branch_id: 509e0f21-c9e9-4071-8651-cec4973a6874
+}
+
+tests {
+  test("Status code is 403 Forbidden", function() {
+    expect(res.status).to.equal(403);
+  });
+  
+  test("Response has error", function() {
+    expect(res.body.success).to.be.false;
+  });
+  
+  test("Message code is GEN_FORBIDDEN_ERR_00003", function() {
+    expect(res.body.code).to.equal("GEN_FORBIDDEN_ERR_00003");
+  });
+}
+
+docs {
+  # Delete Branch (HU61) - Forbidden Case
+  
+  Intenta eliminar una sede que NO pertenece al usuario autenticado.
+  
+  ## Escenario
+  Un usuario con un token diferente (no es el dueño de la sede)
+  intenta eliminar la sede de otro representante.
+  
+  ## Prerrequisitos
+  1. Tener un `branch_id` de una sede existente
+  2. Usar `user_token` de un usuario que NO es el dueño
+  
+  ## Respuesta Esperada
+  - **403 Forbidden**: No tienes permiso para eliminar esta sede
+  - Código: `GEN_FORBIDDEN_ERR_00003`
+}

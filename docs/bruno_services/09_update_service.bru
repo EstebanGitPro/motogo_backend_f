@@ -1,0 +1,111 @@
+meta {
+  name: 09. Update Service (HU68 - Admin)
+  type: http
+  seq: 9
+}
+
+put {
+  url: {{base_url}}/admin/services/{{service_id}}
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{admin_token}}
+}
+
+body:json {
+  {
+    "name": "Ajuste de ralentí",
+    "description": "Calibración del régimen de ralentí del motor",
+    "service_type": "Mantenimiento",
+    "is_active": false
+  }
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("Response has service data", function() {
+    expect(res.getBody().data).to.exist;
+    expect(res.getBody().data.id).to.exist;
+    expect(res.getBody().data.name).to.exist;
+    expect(res.getBody().data.is_active).to.exist;
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.getBody().data._links).to.exist;
+  });
+  
+  test("Message code is update related", function() {
+    const validCodes = ["MOD_S_UPD_EXI_00001", "MOD_S_ACTIVATED_EXI_00001", "MOD_S_DEACTIVATED_EXI_00001"];
+    expect(validCodes).to.include(res.getBody().code);
+  });
+}
+
+docs {
+  # Actualizar Servicio (HU68 - Admin Only)
+  
+  Actualiza un servicio existente en el catálogo global.
+  **Requiere rol ADMIN.**
+  
+  ## Pre-requisitos:
+  1. Ejecutar `08_admin_login.bru` para obtener el `admin_token`
+  2. Obtener un `service_id` válido de `02_get_all_services.bru`
+  
+  ## Variables requeridas:
+  - `admin_token`: Token de admin (se obtiene con 08_admin_login)
+  - `service_id`: ID del servicio a modificar (codificado HashID)
+  
+  ## Endpoint:
+  `PUT /admin/services/:id`
+  
+  ## Body:
+  ```json
+  {
+    "name": "Nuevo nombre del servicio",
+    "description": "Nueva descripción",
+    "service_type": "Mantenimiento",
+    "is_active": true  // Opcional: true para activar, false para desactivar
+  }
+  ```
+  
+  ## Tipos de servicio válidos:
+  - `Mantenimiento`
+  - `Reparación`
+  - `Llantas`
+  - `Diagnóstico`
+  - `Estética`
+  - `Accesorios`
+  - `Eléctrico`
+  - `Legal`
+  
+  ## Respuesta exitosa:
+  ```json
+  {
+    "code": "MOD_S_UPD_EXI_00001",  // O MOD_S_ACTIVATED_EXI_00001 / MOD_S_DEACTIVATED_EXI_00001
+    "message": "Servicio actualizado exitosamente",
+    "data": {
+      "id": "encoded_id",
+      "name": "Ajuste de ralentí",
+      "description": "Calibración del régimen...",
+      "service_type": "Mantenimiento",
+      "is_active": true,
+      "_links": [...]
+    }
+  }
+  ```
+  
+  ## Posibles errores:
+  - `401`: No autenticado
+  - `403`: Sin permisos de ADMIN
+  - `404`: Servicio no encontrado (MOD_S_RES_ERR_00001)
+  - `400`: Tipo de servicio inválido (MOD_S_TYPE_ERR_00001)
+}

@@ -1,0 +1,68 @@
+meta {
+  name: Desactivar Horario (HU35)
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{base_url}}/branches/{{branch_id}}/schedules/deactivate
+  body: none
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success message", function() {
+    expect(res.body.message).to.exist;
+    // El mensaje debería indicar que el horario fue desactivado
+  });
+  
+  test("Schedule is now inactive", function() {
+    expect(res.body.data.active).to.equal(false);
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.body.data._links).to.exist;
+  });
+  
+  test("Has activate link for next action", function() {
+    var activateLink = res.body.data._links.find(l => l.rel === 'activate');
+    expect(activateLink).to.exist;
+    expect(activateLink.method).to.equal('PUT');
+  });
+}
+
+docs {
+  # Desactivar Horario (HU35)
+  
+  Desactiva el horario de una sede. Los horarios desactivados 
+  **NO se muestran a los clientes** en la app.
+  
+  > **Caso de uso:** El representante quiere ocultar temporalmente 
+  > su horario sin eliminarlo (vacaciones, remodelación, etc.)
+  
+  ## Requisitos
+  - Usuario con rol `REPRESENTANTE`
+  - Sede válida perteneciente al representante
+  - Horario existente
+  
+  ## Variables requeridas
+  - `branch_id`: ID encoded de la sede
+  
+  ## Response
+  - **200**: Horario desactivado exitosamente
+  - **403**: Sede no pertenece al representante
+  - **404**: Horario no encontrado
+}

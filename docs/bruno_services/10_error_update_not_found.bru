@@ -1,0 +1,52 @@
+meta {
+  name: 10. Error - Service Not Found
+  type: http
+  seq: 10
+}
+
+put {
+  url: {{base_url}}/admin/services/invalidServiceId123
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{admin_token}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "name": "Test Service",
+    "description": "Test description",
+    "service_type": "Mantenimiento"
+  }
+}
+
+tests {
+  test("Status code is 404", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+  
+  test("Error message code is correct", function() {
+    expect(res.getBody().message_code).to.equal("MOD_S_RES_ERR_00001");
+  });
+}
+
+docs {
+  # Error: Servicio No Encontrado (HU68)
+  
+  Verifica el manejo de error cuando se intenta actualizar un servicio
+  que no existe.
+  
+  ## Pre-requisitos:
+  1. Ejecutar `08_admin_login.bru` para obtener el `admin_token`
+  
+  ## Respuesta esperada:
+  - Status: `404 Not Found`
+  - Message code: `MOD_S_RES_ERR_00001` (MsgServiceNotFound)
+}

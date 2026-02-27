@@ -1,0 +1,90 @@
+meta {
+  name: Obtener Servicios de la Sede (Helper)
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/branches/{{branch_id}}/services
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+script:pre-request {
+  var branchId = bru.getVar("branch_id");
+  if (!branchId || branchId === "REPLACE_WITH_BRANCH_ID") {
+    console.log("⚠️ branch_id no configurado!");
+    console.log("💡 Configura branch_id en el environment");
+  }
+}
+
+script:post-response {
+  if (res.status === 200 && res.body.data && res.body.data.services) {
+    var services = res.body.data.services;
+    console.log("═══════════════════════════════════════════");
+    console.log("✅ SERVICIOS DE LA SEDE (" + services.length + ")");
+    console.log("═══════════════════════════════════════════");
+    
+    services.forEach(function(svc, i) {
+      console.log("  [" + i + "] service_id: " + svc.id);
+      console.log("      Nombre: " + svc.name);
+      console.log("      Tipo: " + (svc.service_type || "N/A"));
+      console.log("      Activo: " + (svc.active ? "✅" : "❌"));
+      console.log("");
+    });
+    
+    // Auto-save first two service IDs for convenience
+    if (services.length >= 1) {
+      bru.setVar("service_id_1", services[0].id);
+      console.log("💡 service_id_1 guardado:", services[0].id, "(" + services[0].name + ")");
+    }
+    if (services.length >= 2) {
+      bru.setVar("service_id_2", services[1].id);
+      console.log("💡 service_id_2 guardado:", services[1].id, "(" + services[1].name + ")");
+    }
+    
+    console.log("═══════════════════════════════════════════");
+    console.log("📌 COPIAR PARA EL REQUEST DE REGISTRO:");
+    if (services.length >= 1) console.log("   service_id_1 → " + services[0].id);
+    if (services.length >= 2) console.log("   service_id_2 → " + services[1].id);
+    console.log("═══════════════════════════════════════════");
+  } else if (res.status === 200) {
+    console.log("ℹ️ La sede no tiene servicios asociados.");
+    console.log("💡 Usa bruno_services/06_associate_services para asociar servicios a la sede.");
+  } else {
+    console.log("❌ Error:", res.status, res.body);
+  }
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has services array", function() {
+    expect(res.body.data.services).to.be.an("array");
+  });
+}
+
+docs {
+  # Obtener Servicios de la Sede (Helper)
+  
+  Lista los servicios asociados a la sede del representante y guarda automáticamente
+  `service_id_1` y `service_id_2` para usar en el request de registro (paso 04).
+  
+  ## Prerrequisitos
+  1. Ejecutar Login Representante (01_login_representante.bru)
+  2. Configurar `branch_id` en el environment
+  
+  ## Variables que guarda
+  - `service_id_1` → ID ofuscado del primer servicio
+  - `service_id_2` → ID ofuscado del segundo servicio
+}

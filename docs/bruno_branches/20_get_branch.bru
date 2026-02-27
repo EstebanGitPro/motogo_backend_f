@@ -1,0 +1,87 @@
+meta {
+  name: Get Branch (HU62) - Success
+  type: http
+  seq: 20
+}
+
+get {
+  url: {{base_url}}/branches/{{branch_id}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+vars:pre-request {
+  branch_id: a76c2d68-e4d8-426f-911d-9f7ecafe4caf
+}
+
+script:pre-request {
+  // branch_id should be set by 02_register_branch.bru post-response script
+  // Or manually set in environment with the ENCODED (hashid) ID, not the UUID
+  var branchId = bru.getVar("branch_id");
+  if (!branchId) {
+    console.log("⚠️ branch_id not set. Run 02_register_branch first!");
+    console.log("💡 Tip: Use the ENCODED ID from response, not the UUID from DB");
+  } else {
+    console.log("Using branch_id:", branchId);
+  }
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.body.success).to.be.true;
+  });
+  
+  test("Response has branch data", function() {
+    expect(res.body.data.id).to.exist;
+    expect(res.body.data.name).to.exist;
+    expect(res.body.data.establishment_type).to.exist;
+    expect(res.body.data.status).to.exist;
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.body.data._links).to.exist;
+    expect(res.body.data._links.length).to.be.greaterThan(0);
+  });
+  
+  test("Response has self link", function() {
+    var selfLink = res.body.data._links.find(l => l.rel === "self");
+    expect(selfLink).to.exist;
+  });
+}
+
+docs {
+  # Get Branch (HU62) - Success Case
+  
+  Consulta información detallada de una sede.
+  
+  ## Prerrequisitos
+  1. **Ejecutar Login primero** (01_login.bru)
+  2. **Registrar una sede** (02_register_branch.bru)
+  3. Configurar `branch_id` en las variables de entorno con el ID de la respuesta
+  
+  ## Notas sobre HATEOAS Links
+  
+  Los links devueltos dependen de si el usuario autenticado es dueño de la sede:
+  
+  | Escenario | Links Disponibles |
+  |-----------|-------------------|
+  | **Dueño** | self, update, delete, list |
+  | **Otro usuario** | self |
+  
+  ## Respuestas
+  - **200**: Sede encontrada
+  - **401**: Token inválido/ausente
+  - **404**: Sede no encontrada
+}

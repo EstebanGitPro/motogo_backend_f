@@ -1,0 +1,62 @@
+meta {
+  name: Get Services - Invalid Type Error
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{base_url}}/services?type=TipoInvalido
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+}
+
+tests {
+  test("Status code is 400 Bad Request", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+  
+  test("Response has success false", function() {
+    expect(res.getBody().success).to.be.false;
+  });
+  
+  test("Response has correct error code", function() {
+    expect(res.getBody().code).to.equal('MOD_S_INVALID_TYPE_ERR_00001');
+  });
+  
+  test("Response has error message", function() {
+    expect(res.getBody().message).to.exist;
+  });
+}
+
+docs {
+  # Get Services - Invalid Type Error (HU63)
+  
+  Verifica que el endpoint retorna error 400 cuando se proporciona
+  un tipo de servicio inválido en el filtro.
+  
+  ## Endpoint:
+  `GET /motogo/api/v1/services?type=TipoInvalido`
+  
+  ## Tipos válidos:
+  - Mantenimiento
+  - Reparación
+  - Llantas
+  - Diagnóstico
+  - Estética
+  - Accesorios
+  - Eléctrico
+  - Legal
+  
+  ## Respuesta esperada:
+  ```json
+  {
+    "success": false,
+    "code": "MOD_S_INVALID_TYPE_ERR_00001",
+    "message": "Tipo de servicio inválido"
+  }
+  ```
+}

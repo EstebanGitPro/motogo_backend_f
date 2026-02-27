@@ -1,0 +1,125 @@
+meta {
+  name: Register Branch (Complete)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}/branches
+  body: json
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "name": "Taller Centro",
+    "establishment_type": "WORKSHOP",
+    "profile_image_url": "https://firebasestorage.googleapis.com/v0/b/motogo-24827.appspot.com/o/branches%2Fexample.jpg?alt=media",
+    "location": {
+      "city_id": "{{city_id}}",
+      "city_name": "Medellín",
+      "department_name": "Antioquia",
+      "address": "Carrera 45 # 32-12"
+    },
+    "brands": ["{{brand_id_1}}", "{{brand_id_2}}"]
+  }
+}
+
+vars:pre-request {
+  city_id: b2c3d4e5-2222-4000-8000-000000000004
+  brand_id_1: f6a7b8c9-6666-4000-8000-000000000001
+  brand_id_2: f6a7b8c9-6666-4000-8000-000000000002
+}
+
+tests {
+  test("Status code is 201", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+  
+  test("Response has success", function() {
+    expect(res.getBody().success).to.be.true;
+  });
+  
+  test("Branch has ID", function() {
+    expect(res.getBody().data.id).to.exist;
+    bru.setEnvVar("branch_id", res.getBody().data.id);
+  });
+  
+  test("Branch has geocoding_status", function() {
+    const status = res.getBody().data.geocoding_status;
+    expect(status).to.exist;
+    // Should be SUCCESS, SKIPPED, or FAILED
+    expect(['SUCCESS', 'SKIPPED', 'FAILED']).to.include(status);
+  });
+  
+  test("If geocoding SUCCESS, has coordinates", function() {
+    const data = res.getBody().data;
+    if (data.geocoding_status === 'SUCCESS') {
+      expect(data.location.latitude).to.exist;
+      expect(data.location.longitude).to.exist;
+    }
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.getBody().data._links).to.be.an('array');
+  });
+}
+
+docs {
+  # Register Branch (Complete Flow)
+  
+  Registra una nueva sede con todos los datos incluyendo ubicación y marcas.
+  El backend intentará geocodificar automáticamente la dirección si no se 
+  proporcionan coordenadas.
+  
+  ## Endpoint:
+  `POST /motogo/api/v1/branches`
+  
+  ## Requiere autenticación:
+  - Bearer Token (JWT de Keycloak)
+  - Usuario debe tener rol REPRESENTANTE
+  
+  ## Campos del body:
+  | Campo | Tipo | Requerido | Descripción |
+  |-------|------|-----------|-------------|
+  | name | string | ✅ | Nombre de la sede |
+  | establishment_type | string | ✅ | WORKSHOP o STORE |
+  | profile_image_url | string | ❌ | URL de Firebase Storage |
+  | franchise_id | string | ❌ | UUID de la franquicia |
+  | location.city_id | string | ✅ | UUID de la ciudad |
+  | location.city_name | string | ❌ | Para geocoding |
+  | location.department_name | string | ❌ | Para geocoding |
+  | location.address | string | ✅ | Dirección física |
+  | location.latitude | number | ❌ | Se genera automáticamente |
+  | location.longitude | number | ❌ | Se genera automáticamente |
+  | brands | string[] | ❌ | UUIDs de marcas |
+  
+  ## Geocoding:
+  Si no se envían coordenadas, el backend usa OpenCage para geocodificar.
+  El campo `geocoding_status` en la respuesta indica:
+  - `SUCCESS`: Coordenadas generadas automáticamente
+  - `SKIPPED`: Usuario envió coordenadas, no se usó geocoding
+  - `FAILED`: Geocoding falló, actualizar manualmente después
+  
+  ## Pre-requisitos:
+  1. Ejecutar 01_get_all_departments.bru → obtener department_id
+  2. Ejecutar 02_get_cities_by_department.bru → obtener city_id
+  3. Ejecutar GET /brands → obtener brand_ids
+  4. Tener token de representante válido
+  
+  ## Respuestas:
+  - **201**: Sede registrada exitosamente
+  - **400**: Validación fallida
+  - **401**: No autenticado
+  - **403**: No tiene rol REPRESENTANTE
+  - **500**: Error interno
+}

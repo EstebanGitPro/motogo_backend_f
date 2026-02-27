@@ -1,0 +1,76 @@
+meta {
+  name: Get Engine Displacement Ranges
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/engine-displacements
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.getBody().success).to.be.true;
+  });
+  
+  test("Response has displacements array", function() {
+    expect(res.getBody().data.displacements).to.be.an('array');
+  });
+  
+  test("Each item has a range label", function() {
+    const displacements = res.getBody().data.displacements;
+    const validRanges = ['BAJO', 'MEDIO', 'ALTO'];
+    displacements.forEach(d => {
+      expect(validRanges).to.include(d.range);
+    });
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.getBody().data._links).to.be.an('array');
+    const selfLink = res.getBody().data._links.find(link => link.rel === 'self');
+    expect(selfLink).to.exist;
+  });
+}
+
+docs {
+  # Get Engine Displacement Ranges (HU49)
+  
+  Obtiene los rangos de cilindraje disponibles para clasificar motocicletas.
+  Endpoint **público** (no requiere autenticación).
+  
+  ## Rangos:
+  | Enum | Rango |
+  |------|-------|
+  | BAJO | 50 - 200 cc |
+  | MEDIO | 201 - 400 cc |
+  | ALTO | 401 - 3000 cc |
+  
+  ## Endpoint:
+  `GET /motogo/api/v1/engine-displacements`
+  
+  ## Ejemplo de respuesta:
+  ```json
+  {
+    "success": true,
+    "code": "MOD_MOT_DISP_LIST_EXI_00001",
+    "data": {
+      "displacements": [
+        {"range": "BAJO"},
+        {"range": "MEDIO"},
+        {"range": "ALTO"}
+      ],
+      "_links": [...]
+    }
+  }
+  ```
+}

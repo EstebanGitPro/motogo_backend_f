@@ -1,0 +1,64 @@
+meta {
+  name: Modificar Detalle Horario (HU7)
+  type: http
+  seq: 9
+}
+
+put {
+  url: {{base_url}}/schedule-details/{{detail_id}}
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "opening_time": "09:00",
+    "closing_time": "13:00",
+    "is_closed": false
+  }
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success message", function() {
+    expect(res.body.message).to.exist;
+  });
+  
+  test("Response has navigation links", function() {
+    expect(res.body.data._links).to.exist;
+  });
+}
+
+docs {
+  # Modificar Detalle de Horario (HU7)
+  
+  Actualiza los campos de una franja horaria existente.
+  
+  ## Requisitos
+  - Usuario autenticado con rol `REPRESENTANTE`
+  - `detail_id` de un detalle perteneciente a una sede propia
+  
+  ## Body (campos opcionales)
+  - `opening_time`: Nueva hora de apertura (HH:MM)
+  - `closing_time`: Nueva hora de cierre (HH:MM)
+  - `is_closed`: true para marcar como cerrado
+  
+  ## Response Codes
+  - **200**: Franja horaria actualizada
+  - **400**: Formato de hora inválido
+  - **403**: No autorizado (sede no pertenece al representante)
+  - **404**: Detalle horario no encontrado
+  - **409**: Conflicto de horarios
+}

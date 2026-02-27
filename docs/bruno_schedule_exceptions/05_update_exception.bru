@@ -1,0 +1,56 @@
+meta {
+  name: Modificar Excepción (HU21)
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{base_url}}/schedule-exceptions/{{exception_id}}
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "opening_time": "10:00",
+    "closing_time": "15:00",
+    "is_closed": false
+  }
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success message", function() {
+    expect(res.body.message).to.exist;
+  });
+}
+
+docs {
+  # Modificar Excepción de Horario (HU21)
+  
+  Actualiza una excepción de horario existente.
+  Nota: Las fechas no se pueden modificar, solo horarios y estado.
+  
+  ## Body (todos opcionales)
+  - `opening_time`: Nueva hora de apertura
+  - `closing_time`: Nueva hora de cierre
+  - `is_closed`: Cambiar estado de cerrado
+  
+  ## Response Codes
+  - **200**: Excepción actualizada exitosamente
+  - **400**: Formato inválido
+  - **403**: No autorizado
+  - **404**: Excepción no encontrada
+}

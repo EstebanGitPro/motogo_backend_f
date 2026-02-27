@@ -1,0 +1,70 @@
+meta {
+  name: Registrar Servicio (estado PENDIENTE)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/completed-services
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "branch_id": "{{branch_id}}",
+    "motorcycle_id": "{{motorcycle_id}}",
+    "service_ids": [
+      "{{service_id_1}}",
+      "{{service_id_2}}"
+    ],
+    "quoted_price": 185000,
+    "final_price": 175000,
+    "representative_notes": "Servicio de prueba para transiciones de estado"
+  }
+}
+
+script:post-response {
+  if (res.status === 200 || res.status === 201) {
+    var csId = res.body.data.id;
+    bru.setVar("completed_service_id", csId);
+    console.log("✅ Servicio registrado! ID:", csId);
+    console.log("📋 Estado inicial:", res.body.data.status);
+  } else {
+    console.log("❌ Error:", res.status, res.body);
+  }
+}
+
+tests {
+  test("Status code is 200 or 201", function() {
+    expect([200, 201]).to.include(res.status);
+  });
+  
+  test("Estado inicial es PENDIENTE", function() {
+    expect(res.body.data.status).to.equal("PENDIENTE");
+  });
+  
+  test("completed_service_id fue guardado", function() {
+    expect(res.body.data.id).to.exist;
+  });
+}
+
+docs {
+  # Registrar Servicio (estado PENDIENTE)
+  
+  Crea un servicio nuevo para poder probar las transiciones de estado.
+  El servicio se crea con estado **PENDIENTE**.
+  
+  ## Prerequisitos
+  - Ejecutar `01_login_representante.bru`
+  - Tener `branch_id`, `motorcycle_id`, `service_id_1` en el environment
+}

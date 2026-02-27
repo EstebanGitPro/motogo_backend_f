@@ -1,0 +1,64 @@
+meta {
+  name: 03 - Update Message
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{base_url}}/admin/messages/PY54My6cA2nFpKWFdvVf14qFeWgh1g6HqJV3
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "code": "MOD_U_DUP_ERR_00001",
+    "active": true
+  }
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success message", function() {
+    expect(res.body.message).to.include('actualizado');
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.body._links).to.be.an('array');
+  });
+  
+  test("Has self and delete links", function() {
+    const selfLink = res.body._links.find(link => link.rel === 'self');
+    const deleteLink = res.body._links.find(link => link.rel === 'delete');
+    expect(selfLink).to.exist;
+    expect(deleteLink).to.exist;
+  });
+}
+
+docs {
+  # Update Message
+  
+  Actualiza un mensaje existente.
+  
+  ## Importante
+  - El ID va en la URL, NO en el body
+  - PUT es idempotente (puedes llamarlo N veces)
+  - Debes enviar todos los campos
+  
+  ## URL Parameter
+  - `id`: ID del mensaje a actualizar
+  
+  ## Body
+  - Todos los campos del mensaje (excepto id, created_at, updated_at)
+  
+  ## Response Success (200)
+  - Mensaje de confirmación
+  - Links HATEOAS (self, delete, list)
+}

@@ -1,0 +1,80 @@
+meta {
+  name: Finalizar Servicio con Precio (HU74)
+  type: http
+  seq: 12
+}
+
+patch {
+  url: {{base_url}}/completed-services/{{completed_service_id}}/status
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "status": "FINALIZADO",
+    "final_price": 175000
+  }
+}
+
+script:pre-request {
+  var csId = bru.getVar("completed_service_id");
+  
+  if (!csId || csId === "REPLACE_WITH_COMPLETED_SERVICE_ID") {
+    console.log("⚠️ completed_service_id no configurado!");
+    console.log("💡 Ejecuta paso 04 (Registrar Servicio) y 10 (Transición EN_PROCESO) primero");
+  }
+}
+
+script:post-response {
+  if (res.status === 200) {
+    console.log("✅ Servicio FINALIZADO con precio final asignado");
+  } else {
+    console.log("❌ Error:", res.status, res.body);
+  }
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.body.success).to.be.true;
+  });
+}
+
+docs {
+  # PATCH /completed-services/:id/status - Finalizar con Precio (HU74)
+  
+  Transiciona un servicio de **EN_PROCESO** a **FINALIZADO**, asignando opcionalmente el precio final.
+  Si se incluye `final_price`, se guarda junto con la fecha de finalización.
+  
+  ## Flujo previo
+  1. Ejecutar `01_login_representante.bru` → guarda `access_token`
+  2. Ejecutar `04_registrar_servicio.bru` → guarda `completed_service_id`
+  3. Ejecutar `10_transicion_en_proceso.bru` → pasa a EN_PROCESO
+  4. (Opcional) Ejecutar `11_actualizar_detalles.bru` → edita precios/notas
+  5. Ejecutar este request ✅
+  
+  ## Request Body
+  
+  | Campo | Tipo | Requerido | Descripción |
+  |-------|------|-----------|-------------|
+  | `status` | string | ✅ | Nuevo estado: `FINALIZADO` |
+  | `final_price` | number | ❌ | Precio final cobrado al cliente (COP) |
+  
+  ## Respuestas
+  - **200**: Servicio finalizado exitosamente
+  - **400**: Transición de estado no válida
+  - **404**: Servicio no encontrado
+}

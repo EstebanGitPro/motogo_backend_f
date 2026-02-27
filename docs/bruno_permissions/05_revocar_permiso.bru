@@ -1,0 +1,75 @@
+meta {
+  name: Revocar Permiso de Sede
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{base_url}}/motorcycles/{{motorcycle_id}}/permissions/{{permission_branch_id}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+script:pre-request {
+  var motoId = bru.getVar("motorcycle_id");
+  var branchId = bru.getVar("permission_branch_id");
+  if (!motoId || motoId === "REPLACE_WITH_MOTORCYCLE_ID") {
+    console.log("⚠️ motorcycle_id no configurado!");
+    console.log("💡 Ejecuta 02_listar_motos.bru primero");
+  }
+  if (!branchId || branchId === "REPLACE_WITH_BRANCH_ID") {
+    console.log("⚠️ permission_branch_id no configurado!");
+    console.log("💡 Ejecuta 03_conceder_permiso.bru o 04_listar_permisos.bru primero");
+  }
+}
+
+script:post-response {
+  if (res.status === 200) {
+    console.log("✅ Permiso revocado exitosamente.");
+    bru.setVar("permission_branch_id", "REPLACE_WITH_BRANCH_ID");
+  } else {
+    console.log("❌ Error:", res.body);
+  }
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+
+  test("Response has success", function() {
+    expect(res.body.success).to.be.true;
+  });
+
+  test("Response has HATEOAS links", function() {
+    expect(res.body.data._links).to.exist;
+  });
+}
+
+docs {
+  # DELETE /motorcycles/:id/permissions/:branchId - Revocar Permiso
+
+  Revoca el permiso de una sede para ver/diagnosticar esta motocicleta.
+  Solo el propietario puede revocar permisos.
+
+  ## Prerrequisitos
+  1. Ejecutar Login (01_login_usuario.bru)
+  2. Obtener motorcycle_id y permission_branch_id
+  3. Recomendado: Ejecutar 04_listar_permisos.bru para capturar el branch_id
+
+  ## Respuestas
+  - **200**: Permiso revocado exitosamente
+  - **401**: Token inválido
+  - **404**: Moto o permiso no encontrado
+
+  ## ⚠️ Nota
+  Al revocar un permiso, la sede ya no podrá ver ni diagnosticar esta motocicleta.
+}

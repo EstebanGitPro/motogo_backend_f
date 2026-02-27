@@ -1,0 +1,72 @@
+meta {
+  name: Register Branch with Franchise
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}/branches
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "name": "Sucursal MotoMax Norte",
+    "establishment_type": "STORE",
+    "franchise_id": "c3d4e5f6-3333-4000-8000-000000000001",
+    "location": {
+      "department_id": "a1b2c3d4-1111-4000-8000-000000000002",
+      "city_id": "b2c3d4e5-2222-4000-8000-000000000004",
+      "city_name": "Medellín",
+      "department_name": "Antioquia",
+      "address": "Avenida Norte #100-50, Centro Comercial"
+    },
+    "brands": [
+      "f6a7b8c9-6666-4000-8000-000000000001",
+      "f6a7b8c9-6666-4000-8000-000000000002"
+    ]
+  }
+}
+
+tests {
+  test("Status code is 201 Created", function() {
+    expect(res.status).to.equal(201);
+  });
+  
+  test("Response has franchise_id", function() {
+    expect(res.body.data.franchise_id).to.exist;
+  });
+  
+  test("Establishment type is STORE", function() {
+    expect(res.body.data.establishment_type).to.equal("STORE");
+  });
+  
+  test("Response has geocoding status", function() {
+    expect(res.body.data.geocoding_status).to.exist;
+  });
+}
+
+docs {
+  # Register Branch with Franchise
+  
+  Registra una sede asociada a una franquicia (MotoMax).
+  
+  ## Regla de Negocio
+  **No pueden existir dos sedes con el mismo nombre dentro de la misma franquicia.**
+  
+  ## UUIDs Usados (de 012_dummy_data.sql)
+  - Franchise: MotoMax (`c3d4e5f6-3333-4000-8000-000000000001`)
+  - Departamento: Antioquia (`a1b2c3d4-1111-4000-8000-000000000002`)
+  - Ciudad: Medellín (`b2c3d4e5-2222-4000-8000-000000000004`)
+  - Marcas: Honda, Yamaha
+}

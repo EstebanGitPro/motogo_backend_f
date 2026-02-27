@@ -799,7 +799,7 @@ func (h *handler) fetchAndEncodeDiagnostics(
 	return diagnosticResponses
 }
 
-// encodeDiagnosticIDs encodes all IDs (diagnostic, branch, motorcycle, evidence) in a diagnostic response list.
+// encodeDiagnosticIDs encodes all IDs (diagnostic, branch, motorcycle) in a diagnostic response list.
 func (h *handler) encodeDiagnosticIDs(responses []DiagnosticResponse, diagnostics []domain.Diagnostic, encodedMotorcycleID string) {
 	for i := range responses {
 		if encDiagID, err := h.EncodeID(diagnostics[i].ID); err == nil {
@@ -809,12 +809,6 @@ func (h *handler) encodeDiagnosticIDs(responses []DiagnosticResponse, diagnostic
 			responses[i].BranchID = encBranchID
 		}
 		responses[i].MotorcycleID = encodedMotorcycleID
-
-		for j := range responses[i].Evidence {
-			if encEvidID, err := h.EncodeID(diagnostics[i].Evidence[j].ID); err == nil {
-				responses[i].Evidence[j].ID = encEvidID
-			}
-		}
 	}
 }
 

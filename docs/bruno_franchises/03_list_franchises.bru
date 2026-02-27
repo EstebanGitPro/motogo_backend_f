@@ -1,0 +1,44 @@
+meta {
+  name: Listar Mis Franquicias
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}/franchises
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has franchises array", function() {
+    expect(res.body.data.franchises).to.be.an('array');
+  });
+  
+  test("Response has total count", function() {
+    expect(res.body.data.total).to.be.a('number');
+  });
+}
+
+docs {
+  # Listar Mis Franquicias (HU29)
+  
+  Lista todas las franquicias del representante autenticado.
+  
+  ## Response
+  - `franchises`: Array de franquicias
+  - `total`: Cantidad total
+  - `_links`: Links HATEOAS (self, create)
+}

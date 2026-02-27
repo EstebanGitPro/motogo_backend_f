@@ -99,6 +99,10 @@ var fieldNameMapping = map[string]string{
 	// Status Transitions (HU74)
 	"status": "Estado del servicio",
 
+	// Rating (HU48)
+	"rating":  "Calificación",
+	"comment": "Comentario",
+
 	// Diagnostics (HU11-12)
 	"branch_id":           "Sede",
 	"problem_description": "Descripción del problema",
@@ -240,6 +244,11 @@ func (b *Builder) WithValidateFranchiseBranch() gin.HandlerFunc {
 // WithValidateUpdateStatus validates status update request (HU74)
 func (b *Builder) WithValidateUpdateStatus() gin.HandlerFunc {
 	return b.jsonValidator(b.Validators.UpdateStatusValidator)
+}
+
+// WithValidateRateServiceItem validates rate service item request (HU48)
+func (b *Builder) WithValidateRateServiceItem() gin.HandlerFunc {
+	return b.jsonValidator(b.Validators.RateServiceItemValidator)
 }
 
 func (b *Builder) jsonValidator(schema *jsonschema.Schema) gin.HandlerFunc {

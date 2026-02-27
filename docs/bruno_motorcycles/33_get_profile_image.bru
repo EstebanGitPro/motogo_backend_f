@@ -1,0 +1,75 @@
+meta {
+  name: Get Profile Image (HU38)
+  type: http
+  seq: 19
+}
+
+get {
+  url: {{base_url}}/motorcycles/{{motorcycle_id}}/profile-image
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+script:pre-request {
+  var motorcycleId = bru.getVar("motorcycle_id");
+  if (!motorcycleId) {
+    console.log("⚠️ motorcycle_id not set. Register a motorcycle first!");
+  }
+}
+
+script:post-response {
+  if (res.status === 200) {
+    var imageUrl = res.body.data.profile_image_url;
+    if (imageUrl) {
+      console.log("📸 Profile Image URL:", imageUrl);
+    } else {
+      console.log("ℹ️ No profile image set for this motorcycle");
+    }
+  }
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.body.success).to.be.true;
+  });
+  
+  test("Response has motorcycle_id", function() {
+    expect(res.body.data.motorcycle_id).to.exist;
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.body.data._links).to.exist;
+    expect(res.body.data._links.length).to.be.greaterThan(0);
+  });
+}
+
+docs {
+  # Get Profile Image (HU38)
+  
+  ## Description
+  Retrieves the profile image URL for a motorcycle.
+  
+  ## Response
+  
+  | Campo | Tipo | Descripción |
+  |-------|------|-------------|
+  | `motorcycle_id` | string | ID de la motocicleta |
+  | `profile_image_url` | string | URL de la imagen (puede estar vacío) |
+  | `_links` | array | Enlaces HATEOAS |
+  
+  ## Prerequisites
+  1. Run Login first
+  2. Have a registered motorcycle
+}

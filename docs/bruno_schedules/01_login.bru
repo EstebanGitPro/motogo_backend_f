@@ -1,0 +1,56 @@
+meta {
+  name: Login (Obtener Token)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/auth/login
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "email": "amordemadre@yopmail.com",
+    "password": "Secret123*"
+  }
+}
+
+script:post-response {
+  // Guardar el token automáticamente para los siguientes requests
+  if (res.status === 200 && res.body.data && res.body.data.access_token) {
+    bru.setEnvVar("access_token", res.body.data.access_token);
+    console.log("✅ Token guardado automáticamente!");
+  }
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has access_token", function() {
+    expect(res.body.data.access_token).to.exist;
+  });
+}
+
+docs {
+  # Login para Horarios
+  
+  **⚠️ Ejecutar primero para obtener el token de autenticación.**
+  
+  El usuario debe ser un REPRESENTANTE para poder gestionar horarios.
+  
+  ## Usuario de prueba
+  - Email: amordemadre@yopmail.com
+  - Password: Secret123*
+  
+  ## Resultado
+  - El `access_token` se guarda automáticamente para los siguientes requests.
+}

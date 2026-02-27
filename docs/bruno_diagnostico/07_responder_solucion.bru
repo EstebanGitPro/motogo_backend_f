@@ -1,0 +1,72 @@
+meta {
+  name: Responder Solución de Diagnóstico (Admin)
+  type: http
+  seq: 10
+}
+
+patch {
+  url: {{base_url}}/diagnostics/{{diagnostic_id}}/solution
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "possible_solution": "Revisar cadena de distribución y ajustar válvulas"
+  }
+}
+
+script:pre-request {
+  var diagId = bru.getVar("diagnostic_id");
+  if (!diagId) {
+    throw new Error("Variable 'diagnostic_id' no está definida. Primero ejecute 01_crear_diagnostico.");
+  }
+}
+
+tests {
+  test("Status 200 OK", function() {
+    expect(res.getStatus()).to.eql(200);
+  });
+  
+  test("Body contains data with possible_solution", function() {
+    var body = res.getBody();
+    expect(body.data).to.have.property("possible_solution");
+    expect(body.data.possible_solution).to.eql("Revisar cadena de distribución y ajustar válvulas");
+  });
+  
+  test("Message code is MOD_DGN_SOLUTION_EXI_00001", function() {
+    var body = res.getBody();
+    expect(body.message).to.have.property("code");
+    expect(body.message.code).to.eql("MOD_DGN_SOLUTION_EXI_00001");
+  });
+}
+
+docs {
+  # Responder Solución de Diagnóstico (Admin)
+  
+  Permite al personal del taller (RoleAdmin) registrar la solución posible
+  para un diagnóstico existente.
+  
+  ## Endpoint
+  `PATCH /admin/diagnostics/{id}/solution`
+  
+  ## Cuerpo de la solicitud
+  | Campo              | Tipo   | Requerido | Descripción                |
+  | ------------------ | ------ | --------- | -------------------------- |
+  | possible_solution  | string | Sí        | Solución posible propuesta |
+  
+  ## Autorización
+  Requiere JWT + rol `admin`.
+  
+  ## Respuesta exitosa
+  Código `200 OK` con el diagnóstico actualizado.
+}

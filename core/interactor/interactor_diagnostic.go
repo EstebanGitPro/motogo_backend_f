@@ -24,7 +24,7 @@ func NewDiagnosticInteractor(diagnosticSvc input.DiagnosticService) *DiagnosticI
 // RegisterDiagnostic creates a new diagnostic or updates an existing one for the same motorcycle+branch (UPSERT)
 // If a diagnostic already exists for the same motorcycle and branch, it updates the existing record
 // instead of creating a duplicate. This is transparent to the caller.
-func (i *DiagnosticInteractor) RegisterDiagnostic(ctx context.Context, motorcycleID, branchID, ownerID string, problemDescription *string, evidenceURLs []string) (result *domain.Diagnostic, err error) {
+func (i *DiagnosticInteractor) RegisterDiagnostic(ctx context.Context, motorcycleID, branchID, ownerID string, problemDescription *string) (result *domain.Diagnostic, err error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
 	log := log.WithTraceID(traceID)
 
@@ -59,8 +59,8 @@ func (i *DiagnosticInteractor) RegisterDiagnostic(ctx context.Context, motorcycl
 		}
 	}()
 
-	// Step 4: Register or update diagnostic (UPSERT + evidence)
-	result, err = i.diagnosticSvc.RegisterOrUpdateDiagnostic(ctx, tx, motorcycleID, branchID, problemDescription, evidenceURLs)
+	// Step 4: Register or update diagnostic (UPSERT)
+	result, err = i.diagnosticSvc.RegisterOrUpdateDiagnostic(ctx, tx, motorcycleID, branchID, problemDescription)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +77,7 @@ func (i *DiagnosticInteractor) RegisterDiagnostic(ctx context.Context, motorcycl
 	return result, nil
 }
 
-// GetDiagnosticByID retrieves a diagnostic with its evidence (HU14)
+// GetDiagnosticByID retrieves a diagnostic by ID (HU14)
 func (i *DiagnosticInteractor) GetDiagnosticByID(ctx context.Context, diagnosticID, ownerID string) (*domain.Diagnostic, error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
 	log := log.WithTraceID(traceID)
@@ -97,19 +97,11 @@ func (i *DiagnosticInteractor) GetDiagnosticByID(ctx context.Context, diagnostic
 		return nil, domain.ErrDiagnosticNotFound
 	}
 
-	// Step 3: Load evidence
-	evidence, err := i.diagnosticSvc.LoadEvidence(ctx, diagnosticID)
-	if err != nil {
-		log.Error(logger.LogDiagnosticInteractorGetError, "error loading evidence", err, "diagnostic_id", diagnosticID)
-		return nil, err
-	}
-	diagnostic.Evidence = evidence
-
 	log.Success(logger.LogDiagnosticInteractorGetSuccess, "diagnostic_id", diagnosticID)
 	return diagnostic, nil
 }
 
-// ListDiagnosticsByMotorcycle retrieves all diagnostics for a motorcycle with evidence (HU14)
+// ListDiagnosticsByMotorcycle retrieves all diagnostics for a motorcycle (HU14)
 func (i *DiagnosticInteractor) ListDiagnosticsByMotorcycle(ctx context.Context, motorcycleID, ownerID string) ([]domain.Diagnostic, error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
 	log := log.WithTraceID(traceID)
@@ -125,11 +117,6 @@ func (i *DiagnosticInteractor) ListDiagnosticsByMotorcycle(ctx context.Context, 
 	diagnostics, err := i.diagnosticSvc.GetByMotorcycleID(ctx, motorcycleID)
 	if err != nil {
 		log.Error(logger.LogDiagnosticInteractorListError, "error", err, "motorcycle_id", motorcycleID)
-		return nil, err
-	}
-
-	// Step 3: Load evidence for each diagnostic
-	if err = i.diagnosticSvc.LoadEvidenceForDiagnostics(ctx, diagnostics); err != nil {
 		return nil, err
 	}
 
@@ -196,7 +183,7 @@ func (i *DiagnosticInteractor) UpdateDiagnostic(ctx context.Context, diagnosticI
 	return diagnostic, nil
 }
 
-// DeleteDiagnostic deletes a diagnostic and its evidence (HU13)
+// DeleteDiagnostic deletes a diagnostic (HU13)
 func (i *DiagnosticInteractor) DeleteDiagnostic(ctx context.Context, diagnosticID, ownerID string) (err error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
 	log := log.WithTraceID(traceID)
@@ -235,7 +222,7 @@ func (i *DiagnosticInteractor) DeleteDiagnostic(ctx context.Context, diagnosticI
 		}
 	}()
 
-	// Step 4: Delete diagnostic (cascades to evidence via FK ON DELETE CASCADE)
+	// Step 4: Delete diagnostic
 	if err = i.diagnosticSvc.DeleteDiagnostic(ctx, tx, diagnosticID); err != nil {
 		return err
 	}
@@ -252,7 +239,7 @@ func (i *DiagnosticInteractor) DeleteDiagnostic(ctx context.Context, diagnosticI
 	return nil
 }
 
-// ListDiagnosticsByMotorcycleID retrieves diagnostics with evidence for a motorcycle (used by motorcycle lookup)
+// ListDiagnosticsByMotorcycleID retrieves diagnostics for a motorcycle (used by motorcycle lookup)
 // This method does NOT validate ownership - it's designed for workshop representatives
 func (i *DiagnosticInteractor) ListDiagnosticsByMotorcycleID(ctx context.Context, motorcycleID string) ([]domain.Diagnostic, error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
@@ -264,11 +251,6 @@ func (i *DiagnosticInteractor) ListDiagnosticsByMotorcycleID(ctx context.Context
 	diagnostics, err := i.diagnosticSvc.GetByMotorcycleID(ctx, motorcycleID)
 	if err != nil {
 		log.Error(logger.LogDiagnosticInteractorListError, "error", err, "motorcycle_id", motorcycleID)
-		return nil, err
-	}
-
-	// Step 2: Load evidence for each diagnostic
-	if err = i.diagnosticSvc.LoadEvidenceForDiagnostics(ctx, diagnostics); err != nil {
 		return nil, err
 	}
 

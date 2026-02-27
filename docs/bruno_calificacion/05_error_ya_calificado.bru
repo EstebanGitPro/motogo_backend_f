@@ -1,0 +1,75 @@
+meta {
+  name: Error - Calificar Ya Calificado
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{base_url}}/completed-services/{{completed_service_id}}/items/{{service_item_id}}/rating
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{user_access_token}}
+}
+
+body:json {
+  {
+    "rating": 4,
+    "comment": "Segundo intento de calificación"
+  }
+}
+
+script:pre-request {
+  console.log("🧪 TEST: Intentando calificar un ítem que ya fue calificado...");
+  console.log("   Se espera error: MOD_CS_RATE_DUP_ERR_00001");
+}
+
+script:post-response {
+  console.log("═══════════════════════════════════════");
+  
+  if (res.status !== 200) {
+    console.log("✅ ERROR ESPERADO — Ítem ya calificado");
+    console.log("  Status:", res.status);
+    console.log("  Código:", res.body.code);
+    if (res.body.message) {
+      console.log("  Mensaje:", res.body.message.content);
+    }
+  } else {
+    console.log("❌ INESPERADO: Se permitió calificar de nuevo");
+  }
+  
+  console.log("═══════════════════════════════════════");
+}
+
+tests {
+  test("Status code is NOT 200 (already rated)", function() {
+    expect(res.status).to.not.equal(200);
+  });
+  
+  test("Response has success false", function() {
+    expect(res.body.success).to.be.false;
+  });
+  
+  test("Error code is duplicate rating", function() {
+    expect(res.body.code).to.equal("MOD_CS_RATE_DUP_ERR_00001");
+  });
+}
+
+docs {
+  # Error: Calificar Ítem Ya Calificado
+  
+  Prueba de error: intentar calificar nuevamente un ítem que ya fue calificado.
+  Debe ejecutarse **después** de `04_calificar_servicio.bru` exitoso.
+  
+  ## Resultado esperado
+  - **Status:** 400
+  - **Código:** `MOD_CS_RATE_DUP_ERR_00001`
+  - **Mensaje:** "Este servicio ya fue calificado"
+}

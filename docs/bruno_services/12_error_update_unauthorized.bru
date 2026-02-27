@@ -1,0 +1,52 @@
+meta {
+  name: 12. Error - Unauthorized (No Admin)
+  type: http
+  seq: 12
+}
+
+put {
+  url: {{base_url}}/admin/services/{{service_id}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "name": "Test Service",
+    "description": "Test description",
+    "service_type": "Mantenimiento"
+  }
+}
+
+tests {
+  test("Status code is 403 Forbidden", function() {
+    expect(res.getStatus()).to.equal(403);
+  });
+}
+
+docs {
+  # Error: Usuario Sin Permisos de Admin (HU68)
+  
+  Verifica que un usuario REPRESENTANTE (no ADMIN) no puede
+  actualizar servicios del catálogo global.
+  
+  ## Pre-requisitos:
+  1. Ejecutar `00_login.bru` para obtener un token de REPRESENTANTE (no admin)
+  2. Tener un `service_id` válido en variables de entorno
+  
+  ## Respuesta esperada:
+  - Status: `403 Forbidden`
+  
+  ## Nota:
+  Este test usa `{{access_token}}` (representante) en lugar de `{{admin_token}}`
+  para verificar que el middleware de rol ADMIN funciona correctamente.
+}

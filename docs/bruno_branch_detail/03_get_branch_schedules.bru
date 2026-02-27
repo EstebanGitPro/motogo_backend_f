@@ -1,0 +1,86 @@
+meta {
+  name: 03 - Get Branch Schedule Details
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}/branches/{{branch_id}}/schedules/details
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+script:post-response {
+  console.log("═══════════════════════════════════════");
+  console.log("📅 HORARIOS DEL TALLER");
+  console.log("═══════════════════════════════════════");
+  
+  var details = res.body.data.details || [];
+  if (details.length === 0) {
+    console.log("⚠️ Sin horarios configurados");
+  } else {
+    // Agrupar por día
+    var byDay = {};
+    details.forEach(function(d) {
+      if (!byDay[d.day_name]) byDay[d.day_name] = [];
+      byDay[d.day_name].push(d);
+    });
+    
+    Object.keys(byDay).forEach(function(day) {
+      var slots = byDay[day];
+      var closed = slots.find(s => s.is_closed);
+      if (closed) {
+        console.log(day + ": 🔴 CERRADO");
+      } else {
+        var times = slots.map(s => s.opening_time + " - " + s.closing_time).join(", ");
+        console.log(day + ": 🟢 " + times);
+      }
+    });
+  }
+  console.log("═══════════════════════════════════════");
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has details array", function() {
+    expect(res.body.data.details).to.be.an('array');
+  });
+  
+  test("Details have day info", function() {
+    var details = res.body.data.details || [];
+    if (details.length > 0) {
+      expect(details[0].day_name).to.exist;
+    }
+  });
+}
+
+docs {
+  # Get Branch Schedule Details
+  
+  Obtiene las franjas horarias configuradas para una sede/taller.
+  
+  ## Response incluye:
+  - `details[]`: Array de franjas horarias
+    - `id`: ID codificado
+    - `day_of_week`: Número del día (1-7)
+    - `day_name`: Nombre del día en español
+    - `opening_time`: Hora de apertura (HH:mm)
+    - `closing_time`: Hora de cierre (HH:mm)
+    - `is_closed`: Si está cerrado ese día
+  - `_links`: Links HATEOAS
+  
+  ## Para UI del mapa:
+  - Mostrar el horario de atención
+  - Calcular "Abierto ahora" comparando hora actual con franjas
+}

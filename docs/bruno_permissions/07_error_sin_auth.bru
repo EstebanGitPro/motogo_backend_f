@@ -1,0 +1,37 @@
+meta {
+  name: Conceder Permiso - Sin Autenticación
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{base_url}}/motorcycles/{{motorcycle_id}}/permissions
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "branch_id": "{{branch_id}}"
+  }
+}
+
+tests {
+  test("Status code is 401", function() {
+    expect(res.status).to.equal(401);
+  });
+}
+
+docs {
+  # POST /motorcycles/:id/permissions - Error: Sin Autenticación
+
+  Caso de error: intento de conceder permiso sin token de autenticación.
+
+  ## Resultado esperado
+  - **401**: No autenticado
+}

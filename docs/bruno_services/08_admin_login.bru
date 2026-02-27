@@ -1,0 +1,61 @@
+meta {
+  name: 08. Admin Login (Get Token)
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{base_url}}/auth/login
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "email": "admin@motogo.com",
+    "password": "Secret123*"
+  }
+}
+
+script:post-response {
+  // Store the access token in environment variables
+  if (res.getStatus() === 200 && res.getBody().data && res.getBody().data.access_token) {
+    bru.setEnvVar("admin_token", res.getBody().data.access_token);
+    console.log("✅ Admin token saved to environment");
+  }
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("Response has access_token", function() {
+    expect(res.getBody().data.access_token).to.exist;
+  });
+}
+
+docs {
+  # Login Admin - Obtener Token
+  
+  Este request obtiene un token de autenticación para un usuario ADMIN
+  y lo guarda automáticamente en la variable `admin_token`.
+  
+  ## Importante:
+  Ejecutar este request **PRIMERO** antes de usar endpoints de `/admin/*`.
+  
+  ## Credenciales de prueba:
+  - Email: `admin@motogo.com`
+  - Password: `Admin123*`
+  
+  ## Nota:
+  Asegúrate de tener un usuario ADMIN registrado en tu BD/Keycloak.
+  
+  ## Post-response Script:
+  El token se guarda automáticamente en `{{admin_token}}` después de login exitoso.
+}

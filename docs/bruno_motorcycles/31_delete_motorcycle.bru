@@ -1,0 +1,92 @@
+meta {
+  name: Delete Motorcycle (HU45) - Success
+  type: http
+  seq: 16
+}
+
+delete {
+  url: {{base_url}}/motorcycles/{{motorcycle_id}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+script:post-response {
+  if (res.status === 200) {
+    console.log("✅ Motorcycle deleted successfully (soft delete)");
+    console.log("📋 HATEOAS links for next actions:");
+    if (res.body.data && res.body.data._links) {
+      res.body.data._links.forEach(link => {
+        console.log("   -", link.rel, ":", link.method, link.href);
+      });
+    }
+  }
+}
+
+tests {
+  test("Status code is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.body.success).to.be.true;
+  });
+  
+  test("Response has data with HATEOAS links", function() {
+    expect(res.body.data).to.be.an('object');
+    expect(res.body.data._links).to.be.an('array');
+  });
+  
+  test("HATEOAS includes list link", function() {
+    var listLink = res.body.data._links.find(l => l.rel === 'list');
+    expect(listLink).to.exist;
+    expect(listLink.method).to.equal('GET');
+  });
+  
+  test("HATEOAS includes create link", function() {
+    var createLink = res.body.data._links.find(l => l.rel === 'create');
+    expect(createLink).to.exist;
+    expect(createLink.method).to.equal('POST');
+  });
+}
+
+docs {
+  # DELETE /motorcycles/:id - Delete Motorcycle (HU45)
+  
+  ## Description
+  Soft deletes a motorcycle (sets deleted_at timestamp).
+  Only the owner can delete their motorcycle.
+  
+  ## Richardson Maturity Model Level 3
+  The response includes HATEOAS links guiding the client to:
+  - List remaining motorcycles
+  - Create a new motorcycle
+  
+  ## Authentication
+  Requires valid JWT token with USER role.
+  
+  ## Security
+  - Returns 404 for non-owners (security by obscurity)
+  - Never reveals existence of motorcycles not owned by user
+  
+  ## Responses
+  - 200: Motorcycle deleted successfully with HATEOAS links
+  - 401: Not authenticated
+  - 404: Motorcycle not found or not owner
+  - 500: Server error
+  
+  ## Prerequisites
+  1. Run 14_list_motorcycles.bru to get motorcycle_id
+  2. Ensure you're authenticated as the motorcycle owner
+  
+  ## Note
+  This is a soft delete - the motorcycle record remains in DB
+  with deleted_at populated for audit purposes.
+}

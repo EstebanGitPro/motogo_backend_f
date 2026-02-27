@@ -1,0 +1,114 @@
+meta {
+  name: Get All Motorcycle Categories
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/motorcycle-categories
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("Response has success", function() {
+    expect(res.getBody().success).to.be.true;
+  });
+  
+  test("Response has categories array", function() {
+    expect(res.getBody().data.categories).to.be.an('array');
+  });
+  
+  test("Each category has name and line_count", function() {
+    const categories = res.getBody().data.categories;
+    if (categories.length > 0) {
+      expect(categories[0].name).to.exist;
+      expect(categories[0].line_count).to.be.a('number');
+    }
+  });
+  
+  test("Each category has drill-down HATEOAS links", function() {
+    const categories = res.getBody().data.categories;
+    if (categories.length > 0) {
+      expect(categories[0]._links).to.be.an('array');
+      const linesLink = categories[0]._links.find(link => link.rel === 'lines');
+      expect(linesLink).to.exist;
+      expect(linesLink.method).to.equal('GET');
+    }
+  });
+  
+  test("Response has top-level HATEOAS links", function() {
+    expect(res.getBody().data._links).to.be.an('array');
+    const selfLink = res.getBody().data._links.find(link => link.rel === 'self');
+    expect(selfLink).to.exist;
+  });
+  
+  test("Save first category name for next request", function() {
+    const categories = res.getBody().data.categories;
+    if (categories.length > 0) {
+      bru.setVar("category_name", categories[0].name);
+    }
+  });
+}
+
+docs {
+  # Get All Motorcycle Categories (HU41)
+  
+  Obtiene la lista de todas las categorías de motocicletas con su conteo de líneas.
+  Este es un endpoint **público** (no requiere autenticación).
+  
+  ## Endpoint:
+  `GET /motogo/api/v1/motorcycle-categories`
+  
+  ## No requiere autenticación
+  
+  ## Respuestas:
+  - **200**: Lista de categorías obtenida exitosamente
+  - **500**: Error interno del servidor
+  
+  ## Ejemplo de respuesta exitosa:
+  ```json
+  {
+    "success": true,
+    "code": "MOD_MOT_CAT_LIST_EXI_00001",
+    "message": "Categorías de motocicletas obtenidas exitosamente.",
+    "data": {
+      "categories": [
+        {
+          "name": "Naked",
+          "line_count": 5,
+          "_links": [
+            {"href": ".../motorcycle-categories/Naked/lines", "rel": "lines", "method": "GET"}
+          ]
+        },
+        {
+          "name": "Sport",
+          "line_count": 8,
+          "_links": [
+            {"href": ".../motorcycle-categories/Sport/lines", "rel": "lines", "method": "GET"}
+          ]
+        }
+      ],
+      "_links": [
+        {"href": ".../motorcycle-categories", "rel": "self", "method": "GET"},
+        {"href": ".../motorcycle-references", "rel": "references", "method": "GET"},
+        {"href": ".../brands", "rel": "brands", "method": "GET"}
+      ]
+    }
+  }
+  ```
+  
+  ## HATEOAS Links:
+  - `self`: URL del catálogo de categorías
+  - `references`: URL del catálogo completo de referencias
+  - `brands`: URL del catálogo de marcas
+  - Per-item `lines`: Drill-down a las líneas de cada categoría
+}

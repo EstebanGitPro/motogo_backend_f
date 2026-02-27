@@ -1,0 +1,71 @@
+meta {
+  name: 01 - Create Message
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/admin/messages
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "code": "MOD_TEST_CREATE_001",
+    "type": "INFO",
+    "category": "testing",
+    "module": "test_module",
+    "title": "Mensaje de Prueba desde Bruno",
+    "content": "Este es un mensaje de prueba creado desde Bruno para validar la API",
+    "active": true
+  }
+}
+
+tests {
+  test("Status code is 201", function() {
+    expect(res.status).to.equal(201);
+  });
+  
+  test("Response has message", function() {
+    expect(res.body.message).to.exist;
+  });
+  
+  test("Response has ID", function() {
+    expect(res.body.id).to.exist;
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.body._links).to.be.an('array');
+    expect(res.body._links.length).to.be.greaterThan(0);
+  });
+  
+  test("Location header is present", function() {
+    expect(res.headers['location']).to.exist;
+  });
+}
+
+docs {
+  # Create Message
+  
+  Crea un nuevo mensaje del sistema.
+  
+  ## Campos Requeridos
+  - `code`: Código único del mensaje
+  - `type`: Tipo (ERROR, SUCCESS, WARNING, INFO, DEBUG)
+  - `category`: Categoría del mensaje
+  - `module`: Módulo al que pertenece
+  - `title`: Título del mensaje
+  - `content`: Contenido del mensaje
+  - `active`: Estado activo (true/false)
+  
+  ## Response
+  - Status: 201 Created
+  - Header Location con URL del recurso
+  - Body con ID y links HATEOAS
+}

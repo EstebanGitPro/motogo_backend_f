@@ -105,3 +105,17 @@ func (m *MockCompletedServiceService) GetStatusHistory(ctx context.Context, serv
 	}
 	return args.Get(0).([]domain.ServiceStatusHistory), args.Error(1)
 }
+
+// UpdateStatusWithPrice (Feature A)
+
+func (m *MockCompletedServiceService) UpdateStatusWithPrice(ctx context.Context, tx output.Tx, serviceID string, status string, completionDate *time.Time, finalPrice *float64) error {
+	args := m.Called(ctx, tx, serviceID, status, completionDate, finalPrice)
+	return args.Error(0)
+}
+
+// UpdateDetails (Feature B)
+
+func (m *MockCompletedServiceService) UpdateDetails(ctx context.Context, tx output.Tx, serviceID string, quotedPrice, finalPrice *float64, notes *string) error {
+	args := m.Called(ctx, tx, serviceID, quotedPrice, finalPrice, notes)
+	return args.Error(0)
+}
