@@ -282,10 +282,10 @@ go run ./cmd/api
 
 | Check | How to Verify |
 |-------|---------------|
-| **Server running** | Console shows `Listening on 0.0.0.0:9090` |
-| **Health endpoint** | `curl http://localhost:9090/health` returns `200 OK` |
-| **Metrics endpoint** | `curl http://localhost:9090/metrics` returns Prometheus data |
-| **Swagger UI** | Open [http://localhost:9090/swagger/index.html](http://localhost:9090/swagger/index.html) |
+| **Server running** | Console shows `Listening on 0.0.0.0:8085` |
+| **Health endpoint** | `curl http://localhost:8085/health` returns `200 OK` |
+| **Metrics endpoint** | `curl http://localhost:8085/metrics` returns Prometheus data |
+| **Swagger UI** | Open [http://localhost:8085/swagger/index.html](http://localhost:8085/swagger/index.html) |
 
 ---
 
@@ -382,7 +382,7 @@ For first-time setup with automatic provisioning:
 The API documentation is served directly from the running application:
 
 ```
-http://localhost:9090/swagger/index.html
+http://localhost:8085/swagger/index.html
 ```
 
 ### Swagger UI (Standalone Container)
@@ -466,7 +466,7 @@ openssl rand -base64 24  # Use for each password field
 
 | Port | Service | Environment |
 |------|---------|-------------|
-| `9090` | MotoGo API | Local + Production |
+| `8085` | MotoGo API | Local + Production |
 | `3306` | MySQL (Application) | Local |
 | `3309` | MySQL (Keycloak) | Local |
 | `8080` | Keycloak (HTTP) | Local + Production |
