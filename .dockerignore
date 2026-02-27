@@ -1,3 +1,8 @@
+# ============================================
+# .dockerignore — MotoGo Backend
+# ============================================
+# Reduce el build context para builds más rápidos
+
 # Binarios
 bin/
 *.exe
@@ -8,6 +13,8 @@ bin/
 # Archivos de prueba
 *_test.go
 *.test
+mocks/
+tests/
 
 # Dependencias
 vendor/
@@ -15,6 +22,8 @@ vendor/
 # IDEs
 .vscode/
 .idea/
+.gemini/
+.agents/
 *.swp
 *.swo
 *~
@@ -26,14 +35,20 @@ Thumbs.db
 # Git
 .git/
 .gitignore
+.gitattributes
 
 # Documentación (no necesaria para build)
-docs/swaggo/*.md
-SWAGGER_TESTING.md
+docs/
+documents_motogo/
 README.md
+CONTRIBUTING.md
+SECURITY.md
+CHANGELOG.md
+LICENSE
 
-# Configuración local
+# Configuración local (no enviar a la imagen)
 config/local-config.json
+config/serviceAccountKey.json
 
 # Logs
 *.log
@@ -41,3 +56,23 @@ config/local-config.json
 # Temporal
 tmp/
 temp/
+
+# Observabilidad (servicios separados, no van en la API)
+platform/grafana/
+platform/prometheus/
+platform/promtail/
+platform/loki/
+platform/log-rotator/
+platform/k6/
+platform/swaggo/
+
+# Deploy scripts (concern separado)
+deploy/
+scripts/
+
+# Keycloak (container separado)
+Containerfile
+tools/keycloak-themes/
+
+# Docker compose files
+docker-compose*.yml
