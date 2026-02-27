@@ -40,6 +40,7 @@ func TestNewRepository_Success(t *testing.T) {
 	mock.ExpectPrepare("INSERT INTO branch_displacement_ranges")
 	mock.ExpectPrepare("DELETE FROM branch_displacement_ranges")
 	mock.ExpectPrepare("SELECT displacement_range FROM branch_displacement_ranges")
+	mock.ExpectPrepare("SELECT s.name FROM branch_services")
 
 	repo, err := NewRepository(db)
 
@@ -1312,11 +1313,17 @@ func TestGetBranchesByRepresentative_Success_WithData(t *testing.T) {
 	)
 	stmtMain.ExpectQuery().WillReturnRows(rows)
 
-	// 4. During rows iteration, Go re-prepares hydration stmts on new connections
-	reBrands := mock.ExpectPrepare("SELECT brand_id FROM branch_brands")
-	reBrands.ExpectQuery().WillReturnRows(sqlmock.NewRows([]string{"brand_id"}).AddRow("brand-A"))
-	reDR := mock.ExpectPrepare("SELECT displacement_range FROM branch_displacement_ranges")
-	reDR.ExpectQuery().WillReturnRows(sqlmock.NewRows([]string{"displacement_range"}).AddRow("BAJO"))
+	// 4. Hydration queries — during row iteration, sqlmock re-prepares on busy conn
+	// Hydration for branch-001
+	mock.ExpectPrepare("SELECT brand_id FROM branch_brands").
+		ExpectQuery().WillReturnRows(sqlmock.NewRows([]string{"brand_id"}).AddRow("brand-A"))
+	mock.ExpectPrepare("SELECT displacement_range FROM branch_displacement_ranges").
+		ExpectQuery().WillReturnRows(sqlmock.NewRows([]string{"displacement_range"}).AddRow("BAJO"))
+	// Hydration for branch-002
+	mock.ExpectPrepare("SELECT brand_id FROM branch_brands").
+		ExpectQuery().WillReturnRows(sqlmock.NewRows([]string{"brand_id"}))
+	mock.ExpectPrepare("SELECT displacement_range FROM branch_displacement_ranges").
+		ExpectQuery().WillReturnRows(sqlmock.NewRows([]string{"displacement_range"}))
 
 	branches, err := repo.GetBranchesByRepresentative(context.Background(), "rep-123")
 
