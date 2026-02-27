@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 	"github.com/EstebanGitPro/motogo-backend/tools/utils"
@@ -127,26 +128,60 @@ func LoadConfig() (*Config, error) {
 		return nil, fmt.Errorf("error parsing JSON configuration: %w", err)
 	}
 
-	// Sobrescribir configuración de Keycloak con variables de entorno si existen
-	// Esto permite: JSON para defaults locales, ENV para producción/secrets
-	if serverURL := os.Getenv("KEYCLOAK_SERVER_URL"); serverURL != "" {
-		config.Keycloak.ServerURL = serverURL
-	}
-	if realm := os.Getenv("KEYCLOAK_REALM"); realm != "" {
-		config.Keycloak.Realm = realm
-	}
-	if clientID := os.Getenv("KEYCLOAK_CLIENT_ID"); clientID != "" {
-		config.Keycloak.ClientID = clientID
-	}
-	if clientSecret := os.Getenv("KEYCLOAK_CLIENT_SECRET"); clientSecret != "" {
-		config.Keycloak.ClientSecret = clientSecret
-	}
-	if adminUser := os.Getenv("KEYCLOAK_ADMIN"); adminUser != "" {
-		config.Keycloak.AdminUser = adminUser
-	}
-	if adminPass := os.Getenv("KEYCLOAK_ADMIN_PASSWORD"); adminPass != "" {
-		config.Keycloak.AdminPass = adminPass
-	}
+	// ── Sobrescribir con variables de entorno si existen ─────────
+	// Patrón: JSON = defaults locales, ENV = override para producción
+
+	// Environment
+	config.Environment = envOrStr("APP_ENV", config.Environment)
+
+	// Database
+	config.Database.Driver = envOrStr("DB_DRIVER", config.Database.Driver)
+	config.Database.Host = envOrStr("DB_HOST", config.Database.Host)
+	config.Database.Port = envOrStr("DB_PORT", config.Database.Port)
+	config.Database.Username = envOrStr("DB_USERNAME", config.Database.Username)
+	config.Database.Password = envOrStr("DB_PASSWORD", config.Database.Password)
+	config.Database.Name = envOrStr("DB_NAME", config.Database.Name)
+	config.Database.SSL = envOrStr("DB_SSL", config.Database.SSL)
+	config.Database.MaxOpenConns = envOrInt("DB_MAX_OPEN_CONNS", config.Database.MaxOpenConns)
+	config.Database.MaxIdleConns = envOrInt("DB_MAX_IDLE_CONNS", config.Database.MaxIdleConns)
+	config.Database.ConnMaxLifetime = envOrInt("DB_CONN_MAX_LIFETIME", config.Database.ConnMaxLifetime)
+	config.Database.ConnMaxIdleTime = envOrInt("DB_CONN_MAX_IDLE_TIME", config.Database.ConnMaxIdleTime)
+
+	// Server
+	config.Server.Port = envOrStr("SERVER_PORT", config.Server.Port)
+	config.Server.Host = envOrStr("SERVER_HOST", config.Server.Host)
+
+	// Resend
+	config.Resend.APIKey = envOrStr("RESEND_API_KEY", config.Resend.APIKey)
+	config.Resend.FromEmail = envOrStr("RESEND_FROM_EMAIL", config.Resend.FromEmail)
+
+	// Keycloak
+	config.Keycloak.ServerURL = envOrStr("KEYCLOAK_SERVER_URL", config.Keycloak.ServerURL)
+	config.Keycloak.Realm = envOrStr("KEYCLOAK_REALM", config.Keycloak.Realm)
+	config.Keycloak.ClientID = envOrStr("KEYCLOAK_CLIENT_ID", config.Keycloak.ClientID)
+	config.Keycloak.ClientSecret = envOrStr("KEYCLOAK_CLIENT_SECRET", config.Keycloak.ClientSecret)
+	config.Keycloak.AdminUser = envOrStr("KEYCLOAK_ADMIN", config.Keycloak.AdminUser)
+	config.Keycloak.AdminPass = envOrStr("KEYCLOAK_ADMIN_PASSWORD", config.Keycloak.AdminPass)
+
+	// Verification
+	config.Verification.BaseURL = envOrStr("VERIFICATION_BASE_URL", config.Verification.BaseURL)
+
+	// ID Encoder
+	config.IDEncoder.Secret = envOrStr("ID_ENCODER_SECRET", config.IDEncoder.Secret)
+	config.IDEncoder.MinLength = envOrInt("ID_ENCODER_MIN_LENGTH", config.IDEncoder.MinLength)
+
+	// Firebase
+	config.Firebase.CredentialsPath = envOrStr("FIREBASE_CREDENTIALS_PATH", config.Firebase.CredentialsPath)
+
+	// Geocoding
+	config.Geocoding.Provider = envOrStr("GEOCODING_PROVIDER", config.Geocoding.Provider)
+	config.Geocoding.APIKey = envOrStr("GEOCODING_API_KEY", config.Geocoding.APIKey)
+	config.Geocoding.BaseURL = envOrStr("GEOCODING_BASE_URL", config.Geocoding.BaseURL)
+	config.Geocoding.TimeoutSeconds = envOrInt("GEOCODING_TIMEOUT", config.Geocoding.TimeoutSeconds)
+	config.Geocoding.CountryCode = envOrStr("GEOCODING_COUNTRY_CODE", config.Geocoding.CountryCode)
+	config.Geocoding.FallbackProvider = envOrStr("GEOCODING_FALLBACK_PROVIDER", config.Geocoding.FallbackProvider)
+	config.Geocoding.FallbackAPIKey = envOrStr("GEOCODING_FALLBACK_API_KEY", config.Geocoding.FallbackAPIKey)
+	config.Geocoding.FallbackBaseURL = envOrStr("GEOCODING_FALLBACK_BASE_URL", config.Geocoding.FallbackBaseURL)
 
 	slog.Info("Configuration loaded successfully",
 		slog.String("config_file", configFile),
@@ -156,6 +191,25 @@ func LoadConfig() (*Config, error) {
 		slog.String("keycloak_realm", config.Keycloak.Realm))
 
 	return &config, nil
+}
+
+// envOrStr retorna el valor de la variable de entorno si existe, o el fallback.
+func envOrStr(key, fallback string) string {
+	if val := os.Getenv(key); val != "" {
+		return val
+	}
+	return fallback
+}
+
+// envOrInt retorna el valor (int) de la variable de entorno si existe, o el fallback.
+func envOrInt(key string, fallback int) int {
+	if val := os.Getenv(key); val != "" {
+		parsed, err := strconv.Atoi(val)
+		if err == nil {
+			return parsed
+		}
+	}
+	return fallback
 }
 
 func (c *Config) GetMySQLDSN() string {
