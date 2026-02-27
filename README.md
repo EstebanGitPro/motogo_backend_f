@@ -109,22 +109,35 @@ MotoGo Backend follows a **Clean / Hexagonal Architecture** (Ports & Adapters) w
 ```
 motogo_backend_f/
 ├── cmd/
-│   └── api/                    # Application entrypoint (main.go)
+│   ├── main.go                 # Application entrypoint
+│   └── dependency/             # Dependency injection wiring
 ├── config/                     # Configuration files (JSON) + config loader
 ├── core/
 │   ├── ports/                  # Interfaces (repository, service contracts)
 │   └── interactor/             # Use cases / business logic
 ├── handlers/                   # HTTP controllers (Gin handlers)
 ├── middleware/                  # Auth, CORS, request ID, metrics
+├── server/                     # Server bootstrap and route registration
 ├── platform/                   # Infrastructure implementations
+│   ├── cache/                  # In-memory caching (system messages)
+│   ├── constants/              # Shared constants
+│   ├── databases/              # MySQL repositories
+│   ├── firebase/               # Firebase Storage adapter
+│   ├── geocoding/              # Geocoding service (Google / Mapbox)
 │   ├── grafana/                # Grafana dashboards & provisioning
+│   ├── identity_provider/      # Keycloak integration
+│   ├── jwt/                    # JWT / JWKS validation
+│   ├── k6/                     # k6 load test scenarios
+│   ├── log-rotator/            # Log rotation service
+│   ├── logger/                 # Structured logging (slog)
 │   ├── loki/                   # Loki configuration
 │   ├── prometheus/             # Prometheus scrape configs
 │   ├── promtail/               # Promtail log shipping config
-│   ├── log-rotator/            # Log rotation service
+│   ├── schema/                 # JSON Schema validation
 │   └── swaggo/                 # Generated Swagger docs
 ├── mocks/                      # Testify mock implementations
-├── tools/                      # Utilities, keycloak themes, helpers
+├── public/                     # Static assets (email templates)
+├── tools/                      # Utilities, keycloak themes, moderation
 ├── scripts/                    # Automation scripts (Docker setup, observability)
 ├── tests/                      # Integration / load tests (k6)
 ├── deploy/                     # Production deployment configs
@@ -132,7 +145,7 @@ motogo_backend_f/
 │   ├── deploy.sh
 │   ├── nginx-motogo.conf
 │   └── .env.production.example
-├── docs/                       # Bruno API test collections
+├── docs/                       # Swagger docs + Bruno API collections
 ├── docker-compose.mysql.yml    # Local MySQL (app + keycloak)
 ├── docker-compose.keycloak.yml # Local Keycloak
 ├── docker-compose.grafana.yml  # Observability stack
@@ -196,34 +209,37 @@ docker compose -f docker-compose.keycloak.yml up -d
 
 #### 4a. Environment Variables
 
-The `.env` file at the project root configures Keycloak's SMTP and secrets. Copy and edit:
+The `.env` file at the project root configures all external services and secrets. Copy and edit:
 
 ```bash
 cp .env.example .env
-# Edit .env with your Resend API key and Keycloak client secret
 ```
 
-#### 4b. Application Config
+The `.env.example` contains the following sections:
 
-Create your local configuration:
+| Section | Key Variables | Purpose |
+|---------|-------------|----------|
+| **Database** | `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`, `DB_NAME` | MySQL connection |
+| **Server** | `SERVER_HOST`, `SERVER_PORT` | API server binding |
+| **Resend** | `RESEND_API_KEY`, `RESEND_FROM_EMAIL` | Email delivery (password reset, verification) |
+| **Keycloak** | `KEYCLOAK_SERVER_URL`, `KEYCLOAK_REALM`, `KEYCLOAK_CLIENT_SECRET` | Identity provider |
+| **Firebase** | `FIREBASE_CREDENTIALS_PATH` | File storage service account path |
+| **ID Encoder** | `ID_ENCODER_SECRET`, `ID_ENCODER_MIN_LENGTH` | HashID encoding |
+| **Geocoding** | `GEOCODING_PROVIDER`, `GEOCODING_API_KEY`, `GEOCODING_COUNTRY_CODE` | Address resolution (Google / Mapbox) |
+| **Verification** | `VERIFICATION_BASE_URL` | Email verification callback URL |
 
-```bash
-cp config/local-config.json.example config/local-config.json
-```
+> **Tip:** Environment variables override JSON config file settings. See `config/config.go` for details.
 
-The configuration file uses the following structure:
+#### 4b. Application Config (JSON)
 
-| Section | Key Settings |
-|---------|-------------|
-| `database` | Host, port, credentials, connection pool (`max_open_conns`, `max_idle_conns`) |
-| `server` | Host (`0.0.0.0`) and port (`9090`) |
-| `keycloak` | Server URL, realm, client ID/secret, admin credentials |
-| `firebase` | Path to `serviceAccountKey.json` |
-| `resend` | API key and sender email |
-| `id_encoder` | HashIDs secret and minimum length |
-| `geocoding` | Provider, API key, country code |
+The application also supports JSON-based configuration for each environment:
 
-> **Tip:** Environment variables override Keycloak settings in the JSON file. See `config/config.go` for details.
+| Environment | Config File | Trigger |
+|-------------|------------|---------|
+| **Local** (default) | `config/local-config.json` | `APP_ENV` unset or `local` |
+| **Production** | `config/prod-config.json` | `APP_ENV=production` |
+
+Edit `config/local-config.json` to set values not already overridden by `.env`.
 
 #### 4c. Firebase Service Account
 
@@ -275,25 +291,31 @@ go run ./cmd/api
 
 ## ⚙️ Configuration
 
-The application supports multiple environments via JSON config files:
+The application supports multiple environments via JSON config files and environment variable overrides.
 
-| Environment | Config File | Trigger |
-|-------------|------------|---------|
-| **Local** (default) | `config/local-config.json` | `APP_ENV` unset or `local` |
-| **Production** | `config/prod-config.json` | `APP_ENV=production` |
+**Precedence:** Environment variables (`.env`) → JSON config file → defaults.
 
-**Precedence:** Environment variables → JSON config file → defaults.
-
-Keycloak-related variables can be overridden via environment:
+All sections of the configuration can be overridden via environment variables. The most commonly overridden variables are:
 
 ```bash
+# Database
+DB_HOST=localhost
+DB_PORT=3309
+DB_PASSWORD=your-password
+
+# Server
+SERVER_PORT=8085
+
+# Keycloak
 KEYCLOAK_SERVER_URL=https://auth.example.com
-KEYCLOAK_REALM=motogo
-KEYCLOAK_CLIENT_ID=motogo-app
 KEYCLOAK_CLIENT_SECRET=your-secret
-KEYCLOAK_ADMIN=admin
-KEYCLOAK_ADMIN_PASSWORD=secure-password
+
+# External services
+RESEND_API_KEY=re_your_api_key
+GEOCODING_API_KEY=your-google-maps-key
 ```
+
+> See `.env.example` for the full list of available environment variables.
 
 ---
 
