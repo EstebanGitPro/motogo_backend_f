@@ -32,7 +32,7 @@ const PASSWORD = __ENV.K6_PASSWORD || 'Secret123*';
 const SCENARIO = __ENV.SCENARIO || 'load';
 
 // Health check abort: máximo de fallos consecutivos antes de abortar
-const MAX_HEALTH_FAILURES = parseInt(__ENV.MAX_HEALTH_FAILURES || '3');
+const MAX_HEALTH_FAILURES = Number.parseInt(__ENV.MAX_HEALTH_FAILURES || '3', 10);
 
 // Token refresh: refrescar 2 minutos antes de expirar (margen de seguridad)
 const TOKEN_REFRESH_MARGIN_S = 120;

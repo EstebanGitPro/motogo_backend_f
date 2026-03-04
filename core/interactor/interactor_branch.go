@@ -61,7 +61,7 @@ func (i *BranchInteractor) RegisterBranch(ctx context.Context, branch domain.Bra
 	}
 	log.Debug(logger.LogBranchInteractorTxStarted)
 
-	defer i.rollbackOnError(tx, &err, log)
+	defer func() { _ = tx.Rollback() }()
 
 	// STEP 3: Delegate to service (handles ID generation, defaults, save operations)
 	savedBranch, err := i.branchService.RegisterBranch(ctx, tx, branch)
@@ -83,7 +83,6 @@ func (i *BranchInteractor) RegisterBranch(ctx context.Context, branch domain.Bra
 		"representative_id", savedBranch.RepresentativeID,
 		"geocoding_succeeded", geocodingSucceeded)
 
-	err = nil // Ensure defer doesn't execute rollback
 	return savedBranch, geocodingSucceeded, nil
 }
 
@@ -155,7 +154,7 @@ func (i *BranchInteractor) UpdateBranch(ctx context.Context, branchID string, br
 		return nil, false, err
 	}
 
-	defer i.rollbackOnError(tx, &err, log)
+	defer func() { _ = tx.Rollback() }()
 
 	// 6. Set branch ID, representative ID, and status (preserve from existing)
 	branch.ID = branchID
@@ -186,7 +185,6 @@ func (i *BranchInteractor) UpdateBranch(ctx context.Context, branchID string, br
 	}
 
 	log.Success(logger.LogBranchInteractorUpdateComplete, "branch_id", branchID, "geocoding_succeeded", geocodingSucceeded)
-	err = nil
 	return updatedBranch, geocodingSucceeded, nil
 }
 
@@ -211,7 +209,7 @@ func (i *BranchInteractor) DeleteBranch(ctx context.Context, branchID string, pe
 		return err
 	}
 
-	defer i.rollbackOnError(tx, &err, log)
+	defer func() { _ = tx.Rollback() }()
 
 	// 4. Delete branch via service
 	// NOTE: FK RESTRICT on diagnostics/completed_services is interpreted by service layer
@@ -238,7 +236,6 @@ func (i *BranchInteractor) DeleteBranch(ctx context.Context, branchID string, pe
 	}
 
 	log.Success(logger.LogBranchInteractorDeleteComplete, "branch_id", branchID)
-	err = nil
 	return nil
 }
 
@@ -279,17 +276,6 @@ func (i *BranchInteractor) geocodeBranchLocation(ctx context.Context, location *
 		log.Info(logger.LogBranchGeocodingGenerated, "lat", *location.Latitude, "lng", *location.Longitude)
 	}
 	return succeeded
-}
-
-// rollbackOnError rolls back the transaction if an error occurred.
-func (i *BranchInteractor) rollbackOnError(tx output.Tx, err *error, log logger.Logger) {
-	if *err != nil {
-		if rbErr := tx.Rollback(); rbErr != nil {
-			log.Error(logger.LogBranchInteractorRollbackError, "rollback_error", rbErr, "original_error", *err)
-		} else {
-			log.Warn(logger.LogBranchInteractorRollbackOK)
-		}
-	}
 }
 
 // getOwnedBranch retrieves a branch and validates that it belongs to the given person.

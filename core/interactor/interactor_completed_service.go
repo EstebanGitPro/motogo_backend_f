@@ -62,7 +62,7 @@ func (i *CompletedServiceInteractor) RegisterCompletedService(ctx context.Contex
 		return nil, err
 	}
 
-	defer deferRollback(tx, &err, log, logger.LogTxRollbackError, logger.LogTxRollbackOK)()
+	defer func() { _ = tx.Rollback() }()
 
 	// STEP 4: Generate ID and set defaults
 	cs.SetID()
@@ -120,7 +120,6 @@ func (i *CompletedServiceInteractor) RegisterCompletedService(ctx context.Contex
 		"motorcycle_id", cs.MotorcycleID,
 		"services_count", len(items))
 
-	err = nil // Ensure defer doesn't execute rollback
 	return cs, nil
 }
 
@@ -197,7 +196,7 @@ func (i *CompletedServiceInteractor) DeleteCompletedService(ctx context.Context,
 		return domain.ErrCompletedServiceCannotDelete
 	}
 
-	defer deferRollback(tx, &err, log, logger.LogTxRollbackError, logger.LogTxRollbackOK)()
+	defer func() { _ = tx.Rollback() }()
 
 	// STEP 3: Delete — service layer decides strategy based on status
 	if err = i.service.DeleteCompletedService(ctx, tx, serviceID, cs.Status); err != nil {
@@ -212,7 +211,6 @@ func (i *CompletedServiceInteractor) DeleteCompletedService(ctx context.Context,
 	}
 
 	log.Success(logger.LogCSInteractorDelSuccess, "service_id", serviceID)
-	err = nil // Ensure defer doesn't execute rollback
 	return nil
 }
 
@@ -248,7 +246,7 @@ func (i *CompletedServiceInteractor) TransitionStatus(ctx context.Context, servi
 		return domain.ErrInvalidStatusTransition
 	}
 
-	defer deferRollback(tx, &err, log, logger.LogTxRollbackError, logger.LogTxRollbackOK)()
+	defer func() { _ = tx.Rollback() }()
 
 	// STEP 4: Set completion_date if transitioning to FINALIZADO
 	var completionDate *time.Time
@@ -296,7 +294,6 @@ func (i *CompletedServiceInteractor) TransitionStatus(ctx context.Context, servi
 		"from", cs.Status,
 		"to", newStatus)
 
-	err = nil
 	return nil
 }
 
@@ -357,7 +354,7 @@ func (i *CompletedServiceInteractor) UpdateCompletedServiceDetails(ctx context.C
 		return domain.ErrCompletedServiceCannotUpdate
 	}
 
-	defer deferRollback(tx, &err, log, logger.LogTxRollbackError, logger.LogTxRollbackOK)()
+	defer func() { _ = tx.Rollback() }()
 
 	// STEP 4: Update details in DB
 	if err = i.service.UpdateDetails(ctx, tx, serviceID, quotedPrice, finalPrice, notes); err != nil {
@@ -373,6 +370,5 @@ func (i *CompletedServiceInteractor) UpdateCompletedServiceDetails(ctx context.C
 
 	log.Success(logger.LogCSInteractorDetailsSuccess, "service_id", serviceID)
 
-	err = nil
 	return nil
 }

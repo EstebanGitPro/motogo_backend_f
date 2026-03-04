@@ -40,6 +40,7 @@ func TestRateServiceItem_Success(t *testing.T) {
 	svc.On("BeginTx", ctx).Return(mockTx, nil)
 	svc.On("RateServiceItem", ctx, mockTx, "item-1", 5, &comment).Return(nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	err := ri.RateServiceItem(ctx, "item-1", 5, &comment)
 
@@ -65,6 +66,7 @@ func TestRateServiceItem_Success_NoComment(t *testing.T) {
 	svc.On("BeginTx", ctx).Return(mockTx, nil)
 	svc.On("RateServiceItem", ctx, mockTx, "item-1", 4, (*string)(nil)).Return(nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	err := ri.RateServiceItem(ctx, "item-1", 4, nil)
 

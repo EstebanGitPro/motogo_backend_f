@@ -54,8 +54,7 @@ func (i *ScheduleExceptionInteractor) CreateException(
 		return nil, txErr
 	}
 
-	defer deferRollback(tx, &err, scheduleExceptionInteractorLog,
-		logger.LogScheduleDetailInteractorRollbackError, logger.LogScheduleDetailInteractorRollbackOK)()
+	defer func() { _ = tx.Rollback() }()
 
 	// 3. Create exception via service
 	result, err = i.detailService.CreateException(ctx, tx, exception)
@@ -75,7 +74,6 @@ func (i *ScheduleExceptionInteractor) CreateException(
 		"exception_id", result.ID,
 		"schedule_id", exception.ScheduleID)
 
-	err = nil
 	return result, nil
 }
 
@@ -130,8 +128,7 @@ func (i *ScheduleExceptionInteractor) UpdateException(
 		return txErr
 	}
 
-	defer deferRollback(tx, &err, scheduleExceptionInteractorLog,
-		logger.LogScheduleDetailInteractorRollbackError, logger.LogScheduleDetailInteractorRollbackOK)()
+	defer func() { _ = tx.Rollback() }()
 
 	// 4. Update exception
 	if err = i.detailService.UpdateException(ctx, tx, exception); err != nil {
@@ -144,7 +141,6 @@ func (i *ScheduleExceptionInteractor) UpdateException(
 		return err
 	}
 
-	err = nil
 	return nil
 }
 
@@ -171,8 +167,7 @@ func (i *ScheduleExceptionInteractor) DeleteException(
 		return txErr
 	}
 
-	defer deferRollback(tx, &err, scheduleExceptionInteractorLog,
-		logger.LogScheduleDetailInteractorRollbackError, logger.LogScheduleDetailInteractorRollbackOK)()
+	defer func() { _ = tx.Rollback() }()
 
 	// 4. Delete exception
 	if err = i.detailService.DeleteException(ctx, tx, exceptionID); err != nil {
@@ -185,7 +180,6 @@ func (i *ScheduleExceptionInteractor) DeleteException(
 		return err
 	}
 
-	err = nil
 	return nil
 }
 
@@ -229,8 +223,7 @@ func (i *ScheduleExceptionInteractor) setExceptionActive(
 		return txErr
 	}
 
-	defer deferRollback(tx, &err, scheduleExceptionInteractorLog,
-		logger.LogScheduleDetailInteractorRollbackError, logger.LogScheduleDetailInteractorRollbackOK)()
+	defer func() { _ = tx.Rollback() }()
 
 	// 4. Delegate active status change to service
 	if err = i.detailService.SetExceptionActive(ctx, tx, exceptionID, active); err != nil {
@@ -243,6 +236,5 @@ func (i *ScheduleExceptionInteractor) setExceptionActive(
 		return err
 	}
 
-	err = nil
 	return nil
 }

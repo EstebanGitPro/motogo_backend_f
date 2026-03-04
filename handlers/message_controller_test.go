@@ -45,6 +45,7 @@ func TestCreateMessage_Integration_Success(t *testing.T) {
 	mockMessageService.On("BeginTx", mock.Anything).Return(mockTx, nil)
 	mockMessageService.On("SaveMessageToDB", mock.Anything, mockTx, mock.AnythingOfType("domain.Message")).Return(nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	// Request body
 	reqBody := map[string]interface{}{
@@ -121,6 +122,7 @@ func TestUpdateMessage_Integration_Success(t *testing.T) {
 	mockMessageService.On("BeginTx", mock.Anything).Return(mockTx, nil)
 	mockMessageService.On("UpdateMessageInDB", mock.Anything, mockTx, mock.AnythingOfType("domain.Message")).Return(nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	// Request body
 	reqBody := map[string]interface{}{
@@ -183,6 +185,7 @@ func TestDeleteMessage_Integration_Success(t *testing.T) {
 	mockMessageService.On("BeginTx", mock.Anything).Return(mockTx, nil)
 	mockMessageService.On("DeleteMessageFromDB", mock.Anything, mockTx, testUUID).Return(nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	router := gin.New()
 	router.DELETE("/admin/messages/:id", h.DeleteMessage())

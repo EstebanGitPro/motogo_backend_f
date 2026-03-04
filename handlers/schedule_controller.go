@@ -356,24 +356,46 @@ func (h *handler) DeactivateBranchSchedule(scheduleInteractor *interactor.Schedu
 	return h.toggleScheduleActive(scheduleInteractor, false)
 }
 
+// scheduleToggleMessages groups the log and success messages for schedule activate/deactivate.
+type scheduleToggleMessages struct {
+	reqLog     string
+	errLog     string
+	okLog      string
+	successMsg string
+}
+
+// activateMessages returns log/success message set for schedule activation.
+func activateMessages() scheduleToggleMessages {
+	return scheduleToggleMessages{
+		reqLog:     logger.LogScheduleControllerActivateReq,
+		errLog:     logger.LogScheduleControllerActivateError,
+		okLog:      logger.LogScheduleControllerActivateOK,
+		successMsg: domain.MsgScheduleActivated,
+	}
+}
+
+// deactivateMessages returns log/success message set for schedule deactivation.
+func deactivateMessages() scheduleToggleMessages {
+	return scheduleToggleMessages{
+		reqLog:     logger.LogScheduleControllerDeactivateReq,
+		errLog:     logger.LogScheduleControllerDeactivateErr,
+		okLog:      logger.LogScheduleControllerDeactivateOK,
+		successMsg: domain.MsgScheduleDeactivated,
+	}
+}
+
 // toggleScheduleActive is a shared helper for activate/deactivate schedule handlers.
 func (h *handler) toggleScheduleActive(scheduleInteractor *interactor.ScheduleInteractor, activate bool) gin.HandlerFunc {
+	msgs := activateMessages()
+	if !activate {
+		msgs = deactivateMessages()
+	}
+
 	return func(c *gin.Context) {
 		traceID := middleware.GetRequestID(c)
 		log := Logger.WithTraceID(traceID)
 
-		reqLogMsg := logger.LogScheduleControllerActivateReq
-		errLogMsg := logger.LogScheduleControllerActivateError
-		okLogMsg := logger.LogScheduleControllerActivateOK
-		successMsg := domain.MsgScheduleActivated
-		if !activate {
-			reqLogMsg = logger.LogScheduleControllerDeactivateReq
-			errLogMsg = logger.LogScheduleControllerDeactivateErr
-			okLogMsg = logger.LogScheduleControllerDeactivateOK
-			successMsg = domain.MsgScheduleDeactivated
-		}
-
-		log.Info(reqLogMsg, "client_ip", c.ClientIP())
+		log.Info(msgs.reqLog, "client_ip", c.ClientIP())
 
 		// 1. Get authenticated person
 		person, _ := middleware.GetAuthenticatedUser(c)
@@ -387,33 +409,16 @@ func (h *handler) toggleScheduleActive(scheduleInteractor *interactor.ScheduleIn
 		}
 
 		// 3. Get schedule to get its ID
-		schedule, err := scheduleInteractor.GetScheduleByBranchIDPublic(c.Request.Context(), branchID)
+		schedule, err := h.fetchSchedulePublic(c, scheduleInteractor, branchID)
 		if err != nil {
-			if errors.Is(err, domain.ErrScheduleNotFound) {
-				h.Response.Error(c, domain.MsgScheduleNotFound)
-			} else {
-				h.Response.Error(c, domain.MsgServerError)
-			}
 			return
 		}
 
 		// 4. Toggle schedule active status
-		var toggleErr error
-		if activate {
-			toggleErr = scheduleInteractor.ActivateSchedule(c.Request.Context(), schedule.ID, person.ID)
-		} else {
-			toggleErr = scheduleInteractor.DeactivateSchedule(c.Request.Context(), schedule.ID, person.ID)
-		}
+		toggleErr := h.executeToggle(c, scheduleInteractor, schedule.ID, person.ID, activate)
 		if toggleErr != nil {
-			log.Error(errLogMsg, "error", toggleErr, "schedule_id", schedule.ID)
-			switch {
-			case errors.Is(toggleErr, domain.ErrScheduleNotFound):
-				h.Response.Error(c, domain.MsgScheduleNotFound)
-			case errors.Is(toggleErr, domain.ErrForbidden):
-				h.Response.Error(c, domain.MsgForbidden)
-			default:
-				h.Response.Error(c, domain.MsgServerError)
-			}
+			log.Error(msgs.errLog, "error", toggleErr, "schedule_id", schedule.ID)
+			h.mapScheduleUpdateError(c, toggleErr)
 			return
 		}
 
@@ -427,10 +432,18 @@ func (h *handler) toggleScheduleActive(scheduleInteractor *interactor.ScheduleIn
 		schedule.Active = activate
 		response := NewScheduleResponse(schedule, encodedScheduleID, encodedBranchID, links)
 
-		log.Success(okLogMsg, "schedule_id", schedule.ID)
+		log.Success(msgs.okLog, "schedule_id", schedule.ID)
 
-		h.Response.SuccessWithData(c, successMsg, response)
+		h.Response.SuccessWithData(c, msgs.successMsg, response)
 	}
+}
+
+// executeToggle calls the appropriate activate/deactivate interactor method.
+func (h *handler) executeToggle(c *gin.Context, si *interactor.ScheduleInteractor, scheduleID, personID string, activate bool) error {
+	if activate {
+		return si.ActivateSchedule(c.Request.Context(), scheduleID, personID)
+	}
+	return si.DeactivateSchedule(c.Request.Context(), scheduleID, personID)
 }
 
 // GetDaysOfWeek handles GET /schedules/days (HU10)

@@ -24,9 +24,9 @@ echo -e "${GREEN}  MotoGo Deploy Script${NC}"
 echo -e "${GREEN}========================================${NC}"
 
 # --- Verificar que se ejecuta como motogo ---
-if [ "$(whoami)" != "motogo" ]; then
-    echo -e "${RED}Error: Ejecutar como usuario 'motogo'${NC}"
-    echo "Uso: su - motogo -c './deploy.sh $1'"
+if [[ "$(whoami)" != "motogo" ]]; then
+    echo -e "${RED}Error: Ejecutar como usuario 'motogo'${NC}" >&2
+    echo "Uso: su - motogo -c './deploy.sh $1'" >&2
     exit 1
 fi
 
@@ -52,7 +52,7 @@ case "$1" in
             "$DEPLOY_DIR/deploy/.env.production"
         )
         for f in "${REQUIRED_FILES[@]}"; do
-            if [ ! -f "$f" ]; then
+            if [[ ! -f "$f" ]]; then
                 echo -e "${RED}  ✗ Falta: $f${NC}"
                 echo "Sube los archivos primero con scp"
                 exit 1
@@ -121,16 +121,16 @@ case "$1" in
 
         # 1. Backup del binario actual
         echo -e "${GREEN}[1/3] Backup del binario actual...${NC}"
-        if [ -f "$DEPLOY_DIR/motogo-api" ]; then
+        if [[ -f "$DEPLOY_DIR/motogo-api" ]]; then
             cp $DEPLOY_DIR/motogo-api $BACKUP_DIR/motogo-api.$(date +%Y%m%d_%H%M%S)
         fi
 
         # 2. Copiar nuevo binario (ya debe estar subido)
         echo -e "${GREEN}[2/3] Verificando nuevo binario...${NC}"
-        if [ ! -f "$DEPLOY_DIR/motogo-api-new" ]; then
-            echo -e "${RED}Error: No se encuentra motogo-api-new${NC}"
-            echo "Primero sube el nuevo binario:"
-            echo "  scp motogo-api motogo@tuserver:/home/motogo/motogo-backend/motogo-api-new"
+        if [[ ! -f "$DEPLOY_DIR/motogo-api-new" ]]; then
+            echo -e "${RED}Error: No se encuentra motogo-api-new${NC}" >&2
+            echo "Primero sube el nuevo binario:" >&2
+            echo "  scp motogo-api motogo@tuserver:/home/motogo/motogo-backend/motogo-api-new" >&2
             exit 1
         fi
         mv $DEPLOY_DIR/motogo-api-new $DEPLOY_DIR/motogo-api

@@ -46,9 +46,10 @@ type LoginResponse struct {
 	Links        []Link `json:"_links"`
 }
 
-// RefreshTokenRequest - DTO para refrescar access token
+// RefreshTokenRequest - DTO para refrescar access token.
+// El campo refresh_token no es required: los clients web envían el token vía cookie.
 type RefreshTokenRequest struct {
-	RefreshToken string `json:"refresh_token" binding:"required"`
+	RefreshToken string `json:"refresh_token"`
 }
 
 // AuthMeResponse represents the authenticated user profile response

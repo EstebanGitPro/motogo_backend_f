@@ -1,6 +1,7 @@
 package config_test
 
 import (
+	"net/http"
 	"os"
 	"testing"
 
@@ -264,4 +265,127 @@ func TestGetKeycloakIssuerURL(t *testing.T) {
 
 	expected := "https://keycloak.example.com/realms/motogo"
 	assert.Equal(t, expected, c.GetKeycloakIssuerURL())
+}
+
+// ============================================
+// ParseSameSite Tests
+// ============================================
+
+func TestParseSameSite_Strict(t *testing.T) {
+	cc := config.CookieConfig{SameSite: "strict"}
+	assert.Equal(t, http.SameSiteStrictMode, cc.ParseSameSite())
+}
+
+func TestParseSameSite_StrictUpperCase(t *testing.T) {
+	cc := config.CookieConfig{SameSite: "STRICT"}
+	assert.Equal(t, http.SameSiteStrictMode, cc.ParseSameSite())
+}
+
+func TestParseSameSite_None(t *testing.T) {
+	cc := config.CookieConfig{SameSite: "none"}
+	assert.Equal(t, http.SameSiteNoneMode, cc.ParseSameSite())
+}
+
+func TestParseSameSite_Lax(t *testing.T) {
+	cc := config.CookieConfig{SameSite: "lax"}
+	assert.Equal(t, http.SameSiteLaxMode, cc.ParseSameSite())
+}
+
+func TestParseSameSite_DefaultFallback(t *testing.T) {
+	cc := config.CookieConfig{SameSite: "unknown"}
+	assert.Equal(t, http.SameSiteLaxMode, cc.ParseSameSite())
+}
+
+func TestParseSameSite_Empty(t *testing.T) {
+	cc := config.CookieConfig{SameSite: ""}
+	assert.Equal(t, http.SameSiteLaxMode, cc.ParseSameSite())
+}
+
+// ============================================
+// envOrBool Tests (via LoadConfig Cookie.Secure override)
+// ============================================
+
+func TestLoadConfig_CookieEnvOverrides(t *testing.T) {
+	t.Setenv("APP_ENV", "")
+	t.Setenv("COOKIE_DOMAIN", ".motogo.com")
+	t.Setenv("COOKIE_SECURE", "true")
+	t.Setenv("COOKIE_SAME_SITE", "none")
+
+	cfg, err := config.LoadConfig()
+
+	assert.NoError(t, err)
+	assert.Equal(t, ".motogo.com", cfg.Cookie.Domain)
+	assert.True(t, cfg.Cookie.Secure)
+	assert.Equal(t, "none", cfg.Cookie.SameSite)
+}
+
+func TestLoadConfig_CookieSecureFalse(t *testing.T) {
+	t.Setenv("APP_ENV", "")
+	t.Setenv("COOKIE_SECURE", "false")
+
+	cfg, err := config.LoadConfig()
+
+	assert.NoError(t, err)
+	assert.False(t, cfg.Cookie.Secure)
+}
+
+func TestLoadConfig_CookieSecureNumeric(t *testing.T) {
+	t.Setenv("APP_ENV", "")
+	t.Setenv("COOKIE_SECURE", "1")
+
+	cfg, err := config.LoadConfig()
+
+	assert.NoError(t, err)
+	assert.True(t, cfg.Cookie.Secure)
+}
+
+// ============================================
+// CORS env override Tests
+// ============================================
+
+func TestLoadConfig_CORSEnvOverride(t *testing.T) {
+	t.Setenv("APP_ENV", "")
+	t.Setenv("CORS_ALLOWED_ORIGINS", "https://app.motogo.com, https://admin.motogo.com")
+
+	cfg, err := config.LoadConfig()
+
+	assert.NoError(t, err)
+	assert.Len(t, cfg.CORS.AllowedOrigins, 2)
+	assert.Equal(t, "https://app.motogo.com", cfg.CORS.AllowedOrigins[0])
+	assert.Equal(t, "https://admin.motogo.com", cfg.CORS.AllowedOrigins[1])
+}
+
+func TestLoadConfig_CORSEnvOverrideSingleOrigin(t *testing.T) {
+	t.Setenv("APP_ENV", "")
+	t.Setenv("CORS_ALLOWED_ORIGINS", "https://app.motogo.com")
+
+	cfg, err := config.LoadConfig()
+
+	assert.NoError(t, err)
+	assert.Len(t, cfg.CORS.AllowedOrigins, 1)
+	assert.Equal(t, "https://app.motogo.com", cfg.CORS.AllowedOrigins[0])
+}
+
+func TestLoadConfig_CORSEnvOverrideWithEmptyEntries(t *testing.T) {
+	t.Setenv("APP_ENV", "")
+	t.Setenv("CORS_ALLOWED_ORIGINS", "https://app.motogo.com,,, https://admin.motogo.com, ")
+
+	cfg, err := config.LoadConfig()
+
+	assert.NoError(t, err)
+	assert.Len(t, cfg.CORS.AllowedOrigins, 2)
+}
+
+// ============================================
+// Production config fallback Tests
+// ============================================
+
+func TestLoadConfig_ProductionEnv_FallsBackToLocal(t *testing.T) {
+	t.Setenv("APP_ENV", "production")
+
+	cfg, err := config.LoadConfig()
+
+	assert.NoError(t, err)
+	assert.NotNil(t, cfg)
+	assert.Equal(t, "production", cfg.Environment)
 }

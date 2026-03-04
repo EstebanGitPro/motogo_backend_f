@@ -63,6 +63,7 @@ func TestCreateBranchSchedule_Integration_Success(t *testing.T) {
 		UpdatedAt: time.Now(),
 	}, nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	// Setup router and execute (no request body needed)
 	router := gin.New()

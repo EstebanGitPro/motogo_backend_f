@@ -45,6 +45,7 @@ func TestRegisterCompletedService_Success(t *testing.T) {
 	svc.On("SaveItems", ctx, mockTx, mock.AnythingOfType("[]domain.CompletedServiceItem")).Return(nil)
 	svc.On("SaveStatusHistory", ctx, mockTx, mock.AnythingOfType("*domain.ServiceStatusHistory")).Return(nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	result, err := ci.RegisterCompletedService(ctx, cs, serviceIDs, "person-1")
 
@@ -81,6 +82,7 @@ func TestRegisterCompletedService_NoDiagnostic_Success(t *testing.T) {
 	svc.On("SaveItems", ctx, mockTx, mock.AnythingOfType("[]domain.CompletedServiceItem")).Return(nil)
 	svc.On("SaveStatusHistory", ctx, mockTx, mock.AnythingOfType("*domain.ServiceStatusHistory")).Return(nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	result, err := ci.RegisterCompletedService(ctx, cs, serviceIDs, "person-1")
 
@@ -366,6 +368,7 @@ func TestDeleteCompletedService_Success_Pendiente(t *testing.T) {
 	svc.On("BeginTx", ctx).Return(mockTx, nil)
 	svc.On("DeleteCompletedService", ctx, mockTx, "cs-1", domain.ServiceStatusPending).Return(nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	err := ci.DeleteCompletedService(ctx, "cs-1")
 
@@ -384,6 +387,7 @@ func TestDeleteCompletedService_Success_Finalizado(t *testing.T) {
 	svc.On("BeginTx", ctx).Return(mockTx, nil)
 	svc.On("DeleteCompletedService", ctx, mockTx, "cs-1", domain.ServiceStatusCompleted).Return(nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	err := ci.DeleteCompletedService(ctx, "cs-1")
 
@@ -469,6 +473,7 @@ func TestTransitionStatus_Success_PendienteToEnProceso(t *testing.T) {
 	svc.On("UpdateStatus", ctx, mockTx, "cs-1", "EN_PROCESO", mock.Anything).Return(nil)
 	svc.On("SaveStatusHistory", ctx, mockTx, mock.AnythingOfType("*domain.ServiceStatusHistory")).Return(nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	err := ci.TransitionStatus(ctx, "cs-1", "EN_PROCESO", "person-1", nil)
 
@@ -491,6 +496,7 @@ func TestTransitionStatus_Success_EnProcesoToFinalizado(t *testing.T) {
 	})).Return(nil)
 	svc.On("SaveStatusHistory", ctx, mockTx, mock.AnythingOfType("*domain.ServiceStatusHistory")).Return(nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	err := ci.TransitionStatus(ctx, "cs-1", "FINALIZADO", "person-1", nil)
 

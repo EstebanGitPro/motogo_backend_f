@@ -68,7 +68,6 @@ func (i *FranchiseInteractor) CreateFranchiseWithBranches(ctx context.Context, f
 
 	log.Info(logger.LogFranchiseInteractorCreateComplete, "franchise_id", result.ID, "branch_count", len(branchIDs))
 
-	err = nil
 	return result, nil
 }
 
@@ -124,7 +123,6 @@ func (i *FranchiseInteractor) UpdateFranchise(ctx context.Context, franchise dom
 
 	log.Info(logger.LogFranchiseInteractorUpdateComplete, "franchise_id", franchise.ID)
 
-	err = nil
 	return nil
 }
 
@@ -167,7 +165,6 @@ func (i *FranchiseInteractor) DeleteFranchise(ctx context.Context, franchiseID, 
 
 	log.Info(logger.LogFranchiseInteractorDeleteComplete, "franchise_id", franchiseID)
 
-	err = nil
 	return nil
 }
 
@@ -208,7 +205,6 @@ func (i *FranchiseInteractor) AddBranchToFranchise(ctx context.Context, franchis
 
 	log.Info(logger.LogFranchiseBranchAdded, "franchise_id", franchiseID, "branch_id", branchID)
 
-	err = nil
 	return nil
 }
 
@@ -250,6 +246,5 @@ func (i *FranchiseInteractor) RemoveBranchFromFranchise(ctx context.Context, fra
 
 	log.Info(logger.LogFranchiseBranchRemoved, "franchise_id", franchiseID, "branch_id", branchID)
 
-	err = nil
 	return nil
 }

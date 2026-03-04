@@ -60,6 +60,7 @@ func TestCreateEvidence_Success(t *testing.T) {
 	svc.On("BeginTx", ctx).Return(mockTx, nil)
 	svc.On("CreateEvidence", ctx, mockTx, testMotorcycleID, evidence).Return(created, nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	result, err := ei.CreateEvidence(ctx, testMotorcycleID, testOwnerID, evidence)
 
@@ -324,6 +325,7 @@ func TestDeleteEvidence_Success(t *testing.T) {
 	svc.On("BeginTx", ctx).Return(mockTx, nil)
 	svc.On("DeleteEvidence", ctx, mockTx, testEvidenceID).Return(nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	err := ei.DeleteEvidence(ctx, testEvidenceID, testOwnerID)
 
@@ -459,6 +461,7 @@ func TestUpdateEvidence_Success(t *testing.T) {
 	svc.On("BeginTx", ctx).Return(mockTx, nil)
 	svc.On("UpdateEvidence", ctx, mockTx, existing).Return(nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	result, err := ei.UpdateEvidence(ctx, testEvidenceID, testOwnerID, updates)
 

@@ -96,6 +96,7 @@ func TestRateServiceItem_Controller_Success(t *testing.T) {
 	comment := "Excelente servicio"
 	mockSvc.On("RateServiceItem", mock.Anything, mockTx, itemUUID, 5, &comment).Return(nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	router, w := setupRatingHandler(t, mockSvc)
 
@@ -325,6 +326,7 @@ func TestRateServiceItem_Controller_OffensiveComment(t *testing.T) {
 	// Service returns sentinel because comment is offensive
 	mockSvc.On("RateServiceItem", mock.Anything, mockTx, itemUUID, 1, &comment).Return(domain.ErrOffensiveCommentFiltered)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	router, w := setupRatingHandler(t, mockSvc)
 

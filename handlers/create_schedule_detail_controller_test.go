@@ -79,6 +79,7 @@ func TestCreateScheduleDetail_Integration_Success(t *testing.T) {
 			UpdatedAt:   time.Now(),
 		}, nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	// Request body
 	reqBody := map[string]interface{}{

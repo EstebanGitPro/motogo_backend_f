@@ -115,7 +115,6 @@ func (i *Interactor) RegisterPerson(ctx context.Context, person domain.Person) (
 		person.ToLogger(),
 		"keycloak_user_id", keycloakUserID)
 
-	err = nil // asegurar que defer NO ejecute rollback
 	return result, err
 }
 

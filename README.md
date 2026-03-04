@@ -5,80 +5,83 @@
 [![Version](https://img.shields.io/badge/version-0.14.0-blue)](CHANGELOG.md)
 [![SonarCloud](https://img.shields.io/badge/SonarCloud-Analyzed-F3702A?logo=sonarcloud)](https://sonarcloud.io/project/overview?id=EstebanGitPro_motogo_backend_f)
 
-> RESTful API backend for **MotoGo** — a mobile platform that helps motorcyclists find trusted workshops and services tailored to their registered vehicles, compare nearby options, and request quotes or diagnostics before visiting.
+> API RESTful del backend de **MotoGo** — plataforma móvil que ayuda a motociclistas a encontrar talleres y servicios confiables, filtrados por los vehículos registrados en su perfil, con búsqueda por cercanía y la posibilidad de solicitar cotizaciones o diagnósticos antes de desplazarse.
 
 ---
 
-## 📖 Table of Contents
+## 📖 Tabla de Contenidos
 
-- [Vision](#-vision)
-- [Key Features](#-key-features)
-- [Technology Stack](#-technology-stack)
-- [Architecture](#-architecture)
-- [Project Structure](#-project-structure)
-- [Getting Started](#-getting-started)
-- [Configuration](#-configuration)
-- [Available Commands](#-available-commands)
-- [Observability](#-observability)
-- [API Documentation](#-api-documentation)
+- [Visión](#-visión)
+- [Funcionalidades Principales](#-funcionalidades-principales)
+- [Stack Tecnológico](#-stack-tecnológico)
+- [Arquitectura](#-arquitectura)
+- [Estructura del Proyecto](#-estructura-del-proyecto)
+- [Inicio Rápido](#-inicio-rápido)
+- [Configuración](#️-configuración)
+- [Comandos Disponibles](#-comandos-disponibles)
+- [Observabilidad](#-observabilidad)
+- [Documentación de la API](#-documentación-de-la-api)
 - [Testing](#-testing)
-- [Deployment](#-deployment)
-- [Port Reference](#-port-reference)
-- [Contributing](#-contributing)
-- [Security](#-security)
-- [License](#-license)
+- [Despliegue](#-despliegue)
+- [Referencia de Puertos](#-referencia-de-puertos)
+- [Contribuciones](#-contribuciones)
+- [Seguridad](#️-seguridad)
+- [Licencia](#-licencia)
 
 ---
 
-## 🎯 Vision
+## 🎯 Visión
 
-For motorcyclists who don't have a reliable way to find trusted workshops offering technical services and consumables that match their needs, **MotoGo** is a mobile application that saves users both time and money when searching for motorcycle services.
+Para los motociclistas que no cuentan con un mecanismo que permita encontrar establecimientos confiables que brinden servicios técnicos y/o venta de consumibles que se ajuste a sus necesidades, **MotoGo** es una aplicación móvil que permite a los usuarios ahorrar tanto su tiempo como su dinero en la búsqueda de los servicios para su motocicleta.
 
-Unlike Yelp, Google Maps, or Yellow Pages, MotoGo provides access to a **service catalog filtered by the vehicles each user has registered** in their profile, along with nearby service information and the ability to request quotes or approximate diagnostics before traveling to the location.
-
----
-
-## ✨ Key Features
-
-- **User Management** — Registration, authentication, email verification, and password reset flows
-- **Identity Provider Integration** — Keycloak for secure identity and access management (OIDC/JWT)
-- **Branch & Workshop Discovery** — Geospatial search with map-based nearby discovery
-- **Motorcycle Management** — Vehicle registration, profile images, and evidence galleries
-- **Service Catalog** — Global catalog with branch-specific service associations
-- **Diagnostics & Services** — Two-sided diagnostic flow with WhatsApp integration
-- **Rating System** — Service reviews and rating ranges
-- **Dynamic Messaging** — Centralized, database-driven system messages with in-memory caching
-- **HATEOAS API** — Richardson Maturity Model Level 3 hypermedia responses
-- **Comprehensive Observability** — Prometheus metrics, Grafana dashboards, Loki log aggregation
-- **API Documentation** — Auto-generated OpenAPI/Swagger specifications
-- **Load Testing** — k6 scripts for performance and soak testing
+A diferencia de Yelp, 4WorldLover, Google Maps y Páginas Amarillas, nuestro producto permite acceder al **catálogo de servicios dependiendo de los vehículos que cada usuario tiene registrados en su perfil**, así como el acceso a la información de los servicios más cercanos al usuario, con la posibilidad de solicitar una cotización o un diagnóstico aproximado antes de dirigirse al lugar.
 
 ---
 
-## 🛠 Technology Stack
+## ✨ Funcionalidades Principales
 
-| Category                      | Technology                                                  |
-| ----------------------------- | ----------------------------------------------------------- |
-| **Language**            | Go 1.25.2                                                   |
-| **Web Framework**       | [Gin](https://github.com/gin-gonic/gin)                        |
-| **Database**            | MySQL 8.0                                                   |
+- **Gestión de Usuarios** — Registro, autenticación, verificación de email y flujos de restablecimiento de contraseña
+- **Integración con Identity Provider** — Keycloak para gestión segura de identidad y acceso (OIDC/JWT)
+- **Descubrimiento de Sedes y Talleres** — Búsqueda geoespacial con descubrimiento por cercanía en mapa
+- **Gestión de Motocicletas** — Registro de vehículos, imágenes de perfil y galerías de evidencia
+- **Catálogo de Servicios** — Catálogo global con asociaciones de servicios por sede
+- **Diagnósticos y Servicios** — Flujo de diagnóstico de dos lados con integración WhatsApp
+- **Sistema de Calificaciones** — Reseñas de servicios y rangos de calificación
+- **Mensajería Dinámica** — Sistema de mensajes centralizado y manejado desde base de datos con caché en memoria
+- **API HATEOAS** — Respuestas hypermedia (Richardson Maturity Model Level 3)
+- **Observabilidad Integral** — Métricas con Prometheus, dashboards en Grafana, logs centralizados con Loki
+- **Documentación de API** — Especificaciones OpenAPI/Swagger generadas automáticamente
+- **Pruebas de Carga** — Scripts K6 para pruebas de rendimiento y resistencia
+
+---
+
+## 🛠 Stack Tecnológico
+
+| Categoría | Tecnología |
+| --- | --- |
+| **Lenguaje** | Go 1.25.2 |
+| **Web Framework** | [Gin](https://github.com/gin-gonic/gin) |
+| **Base de Datos** | MySQL 8.0 |
 | **Identity Management** | [Keycloak](https://www.keycloak.org/) (OIDC + JWKS validation) |
-| **File Storage**        | Firebase Storage                                            |
-| **Email**               | [Resend](https://resend.com/)                                  |
-| **Metrics**             | Prometheus                                                  |
-| **Dashboards**          | Grafana                                                     |
-| **Log Aggregation**     | Loki + Promtail                                             |
-| **Structured Logging**  | `log/slog`                                                |
-| **API Docs**            | Swagger (swaggo)                                            |
-| **Code Quality**        | SonarCloud, golangci-lint, staticcheck                      |
-| **Load Testing**        | k6                                                          |
-| **Containerization**    | Docker + Docker Compose                                     |
+| **Almacenamiento de Archivos** | Firebase Storage |
+| **Email** | [Resend](https://resend.com/) |
+| **Notificaciones Push** | Firebase Cloud Messaging (FCM) |
+| **Métricas** | Prometheus |
+| **Dashboards** | Grafana |
+| **Log Aggregation** | Loki + Promtail |
+| **Structured Logging** | `log/slog` |
+| **Documentación API** | Swagger (swaggo) |
+| **Calidad de Código** | SonarCloud, golangci-lint, staticcheck |
+| **Pruebas de Carga** | K6 |
+| **Containerización** | Docker + Docker Compose |
+| **Proxy HTTP y Gestión DNS** | Cloudflare |
+| **Despliegue** | Dokploy en VPS Contabo |
 
 ---
 
-## 🏗 Architecture
+## 🏗 Arquitectura
 
-MotoGo Backend follows a **Clean / Hexagonal Architecture** (Ports & Adapters) with 4 layers:
+El backend de MotoGo sigue una **Clean / Hexagonal Architecture** (Ports & Adapters) con 4 capas:
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -96,280 +99,281 @@ MotoGo Backend follows a **Clean / Hexagonal Architecture** (Ports & Adapters) w
 └─────────────────────────────────────────────────┘
 ```
 
-**Key principles:**
+**Principios clave:**
 
-- Dependencies point **inward** — `platform` implements `core/ports` interfaces
-- Business logic in `core/interactor` is **framework-agnostic**
-- `handlers` only orchestrate HTTP request/response mapping
-- `middleware` provides authentication, request tracing, and CORS
+- Las dependencias apuntan **hacia adentro** — `platform` implementa las interfaces de `core/ports`
+- La lógica de negocio en `core/interactor` es **agnóstica al framework**
+- `handlers` solo orquesta el mapeo de request/response HTTP
+- `middleware` provee autenticación, trazabilidad de requests y CORS
 
 ---
 
-## 📁 Project Structure
+## 📁 Estructura del Proyecto
 
 ```
 motogo_backend_f/
 ├── cmd/
-│   ├── main.go                 # Application entrypoint
-│   └── dependency/             # Dependency injection wiring
-├── config/                     # Configuration files (JSON) + config loader
+│   ├── main.go                 # Punto de entrada de la aplicación
+│   └── dependency/             # Wiring de inyección de dependencias
+├── config/                     # Archivos de configuración (JSON) + config loader
 ├── core/
-│   ├── ports/                  # Interfaces (repository, service contracts)
-│   └── interactor/             # Use cases / business logic
-├── handlers/                   # HTTP controllers (Gin handlers)
-├── middleware/                  # Auth, CORS, request ID, metrics
-├── server/                     # Server bootstrap and route registration
-├── platform/                   # Infrastructure implementations
-│   ├── cache/                  # In-memory caching (system messages)
-│   ├── constants/              # Shared constants
-│   ├── databases/              # MySQL repositories
-│   ├── firebase/               # Firebase Storage adapter
-│   ├── geocoding/              # Geocoding service (Google / Mapbox)
-│   ├── grafana/                # Grafana dashboards & provisioning
-│   ├── identity_provider/      # Keycloak integration
-│   ├── jwt/                    # JWT / JWKS validation
-│   ├── k6/                     # k6 load test scenarios
-│   ├── log-rotator/            # Log rotation service
-│   ├── logger/                 # Structured logging (slog)
-│   ├── loki/                   # Loki configuration
-│   ├── prometheus/             # Prometheus scrape configs
-│   ├── promtail/               # Promtail log shipping config
-│   ├── schema/                 # JSON Schema validation
-│   └── swaggo/                 # Generated Swagger docs
-├── mocks/                      # Testify mock implementations
-├── public/                     # Static assets (email templates)
-├── tools/                      # Utilities, keycloak themes, moderation
-├── scripts/                    # Automation scripts (Docker setup, observability)
-├── tests/                      # Integration / load tests (k6)
-├── deploy/                     # Production deployment configs
+│   ├── ports/                  # Interfaces (contratos de repositorio y servicio)
+│   └── interactor/             # Casos de uso / lógica de negocio
+├── handlers/                   # Controladores HTTP (Gin handlers)
+├── middleware/                  # Auth, CORS, request ID, métricas
+├── server/                     # Bootstrap del servidor y registro de rutas
+├── platform/                   # Implementaciones de infraestructura
+│   ├── cache/                  # Caché en memoria (mensajes del sistema)
+│   ├── constants/              # Constantes compartidas
+│   ├── cookie/                 # Utilidades de manejo de cookies HTTP
+│   ├── databases/              # Repositorios MySQL
+│   ├── firebase/               # Adaptador de Firebase Storage
+│   ├── geocoding/              # Servicio de geocodificación (Google / Mapbox)
+│   ├── grafana/                # Dashboards y provisioning de Grafana
+│   ├── identity_provider/      # Integración con Keycloak
+│   ├── jwt/                    # Validación JWT / JWKS
+│   ├── k6/                     # Escenarios de pruebas de carga K6
+│   ├── log-rotator/            # Servicio de rotación de logs
+│   ├── logger/                 # Logging estructurado (slog)
+│   ├── loki/                   # Configuración de Loki
+│   ├── prometheus/             # Configuración de scrape de Prometheus
+│   ├── promtail/               # Configuración de envío de logs con Promtail
+│   ├── schema/                 # Validación con JSON Schema
+│   └── swaggo/                 # Documentación Swagger generada
+├── mocks/                      # Implementaciones mock con testify
+├── public/                     # Assets estáticos (templates de email)
+├── tools/                      # Utilidades, temas de Keycloak, moderación
+├── scripts/                    # Scripts de automatización (Docker, observabilidad)
+├── tests/                      # Tests de integración / carga (K6)
+├── deploy/                     # Configuraciones de despliegue a producción
 │   ├── docker-compose.production.yml
 │   ├── deploy.sh
 │   ├── nginx-motogo.conf
 │   └── .env.production.example
-├── docs/                       # Swagger docs + Bruno API collections
-├── docker-compose.mysql.yml    # Local MySQL (app + keycloak)
-├── docker-compose.keycloak.yml # Local Keycloak
-├── docker-compose.grafana.yml  # Observability stack
+├── docs/                       # Swagger docs + colecciones Bruno API
+├── docker-compose.mysql.yml    # MySQL local (app + keycloak)
+├── docker-compose.keycloak.yml # Keycloak local
+├── docker-compose.grafana.yml  # Stack de observabilidad
 ├── docker-compose.swagger-ui.yml
-├── Containerfile               # Keycloak custom image (with MotoGo theme)
-├── Makefile                    # Build, test, lint automation
-├── .golangci.yml               # Linter configuration
-└── sonar-project.properties    # SonarCloud integration
+├── Containerfile               # Imagen custom de Keycloak (con tema MotoGo)
+├── Makefile                    # Automatización de build, test y lint
+├── .golangci.yml               # Configuración del linter
+└── sonar-project.properties    # Integración con SonarCloud
 ```
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Inicio Rápido
 
-**Estimated time:** 15–20 minutes
+**Tiempo estimado:** 15–20 minutos
 
-### Prerequisites
+### Prerrequisitos
 
-| Tool                     | Version | Purpose                                         |
-| ------------------------ | ------- | ----------------------------------------------- |
-| **Go**             | ≥ 1.25 | Language runtime                                |
-| **Docker**         | ≥ 24.0 | Container runtime                               |
-| **Docker Compose** | ≥ 2.20 | Multi-container orchestration                   |
-| **Make**           | Any     | Build automation (pre-installed on macOS/Linux) |
-| **Git**            | Any     | Version control                                 |
+| Herramienta | Versión | Propósito |
+| --- | --- | --- |
+| **Go** | ≥ 1.25 | Runtime del lenguaje |
+| **Docker** | ≥ 24.0 | Runtime de contenedores |
+| **Docker Compose** | ≥ 2.20 | Orquestación multi-contenedor |
+| **Make** | Cualquiera | Automatización de build (preinstalado en macOS/Linux) |
+| **Git** | Cualquiera | Control de versiones |
 
-### Step 1: Clone the Repository
+### Paso 1: Clonar el Repositorio
 
 ```bash
 git clone https://github.com/EstebanGitPro/motogo_backend_f.git
 cd motogo_backend_f
 ```
 
-### Step 2: Start MySQL Databases
+### Paso 2: Iniciar las Bases de Datos MySQL
 
-The project uses **two MySQL instances**: one for the application and one for Keycloak.
+El proyecto usa **dos instancias MySQL**: una para la aplicación y otra para Keycloak.
 
 ```bash
 docker compose -f docker-compose.mysql.yml up -d
 ```
 
-**Verification:**
+**Verificación:**
 
 ```bash
 docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-# Expected: motogo-mysql-app (healthy), motogo-mysql-keycloak (healthy)
+# Esperado: motogo-mysql-app (healthy), motogo-mysql-keycloak (healthy)
 ```
 
-> **Wait** for both containers to report `(healthy)` before proceeding (~30 seconds).
+> **Esperar** a que ambos contenedores reporten `(healthy)` antes de continuar (~30 segundos).
 
-### Step 3: Start Keycloak
+### Paso 3: Iniciar Keycloak
 
 ```bash
 docker compose -f docker-compose.keycloak.yml up -d
 ```
 
-**Verification:** Open [http://localhost:8080](http://localhost:8080) — you should see the Keycloak admin console.
+**Verificación:** Abrir [http://localhost:8080](http://localhost:8080) — debería verse la consola de administración de Keycloak.
 
-> Default credentials: `motogo-admin` / `12345678` (local development only).
+> Credenciales por defecto: `motogo-admin` / `12345678` (solo desarrollo local).
 
-### Step 4: Configure the Application
+### Paso 4: Configurar la Aplicación
 
-#### 4a. Environment Variables
+#### 4a. Variables de Entorno
 
-The `.env` file at the project root configures all external services and secrets. Copy and edit:
+El archivo `.env` en la raíz del proyecto configura todos los servicios externos y secretos. Copiar y editar:
 
 ```bash
 cp .env.example .env
 ```
 
-The `.env.example` contains the following sections:
+El `.env.example` contiene las siguientes secciones:
 
-| Section                | Key Variables                                                             | Purpose                                       |
-| ---------------------- | ------------------------------------------------------------------------- | --------------------------------------------- |
-| **Database**     | `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`, `DB_NAME`   | MySQL connection                              |
-| **Server**       | `SERVER_HOST`, `SERVER_PORT`                                          | API server binding                            |
-| **Resend**       | `RESEND_API_KEY`, `RESEND_FROM_EMAIL`                                 | Email delivery (password reset, verification) |
-| **Keycloak**     | `KEYCLOAK_SERVER_URL`, `KEYCLOAK_REALM`, `KEYCLOAK_CLIENT_SECRET`   | Identity provider                             |
-| **Firebase**     | `FIREBASE_CREDENTIALS_PATH`                                             | File storage service account path             |
-| **ID Encoder**   | `ID_ENCODER_SECRET`, `ID_ENCODER_MIN_LENGTH`                          | HashID encoding                               |
-| **Geocoding**    | `GEOCODING_PROVIDER`, `GEOCODING_API_KEY`, `GEOCODING_COUNTRY_CODE` | Address resolution (Google / Mapbox)          |
-| **Verification** | `VERIFICATION_BASE_URL`                                                 | Email verification callback URL               |
+| Sección | Variables clave | Propósito |
+| --- | --- | --- |
+| **Database** | `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`, `DB_NAME` | Conexión MySQL |
+| **Server** | `SERVER_HOST`, `SERVER_PORT` | Binding del servidor API |
+| **Resend** | `RESEND_API_KEY`, `RESEND_FROM_EMAIL` | Envío de emails (reset de contraseña, verificación) |
+| **Keycloak** | `KEYCLOAK_SERVER_URL`, `KEYCLOAK_REALM`, `KEYCLOAK_CLIENT_SECRET` | Identity provider |
+| **Firebase** | `FIREBASE_CREDENTIALS_PATH` | Ruta al service account de Firebase Storage |
+| **ID Encoder** | `ID_ENCODER_SECRET`, `ID_ENCODER_MIN_LENGTH` | Codificación de HashID |
+| **Geocoding** | `GEOCODING_PROVIDER`, `GEOCODING_API_KEY`, `GEOCODING_COUNTRY_CODE` | Resolución de direcciones (Google / Mapbox) |
+| **Verification** | `VERIFICATION_BASE_URL` | URL de callback para verificación de email |
 
-> **Tip:** Environment variables override JSON config file settings. See `config/config.go` for details.
+> **Tip:** Las variables de entorno tienen prioridad sobre el archivo JSON. Ver `config/config.go` para detalles.
 
-#### 4b. Application Config (JSON)
+#### 4b. Configuración por Archivo (JSON)
 
-The application also supports JSON-based configuration for each environment:
+La aplicación también soporta configuración basada en archivos JSON por entorno:
 
-| Environment               | Config File                  | Trigger                        |
-| ------------------------- | ---------------------------- | ------------------------------ |
-| **Local** (default) | `config/local-config.json` | `APP_ENV` unset or `local` |
-| **Production**      | `config/prod-config.json`  | `APP_ENV=production`         |
+| Entorno | Archivo | Trigger |
+| --- | --- | --- |
+| **Local** (por defecto) | `config/local-config.json` | `APP_ENV` sin definir o `local` |
+| **Producción** | `config/prod-config.json` | `APP_ENV=production` |
 
-Edit `config/local-config.json` to set values not already overridden by `.env`.
+Editar `config/local-config.json` para establecer valores no sobreescritos por `.env`.
 
 #### 4c. Firebase Service Account
 
-Place your Firebase service account key in the `config/` directory:
+Colocar la clave del service account de Firebase en el directorio `config/`:
 
 ```bash
-# Download from Firebase Console → Project Settings → Service Accounts
+# Descargar desde Firebase Console → Project Settings → Service Accounts
 cp ~/Downloads/your-firebase-adminsdk.json config/serviceAccountKey.json
 ```
 
-> ⚠️ This file is in `.gitignore` and must **never** be committed.
+> ⚠️ Este archivo está en `.gitignore` y **nunca** debe ser commiteado.
 
-### Step 5: Install Dependencies
+### Paso 5: Instalar Dependencias
 
 ```bash
 go mod tidy
 ```
 
-### Step 6: Install Development Tools (Optional)
+### Paso 6: Instalar Herramientas de Desarrollo (Opcional)
 
 ```bash
 make install-tools
-# Installs: staticcheck
-# For golangci-lint: brew install golangci-lint
+# Instala: staticcheck
+# Para golangci-lint: brew install golangci-lint
 ```
 
-### Step 7: Run the Application
+### Paso 7: Ejecutar la Aplicación
 
 ```bash
 make run
 ```
 
-Or directly:
+O directamente:
 
 ```bash
 go run ./cmd/api
 ```
 
-### ✅ Verification
+### ✅ Verificación
 
-| Check                      | How to Verify                                                                         |
-| -------------------------- | ------------------------------------------------------------------------------------- |
-| **Server running**   | Console shows `Listening on 0.0.0.0:8085`                                           |
-| **Health endpoint**  | `curl http://localhost:8085/health` returns `200 OK`                              |
-| **Metrics endpoint** | `curl http://localhost:8085/metrics` returns Prometheus data                        |
-| **Swagger UI**       | Open[http://localhost:8085/swagger/index.html](http://localhost:8085/swagger/index.html) |
+| Comprobación | Cómo verificar |
+| --- | --- |
+| **Servidor corriendo** | La consola muestra `Listening on 0.0.0.0:8085` |
+| **Health endpoint** | `curl http://localhost:8085/health` retorna `200 OK` |
+| **Metrics endpoint** | `curl http://localhost:8085/metrics` retorna datos de Prometheus |
+| **Swagger UI** | Abrir [http://localhost:8085/swagger/index.html](http://localhost:8085/swagger/index.html) |
 
 ---
 
-## ⚙️ Configuration
+## ⚙️ Configuración
 
-The application supports multiple environments via JSON config files and environment variable overrides.
+La aplicación soporta múltiples entornos mediante archivos de configuración JSON y sobreescrituras por variables de entorno.
 
-**Precedence:** Environment variables (`.env`) → JSON config file → defaults.
+**Precedencia:** Variables de entorno (`.env`) → Archivo JSON → Valores por defecto.
 
-All sections of the configuration can be overridden via environment variables. The most commonly overridden variables are:
+Todas las secciones de la configuración pueden sobreescribirse con variables de entorno. Las más comúnmente modificadas son:
 
 ```bash
-# Database
+# Base de datos
 DB_HOST=localhost
 DB_PORT=3309
 DB_PASSWORD=your-password
 
-# Server
+# Servidor
 SERVER_PORT=8085
 
 # Keycloak
 KEYCLOAK_SERVER_URL=https://auth.example.com
 KEYCLOAK_CLIENT_SECRET=your-secret
 
-# External services
+# Servicios externos
 RESEND_API_KEY=re_your_api_key
 GEOCODING_API_KEY=your-google-maps-key
 ```
 
-> See `.env.example` for the full list of available environment variables.
+> Ver `.env.example` para la lista completa de variables de entorno disponibles.
 
 ---
 
-## 📋 Available Commands
+## 📋 Comandos Disponibles
 
-All project automation is available through the `Makefile`:
+Toda la automatización del proyecto está disponible a través del `Makefile`:
 
-| Command                  | Description                                                |
-| ------------------------ | ---------------------------------------------------------- |
-| `make help`            | Show all available targets                                 |
-| `make run`             | Run the application (`go run ./cmd/api`)                 |
-| `make build`           | Build binary to `bin/motogo-api`                         |
-| `make test`            | Run all tests with verbose output                          |
-| `make test-short`      | Run tests without verbose output                           |
-| `make coverage`        | Generate HTML coverage report                              |
-| `make coverage-check`  | Verify coverage meets 65% minimum threshold                |
-| `make lint`            | Run `go vet` + `staticcheck`                           |
-| `make lint-full`       | Run `golangci-lint` with full rule set                   |
-| `make fmt`             | Format all Go source files                                 |
-| `make tidy`            | Run `go mod tidy`                                        |
-| `make clean`           | Remove build artifacts and coverage files                  |
-| `make pre-commit`      | Run full pre-commit suite (fmt + vet + staticcheck + test) |
-| `make pre-push`        | Run tests with average coverage threshold enforcement      |
-| `make setup-hooks`     | Install Git pre-commit hook                                |
-| `make setup-hooks-all` | Install both pre-commit and pre-push hooks                 |
-| `make install-tools`   | Install `staticcheck` and prompt for `golangci-lint`   |
+| Comando | Descripción |
+| --- | --- |
+| `make help` | Muestra todos los targets disponibles |
+| `make run` | Ejecuta la aplicación (`go run ./cmd/api`) |
+| `make build` | Compila el binario en `bin/motogo-api` |
+| `make test` | Ejecuta todos los tests con output verbose |
+| `make test-short` | Ejecuta tests sin output verbose |
+| `make coverage` | Genera reporte HTML de cobertura |
+| `make coverage-check` | Verifica que la cobertura cumpla con el mínimo de 65% |
+| `make lint` | Ejecuta `go vet` + `staticcheck` |
+| `make lint-full` | Ejecuta `golangci-lint` con el conjunto completo de reglas |
+| `make fmt` | Formatea todos los archivos fuente Go |
+| `make tidy` | Ejecuta `go mod tidy` |
+| `make clean` | Elimina artefactos de build y archivos de cobertura |
+| `make pre-commit` | Ejecuta la suite completa de pre-commit (fmt + vet + staticcheck + test) |
+| `make pre-push` | Ejecuta tests con enforcement del threshold de cobertura promedio |
+| `make setup-hooks` | Instala el hook pre-commit de Git |
+| `make setup-hooks-all` | Instala los hooks pre-commit y pre-push |
+| `make install-tools` | Instala `staticcheck` y sugiere `golangci-lint` |
 
 ---
 
-## 📊 Observability
+## 📊 Observabilidad
 
-### Start the Full Observability Stack
+### Iniciar el Stack Completo de Observabilidad
 
 ```bash
 docker compose -f docker-compose.grafana.yml up -d
 ```
 
-This starts **5 services**:
+Esto inicia **5 servicios**:
 
-| Service               | Port                                 | Purpose                                  |
-| --------------------- | ------------------------------------ | ---------------------------------------- |
-| **Grafana**     | [localhost:3000](http://localhost:3000) | Dashboards and visualization             |
-| **Prometheus**  | [localhost:9091](http://localhost:9091) | Metrics scraping and storage             |
-| **Loki**        | localhost:3100                       | Log aggregation                          |
-| **Promtail**    | —                                   | Log shipping agent                       |
-| **Log Rotator** | —                                   | Automatic log rotation (7-day retention) |
+| Servicio | Puerto | Propósito |
+| --- | --- | --- |
+| **Grafana** | [localhost:3000](http://localhost:3000) | Dashboards y visualización |
+| **Prometheus** | [localhost:9091](http://localhost:9091) | Scraping y almacenamiento de métricas |
+| **Loki** | localhost:3100 | Agregación de logs |
+| **Promtail** | — | Agente de envío de logs |
+| **Log Rotator** | — | Rotación automática de logs (retención de 7 días) |
 
-> Grafana default credentials: `admin` / `admin`
+> Credenciales por defecto de Grafana: `admin` / `admin`
 
-### Quick Start Script
+### Script de Inicio Rápido
 
-For first-time setup with automatic provisioning:
+Para la primera configuración con provisioning automático:
 
 ```bash
 ./scripts/quick-start-observability.sh
@@ -377,136 +381,156 @@ For first-time setup with automatic provisioning:
 
 ---
 
-## 📚 API Documentation
+## 📚 Documentación de la API
 
-### Swagger UI (Integrated)
+### Swagger UI (Integrado)
 
-The API documentation is served directly from the running application:
+La documentación de la API se sirve directamente desde la aplicación en ejecución:
 
 ```
 http://localhost:8085/swagger/index.html
 ```
 
-### Swagger UI (Standalone Container)
+### Swagger UI (Contenedor Independiente)
 
-For a standalone Swagger UI with hot-reload:
+Para un Swagger UI independiente con hot-reload:
 
 ```bash
 docker compose -f docker-compose.swagger-ui.yml up -d
-# Open http://localhost:3001
+# Abrir http://localhost:3001
 ```
 
 ---
 
 ## 🧪 Testing
 
-### Run All Tests
+### Ejecutar Todos los Tests
 
 ```bash
 make test
 ```
 
-### Coverage Report
+### Reporte de Cobertura
 
 ```bash
 make coverage
-# Generates: coverage.html (open in browser)
-# Prints: total coverage percentage
+# Genera: coverage.html (abrir en navegador)
+# Imprime: porcentaje total de cobertura
 ```
 
-### Coverage Threshold
+### Threshold de Cobertura
 
-The project enforces a **65% minimum coverage** threshold:
+El proyecto exige un **mínimo de 65% de cobertura**:
 
 ```bash
 make coverage-check
-# Fails CI if coverage < 65%
+# Falla el CI si la cobertura < 65%
 ```
 
-### Load Testing (k6)
+### Pruebas de Carga (K6)
 
 ```bash
-# Start the k6 + InfluxDB stack
+# Iniciar el stack K6 + InfluxDB
 docker compose -f docker-compose.k6-influxdb.yml up -d
 
-# Run load tests (scripts in tests/ directory)
+# Ejecutar pruebas de carga (scripts en el directorio tests/)
 ```
 
 ---
 
-## 🚢 Deployment
+## 🚢 Despliegue
 
-Production deployment files are in the `deploy/` directory:
+Los archivos de despliegue a producción están en el directorio `deploy/`:
 
-| File                              | Purpose                                      |
-| --------------------------------- | -------------------------------------------- |
-| `docker-compose.production.yml` | Production MySQL (app + keycloak) + Keycloak |
-| `.env.production.example`       | Template for production secrets              |
-| `deploy.sh`                     | Automated deployment script                  |
-| `nginx-motogo.conf`             | Nginx reverse proxy configuration            |
-| `motogo-api.service`            | systemd service file for the Go binary       |
-| `ssh.sh`                        | SSH connection helper                        |
+| Archivo | Propósito |
+| --- | --- |
+| `docker-compose.production.yml` | MySQL de producción (app + keycloak) + Keycloak |
+| `.env.production.example` | Plantilla para secrets de producción |
+| `deploy.sh` | Script de despliegue automatizado |
+| `nginx-motogo.conf` | Configuración de reverse proxy con Nginx |
+| `motogo-api.service` | Archivo de servicio systemd para el binario Go |
+| `ssh.sh` | Helper de conexión SSH |
 
-### Quick Deploy
+### Despliegue Rápido
 
 ```bash
-# 1. Copy and configure production secrets
+# 1. Copiar y configurar los secrets de producción
 cp deploy/.env.production.example deploy/.env.production
 
-# 2. Generate secure passwords
-openssl rand -base64 24  # Use for each password field
+# 2. Generar contraseñas seguras
+openssl rand -base64 24  # Usar para cada campo de contraseña
 
-# 3. Run the deployment script
+# 3. Ejecutar el script de despliegue
 ./deploy/deploy.sh
 ```
 
-> See `deploy/.env.production.example` for all required variables.
+> Ver `deploy/.env.production.example` para todas las variables requeridas.
 
 ---
 
-## 🔌 Port Reference
+## 🔌 Referencia de Puertos
 
-| Port     | Service                   | Environment        |
-| -------- | ------------------------- | ------------------ |
-| `8085` | MotoGo API                | Local + Production |
-| `3306` | MySQL (Application)       | Local              |
-| `3309` | MySQL (Keycloak)          | Local              |
-| `8080` | Keycloak (HTTP)           | Local + Production |
-| `8443` | Keycloak (HTTPS)          | Production         |
-| `9000` | Keycloak (Health/Metrics) | Local + Production |
-| `3000` | Grafana                   | Local              |
-| `9091` | Prometheus                | Local              |
-| `3100` | Loki                      | Local              |
-| `3001` | Swagger UI (standalone)   | Local              |
-
----
-
-## 🤝 Contributing
-
-We welcome contributions! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on:
-
-- Git Flow branching strategy
-- Conventional commit format
-- Code quality standards (golangci-lint, pre-commit hooks)
-- Pull request process
+| Puerto | Servicio | Entorno |
+| --- | --- | --- |
+| `8085` | MotoGo API | Local + Producción |
+| `3306` | MySQL (Aplicación) | Local |
+| `3309` | MySQL (Keycloak) | Local |
+| `8080` | Keycloak (HTTP) | Local + Producción |
+| `8443` | Keycloak (HTTPS) | Producción |
+| `9000` | Keycloak (Health/Metrics) | Local + Producción |
+| `3000` | Grafana | Local |
+| `9091` | Prometheus | Local |
+| `3100` | Loki | Local |
+| `3001` | Swagger UI (standalone) | Local |
 
 ---
 
-## 🛡️ Security
+## 🤝 Contribuciones
 
-To report a vulnerability, please read our [Security Policy](SECURITY.md).
+¡Las contribuciones son bienvenidas! Por favor leer [CONTRIBUTING.md](CONTRIBUTING.md) para detalles sobre:
 
-**Do not** open a public issue for security vulnerabilities.
+- Estrategia de branching con Git Flow
+- Formato de Conventional Commits
+- Estándares de calidad de código (golangci-lint, pre-commit hooks)
+- Proceso de Pull Requests
 
 ---
 
-## 📄 License
+## 🛡️ Seguridad
 
-This project is licensed under the [MIT License](LICENSE).
+### Nota sobre Credenciales Incluidas
+
+> **Este repositorio es un proyecto de grado académico.** Las credenciales incluidas en `config/local-config.json` son exclusivamente para el entorno de desarrollo local y se incluyen intencionalmente para facilitar la ejecución y evaluación del proyecto sin configuración adicional.
+
+En un entorno productivo, **todas las credenciales se inyectan mediante variables de entorno** (archivo `.env` o secretos del proveedor de hosting), nunca desde archivos de configuración commiteados. El archivo `config/prod-config.json` sirve como plantilla con placeholders (`CAMBIAR_POR_...`) y no contiene valores reales.
+
+| Archivo | ¿Commiteado? | Propósito |
+| --- | :---: | --- |
+| `config/local-config.json` | ✅ Sí | Configuración local lista para ejecutar |
+| `config/prod-config.json` | ❌ No | Plantilla de producción (solo placeholders) |
+| `.env` | ❌ No | Variables de entorno con secrets reales |
+| `serviceAccountKey.json` | ❌ No | Credenciales de Firebase (nunca commiteado) |
+| `deploy/.env.production` | ❌ No | Secrets de producción |
+
+### Estrategia de Configuración
+
+```
+Prioridad de configuración (de mayor a menor):
+
+  Variables de entorno (.env)  →  Archivo JSON (local/prod-config.json)  →  Valores por defecto
+```
+
+Para más detalles, ver la sección [Configuración](#️-configuración) y el archivo `config/config.go`.
+
+---
+
+## 📄 Licencia
+
+Este proyecto está licenciado bajo la [Licencia MIT](LICENSE).
 
 ---
 
 <p align="center">
-  <sub>Built with ❤️ by Esteban Agudelo
+  <sub>Hecho con ❤️ por Esteban Agudelo
 </sub>
 </p>

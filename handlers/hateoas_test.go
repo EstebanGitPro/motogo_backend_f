@@ -21,37 +21,34 @@ func TestGetBaseURL_HTTP(t *testing.T) {
 	// Act
 	baseURL := handlers.GetBaseURL(c)
 
-	// Assert
-	assert.Equal(t, "http://localhost:8080", baseURL)
+	// Assert — now returns relative API base path (no Host header usage — S5146)
+	assert.Equal(t, "/motogo/api/v1", baseURL)
 }
 
 func TestBuildResourceURL(t *testing.T) {
 	tests := []struct {
 		name       string
-		baseURL    string
 		resource   string
 		resourceID string
 		expected   string
 	}{
 		{
 			name:       "accounts resource",
-			baseURL:    "http://localhost:8080",
 			resource:   "accounts",
 			resourceID: "xyz123",
-			expected:   "http://localhost:8080/motogo/api/v1/accounts/xyz123",
+			expected:   "/motogo/api/v1/accounts/xyz123",
 		},
 		{
 			name:       "messages resource",
-			baseURL:    "https://api.example.com",
 			resource:   "messages",
 			resourceID: "abc456",
-			expected:   "https://api.example.com/motogo/api/v1/messages/abc456",
+			expected:   "/motogo/api/v1/messages/abc456",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := handlers.BuildResourceURL(tt.baseURL, tt.resource, tt.resourceID)
+			result := handlers.BuildResourceURL("", tt.resource, tt.resourceID)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
@@ -60,27 +57,24 @@ func TestBuildResourceURL(t *testing.T) {
 func TestBuildCollectionURL(t *testing.T) {
 	tests := []struct {
 		name     string
-		baseURL  string
 		resource string
 		expected string
 	}{
 		{
 			name:     "accounts collection",
-			baseURL:  "http://localhost:8080",
 			resource: "accounts",
-			expected: "http://localhost:8080/motogo/api/v1/accounts",
+			expected: "/motogo/api/v1/accounts",
 		},
 		{
 			name:     "messages collection",
-			baseURL:  "https://api.example.com",
 			resource: "messages",
-			expected: "https://api.example.com/motogo/api/v1/messages",
+			expected: "/motogo/api/v1/messages",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := handlers.BuildCollectionURL(tt.baseURL, tt.resource)
+			result := handlers.BuildCollectionURL("", tt.resource)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
@@ -88,20 +82,19 @@ func TestBuildCollectionURL(t *testing.T) {
 
 func TestBuildResourceLinks(t *testing.T) {
 	// Arrange
-	baseURL := "http://localhost:8080"
 	resource := "accounts"
 	resourceID := "xyz123"
 
 	// Act
-	links := handlers.BuildResourceLinks(baseURL, resource, resourceID)
+	links := handlers.BuildResourceLinks("", resource, resourceID)
 
 	// Assert
 	assert.Len(t, links, 4)
 
-	// Check self link
+	// Check self link — relative path
 	selfLink := findLinkByRel(links, "self")
 	assert.NotNil(t, selfLink)
-	assert.Equal(t, "http://localhost:8080/motogo/api/v1/accounts/xyz123", selfLink.Href)
+	assert.Equal(t, "/motogo/api/v1/accounts/xyz123", selfLink.Href)
 	assert.Equal(t, "GET", selfLink.Method)
 
 	// Check update link
@@ -117,7 +110,7 @@ func TestBuildResourceLinks(t *testing.T) {
 	// Check collection link
 	collectionLink := findLinkByRel(links, "collection")
 	assert.NotNil(t, collectionLink)
-	assert.Equal(t, "http://localhost:8080/motogo/api/v1/accounts", collectionLink.Href)
+	assert.Equal(t, "/motogo/api/v1/accounts", collectionLink.Href)
 }
 
 func TestBuildMessageLinks(t *testing.T) {
