@@ -22,7 +22,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     -o /motogo-api ./cmd
 
 # ── Stage 2: Runtime (imagen mínima) ─────────
-FROM gcr.io/distroless/static-debian12
+FROM gcr.io/distroless/static-debian12:nonroot
 
 # Copiar binario compilado
 COPY --from=builder /motogo-api /motogo-api

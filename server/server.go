@@ -25,10 +25,10 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 	dependencies.Logger.Info(logger.LogRouteConfiguring)
 
 	corsConfig := cors.Config{
-		AllowOrigins:     []string{"http://localhost:8080", "http://localhost:8085", "http://localhost:3000", "http://localhost:3001"},
+		AllowOrigins:     dependencies.Config.CORS.AllowedOrigins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "X-Request-ID"},
-		ExposeHeaders:    []string{"Content-Length", "Location"},
+		ExposeHeaders:    []string{"Content-Length", "Location", "Set-Cookie"},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}
@@ -74,6 +74,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 		MessagingCache:             dependencies.MessagingCache,
 		IDEncoder:                  dependencies.IDEncoder,
 		ResponseHandler:            dependencies.ResponseHandler,
+		CookieConfig:               dependencies.Config.Cookie,
 	})
 
 	validators, err := schema.NewValidator(&schema.DefaultFileReader{})
