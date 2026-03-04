@@ -44,11 +44,16 @@ func (t *SQLTx) Rollback() error {
 
 // BeginSQLTx starts a new database transaction and wraps it in an SQLTx.
 // Repositories should call this instead of db.BeginTx + NewSQLTx directly.
-func BeginSQLTx(ctx context.Context, db *sql.DB) (output.Tx, error) {
+func BeginSQLTx(ctx context.Context, db *sql.DB) (_ output.Tx, err error) {
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
 	return NewSQLTx(tx), nil
 }
 
