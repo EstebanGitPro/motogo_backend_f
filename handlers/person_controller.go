@@ -5,6 +5,7 @@ import (
 
 	domain "github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/middleware"
+	cookiepkg "github.com/EstebanGitPro/motogo-backend/platform/cookie"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 	"github.com/gin-gonic/gin"
 )
@@ -206,6 +207,11 @@ func (h handler) Login() gin.HandlerFunc {
 
 		log.Success(logger.LogKeycloakUserLoginOK, "email", req.Email, "client_ip", c.ClientIP())
 		middleware.RecordPersonRegistration() // Por ahora usamos el mismo metric
+
+		// Escribir cookies HttpOnly (preparación para Flutter Web)
+		cookiepkg.SetAccessToken(c, token.AccessToken, h.CookieConfig)
+		cookiepkg.SetRefreshToken(c, token.RefreshToken, h.CookieConfig)
+
 		h.Response.SuccessWithData(c, "MOD_AUTH_LOGIN_SUCCESS_EXI_00001", response)
 	}
 }
@@ -227,9 +233,19 @@ func (h handler) RefreshToken() gin.HandlerFunc {
 
 		var req RefreshTokenRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
-			log.Error(logger.LogRegJSONParseError, "error", err)
-			h.Response.Error(c, domain.MsgValBadFormat)
-			return
+			// ShouldBindJSON puede fallar con body vacío; es válido si el token viene por cookie
+			log.Debug("RefreshToken: body vacío o inválido, intentando cookie fallback", "error", err)
+		}
+
+		// Fallback: si no vino en el body, intentar leerlo de la cookie
+		if req.RefreshToken == "" {
+			cookieToken, err := cookiepkg.GetRefreshToken(c)
+			if err != nil || cookieToken == "" {
+				log.Error(logger.LogRegJSONParseError, "error", "refresh_token no proporcionado en body ni cookie")
+				h.Response.Error(c, domain.MsgValBadFormat)
+				return
+			}
+			req.RefreshToken = cookieToken
 		}
 
 		log.Info(logger.LogPersonControllerRefreshRequest, "client_ip", c.ClientIP())
@@ -256,6 +272,11 @@ func (h handler) RefreshToken() gin.HandlerFunc {
 		}
 
 		log.Success(logger.LogPersonControllerTokenRefreshOK, "client_ip", c.ClientIP())
+
+		// Actualizar cookies HttpOnly con los nuevos tokens
+		cookiepkg.SetAccessToken(c, token.AccessToken, h.CookieConfig)
+		cookiepkg.SetRefreshToken(c, token.RefreshToken, h.CookieConfig)
+
 		h.Response.SuccessWithData(c, "MOD_AUTH_REFRESH_SUCCESS_EXI_00001", response)
 	}
 }
