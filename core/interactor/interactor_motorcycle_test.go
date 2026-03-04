@@ -40,6 +40,7 @@ func TestRegisterMotorcycle_Success(t *testing.T) {
 	mockSvc.On("BeginTx", ctx).Return(mockTx, nil)
 	mockSvc.On("RegisterMotorcycle", ctx, mockTx, motorcycle).Return(nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	// Act
 	result, err := motorcycleInteractor.RegisterMotorcycle(ctx, motorcycle)
@@ -415,6 +416,7 @@ func TestUpdateMotorcycle_Success(t *testing.T) {
 	mockSvc.On("BeginTx", ctx).Return(mockTx, nil)
 	mockSvc.On("UpdateMotorcycle", ctx, mockTx, existingMotorcycle).Return(nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 	mockSvc.On("GetByID", ctx, motorcycleID).Return(existingMotorcycle, nil)
 
 	// Act
@@ -540,6 +542,7 @@ func TestDeleteMotorcycle_Success_WithHistory(t *testing.T) {
 	mockSvc.On("BeginTx", ctx).Return(mockTx, nil)
 	mockSvc.On("DeleteMotorcycle", ctx, mockTx, motorcycleID).Return(nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	// Act
 	err := motorcycleInteractor.DeleteMotorcycle(ctx, motorcycleID, ownerID)
@@ -576,6 +579,7 @@ func TestDeleteMotorcycle_Success_WithProfileImage(t *testing.T) {
 	mockSvc.On("BeginTx", ctx).Return(mockTx, nil)
 	mockSvc.On("DeleteMotorcycle", ctx, mockTx, motorcycleID).Return(nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	// Act
 	err := motorcycleInteractor.DeleteMotorcycle(ctx, motorcycleID, ownerID)
@@ -798,6 +802,7 @@ func TestDeleteProfileImage_Success(t *testing.T) {
 	mockSvc.On("BeginTx", ctx).Return(mockTx, nil)
 	mockSvc.On("ClearProfileImageURL", ctx, mockTx, motorcycleID).Return(nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	// Act
 	err := motorcycleInteractor.DeleteProfileImage(ctx, motorcycleID, ownerID)
@@ -1021,6 +1026,7 @@ func TestGrantDiagnosticPermission_Success(t *testing.T) {
 	mockSvc.On("BeginTx", ctx).Return(mockTx, nil)
 	mockSvc.On("GrantPermission", ctx, mockTx, motorcycleID, branchID, true).Return(expectedPermission, nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	// Act
 	result, err := motorcycleInteractor.GrantDiagnosticPermission(ctx, motorcycleID, branchID, ownerID, true)
@@ -1120,6 +1126,7 @@ func TestRevokeDiagnosticPermission_Success(t *testing.T) {
 	mockSvc.On("BeginTx", ctx).Return(mockTx, nil)
 	mockSvc.On("RevokePermission", ctx, mockTx, motorcycleID, branchID).Return(nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	// Act
 	err := motorcycleInteractor.RevokeDiagnosticPermission(ctx, motorcycleID, branchID, ownerID)

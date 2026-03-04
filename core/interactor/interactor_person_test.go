@@ -47,6 +47,7 @@ func TestRegisterPerson_Success(t *testing.T) {
 	mockService.On("AssignUserRole", ctx, keycloakUserID, string(person.Role)).Return(nil)
 	mockService.On("UpdatePersonKeycloakID", ctx, mockTx, mock.AnythingOfType("string"), keycloakUserID).Return(nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 	mockService.On("SendVerificationEmail", ctx, keycloakUserID).Return(nil)
 
 	result, err := personInteractor.RegisterPerson(ctx, person)
@@ -311,6 +312,7 @@ func TestUpdateProfile_Success(t *testing.T) {
 	mockService.On("BeginTx", ctx).Return(mockTx, nil)
 	mockService.On("UpdatePersonProfile", ctx, mockTx, person).Return(nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	result, err := personInteractor.UpdateProfile(ctx, person)
 

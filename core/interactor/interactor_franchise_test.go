@@ -40,6 +40,7 @@ func TestCreateFranchiseWithBranches_Success(t *testing.T) {
 	mockFranchiseService.On("CreateFranchise", ctx, mockTx, mock.AnythingOfType("domain.Franchise")).Return(createdFranchise, nil)
 	mockFranchiseService.On("AssociateBranches", ctx, mockTx, "franchise-123", branchIDs).Return(nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	result, err := franchiseInteractor.CreateFranchiseWithBranches(ctx, franchise, branchIDs, representativeID)
 
@@ -173,6 +174,7 @@ func TestDeleteFranchise_Success(t *testing.T) {
 	mockFranchiseService.On("DissociateBranches", ctx, mockTx, franchiseID).Return(nil)
 	mockFranchiseService.On("DeleteFranchise", ctx, mockTx, franchiseID).Return(nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	err := franchiseInteractor.DeleteFranchise(ctx, franchiseID, representativeID)
 

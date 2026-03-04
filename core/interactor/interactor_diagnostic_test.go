@@ -36,6 +36,7 @@ func TestRegisterDiagnostic_CreateNew_Success(t *testing.T) {
 	svc.On("BeginTx", ctx).Return(mockTx, nil)
 	svc.On("RegisterOrUpdateDiagnostic", ctx, mockTx, "moto-1", "branch-1", &desc).Return(createdDiag, nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	result, err := di.RegisterDiagnostic(ctx, "moto-1", "branch-1", "owner-1", &desc)
 
@@ -257,6 +258,7 @@ func TestUpdateDiagnostic_Success(t *testing.T) {
 	svc.On("BeginTx", ctx).Return(mockTx, nil)
 	svc.On("UpdateDiagnostic", ctx, mockTx, existing).Return(nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	result, err := di.UpdateDiagnostic(ctx, "diag-1", "owner-1", updates)
 
@@ -374,6 +376,7 @@ func TestDeleteDiagnostic_Success(t *testing.T) {
 	svc.On("BeginTx", ctx).Return(mockTx, nil)
 	svc.On("DeleteDiagnostic", ctx, mockTx, "diag-1").Return(nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	err := di.DeleteDiagnostic(ctx, "diag-1", "owner-1")
 
@@ -510,6 +513,7 @@ func TestSetSolution_Success(t *testing.T) {
 	svc.On("BeginTx", ctx).Return(mockTx, nil)
 	svc.On("SetSolution", ctx, mockTx, "diag-1", "Cambiar pastillas de freno").Return(nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	err := di.SetSolution(ctx, "diag-1", "Cambiar pastillas de freno")
 
