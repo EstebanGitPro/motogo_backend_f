@@ -9,6 +9,20 @@ import (
 // API base path — all HATEOAS links use relative paths to avoid open redirects (S5146)
 const apiBase = "/motogo/api/v1"
 
+// Path format strings (extracted to avoid duplication — SonarCloud S1192)
+const (
+	adminMessagesPath        = apiBase + "/admin/messages"
+	adminMessageIDFmt        = adminMessagesPath + "/%s"
+	personsProfilePath       = apiBase + "/persons/me"
+	personsPasswordPath      = personsProfilePath + "/password"
+	authLoginPath            = apiBase + "/auth/login"
+	branchTypesPath          = apiBase + "/branch-types"
+	motorcycleReferencesPath = apiBase + "/motorcycle-references"
+	motorcycleCategoriesPath = apiBase + "/motorcycle-categories"
+	motorcycleEvidenceFmt    = apiBase + "/motorcycles/%s/evidence"
+	motorcycleEvidenceIDFmt  = motorcycleEvidenceFmt + "/%s"
+)
+
 type Link struct {
 	Href   string `json:"href"`
 	Rel    string `json:"rel"`
@@ -60,8 +74,8 @@ func BuildResourceLinks(_, resource, resourceID string) []Link {
 
 // BuildMessageLinks construye links HATEOAS para un mensaje específico
 func BuildMessageLinks(_, messageID string) []Link {
-	resourceURL := fmt.Sprintf("%s/admin/messages/%s", apiBase, messageID)
-	collectionURL := fmt.Sprintf("%s/admin/messages", apiBase)
+	resourceURL := fmt.Sprintf(adminMessageIDFmt, messageID)
+	collectionURL := adminMessagesPath
 	return []Link{
 		{Href: resourceURL, Rel: "self", Method: "GET"},
 		{Href: resourceURL, Rel: "update", Method: "PUT"},
@@ -72,8 +86,8 @@ func BuildMessageLinks(_, messageID string) []Link {
 
 // BuildMessageCreatedLinks construye links para un mensaje recién creado
 func BuildMessageCreatedLinks(_, messageID string) []Link {
-	resourceURL := fmt.Sprintf("%s/admin/messages/%s", apiBase, messageID)
-	collectionURL := fmt.Sprintf("%s/admin/messages", apiBase)
+	resourceURL := fmt.Sprintf(adminMessageIDFmt, messageID)
+	collectionURL := adminMessagesPath
 	return []Link{
 		{Href: resourceURL, Rel: "self", Method: "GET"},
 		{Href: resourceURL, Rel: "update", Method: "PUT"},
@@ -84,8 +98,8 @@ func BuildMessageCreatedLinks(_, messageID string) []Link {
 
 // BuildMessageUpdatedLinks construye links para un mensaje actualizado
 func BuildMessageUpdatedLinks(_, messageID string) []Link {
-	resourceURL := fmt.Sprintf("%s/admin/messages/%s", apiBase, messageID)
-	collectionURL := fmt.Sprintf("%s/admin/messages", apiBase)
+	resourceURL := fmt.Sprintf(adminMessageIDFmt, messageID)
+	collectionURL := adminMessagesPath
 	return []Link{
 		{Href: resourceURL, Rel: "self", Method: "GET"},
 		{Href: resourceURL, Rel: "delete", Method: "DELETE"},
@@ -95,7 +109,7 @@ func BuildMessageUpdatedLinks(_, messageID string) []Link {
 
 // BuildMessageListLinks construye links para la lista de mensajes
 func BuildMessageListLinks(_ string) []Link {
-	collectionURL := fmt.Sprintf("%s/admin/messages", apiBase)
+	collectionURL := adminMessagesPath
 	return []Link{
 		{Href: collectionURL, Rel: "self", Method: "GET"},
 		{Href: collectionURL, Rel: "create", Method: "POST"},
@@ -109,7 +123,7 @@ func BuildMessageListLinks(_ string) []Link {
 // BuildLoginLinks constructs HATEOAS links for successful login response
 func BuildLoginLinks(_ string) []Link {
 	return []Link{
-		{Href: fmt.Sprintf("%s/persons/me", apiBase), Rel: "profile", Method: "GET"},
+		{Href: personsProfilePath, Rel: "profile", Method: "GET"},
 		{Href: fmt.Sprintf("%s/auth/password-reset", apiBase), Rel: "password-reset", Method: "POST"},
 	}
 }
@@ -117,16 +131,16 @@ func BuildLoginLinks(_ string) []Link {
 // BuildAuthMeLinks constructs HATEOAS links for authenticated user profile (/auth/me)
 func BuildAuthMeLinks(_ string) []Link {
 	return []Link{
-		{Href: fmt.Sprintf("%s/persons/me", apiBase), Rel: "self", Method: "GET"},
-		{Href: fmt.Sprintf("%s/persons/me/password", apiBase), Rel: "change-password", Method: "PUT"},
-		{Href: fmt.Sprintf("%s/auth/login", apiBase), Rel: "login", Method: "POST"},
+		{Href: personsProfilePath, Rel: "self", Method: "GET"},
+		{Href: personsPasswordPath, Rel: "change-password", Method: "PUT"},
+		{Href: authLoginPath, Rel: "login", Method: "POST"},
 	}
 }
 
 // BuildAccountCreatedLinks constructs HATEOAS links for newly created account
 func BuildAccountCreatedLinks(_ string) []Link {
 	return []Link{
-		{Href: fmt.Sprintf("%s/auth/login", apiBase), Rel: "login", Method: "POST"},
+		{Href: authLoginPath, Rel: "login", Method: "POST"},
 		{Href: fmt.Sprintf("%s/auth/verify-email", apiBase), Rel: "verify-email", Method: "POST"},
 	}
 }
@@ -134,18 +148,18 @@ func BuildAccountCreatedLinks(_ string) []Link {
 // BuildChangePasswordLinks constructs HATEOAS links for password change response (HU57)
 func BuildChangePasswordLinks(_ string) []Link {
 	return []Link{
-		{Href: fmt.Sprintf("%s/persons/me", apiBase), Rel: "profile", Method: "GET"},
-		{Href: fmt.Sprintf("%s/auth/login", apiBase), Rel: "login", Method: "POST"},
+		{Href: personsProfilePath, Rel: "profile", Method: "GET"},
+		{Href: authLoginPath, Rel: "login", Method: "POST"},
 	}
 }
 
 // BuildUpdateProfileLinks constructs HATEOAS links for profile update response (HU52)
 func BuildUpdateProfileLinks(_ string) []Link {
 	return []Link{
-		{Href: fmt.Sprintf("%s/persons/me", apiBase), Rel: "self", Method: "GET"},
-		{Href: fmt.Sprintf("%s/persons/me", apiBase), Rel: "update", Method: "PUT"},
-		{Href: fmt.Sprintf("%s/persons/me/password", apiBase), Rel: "change-password", Method: "PUT"},
-		{Href: fmt.Sprintf("%s/auth/login", apiBase), Rel: "login", Method: "POST"},
+		{Href: personsProfilePath, Rel: "self", Method: "GET"},
+		{Href: personsProfilePath, Rel: "update", Method: "PUT"},
+		{Href: personsPasswordPath, Rel: "change-password", Method: "PUT"},
+		{Href: authLoginPath, Rel: "login", Method: "POST"},
 	}
 }
 
@@ -214,7 +228,7 @@ func BuildBranchDetailLinks(_ string, branchID string, isOwner bool) []Link {
 // BuildBranchTypesLinks constructs HATEOAS links for branch types catalog (HU76)
 func BuildBranchTypesLinks(_ string) []Link {
 	return []Link{
-		{Href: fmt.Sprintf("%s/branch-types", apiBase), Rel: "self", Method: "GET"},
+		{Href: branchTypesPath, Rel: "self", Method: "GET"},
 		{Href: BuildCollectionURL("", "branches"), Rel: "create-branch", Method: "POST"},
 	}
 }
@@ -226,7 +240,7 @@ func BuildBranchListLinks(_ string) []Link {
 		{Href: collectionURL, Rel: "self", Method: "GET"},
 		{Href: collectionURL, Rel: "create", Method: "POST"},
 		{Href: BuildCollectionURL("", "brands"), Rel: "brands", Method: "GET"},
-		{Href: fmt.Sprintf("%s/branch-types", apiBase), Rel: "branch-types", Method: "GET"},
+		{Href: branchTypesPath, Rel: "branch-types", Method: "GET"},
 	}
 }
 
@@ -297,14 +311,14 @@ func BuildNearbyBranchesLinks(_ string, lat, lng, radiusKm float64) []Link {
 	return []Link{
 		{Href: nearbyURL, Rel: "self", Method: "GET"},
 		{Href: BuildCollectionURL("", "branches"), Rel: "branches", Method: "GET"},
-		{Href: fmt.Sprintf("%s/branch-types", apiBase), Rel: "branch-types", Method: "GET"},
+		{Href: branchTypesPath, Rel: "branch-types", Method: "GET"},
 	}
 }
 
 // BuildMotorcycleReferencesLinks constructs HATEOAS links for motorcycle references catalog (HU50)
 func BuildMotorcycleReferencesLinks(_ string) []Link {
 	return []Link{
-		{Href: fmt.Sprintf("%s/motorcycle-references", apiBase), Rel: "self", Method: "GET"},
+		{Href: motorcycleReferencesPath, Rel: "self", Method: "GET"},
 		{Href: BuildCollectionURL("", "motorcycles"), Rel: "motorcycles", Method: "GET"},
 		{Href: BuildCollectionURL("", "brands"), Rel: "brands", Method: "GET"},
 	}
@@ -315,7 +329,7 @@ func BuildBrandLinesLinks(_, brandID string) []Link {
 	return []Link{
 		{Href: fmt.Sprintf("%s/admin/brands/%s/lines", apiBase, brandID), Rel: "self", Method: "GET"},
 		{Href: BuildCollectionURL("", "brands"), Rel: "brands", Method: "GET"},
-		{Href: fmt.Sprintf("%s/motorcycle-references", apiBase), Rel: "references", Method: "GET"},
+		{Href: motorcycleReferencesPath, Rel: "references", Method: "GET"},
 	}
 }
 
@@ -326,8 +340,8 @@ func BuildBrandLinesLinks(_, brandID string) []Link {
 // BuildMotorcycleCategoryListLinks constructs HATEOAS links for the motorcycle categories list
 func BuildMotorcycleCategoryListLinks(_ string) []Link {
 	return []Link{
-		{Href: fmt.Sprintf("%s/motorcycle-categories", apiBase), Rel: "self", Method: "GET"},
-		{Href: fmt.Sprintf("%s/motorcycle-references", apiBase), Rel: "references", Method: "GET"},
+		{Href: motorcycleCategoriesPath, Rel: "self", Method: "GET"},
+		{Href: motorcycleReferencesPath, Rel: "references", Method: "GET"},
 		{Href: BuildCollectionURL("", "brands"), Rel: "brands", Method: "GET"},
 	}
 }
@@ -335,15 +349,15 @@ func BuildMotorcycleCategoryListLinks(_ string) []Link {
 // BuildMotorcycleCategoryItemLinks constructs drill-down HATEOAS links for a single category item
 func BuildMotorcycleCategoryItemLinks(_, categoryName string) []Link {
 	return []Link{
-		{Href: fmt.Sprintf("%s/motorcycle-categories/%s/lines", apiBase, categoryName), Rel: "lines", Method: "GET"},
+		{Href: fmt.Sprintf(motorcycleCategoriesPath+"/%s/lines", categoryName), Rel: "lines", Method: "GET"},
 	}
 }
 
 // BuildCategoryLinesLinks constructs HATEOAS links for lines within a specific category
 func BuildCategoryLinesLinks(_, categoryName string) []Link {
 	return []Link{
-		{Href: fmt.Sprintf("%s/motorcycle-categories/%s/lines", apiBase, categoryName), Rel: "self", Method: "GET"},
-		{Href: fmt.Sprintf("%s/motorcycle-categories", apiBase), Rel: "categories", Method: "GET"},
+		{Href: fmt.Sprintf(motorcycleCategoriesPath+"/%s/lines", categoryName), Rel: "self", Method: "GET"},
+		{Href: motorcycleCategoriesPath, Rel: "categories", Method: "GET"},
 		{Href: BuildCollectionURL("", "brands"), Rel: "brands", Method: "GET"},
 	}
 }
@@ -352,7 +366,7 @@ func BuildCategoryLinesLinks(_, categoryName string) []Link {
 func BuildEngineDisplacementLinks(_ string) []Link {
 	return []Link{
 		{Href: fmt.Sprintf("%s/engine-displacements", apiBase), Rel: "self", Method: "GET"},
-		{Href: fmt.Sprintf("%s/motorcycle-categories", apiBase), Rel: "categories", Method: "GET"},
+		{Href: motorcycleCategoriesPath, Rel: "categories", Method: "GET"},
 		{Href: BuildCollectionURL("", "brands"), Rel: "brands", Method: "GET"},
 	}
 }
@@ -362,7 +376,7 @@ func BuildRatingRangeLinks(_ string) []Link {
 	return []Link{
 		{Href: fmt.Sprintf("%s/rating-ranges", apiBase), Rel: "self", Method: "GET"},
 		{Href: fmt.Sprintf("%s/engine-displacements", apiBase), Rel: "displacements", Method: "GET"},
-		{Href: fmt.Sprintf("%s/motorcycle-categories", apiBase), Rel: "categories", Method: "GET"},
+		{Href: motorcycleCategoriesPath, Rel: "categories", Method: "GET"},
 	}
 }
 
@@ -372,8 +386,8 @@ func BuildRatingRangeLinks(_ string) []Link {
 
 // BuildEvidenceDetailLinks constructs HATEOAS links for evidence detail (HU16-19)
 func BuildEvidenceDetailLinks(_, motorcycleID, evidenceID string, isOwner bool) []Link {
-	evidenceURL := fmt.Sprintf("%s/motorcycles/%s/evidence/%s", apiBase, motorcycleID, evidenceID)
-	listURL := fmt.Sprintf("%s/motorcycles/%s/evidence", apiBase, motorcycleID)
+	evidenceURL := fmt.Sprintf(motorcycleEvidenceIDFmt, motorcycleID, evidenceID)
+	listURL := fmt.Sprintf(motorcycleEvidenceFmt, motorcycleID)
 	motorcycleURL := BuildResourceURL("", "motorcycles", motorcycleID)
 
 	links := []Link{
@@ -392,7 +406,7 @@ func BuildEvidenceDetailLinks(_, motorcycleID, evidenceID string, isOwner bool) 
 
 // BuildEvidenceListLinks constructs HATEOAS links for evidence list (HU18)
 func BuildEvidenceListLinks(_, motorcycleID string) []Link {
-	listURL := fmt.Sprintf("%s/motorcycles/%s/evidence", apiBase, motorcycleID)
+	listURL := fmt.Sprintf(motorcycleEvidenceFmt, motorcycleID)
 	motorcycleURL := BuildResourceURL("", "motorcycles", motorcycleID)
 	return []Link{
 		{Href: listURL, Rel: "self", Method: "GET"},
@@ -403,7 +417,7 @@ func BuildEvidenceListLinks(_, motorcycleID string) []Link {
 
 // BuildEvidenceDeletedLinks constructs HATEOAS links after evidence deletion (HU19)
 func BuildEvidenceDeletedLinks(_, motorcycleID string) []Link {
-	listURL := fmt.Sprintf("%s/motorcycles/%s/evidence", apiBase, motorcycleID)
+	listURL := fmt.Sprintf(motorcycleEvidenceFmt, motorcycleID)
 	motorcycleURL := BuildResourceURL("", "motorcycles", motorcycleID)
 	return []Link{
 		{Href: listURL, Rel: "list", Method: "GET"},
