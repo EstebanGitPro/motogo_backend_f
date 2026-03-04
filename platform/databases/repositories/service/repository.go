@@ -5,6 +5,7 @@ import (
 	"database/sql"
 
 	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
+	"github.com/EstebanGitPro/motogo-backend/platform/databases/common"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
 
@@ -106,5 +107,5 @@ func NewRepository(db *sql.DB) (output.ServiceRepository, error) {
 }
 
 func (r *repository) BeginTx(ctx context.Context) (output.Tx, error) {
-	return r.db.BeginTx(ctx, nil)
+	return common.BeginSQLTx(ctx, r.db)
 }

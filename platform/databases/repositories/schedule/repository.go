@@ -105,9 +105,5 @@ func NewRepository(db *sql.DB) (output.ScheduleRepository, error) {
 }
 
 func (r *repository) BeginTx(ctx context.Context) (output.Tx, error) {
-	tx, err := r.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	return common.NewSQLTx(tx), nil
+	return common.BeginSQLTx(ctx, r.db)
 }

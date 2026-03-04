@@ -52,6 +52,7 @@ func (i *Interactor) RegisterPerson(ctx context.Context, person domain.Person) (
 		log.Error(logger.LogPersonInteractorStep2_Error, "error", err)
 		return result, err
 	}
+	defer tx.Rollback()
 
 	var keycloakUserID string
 	var keycloakCreated bool
@@ -372,6 +373,7 @@ func (i *Interactor) UpdateProfile(ctx context.Context, person domain.Person) (*
 		log.Error(logger.LogPersonInteractorStep2_Error, "error", err)
 		return nil, err
 	}
+	defer tx.Rollback()
 
 	var profileUpdated bool
 
