@@ -494,9 +494,29 @@ We welcome contributions! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for det
 
 ## 🛡️ Security
 
-To report a vulnerability, please read our [Security Policy](SECURITY.md).
+### Nota sobre Credenciales Incluidas
 
-**Do not** open a public issue for security vulnerabilities.
+> **Este repositorio es un proyecto de grado académico.** Las credenciales incluidas en `config/local-config.json` son exclusivamente para el entorno de desarrollo local y se incluyen intencionalmente para facilitar la ejecución y evaluación del proyecto sin configuración adicional.
+
+En un entorno productivo, **todas las credenciales se inyectan mediante variables de entorno** (archivo `.env` o secretos del proveedor de hosting), nunca desde archivos de configuración commiteados. El archivo `config/prod-config.json` sirve como plantilla con placeholders (`CAMBIAR_POR_...`) y no contiene valores reales.
+
+| Archivo | ¿Commiteado? | Propósito |
+|---------|:------------:|-----------|
+| `config/local-config.json` | ✅ Sí | Configuración local lista para ejecutar |
+| `config/prod-config.json` | ❌ No | Plantilla de producción (solo placeholders) |
+| `.env` | ❌ No | Variables de entorno con secrets reales |
+| `serviceAccountKey.json` | ❌ No | Credenciales de Firebase (nunca commiteado) |
+| `deploy/.env.production` | ❌ No | Secrets de producción |
+
+### Estrategia de Configuración
+
+```
+Prioridad de configuración (de mayor a menor):
+
+  Variables de entorno (.env)  →  Archivo JSON (local/prod-config.json)  →  Valores por defecto
+```
+
+Para más detalles, ver la sección [Configuration](#️-configuration) y el archivo `config/config.go`.
 
 ---
 

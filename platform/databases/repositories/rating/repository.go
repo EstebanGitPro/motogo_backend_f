@@ -190,6 +190,24 @@ func formatReviewerName(firstName, lastName string) string {
 	return fmt.Sprintf("%s %s.", firstName, strings.ToUpper(lastName[:1]))
 }
 
+// toServiceReview converts a ReviewRow to a domain ServiceReview.
+func toServiceReview(row ReviewRow) domain.ServiceReview {
+	review := domain.ServiceReview{
+		ReviewerName: formatReviewerName(row.FirstName, row.LastName),
+		Rating:       row.Rating,
+	}
+	if row.Comment.Valid && row.Comment.String != "" {
+		review.Comment = &row.Comment.String
+	}
+	if row.RatedAt.Valid {
+		review.RatedAt = row.RatedAt.Time
+	}
+	if row.MotorcycleModel.Valid && row.MotorcycleModel.String != "" {
+		review.MotorcycleModel = &row.MotorcycleModel.String
+	}
+	return review
+}
+
 // GetReviewsByServiceID retrieves all reviews for a service type, aggregating average and breakdown
 func (r *repository) GetReviewsByServiceID(ctx context.Context, serviceID string) (*domain.ServiceReviewSummary, error) {
 	rows, err := r.stmtGetReviewsByServiceID.QueryContext(ctx, serviceID)
@@ -222,22 +240,7 @@ func (r *repository) GetReviewsByServiceID(ctx context.Context, serviceID string
 		serviceName = row.ServiceName
 		totalRating += row.Rating
 		breakdown[row.Rating]++
-
-		review := domain.ServiceReview{
-			ReviewerName: formatReviewerName(row.FirstName, row.LastName),
-			Rating:       row.Rating,
-		}
-		if row.Comment.Valid && row.Comment.String != "" {
-			review.Comment = &row.Comment.String
-		}
-		if row.RatedAt.Valid {
-			review.RatedAt = row.RatedAt.Time
-		}
-		if row.MotorcycleModel.Valid && row.MotorcycleModel.String != "" {
-			review.MotorcycleModel = &row.MotorcycleModel.String
-		}
-
-		reviews = append(reviews, review)
+		reviews = append(reviews, toServiceReview(row))
 	}
 
 	if err = rows.Err(); err != nil {

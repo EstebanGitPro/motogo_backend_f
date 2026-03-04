@@ -455,3 +455,63 @@ func TestRequireAuth_UserNotFoundInDB_Aborts(t *testing.T) {
 	mockValidator.AssertExpectations(t)
 	mockService.AssertExpectations(t)
 }
+
+// ============================================
+// Cookie Fallback Tests
+// ============================================
+
+func TestRequireAuth_FallbackToCookie_Success(t *testing.T) {
+	// Arrange
+	mockService := new(mocks.MockPersonService)
+	mockValidator := new(mocks.MockJWKSValidator)
+
+	expectedPerson := &domain.Person{
+		ID:             "person-cookie-123",
+		Email:          "cookie@example.com",
+		KeycloakUserID: "kc-cookie-user",
+	}
+
+	// Mock: validator accepts token from cookie
+	mockValidator.On("ValidateToken", "cookie-access-token").Return(
+		map[string]interface{}{"sub": "kc-cookie-user"}, nil,
+	)
+
+	// Mock: person service finds the user
+	mockService.On("GetPersonByKeycloakID", mock.Anything, "kc-cookie-user").Return(
+		expectedPerson, nil,
+	)
+
+	router := setupRequireAuthRouter(mockService, mockValidator)
+
+	// Act - NO Authorization header, but WITH mg_access_token cookie
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/protected", nil)
+	req.AddCookie(&http.Cookie{
+		Name:  "mg_access_token",
+		Value: "cookie-access-token",
+	})
+	router.ServeHTTP(w, req)
+
+	// Assert - Should succeed via cookie fallback
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "person-cookie-123")
+	mockValidator.AssertExpectations(t)
+	mockService.AssertExpectations(t)
+}
+
+func TestRequireAuth_NoCookieNoHeader_StillAborts(t *testing.T) {
+	// Arrange
+	mockService := new(mocks.MockPersonService)
+	mockValidator := new(mocks.MockJWKSValidator)
+
+	router := setupRequireAuthRouter(mockService, mockValidator)
+
+	// Act - Neither Authorization header nor cookie
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/protected", nil)
+	router.ServeHTTP(w, req)
+
+	// Assert - handler should not execute
+	assert.NotContains(t, w.Body.String(), "user_id")
+	assert.NotContains(t, w.Body.String(), "no user")
+}
