@@ -47,7 +47,7 @@ type LoginResponse struct {
 }
 
 // RefreshTokenRequest - DTO para refrescar access token.
-// El campo refresh_token no es required: los clientes web envían el token vía cookie.
+// El campo refresh_token no es required: los clients web envían el token vía cookie.
 type RefreshTokenRequest struct {
 	RefreshToken string `json:"refresh_token"`
 }

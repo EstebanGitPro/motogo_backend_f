@@ -64,7 +64,7 @@ func (i *RatingInteractor) RateServiceItem(ctx context.Context, itemID string, r
 		return domain.ErrRatingCannotSave
 	}
 
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	// STEP 6: Delegate to service (handles moderation + persistence)
 	wasOffensive := false
