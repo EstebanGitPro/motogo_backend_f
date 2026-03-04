@@ -47,3 +47,4 @@ deploy/.env.production
 
 # Compiled binaries
 motogo-api
+.scannerwork/
