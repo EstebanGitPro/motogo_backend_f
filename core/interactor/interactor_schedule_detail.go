@@ -74,7 +74,6 @@ func (i *ScheduleDetailInteractor) CreateDetail(
 		"detail_id", result.ID,
 		"schedule_id", detail.ScheduleID)
 
-	err = nil
 	return result, nil
 }
 
@@ -142,7 +141,6 @@ func (i *ScheduleDetailInteractor) UpdateDetail(
 		return err
 	}
 
-	err = nil
 	return nil
 }
 
@@ -185,6 +183,5 @@ func (i *ScheduleDetailInteractor) DeleteDetail(
 		return err
 	}
 
-	err = nil
 	return nil
 }

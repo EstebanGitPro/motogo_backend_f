@@ -58,7 +58,6 @@ func (i *ScheduleInteractor) CreateSchedule(ctx context.Context, branchID, repre
 
 	scheduleInteractorLog.Info(logger.LogScheduleInteractorCreateComplete, "schedule_id", result.ID, "branch_id", branchID)
 
-	err = nil
 	return result, nil
 }
 
@@ -130,7 +129,6 @@ func (i *ScheduleInteractor) UpdateSchedule(ctx context.Context, schedule domain
 
 	scheduleInteractorLog.Info(logger.LogScheduleInteractorUpdateComplete, "schedule_id", schedule.ID)
 
-	err = nil
 	return nil
 }
 
@@ -165,7 +163,6 @@ func (i *ScheduleInteractor) DeleteSchedule(ctx context.Context, scheduleID, rep
 
 	scheduleInteractorLog.Info(logger.LogScheduleInteractorDeleteComplete, "schedule_id", scheduleID)
 
-	err = nil
 	return nil
 }
 
@@ -211,6 +208,5 @@ func (i *ScheduleInteractor) setActive(ctx context.Context, scheduleID, represen
 		return err
 	}
 
-	err = nil
 	return nil
 }

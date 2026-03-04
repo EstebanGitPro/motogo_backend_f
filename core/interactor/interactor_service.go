@@ -162,6 +162,5 @@ func (i *ServiceInteractor) UpdateService(ctx context.Context, service domain.Se
 
 	log.Success(logger.LogServiceInteractorUpdateOK, "service_id", service.ID)
 
-	err = nil
 	return nil
 }

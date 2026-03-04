@@ -120,7 +120,6 @@ func (i *CompletedServiceInteractor) RegisterCompletedService(ctx context.Contex
 		"motorcycle_id", cs.MotorcycleID,
 		"services_count", len(items))
 
-	err = nil // Ensure defer doesn't execute rollback
 	return cs, nil
 }
 
@@ -212,7 +211,6 @@ func (i *CompletedServiceInteractor) DeleteCompletedService(ctx context.Context,
 	}
 
 	log.Success(logger.LogCSInteractorDelSuccess, "service_id", serviceID)
-	err = nil // Ensure defer doesn't execute rollback
 	return nil
 }
 
@@ -296,7 +294,6 @@ func (i *CompletedServiceInteractor) TransitionStatus(ctx context.Context, servi
 		"from", cs.Status,
 		"to", newStatus)
 
-	err = nil
 	return nil
 }
 
@@ -373,6 +370,5 @@ func (i *CompletedServiceInteractor) UpdateCompletedServiceDetails(ctx context.C
 
 	log.Success(logger.LogCSInteractorDetailsSuccess, "service_id", serviceID)
 
-	err = nil
 	return nil
 }

@@ -73,7 +73,6 @@ func (i *MessageInteractor) CreateMessage(ctx context.Context, message domain.Me
 	result = &message
 	log.Success(logger.LogMessageInteractorCreateComplete, message.ToLogger())
 
-	err = nil // ensure defer does NOT execute rollback
 	return result, err
 }
 
@@ -140,7 +139,6 @@ func (i *MessageInteractor) UpdateMessage(ctx context.Context, message domain.Me
 	// Refresh cache after update
 	log.Info(logger.LogMessageCacheRefresh)
 
-	err = nil // ensure defer does NOT execute rollback
 	return result, err
 }
 
@@ -199,7 +197,6 @@ func (i *MessageInteractor) DeleteMessage(ctx context.Context, id string) (err e
 	// Refresh cache after delete
 	log.Info(logger.LogMessageCacheRefresh)
 
-	err = nil // ensure defer does NOT execute rollback
 	return err
 }
 

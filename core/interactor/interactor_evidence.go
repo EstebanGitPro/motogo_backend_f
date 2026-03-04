@@ -71,7 +71,6 @@ func (i *EvidenceInteractor) CreateEvidence(ctx context.Context, motorcycleID, o
 
 	log.Success(logger.LogEvidenceInteractorCreateSuccess, "id", result.ID, "motorcycle_id", motorcycleID)
 
-	err = nil
 	return result, nil
 }
 
@@ -177,7 +176,6 @@ func (i *EvidenceInteractor) DeleteEvidence(ctx context.Context, evidenceID, own
 
 	log.Success(logger.LogEvidenceInteractorDeleteSuccess, "evidence_id", evidenceID)
 
-	err = nil
 	return nil
 }
 
@@ -236,7 +234,6 @@ func (i *EvidenceInteractor) UpdateEvidence(ctx context.Context, evidenceID, own
 
 	log.Success(logger.LogEvidenceInteractorUpdateSuccess, "evidence_id", evidenceID)
 
-	err = nil
 	return evidence, nil
 }
 

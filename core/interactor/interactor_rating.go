@@ -72,7 +72,6 @@ func (i *RatingInteractor) RateServiceItem(ctx context.Context, itemID string, r
 		// Offensive sentinel is NOT a real error — the data was saved successfully
 		if errors.Is(err, domain.ErrOffensiveCommentFiltered) {
 			wasOffensive = true
-			err = nil // Clear so deferRollback does not trigger
 		} else {
 			log.Error(logger.LogCSInteractorRateUpdErr, "item_id", itemID, "error", err)
 			return domain.ErrRatingCannotSave
@@ -88,7 +87,6 @@ func (i *RatingInteractor) RateServiceItem(ctx context.Context, itemID string, r
 	log.Success(logger.LogCSInteractorRateSuccess, "item_id", itemID)
 
 	// Propagate offensive sentinel to handler (if applicable)
-	err = nil
 	if wasOffensive {
 		return domain.ErrOffensiveCommentFiltered
 	}

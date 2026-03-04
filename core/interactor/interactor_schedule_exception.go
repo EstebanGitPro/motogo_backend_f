@@ -74,7 +74,6 @@ func (i *ScheduleExceptionInteractor) CreateException(
 		"exception_id", result.ID,
 		"schedule_id", exception.ScheduleID)
 
-	err = nil
 	return result, nil
 }
 
@@ -142,7 +141,6 @@ func (i *ScheduleExceptionInteractor) UpdateException(
 		return err
 	}
 
-	err = nil
 	return nil
 }
 
@@ -182,7 +180,6 @@ func (i *ScheduleExceptionInteractor) DeleteException(
 		return err
 	}
 
-	err = nil
 	return nil
 }
 
@@ -239,6 +236,5 @@ func (i *ScheduleExceptionInteractor) setExceptionActive(
 		return err
 	}
 
-	err = nil
 	return nil
 }
