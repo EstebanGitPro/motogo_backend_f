@@ -263,3 +263,51 @@ func TestRateServiceItem_CommitError_RollsBack(t *testing.T) {
 	assert.Equal(t, domain.ErrRatingCannotSave, err)
 	mockTx.AssertCalled(t, "Rollback")
 }
+
+// ============================================
+// GetServiceReviews — success
+// ============================================
+
+func TestGetServiceReviews_Success(t *testing.T) {
+	ctx := context.Background()
+	ri, svc := setupRatingInteractor()
+
+	comment := "Excellent"
+	model := "Honda CB 160F"
+	summary := &domain.ServiceReviewSummary{
+		ServiceID:     "svc-1",
+		ServiceName:   "Oil Change",
+		AverageRating: 4.5,
+		TotalReviews:  2,
+		Breakdown:     map[int]int{5: 1, 4: 1, 3: 0, 2: 0, 1: 0},
+		Reviews: []domain.ServiceReview{
+			{ReviewerName: "Carlos M.", Rating: 5, Comment: &comment, MotorcycleModel: &model},
+			{ReviewerName: "Ana P.", Rating: 4, Comment: nil, MotorcycleModel: nil},
+		},
+	}
+
+	svc.On("GetReviewsByServiceID", ctx, "svc-1").Return(summary, nil)
+
+	result, err := ri.GetServiceReviews(ctx, "svc-1")
+
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Equal(t, "svc-1", result.ServiceID)
+	assert.Equal(t, 4.5, result.AverageRating)
+	assert.Equal(t, 2, result.TotalReviews)
+	assert.Len(t, result.Reviews, 2)
+	svc.AssertExpectations(t)
+}
+
+func TestGetServiceReviews_ServiceError(t *testing.T) {
+	ctx := context.Background()
+	ri, svc := setupRatingInteractor()
+
+	svc.On("GetReviewsByServiceID", ctx, "svc-bad").Return(nil, errors.New("db error"))
+
+	result, err := ri.GetServiceReviews(ctx, "svc-bad")
+
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	svc.AssertExpectations(t)
+}

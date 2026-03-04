@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/EstebanGitPro/motogo-backend/core/interactor"
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
@@ -28,6 +30,7 @@ func createRatingMessageCache() *messagingCache.MessageCache {
 		// Rating success
 		{Code: "MOD_CS_RATE_EXI_00001", Type: "EXITO", Title: "Calificado", Content: "Servicio calificado exitosamente", Active: true},
 		{Code: "MOD_CS_RATE_OFFENSIVE_EXI_00001", Type: "EXITO", Title: "Calificado", Content: "Tu calificación fue registrada. El comentario contiene lenguaje inapropiado.", Active: true},
+		{Code: "MOD_CS_RATE_LIST_EXI_00001", Type: "EXITO", Title: "Reviews", Content: "Reviews obtenidas exitosamente", Active: true},
 		// Rating errors
 		{Code: "MOD_CS_ITEM_NF_ERR_00001", Type: "ERROR", Title: "Item no encontrado", Content: "El item de servicio no fue encontrado", Active: true},
 		{Code: "MOD_CS_RATE_DUP_ERR_00001", Type: "ERROR", Title: "Ya calificado", Content: "El item ya fue calificado", Active: true},
@@ -63,6 +66,7 @@ func setupRatingHandler(t *testing.T, mockSvc *mocks.MockRatingService) (*gin.En
 		c.Next()
 	})
 	router.POST("/completed-services/:id/items/:itemId/rating", h.RateServiceItem())
+	router.GET("/services/:id/reviews", h.GetServiceReviews())
 
 	return router, httptest.NewRecorder()
 }
@@ -354,4 +358,95 @@ func TestRateServiceItem_Controller_OffensiveComment(t *testing.T) {
 
 	mockSvc.AssertExpectations(t)
 	mockTx.AssertExpectations(t)
+}
+
+// ==============================================
+// GetServiceReviews — Success (full HTTP pipeline)
+// ==============================================
+
+func TestGetServiceReviews_Controller_Success(t *testing.T) {
+	mockSvc := new(mocks.MockRatingService)
+	encoder := createTestEncoder()
+
+	serviceUUID := "a3333333-3333-4000-8000-333333333333"
+	encodedServiceID, _ := encoder.Encode(serviceUUID)
+
+	comment := "Great service!"
+	model := "Honda CB 160F"
+	summary := &domain.ServiceReviewSummary{
+		ServiceID:     serviceUUID,
+		ServiceName:   "Oil Change",
+		AverageRating: 4.5,
+		TotalReviews:  2,
+		Breakdown:     map[int]int{5: 1, 4: 1, 3: 0, 2: 0, 1: 0},
+		Reviews: []domain.ServiceReview{
+			{ReviewerName: "Carlos M.", Rating: 5, Comment: &comment, MotorcycleModel: &model,
+				RatedAt: time.Date(2025, 6, 15, 10, 0, 0, 0, time.UTC)},
+			{ReviewerName: "Ana P.", Rating: 4, Comment: nil, MotorcycleModel: nil,
+				RatedAt: time.Date(2025, 6, 16, 14, 30, 0, 0, time.UTC)},
+		},
+	}
+
+	mockSvc.On("GetReviewsByServiceID", mock.Anything, serviceUUID).Return(summary, nil)
+
+	router, _ := setupRatingHandler(t, mockSvc)
+	w := httptest.NewRecorder()
+
+	req, _ := http.NewRequest("GET", "/services/"+encodedServiceID+"/reviews", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.True(t, response["success"].(bool))
+	assert.Equal(t, "MOD_CS_RATE_LIST_EXI_00001", response["code"])
+
+	// Verify data structure
+	data := response["data"].(map[string]interface{})
+	assert.Equal(t, serviceUUID, data["service_id"])
+	assert.Equal(t, "Oil Change", data["service_name"])
+	assert.Equal(t, 4.5, data["average_rating"])
+	reviews := data["reviews"].([]interface{})
+	assert.Len(t, reviews, 2)
+
+	mockSvc.AssertExpectations(t)
+}
+
+func TestGetServiceReviews_Controller_InvalidServiceID(t *testing.T) {
+	mockSvc := new(mocks.MockRatingService)
+	router, _ := setupRatingHandler(t, mockSvc)
+	w := httptest.NewRecorder()
+
+	req, _ := http.NewRequest("GET", "/services/invalid-id/reviews", nil)
+	router.ServeHTTP(w, req)
+
+	assert.NotEqual(t, http.StatusOK, w.Code)
+	var response map[string]interface{}
+	_ = json.Unmarshal(w.Body.Bytes(), &response)
+	assert.False(t, response["success"].(bool))
+}
+
+func TestGetServiceReviews_Controller_InteractorError(t *testing.T) {
+	mockSvc := new(mocks.MockRatingService)
+	encoder := createTestEncoder()
+
+	serviceUUID := "a3333333-3333-4000-8000-333333333333"
+	encodedServiceID, _ := encoder.Encode(serviceUUID)
+
+	mockSvc.On("GetReviewsByServiceID", mock.Anything, serviceUUID).Return(nil, errors.New("db error"))
+
+	router, _ := setupRatingHandler(t, mockSvc)
+	w := httptest.NewRecorder()
+
+	req, _ := http.NewRequest("GET", "/services/"+encodedServiceID+"/reviews", nil)
+	router.ServeHTTP(w, req)
+
+	assert.NotEqual(t, http.StatusOK, w.Code)
+	var response map[string]interface{}
+	_ = json.Unmarshal(w.Body.Bytes(), &response)
+	assert.False(t, response["success"].(bool))
+
+	mockSvc.AssertExpectations(t)
 }
