@@ -54,8 +54,7 @@ func (i *ScheduleExceptionInteractor) CreateException(
 		return nil, txErr
 	}
 
-	defer deferRollback(tx, &err, scheduleExceptionInteractorLog,
-		logger.LogScheduleDetailInteractorRollbackError, logger.LogScheduleDetailInteractorRollbackOK)()
+	defer tx.Rollback()
 
 	// 3. Create exception via service
 	result, err = i.detailService.CreateException(ctx, tx, exception)
@@ -130,8 +129,7 @@ func (i *ScheduleExceptionInteractor) UpdateException(
 		return txErr
 	}
 
-	defer deferRollback(tx, &err, scheduleExceptionInteractorLog,
-		logger.LogScheduleDetailInteractorRollbackError, logger.LogScheduleDetailInteractorRollbackOK)()
+	defer tx.Rollback()
 
 	// 4. Update exception
 	if err = i.detailService.UpdateException(ctx, tx, exception); err != nil {
@@ -171,8 +169,7 @@ func (i *ScheduleExceptionInteractor) DeleteException(
 		return txErr
 	}
 
-	defer deferRollback(tx, &err, scheduleExceptionInteractorLog,
-		logger.LogScheduleDetailInteractorRollbackError, logger.LogScheduleDetailInteractorRollbackOK)()
+	defer tx.Rollback()
 
 	// 4. Delete exception
 	if err = i.detailService.DeleteException(ctx, tx, exceptionID); err != nil {
@@ -229,8 +226,7 @@ func (i *ScheduleExceptionInteractor) setExceptionActive(
 		return txErr
 	}
 
-	defer deferRollback(tx, &err, scheduleExceptionInteractorLog,
-		logger.LogScheduleDetailInteractorRollbackError, logger.LogScheduleDetailInteractorRollbackOK)()
+	defer tx.Rollback()
 
 	// 4. Delegate active status change to service
 	if err = i.detailService.SetExceptionActive(ctx, tx, exceptionID, active); err != nil {

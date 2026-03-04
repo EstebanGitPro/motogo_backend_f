@@ -41,8 +41,7 @@ func (i *ScheduleInteractor) CreateSchedule(ctx context.Context, branchID, repre
 		return nil, txErr
 	}
 
-	defer deferRollback(tx, &err, scheduleInteractorLog,
-		logger.LogScheduleInteractorRollbackError, logger.LogScheduleInteractorRollbackOK)()
+	defer tx.Rollback()
 
 	// 3. Create schedule via service
 	result, err = i.scheduleService.CreateSchedule(ctx, tx, branchID)
@@ -116,8 +115,7 @@ func (i *ScheduleInteractor) UpdateSchedule(ctx context.Context, schedule domain
 		return txErr
 	}
 
-	defer deferRollback(tx, &err, scheduleInteractorLog,
-		logger.LogScheduleInteractorRollbackError, logger.LogScheduleInteractorRollbackOK)()
+	defer tx.Rollback()
 
 	// 3. Update schedule with all fields
 	if err = i.scheduleService.UpdateSchedule(ctx, tx, schedule); err != nil {
@@ -152,8 +150,7 @@ func (i *ScheduleInteractor) DeleteSchedule(ctx context.Context, scheduleID, rep
 		return txErr
 	}
 
-	defer deferRollback(tx, &err, scheduleInteractorLog,
-		logger.LogScheduleInteractorRollbackError, logger.LogScheduleInteractorRollbackOK)()
+	defer tx.Rollback()
 
 	// 3. Delete schedule
 	if err = i.scheduleService.DeleteSchedule(ctx, tx, scheduleID); err != nil {
@@ -196,8 +193,7 @@ func (i *ScheduleInteractor) setActive(ctx context.Context, scheduleID, represen
 		return txErr
 	}
 
-	defer deferRollback(tx, &err, scheduleInteractorLog,
-		logger.LogScheduleInteractorRollbackError, logger.LogScheduleInteractorRollbackOK)()
+	defer tx.Rollback()
 
 	// 3. Set active status
 	if active {

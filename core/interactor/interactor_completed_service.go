@@ -62,7 +62,7 @@ func (i *CompletedServiceInteractor) RegisterCompletedService(ctx context.Contex
 		return nil, err
 	}
 
-	defer deferRollback(tx, &err, log, logger.LogTxRollbackError, logger.LogTxRollbackOK)()
+	defer tx.Rollback()
 
 	// STEP 4: Generate ID and set defaults
 	cs.SetID()
@@ -197,7 +197,7 @@ func (i *CompletedServiceInteractor) DeleteCompletedService(ctx context.Context,
 		return domain.ErrCompletedServiceCannotDelete
 	}
 
-	defer deferRollback(tx, &err, log, logger.LogTxRollbackError, logger.LogTxRollbackOK)()
+	defer tx.Rollback()
 
 	// STEP 3: Delete — service layer decides strategy based on status
 	if err = i.service.DeleteCompletedService(ctx, tx, serviceID, cs.Status); err != nil {
@@ -248,7 +248,7 @@ func (i *CompletedServiceInteractor) TransitionStatus(ctx context.Context, servi
 		return domain.ErrInvalidStatusTransition
 	}
 
-	defer deferRollback(tx, &err, log, logger.LogTxRollbackError, logger.LogTxRollbackOK)()
+	defer tx.Rollback()
 
 	// STEP 4: Set completion_date if transitioning to FINALIZADO
 	var completionDate *time.Time
@@ -357,7 +357,7 @@ func (i *CompletedServiceInteractor) UpdateCompletedServiceDetails(ctx context.C
 		return domain.ErrCompletedServiceCannotUpdate
 	}
 
-	defer deferRollback(tx, &err, log, logger.LogTxRollbackError, logger.LogTxRollbackOK)()
+	defer tx.Rollback()
 
 	// STEP 4: Update details in DB
 	if err = i.service.UpdateDetails(ctx, tx, serviceID, quotedPrice, finalPrice, notes); err != nil {

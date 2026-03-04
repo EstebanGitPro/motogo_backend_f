@@ -61,7 +61,7 @@ func (i *BranchInteractor) RegisterBranch(ctx context.Context, branch domain.Bra
 	}
 	log.Debug(logger.LogBranchInteractorTxStarted)
 
-	defer i.rollbackOnError(tx, &err, log)
+	defer tx.Rollback()
 
 	// STEP 3: Delegate to service (handles ID generation, defaults, save operations)
 	savedBranch, err := i.branchService.RegisterBranch(ctx, tx, branch)
@@ -155,7 +155,7 @@ func (i *BranchInteractor) UpdateBranch(ctx context.Context, branchID string, br
 		return nil, false, err
 	}
 
-	defer i.rollbackOnError(tx, &err, log)
+	defer tx.Rollback()
 
 	// 6. Set branch ID, representative ID, and status (preserve from existing)
 	branch.ID = branchID
@@ -211,7 +211,7 @@ func (i *BranchInteractor) DeleteBranch(ctx context.Context, branchID string, pe
 		return err
 	}
 
-	defer i.rollbackOnError(tx, &err, log)
+	defer tx.Rollback()
 
 	// 4. Delete branch via service
 	// NOTE: FK RESTRICT on diagnostics/completed_services is interpreted by service layer
