@@ -148,6 +148,7 @@ func TestUpdateMotorcycle_Integration_Success(t *testing.T) {
 	mockSvc.On("BeginTx", mock.Anything).Return(mockTx, nil)
 	mockSvc.On("UpdateMotorcycle", mock.Anything, mockTx, testMotorcycle).Return(nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 	mockSvc.On("GetByID", mock.Anything, testMotorcycle.ID).Return(updatedMoto, nil)
 
 	reqBody := map[string]interface{}{"year": 2024}
@@ -190,6 +191,7 @@ func TestDeleteMotorcycle_Integration_Success(t *testing.T) {
 	mockSvc.On("BeginTx", mock.Anything).Return(mockTx, nil)
 	mockSvc.On("DeleteMotorcycle", mock.Anything, mockTx, testMotorcycle.ID).Return(nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	router := gin.New()
 	router.DELETE("/motorcycles/:id", func(c *gin.Context) {

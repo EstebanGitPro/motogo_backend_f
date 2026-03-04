@@ -70,6 +70,7 @@ func TestRegisterPerson_Integration_Success(t *testing.T) {
 
 	// Mock: Step 8 commit transaction
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	// Mock: Step 9 send verification email (non-blocking)
 	mockPersonService.On("SendVerificationEmail", mock.Anything, keycloakUID).Return(nil)
@@ -195,6 +196,7 @@ func TestUpdateProfile_Integration_Success(t *testing.T) {
 	mockPersonService.On("BeginTx", mock.Anything).Return(mockTx, nil)
 	mockPersonService.On("UpdatePersonProfile", mock.Anything, mockTx, mock.AnythingOfType("domain.Person")).Return(nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	// Update only first name and phone
 	reqBody := map[string]interface{}{

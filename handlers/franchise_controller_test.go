@@ -42,14 +42,13 @@ func TestBuildFranchiseLinks_AllLinksPresent(t *testing.T) {
 }
 
 func TestBuildFranchiseLinks_CorrectURLs(t *testing.T) {
-	baseURL := "http://localhost:8080"
 	franchiseID := "abc123"
 
-	links := handlers.BuildFranchiseLinks(baseURL, franchiseID)
+	links := handlers.BuildFranchiseLinks("", franchiseID)
 
-	// Verify URLs contain expected patterns
+	// Verify URLs contain expected patterns (relative paths)
 	for _, link := range links {
-		assert.Contains(t, link.Href, baseURL, "Link should contain base URL")
+		assert.Contains(t, link.Href, "/motogo/api/v1", "Link should contain API base path")
 
 		switch link.Rel {
 		case "self":
@@ -81,18 +80,11 @@ func TestBuildFranchiseLinks_EmptyID(t *testing.T) {
 }
 
 func TestBuildFranchiseLinks_DifferentBaseURLs(t *testing.T) {
-	testCases := []string{
-		"http://localhost:8080",
-		"https://api.example.com",
-		"http://192.168.1.1:3000",
-	}
-
-	for _, baseURL := range testCases {
-		links := handlers.BuildFranchiseLinks(baseURL, "test-id")
-		assert.NotEmpty(t, links)
-		for _, link := range links {
-			assert.Contains(t, link.Href, baseURL)
-		}
+	// baseURL is now ignored — all links are relative paths
+	links := handlers.BuildFranchiseLinks("", "test-id")
+	assert.NotEmpty(t, links)
+	for _, link := range links {
+		assert.Contains(t, link.Href, "/motogo/api/v1")
 	}
 }
 
@@ -142,6 +134,7 @@ func TestRegisterFranchise_Integration_Success(t *testing.T) {
 		}, nil)
 	mockFranchiseService.On("AssociateBranches", mock.Anything, mockTx, franchiseID, []string{branchID}).Return(nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	// Request body
 	reqBody := map[string]interface{}{
