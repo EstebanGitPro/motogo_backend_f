@@ -100,6 +100,7 @@ func TestCreateMessage_Success(t *testing.T) {
 	mockService.On("BeginTx", ctx).Return(mockTx, nil)
 	mockService.On("SaveMessageToDB", ctx, mockTx, mock.AnythingOfType("domain.Message")).Return(nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	// Act
 	result, err := messageInteractor.CreateMessage(ctx, message)
@@ -215,6 +216,7 @@ func TestDeleteMessage_Success(t *testing.T) {
 	mockService.On("BeginTx", ctx).Return(mockTx, nil)
 	mockService.On("DeleteMessageFromDB", ctx, mockTx, "msg-123").Return(nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	// Act
 	err := messageInteractor.DeleteMessage(ctx, "msg-123")
@@ -277,6 +279,7 @@ func TestUpdateMessage_Success(t *testing.T) {
 	mockService.On("BeginTx", ctx).Return(mockTx, nil)
 	mockService.On("UpdateMessageInDB", ctx, mockTx, mock.AnythingOfType("domain.Message")).Return(nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	//Act
 	result, err := messageInteractor.UpdateMessage(ctx, message)

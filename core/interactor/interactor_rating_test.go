@@ -40,6 +40,7 @@ func TestRateServiceItem_Success(t *testing.T) {
 	svc.On("BeginTx", ctx).Return(mockTx, nil)
 	svc.On("RateServiceItem", ctx, mockTx, "item-1", 5, &comment).Return(nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	err := ri.RateServiceItem(ctx, "item-1", 5, &comment)
 
@@ -65,6 +66,7 @@ func TestRateServiceItem_Success_NoComment(t *testing.T) {
 	svc.On("BeginTx", ctx).Return(mockTx, nil)
 	svc.On("RateServiceItem", ctx, mockTx, "item-1", 4, (*string)(nil)).Return(nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	err := ri.RateServiceItem(ctx, "item-1", 4, nil)
 
@@ -260,4 +262,52 @@ func TestRateServiceItem_CommitError_RollsBack(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, domain.ErrRatingCannotSave, err)
 	mockTx.AssertCalled(t, "Rollback")
+}
+
+// ============================================
+// GetServiceReviews — success
+// ============================================
+
+func TestGetServiceReviews_Success(t *testing.T) {
+	ctx := context.Background()
+	ri, svc := setupRatingInteractor()
+
+	comment := "Excellent"
+	model := "Honda CB 160F"
+	summary := &domain.ServiceReviewSummary{
+		ServiceID:     "svc-1",
+		ServiceName:   "Oil Change",
+		AverageRating: 4.5,
+		TotalReviews:  2,
+		Breakdown:     map[int]int{5: 1, 4: 1, 3: 0, 2: 0, 1: 0},
+		Reviews: []domain.ServiceReview{
+			{ReviewerName: "Carlos M.", Rating: 5, Comment: &comment, MotorcycleModel: &model},
+			{ReviewerName: "Ana P.", Rating: 4, Comment: nil, MotorcycleModel: nil},
+		},
+	}
+
+	svc.On("GetReviewsByServiceID", ctx, "svc-1").Return(summary, nil)
+
+	result, err := ri.GetServiceReviews(ctx, "svc-1")
+
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Equal(t, "svc-1", result.ServiceID)
+	assert.Equal(t, 4.5, result.AverageRating)
+	assert.Equal(t, 2, result.TotalReviews)
+	assert.Len(t, result.Reviews, 2)
+	svc.AssertExpectations(t)
+}
+
+func TestGetServiceReviews_ServiceError(t *testing.T) {
+	ctx := context.Background()
+	ri, svc := setupRatingInteractor()
+
+	svc.On("GetReviewsByServiceID", ctx, "svc-bad").Return(nil, errors.New("db error"))
+
+	result, err := ri.GetServiceReviews(ctx, "svc-bad")
+
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	svc.AssertExpectations(t)
 }

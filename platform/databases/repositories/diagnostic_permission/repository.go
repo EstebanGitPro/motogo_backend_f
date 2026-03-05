@@ -88,9 +88,5 @@ func NewRepository(db *sql.DB) (output.DiagnosticPermissionRepository, error) {
 
 // BeginTx starts a new database transaction
 func (r *repository) BeginTx(ctx context.Context) (output.Tx, error) {
-	tx, err := r.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	return common.NewSQLTx(tx), nil
+	return common.BeginSQLTx(ctx, r.db)
 }

@@ -73,7 +73,6 @@ func (i *DiagnosticInteractor) RegisterDiagnostic(ctx context.Context, motorcycl
 
 	log.Success(logger.LogDiagnosticInteractorCreateSuccess, "id", result.ID, "motorcycle_id", motorcycleID)
 
-	err = nil
 	return result, nil
 }
 
@@ -179,7 +178,6 @@ func (i *DiagnosticInteractor) UpdateDiagnostic(ctx context.Context, diagnosticI
 
 	log.Success(logger.LogDiagnosticInteractorUpdateSuccess, "diagnostic_id", diagnosticID)
 
-	err = nil
 	return diagnostic, nil
 }
 
@@ -235,7 +233,6 @@ func (i *DiagnosticInteractor) DeleteDiagnostic(ctx context.Context, diagnosticI
 
 	log.Success(logger.LogDiagnosticInteractorDeleteSuccess, "diagnostic_id", diagnosticID)
 
-	err = nil
 	return nil
 }
 
@@ -298,6 +295,5 @@ func (i *DiagnosticInteractor) SetSolution(ctx context.Context, diagnosticID str
 
 	log.Success(logger.LogDiagnosticInteractorSetSolutionSuccess, "diagnostic_id", diagnosticID)
 
-	err = nil
 	return nil
 }

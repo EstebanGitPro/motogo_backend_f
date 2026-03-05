@@ -32,7 +32,7 @@ const PASSWORD = __ENV.K6_PASSWORD || 'Secret123*';
 const SCENARIO = __ENV.SCENARIO || 'load';
 
 // Health check abort: máximo de fallos consecutivos antes de abortar
-const MAX_HEALTH_FAILURES = parseInt(__ENV.MAX_HEALTH_FAILURES || '3');
+const MAX_HEALTH_FAILURES = Number.parseInt(__ENV.MAX_HEALTH_FAILURES || '3', 10);
 
 // Token refresh: refrescar 2 minutos antes de expirar (margen de seguridad)
 const TOKEN_REFRESH_MARGIN_S = 120;
@@ -299,7 +299,7 @@ function ensureFreshToken(data) {
       tokenRefreshes.add(1);
       return vuToken;
     } catch (e) {
-      // Falló el parse, devolver lo que tengamos
+      console.warn('⚠️ Error parseando refresh response:', e);
     }
   }
 
@@ -308,7 +308,7 @@ function ensureFreshToken(data) {
 }
 
 // ── MAIN TEST FUNCTION ─────────────────────────────────
-export default function (data) {
+export default function mainTest(data) {
   // ⭐ Obtener token fresco ANTES de hacer requests
   const activeToken = data.loginSuccess ? ensureFreshToken(data) : null;
   const authHeaders = activeToken
@@ -330,7 +330,9 @@ export default function (data) {
       'health fast < 500ms': (r) => r.timings.duration < 500,
     });
 
-    if (!ok) {
+    if (ok) {
+      consecutiveHealthFailures = 0;
+    } else {
       consecutiveHealthFailures++;
       console.warn(
         `💔 Health check falló (${consecutiveHealthFailures}/${MAX_HEALTH_FAILURES}): ` +
@@ -347,8 +349,6 @@ export default function (data) {
           `Server health check failed ${MAX_HEALTH_FAILURES} consecutive times — server likely crashed`
         );
       }
-    } else {
-      consecutiveHealthFailures = 0;
     }
   });
 

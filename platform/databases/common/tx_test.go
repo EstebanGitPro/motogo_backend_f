@@ -2,6 +2,8 @@ package common
 
 import (
 	"context"
+	"database/sql"
+	"fmt"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -52,7 +54,7 @@ func TestSQLTx_Commit_Success(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
-func TestSQLTx_Commit_Panics_WhenClosed(t *testing.T) {
+func TestSQLTx_Commit_ReturnsTxDone_WhenClosed(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	assert.NoError(t, err)
 	defer db.Close()
@@ -66,10 +68,9 @@ func TestSQLTx_Commit_Panics_WhenClosed(t *testing.T) {
 	sqlTx := NewSQLTx(tx)
 	_ = sqlTx.Commit() // First commit
 
-	// Second commit should panic
-	assert.Panics(t, func() {
-		_ = sqlTx.Commit()
-	})
+	// Second commit should return sql.ErrTxDone (idempotent)
+	err = sqlTx.Commit()
+	assert.ErrorIs(t, err, sql.ErrTxDone)
 }
 
 // ============================================
@@ -96,24 +97,55 @@ func TestSQLTx_Rollback_Success(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
-func TestSQLTx_Rollback_Panics_WhenClosed(t *testing.T) {
+func TestSQLTx_Rollback_ReturnsNil_WhenClosed(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	assert.NoError(t, err)
 	defer db.Close()
 
 	mock.ExpectBegin()
-	mock.ExpectRollback()
+	mock.ExpectCommit()
 
 	tx, err := db.Begin()
 	assert.NoError(t, err)
 
 	sqlTx := NewSQLTx(tx)
-	_ = sqlTx.Rollback() // First rollback
+	_ = sqlTx.Commit() // Commit first
 
-	// Second rollback should panic
-	assert.Panics(t, func() {
-		_ = sqlTx.Rollback()
-	})
+	// Rollback after commit should return nil (idempotent — safe for defer)
+	err = sqlTx.Rollback()
+	assert.NoError(t, err)
+}
+
+// ============================================
+// BeginSQLTx Tests
+// ============================================
+
+func TestBeginSQLTx_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin()
+
+	tx, err := BeginSQLTx(context.Background(), db)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, tx)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestBeginSQLTx_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectBegin().WillReturnError(fmt.Errorf("connection lost"))
+
+	tx, err := BeginSQLTx(context.Background(), db)
+
+	assert.Error(t, err)
+	assert.Nil(t, tx)
+	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
 // ============================================

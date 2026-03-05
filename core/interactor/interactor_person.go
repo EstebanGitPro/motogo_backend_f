@@ -2,6 +2,7 @@ package interactor
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/dto"
@@ -52,6 +53,11 @@ func (i *Interactor) RegisterPerson(ctx context.Context, person domain.Person) (
 		log.Error(logger.LogPersonInteractorStep2_Error, "error", err)
 		return result, err
 	}
+	defer func() {
+		if rbErr := tx.Rollback(); rbErr != nil && !errors.Is(rbErr, sql.ErrTxDone) {
+			log.Error("failed to rollback transaction", "error", rbErr)
+		}
+	}()
 
 	var keycloakUserID string
 	var keycloakCreated bool
@@ -115,7 +121,6 @@ func (i *Interactor) RegisterPerson(ctx context.Context, person domain.Person) (
 		person.ToLogger(),
 		"keycloak_user_id", keycloakUserID)
 
-	err = nil // asegurar que defer NO ejecute rollback
 	return result, err
 }
 
@@ -373,6 +378,11 @@ func (i *Interactor) UpdateProfile(ctx context.Context, person domain.Person) (*
 		log.Error(logger.LogPersonInteractorStep2_Error, "error", err)
 		return nil, err
 	}
+	defer func() {
+		if rbErr := tx.Rollback(); rbErr != nil && !errors.Is(rbErr, sql.ErrTxDone) {
+			log.Error("failed to rollback transaction", "error", rbErr)
+		}
+	}()
 
 	var profileUpdated bool
 

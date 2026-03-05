@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 	"github.com/EstebanGitPro/motogo-backend/tools/utils"
@@ -26,6 +28,34 @@ type Config struct {
 	IDEncoder    IDEncoder       `json:"id_encoder"`
 	Firebase     FirebaseConfig  `json:"firebase"`
 	Geocoding    GeocodingConfig `json:"geocoding"`
+	Cookie       CookieConfig    `json:"cookie"`
+	CORS         CORSConfig      `json:"cors"`
+}
+
+// CORSConfig contiene los orígenes permitidos para Cross-Origin Resource Sharing.
+// En local se permiten todos los puertos de desarrollo; en producción solo los dominios reales.
+type CORSConfig struct {
+	AllowedOrigins []string `json:"allowed_origins"`
+}
+
+// CookieConfig contiene los parámetros de configuración para cookies HttpOnly.
+// Los valores varían entre entornos (local vs producción).
+type CookieConfig struct {
+	Domain   string `json:"domain"`
+	Secure   bool   `json:"secure"`
+	SameSite string `json:"same_site"`
+}
+
+// ParseSameSite convierte el string de configuración a http.SameSite.
+func (cc CookieConfig) ParseSameSite() http.SameSite {
+	switch strings.ToLower(cc.SameSite) {
+	case "strict":
+		return http.SameSiteStrictMode
+	case "none":
+		return http.SameSiteNoneMode
+	default:
+		return http.SameSiteLaxMode
+	}
 }
 
 type FirebaseConfig struct {
@@ -183,6 +213,23 @@ func LoadConfig() (*Config, error) {
 	config.Geocoding.FallbackAPIKey = envOrStr("GEOCODING_FALLBACK_API_KEY", config.Geocoding.FallbackAPIKey)
 	config.Geocoding.FallbackBaseURL = envOrStr("GEOCODING_FALLBACK_BASE_URL", config.Geocoding.FallbackBaseURL)
 
+	// Cookie
+	config.Cookie.Domain = envOrStr("COOKIE_DOMAIN", config.Cookie.Domain)
+	config.Cookie.Secure = envOrBool("COOKIE_SECURE", config.Cookie.Secure)
+	config.Cookie.SameSite = envOrStr("COOKIE_SAME_SITE", config.Cookie.SameSite)
+
+	// CORS — comma-separated origins override (e.g. "https://app.example.com,https://admin.example.com")
+	if origins := os.Getenv("CORS_ALLOWED_ORIGINS"); origins != "" {
+		parsed := strings.Split(origins, ",")
+		trimmed := make([]string, 0, len(parsed))
+		for _, o := range parsed {
+			if s := strings.TrimSpace(o); s != "" {
+				trimmed = append(trimmed, s)
+			}
+		}
+		config.CORS.AllowedOrigins = trimmed
+	}
+
 	slog.Info("Configuration loaded successfully",
 		slog.String("config_file", configFile),
 		slog.String("environment", config.Environment),
@@ -208,6 +255,14 @@ func envOrInt(key string, fallback int) int {
 		if err == nil {
 			return parsed
 		}
+	}
+	return fallback
+}
+
+// envOrBool retorna el valor (bool) de la variable de entorno si existe, o el fallback.
+func envOrBool(key string, fallback bool) bool {
+	if val := os.Getenv(key); val != "" {
+		return strings.EqualFold(val, "true") || val == "1"
 	}
 	return fallback
 }

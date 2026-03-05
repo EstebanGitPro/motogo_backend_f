@@ -5,26 +5,8 @@ import (
 
 	"github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/input"
-	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
 	"github.com/EstebanGitPro/motogo-backend/platform/logger"
 )
-
-// deferRollback returns a function suitable for use with defer that rolls back
-// the transaction if *errPtr is non-nil. This centralizes the repeated
-// rollback-with-logging pattern used across schedule interactors.
-func deferRollback(tx output.Tx, errPtr *error, log logger.Logger, rollbackErrMsg, rollbackOKMsg string) func() {
-	return func() {
-		if *errPtr != nil {
-			if rbErr := tx.Rollback(); rbErr != nil {
-				log.Error(rollbackErrMsg,
-					"rollback_error", rbErr,
-					"original_error", *errPtr)
-			} else {
-				log.Warn(rollbackOKMsg)
-			}
-		}
-	}
-}
 
 // verifyScheduleOwnership checks that the representativeID is the owner of the
 // branch associated with the given scheduleID. Returns nil on success, or a

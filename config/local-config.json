@@ -48,5 +48,19 @@
         "fallback_provider": "mapbox",
         "fallback_api_key": "pk.eyJ1Ijoic3RpZmxlcjA4IiwiYSI6ImNta2U3b3dveDA0ODAzZG9mN3EzbHQzdm4ifQ.uhavqtuqgUt6dwKv0uyNCg",
         "fallback_base_url": "https://api.mapbox.com/search/geocode/v6"
+    },
+    "cookie": {
+        "domain": "",
+        "secure": true,
+        "same_site": "none"
+    },
+    "cors": {
+        "allowed_origins": [
+            "http://localhost:8080",
+            "http://localhost:8085",
+            "http://localhost:3000",
+            "http://localhost:3001",
+            "http://localhost:8084"
+        ]
     }
 }

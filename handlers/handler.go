@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/EstebanGitPro/motogo-backend/config"
 	"github.com/EstebanGitPro/motogo-backend/core/interactor"
 	domain "github.com/EstebanGitPro/motogo-backend/core/interactor/services/domain"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/input"
@@ -29,6 +30,7 @@ type handler struct {
 	MessagingCache             *messagingCache.MessageCache
 	IDEncoder                  *idencoder.HashidsEncoder
 	Response                   *middleware.ResponseHandler
+	CookieConfig               config.CookieConfig
 }
 
 // HandlerConfig groups all dependencies required by the handler (SonarCloud S107: max 7 params).
@@ -49,6 +51,7 @@ type HandlerConfig struct {
 	MessagingCache             *messagingCache.MessageCache
 	IDEncoder                  *idencoder.HashidsEncoder
 	ResponseHandler            *middleware.ResponseHandler
+	CookieConfig               config.CookieConfig
 }
 
 func New(cfg HandlerConfig) *handler {
@@ -69,6 +72,7 @@ func New(cfg HandlerConfig) *handler {
 		MessagingCache:             cfg.MessagingCache,
 		IDEncoder:                  cfg.IDEncoder,
 		Response:                   cfg.ResponseHandler,
+		CookieConfig:               cfg.CookieConfig,
 	}
 }
 

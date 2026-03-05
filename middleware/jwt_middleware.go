@@ -8,6 +8,7 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/core/ports/input"
 	"github.com/EstebanGitPro/motogo-backend/core/ports/output"
 	"github.com/EstebanGitPro/motogo-backend/platform/cache/messaging"
+	cookiepkg "github.com/EstebanGitPro/motogo-backend/platform/cookie"
 	"github.com/EstebanGitPro/motogo-backend/platform/jwt"
 	"github.com/gin-gonic/gin"
 )
@@ -47,23 +48,31 @@ func RequireAuth(personService input.Service, msgCache *messaging.MessageCache, 
 }
 
 // extractBearerToken parses the Authorization header and returns the raw token.
-// Returns false and aborts if the header is missing or malformed.
+// Falls back to the mg_access_token cookie if no header is present (web clients).
+// Returns false and aborts if neither source provides a token.
 func extractBearerToken(c *gin.Context) (string, bool) {
+	// 1. Try Authorization header first (mobile clients)
 	authHeader := c.GetHeader("Authorization")
-	if authHeader == "" {
-		_ = c.Error(domain.ErrInvalidToken)
-		c.Abort()
-		return "", false
+	if authHeader != "" {
+		parts := strings.Split(authHeader, " ")
+		if len(parts) != 2 || parts[0] != "Bearer" {
+			_ = c.Error(domain.ErrInvalidToken)
+			c.Abort()
+			return "", false
+		}
+		return parts[1], true
 	}
 
-	parts := strings.Split(authHeader, " ")
-	if len(parts) != 2 || parts[0] != "Bearer" {
-		_ = c.Error(domain.ErrInvalidToken)
-		c.Abort()
-		return "", false
+	// 2. Fallback: try mg_access_token cookie (web clients)
+	token, err := cookiepkg.GetAccessToken(c)
+	if err == nil && token != "" {
+		return token, true
 	}
 
-	return parts[1], true
+	// 3. Neither source provided a token
+	_ = c.Error(domain.ErrInvalidToken)
+	c.Abort()
+	return "", false
 }
 
 // resolveTokenClaims validates the token and extracts claims using either the JWKS validator

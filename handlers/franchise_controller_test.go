@@ -2,7 +2,9 @@ package handlers_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -12,6 +14,7 @@ import (
 	"github.com/EstebanGitPro/motogo-backend/handlers"
 	"github.com/EstebanGitPro/motogo-backend/middleware"
 	"github.com/EstebanGitPro/motogo-backend/mocks"
+	messagingCache "github.com/EstebanGitPro/motogo-backend/platform/cache/messaging"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -42,14 +45,13 @@ func TestBuildFranchiseLinks_AllLinksPresent(t *testing.T) {
 }
 
 func TestBuildFranchiseLinks_CorrectURLs(t *testing.T) {
-	baseURL := "http://localhost:8080"
 	franchiseID := "abc123"
 
-	links := handlers.BuildFranchiseLinks(baseURL, franchiseID)
+	links := handlers.BuildFranchiseLinks("", franchiseID)
 
-	// Verify URLs contain expected patterns
+	// Verify URLs contain expected patterns (relative paths)
 	for _, link := range links {
-		assert.Contains(t, link.Href, baseURL, "Link should contain base URL")
+		assert.Contains(t, link.Href, "/motogo/api/v1", "Link should contain API base path")
 
 		switch link.Rel {
 		case "self":
@@ -81,18 +83,11 @@ func TestBuildFranchiseLinks_EmptyID(t *testing.T) {
 }
 
 func TestBuildFranchiseLinks_DifferentBaseURLs(t *testing.T) {
-	testCases := []string{
-		"http://localhost:8080",
-		"https://api.example.com",
-		"http://192.168.1.1:3000",
-	}
-
-	for _, baseURL := range testCases {
-		links := handlers.BuildFranchiseLinks(baseURL, "test-id")
-		assert.NotEmpty(t, links)
-		for _, link := range links {
-			assert.Contains(t, link.Href, baseURL)
-		}
+	// baseURL is now ignored — all links are relative paths
+	links := handlers.BuildFranchiseLinks("", "test-id")
+	assert.NotEmpty(t, links)
+	for _, link := range links {
+		assert.Contains(t, link.Href, "/motogo/api/v1")
 	}
 }
 
@@ -142,6 +137,7 @@ func TestRegisterFranchise_Integration_Success(t *testing.T) {
 		}, nil)
 	mockFranchiseService.On("AssociateBranches", mock.Anything, mockTx, franchiseID, []string{branchID}).Return(nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	// Request body
 	reqBody := map[string]interface{}{
@@ -178,4 +174,418 @@ func TestRegisterFranchise_Integration_Success(t *testing.T) {
 
 	mockFranchiseService.AssertExpectations(t)
 	mockTx.AssertExpectations(t)
+}
+
+// ============================================
+// Franchise controller integration helpers
+// ============================================
+
+func createFranchiseMessageCache() *messagingCache.MessageCache {
+	mockRepo := new(mocks.MockMessageCacheRepo)
+	cache := messagingCache.NewMessageCache(mockRepo, 0)
+
+	mockRepo.On("GetAllActiveForCache", mock.Anything).Return([]messagingCache.CachedMessage{
+		{Code: "MOD_F_REG_EXI_00001", Type: "EXITO", Title: "Franquicia registrada", Content: "Franquicia registrada exitosamente", Active: true},
+		{Code: "MOD_F_GET_EXI_00001", Type: "EXITO", Title: "Franquicia encontrada", Content: "Franquicia encontrada exitosamente", Active: true},
+		{Code: "MOD_F_LIST_EXI_00001", Type: "EXITO", Title: "Franquicias listadas", Content: "Franquicias listadas exitosamente", Active: true},
+		{Code: "MOD_F_UPD_EXI_00001", Type: "EXITO", Title: "Franquicia actualizada", Content: "Franquicia actualizada exitosamente", Active: true},
+		{Code: "MOD_F_DEL_EXI_00001", Type: "EXITO", Title: "Franquicia eliminada", Content: "Franquicia eliminada exitosamente", Active: true},
+		{Code: "MOD_F_BRANCH_ADD_EXI_00001", Type: "EXITO", Title: "Sede agregada", Content: "Sede agregada a franquicia exitosamente", Active: true},
+		{Code: "MOD_F_BRANCH_REM_EXI_00001", Type: "EXITO", Title: "Sede removida", Content: "Sede removida de franquicia exitosamente", Active: true},
+		{Code: "MOD_F_NOT_FOUND_ERR_00001", Type: "ERROR", Title: "No encontrada", Content: "Franquicia no encontrada", Active: true},
+		{Code: "MOD_F_DUP_NAME_ERR_00001", Type: "ERROR", Title: "Nombre duplicado", Content: "Ya existe una franquicia con ese nombre", Active: true},
+		{Code: "MOD_F_NO_BRANCHES_ERR_00001", Type: "ERROR", Title: "Sin sedes", Content: "Debe incluir al menos una sede", Active: true},
+		{Code: "MOD_F_BRANCH_NOT_OWNED_ERR_00001", Type: "ERROR", Title: "Sede ajena", Content: "La sede no le pertenece", Active: true},
+		{Code: "MOD_F_MIN_BRANCHES_ERR_00001", Type: "ERROR", Title: "Mínimo sedes", Content: "No se puede remover la última sede", Active: true},
+		{Code: "MOD_B_NOT_FOUND_ERR_00001", Type: "ERROR", Title: "Sede no encontrada", Content: "La sede no fue encontrada", Active: true},
+		{Code: "GEN_SRV_ERR_00001", Type: "ERROR", Title: "Error del servidor", Content: "Error interno del servidor", Active: true},
+		{Code: "MOD_V_VAL_ERR_00001", Type: "ERROR", Title: "Formato inválido", Content: "Formato de solicitud inválido", Active: true},
+		{Code: "MOD_V_JSON_ERR_00012", Type: "ERROR", Title: "JSON inválido", Content: "El formato JSON de la solicitud es inválido", Active: true},
+	}, nil)
+	_ = cache.LoadMessages(context.TODO())
+	return cache
+}
+
+func setupFranchiseRouter(t *testing.T, mockSvc *mocks.MockFranchiseService) *gin.Engine {
+	t.Helper()
+	gin.SetMode(gin.TestMode)
+
+	encoder := createTestEncoder()
+	msgCache := createFranchiseMessageCache()
+	responseHandler := middleware.NewResponseHandler(msgCache)
+	franchiseInteractor := interactor.NewFranchiseInteractor(mockSvc)
+	h := handlers.NewForTestWithConcrete(nil, nil, nil, franchiseInteractor, encoder, responseHandler)
+
+	router := gin.New()
+	router.Use(func(c *gin.Context) {
+		c.Set("authenticated_user", &domain.Person{
+			ID:   "owner-1",
+			Role: "REPRESENTANTE",
+		})
+		c.Next()
+	})
+
+	router.GET("/franchises", h.ListFranchises(franchiseInteractor))
+	router.GET("/franchises/:id", h.GetFranchise(franchiseInteractor))
+	router.PUT("/franchises/:id", h.UpdateFranchise(franchiseInteractor))
+	router.DELETE("/franchises/:id", h.DeleteFranchise(franchiseInteractor))
+	router.POST("/franchises/:id/branches", h.AddBranchToFranchise(franchiseInteractor))
+	router.DELETE("/franchises/:id/branches/:branchId", h.RemoveBranchFromFranchise(franchiseInteractor))
+
+	return router
+}
+
+// ============================================
+// ListFranchises
+// ============================================
+
+func TestListFranchises_Success(t *testing.T) {
+	mockSvc := new(mocks.MockFranchiseService)
+
+	desc := "Red de talleres"
+	mockSvc.On("GetFranchisesByRepresentative", mock.Anything, "owner-1").Return([]domain.Franchise{
+		{ID: "a1111111-1111-4000-8000-111111111111", Name: "Franquicia 1", Description: &desc},
+		{ID: "a2222222-2222-4000-8000-222222222222", Name: "Franquicia 2"},
+	}, nil)
+
+	router := setupFranchiseRouter(t, mockSvc)
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/franchises", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var response map[string]interface{}
+	_ = json.Unmarshal(w.Body.Bytes(), &response)
+	assert.True(t, response["success"].(bool))
+	mockSvc.AssertExpectations(t)
+}
+
+func TestListFranchises_Error(t *testing.T) {
+	mockSvc := new(mocks.MockFranchiseService)
+
+	mockSvc.On("GetFranchisesByRepresentative", mock.Anything, "owner-1").Return(nil, errors.New("db error"))
+
+	router := setupFranchiseRouter(t, mockSvc)
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/franchises", nil)
+	router.ServeHTTP(w, req)
+
+	assert.NotEqual(t, http.StatusOK, w.Code)
+	mockSvc.AssertExpectations(t)
+}
+
+// ============================================
+// GetFranchise
+// ============================================
+
+func TestGetFranchise_Success(t *testing.T) {
+	mockSvc := new(mocks.MockFranchiseService)
+	encoder := createTestEncoder()
+
+	franchiseUUID := "a1111111-1111-4000-8000-111111111111"
+	encodedID, _ := encoder.Encode(franchiseUUID)
+
+	mockSvc.On("GetFranchiseByID", mock.Anything, franchiseUUID).Return(&domain.Franchise{
+		ID: franchiseUUID, Name: "Franquicia Test",
+	}, nil)
+
+	router := setupFranchiseRouter(t, mockSvc)
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/franchises/"+encodedID, nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var response map[string]interface{}
+	_ = json.Unmarshal(w.Body.Bytes(), &response)
+	assert.True(t, response["success"].(bool))
+	mockSvc.AssertExpectations(t)
+}
+
+func TestGetFranchise_InvalidID(t *testing.T) {
+	mockSvc := new(mocks.MockFranchiseService)
+	router := setupFranchiseRouter(t, mockSvc)
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/franchises/invalid-id", nil)
+	router.ServeHTTP(w, req)
+
+	assert.NotEqual(t, http.StatusOK, w.Code)
+}
+
+func TestGetFranchise_NotFound(t *testing.T) {
+	mockSvc := new(mocks.MockFranchiseService)
+	encoder := createTestEncoder()
+
+	franchiseUUID := "a1111111-1111-4000-8000-111111111111"
+	encodedID, _ := encoder.Encode(franchiseUUID)
+
+	mockSvc.On("GetFranchiseByID", mock.Anything, franchiseUUID).Return(nil, domain.ErrFranchiseNotFound)
+
+	router := setupFranchiseRouter(t, mockSvc)
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/franchises/"+encodedID, nil)
+	router.ServeHTTP(w, req)
+
+	assert.NotEqual(t, http.StatusOK, w.Code)
+	mockSvc.AssertExpectations(t)
+}
+
+// ============================================
+// UpdateFranchise
+// ============================================
+
+func TestUpdateFranchise_Success(t *testing.T) {
+	mockSvc := new(mocks.MockFranchiseService)
+	mockTx := new(mocks.MockTx)
+	encoder := createTestEncoder()
+
+	franchiseUUID := "a1111111-1111-4000-8000-111111111111"
+	encodedID, _ := encoder.Encode(franchiseUUID)
+
+	// Interactor flow: CountBranches → BeginTx → UpdateFranchise → Commit
+	mockSvc.On("CountBranches", mock.Anything, franchiseUUID).Return(2, nil)
+	mockSvc.On("BeginTx", mock.Anything).Return(mockTx, nil)
+	mockSvc.On("UpdateFranchise", mock.Anything, mockTx, mock.AnythingOfType("domain.Franchise")).Return(nil)
+	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
+
+	router := setupFranchiseRouter(t, mockSvc)
+
+	reqBody := map[string]interface{}{"name": "Updated Franchise"}
+	bodyJSON, _ := json.Marshal(reqBody)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("PUT", "/franchises/"+encodedID, bytes.NewBuffer(bodyJSON))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var response map[string]interface{}
+	_ = json.Unmarshal(w.Body.Bytes(), &response)
+	assert.True(t, response["success"].(bool))
+	mockSvc.AssertExpectations(t)
+}
+
+func TestUpdateFranchise_InvalidID(t *testing.T) {
+	mockSvc := new(mocks.MockFranchiseService)
+	router := setupFranchiseRouter(t, mockSvc)
+
+	reqBody := map[string]interface{}{"name": "Updated"}
+	bodyJSON, _ := json.Marshal(reqBody)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("PUT", "/franchises/invalid-id", bytes.NewBuffer(bodyJSON))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+
+	assert.NotEqual(t, http.StatusOK, w.Code)
+}
+
+func TestUpdateFranchise_InvalidJSON(t *testing.T) {
+	mockSvc := new(mocks.MockFranchiseService)
+	encoder := createTestEncoder()
+
+	franchiseUUID := "a1111111-1111-4000-8000-111111111111"
+	encodedID, _ := encoder.Encode(franchiseUUID)
+
+	router := setupFranchiseRouter(t, mockSvc)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("PUT", "/franchises/"+encodedID, bytes.NewBuffer([]byte("not-json")))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+
+	assert.NotEqual(t, http.StatusOK, w.Code)
+}
+
+// ============================================
+// DeleteFranchise
+// ============================================
+
+func TestDeleteFranchise_Success(t *testing.T) {
+	mockSvc := new(mocks.MockFranchiseService)
+	mockTx := new(mocks.MockTx)
+	encoder := createTestEncoder()
+
+	franchiseUUID := "a1111111-1111-4000-8000-111111111111"
+	encodedID, _ := encoder.Encode(franchiseUUID)
+
+	// Interactor flow: BeginTx → DissociateBranches → DeleteFranchise → Commit
+	mockSvc.On("BeginTx", mock.Anything).Return(mockTx, nil)
+	mockSvc.On("DissociateBranches", mock.Anything, mockTx, franchiseUUID).Return(nil)
+	mockSvc.On("DeleteFranchise", mock.Anything, mockTx, franchiseUUID).Return(nil)
+	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
+
+	router := setupFranchiseRouter(t, mockSvc)
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("DELETE", "/franchises/"+encodedID, nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var response map[string]interface{}
+	_ = json.Unmarshal(w.Body.Bytes(), &response)
+	assert.True(t, response["success"].(bool))
+	mockSvc.AssertExpectations(t)
+}
+
+func TestDeleteFranchise_NotFound(t *testing.T) {
+	mockSvc := new(mocks.MockFranchiseService)
+	mockTx := new(mocks.MockTx)
+	encoder := createTestEncoder()
+
+	franchiseUUID := "a1111111-1111-4000-8000-111111111111"
+	encodedID, _ := encoder.Encode(franchiseUUID)
+
+	// Interactor flow: BeginTx → DissociateBranches → DeleteFranchise (fails)
+	mockSvc.On("BeginTx", mock.Anything).Return(mockTx, nil)
+	mockSvc.On("DissociateBranches", mock.Anything, mockTx, franchiseUUID).Return(nil)
+	mockSvc.On("DeleteFranchise", mock.Anything, mockTx, franchiseUUID).Return(domain.ErrFranchiseNotFound)
+	mockTx.On("Rollback").Return(nil).Maybe()
+
+	router := setupFranchiseRouter(t, mockSvc)
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("DELETE", "/franchises/"+encodedID, nil)
+	router.ServeHTTP(w, req)
+
+	assert.NotEqual(t, http.StatusOK, w.Code)
+	mockSvc.AssertExpectations(t)
+}
+
+// ============================================
+// AddBranchToFranchise
+// ============================================
+
+func TestAddBranchToFranchise_Success(t *testing.T) {
+	mockSvc := new(mocks.MockFranchiseService)
+	mockTx := new(mocks.MockTx)
+	encoder := createTestEncoder()
+
+	franchiseUUID := "a1111111-1111-4000-8000-111111111111"
+	branchUUID := "a2222222-2222-4000-8000-222222222222"
+	encodedFranchiseID, _ := encoder.Encode(franchiseUUID)
+	encodedBranchID, _ := encoder.Encode(branchUUID)
+
+	// Interactor flow: ValidateBranchOwnership → BeginTx → AssociateBranches → Commit
+	mockSvc.On("ValidateBranchOwnership", mock.Anything, branchUUID, "owner-1").Return(nil)
+	mockSvc.On("BeginTx", mock.Anything).Return(mockTx, nil)
+	mockSvc.On("AssociateBranches", mock.Anything, mockTx, franchiseUUID, []string{branchUUID}).Return(nil)
+	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
+
+	router := setupFranchiseRouter(t, mockSvc)
+
+	reqBody := map[string]interface{}{"branch_id": encodedBranchID}
+	bodyJSON, _ := json.Marshal(reqBody)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/franchises/"+encodedFranchiseID+"/branches", bytes.NewBuffer(bodyJSON))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var response map[string]interface{}
+	_ = json.Unmarshal(w.Body.Bytes(), &response)
+	assert.True(t, response["success"].(bool))
+	mockSvc.AssertExpectations(t)
+}
+
+func TestAddBranchToFranchise_InvalidFranchiseID(t *testing.T) {
+	mockSvc := new(mocks.MockFranchiseService)
+	router := setupFranchiseRouter(t, mockSvc)
+
+	reqBody := map[string]interface{}{"branch_id": "some-id"}
+	bodyJSON, _ := json.Marshal(reqBody)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/franchises/invalid-id/branches", bytes.NewBuffer(bodyJSON))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+
+	assert.NotEqual(t, http.StatusOK, w.Code)
+}
+
+func TestAddBranchToFranchise_InvalidBranchID(t *testing.T) {
+	mockSvc := new(mocks.MockFranchiseService)
+	encoder := createTestEncoder()
+
+	franchiseUUID := "a1111111-1111-4000-8000-111111111111"
+	encodedFranchiseID, _ := encoder.Encode(franchiseUUID)
+
+	router := setupFranchiseRouter(t, mockSvc)
+
+	reqBody := map[string]interface{}{"branch_id": "invalid-branch-id"}
+	bodyJSON, _ := json.Marshal(reqBody)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/franchises/"+encodedFranchiseID+"/branches", bytes.NewBuffer(bodyJSON))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+
+	assert.NotEqual(t, http.StatusOK, w.Code)
+}
+
+// ============================================
+// RemoveBranchFromFranchise
+// ============================================
+
+func TestRemoveBranchFromFranchise_Success(t *testing.T) {
+	mockSvc := new(mocks.MockFranchiseService)
+	mockTx := new(mocks.MockTx)
+	encoder := createTestEncoder()
+
+	franchiseUUID := "a1111111-1111-4000-8000-111111111111"
+	branchUUID := "a2222222-2222-4000-8000-222222222222"
+	encodedFranchiseID, _ := encoder.Encode(franchiseUUID)
+	encodedBranchID, _ := encoder.Encode(branchUUID)
+
+	// Interactor flow: CanRemoveBranch → BeginTx → DissociateSingleBranch → Commit
+	mockSvc.On("CanRemoveBranch", mock.Anything, franchiseUUID).Return(nil)
+	mockSvc.On("BeginTx", mock.Anything).Return(mockTx, nil)
+	mockSvc.On("DissociateSingleBranch", mock.Anything, mockTx, branchUUID).Return(nil)
+	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
+
+	router := setupFranchiseRouter(t, mockSvc)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("DELETE", "/franchises/"+encodedFranchiseID+"/branches/"+encodedBranchID, nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var response map[string]interface{}
+	_ = json.Unmarshal(w.Body.Bytes(), &response)
+	assert.True(t, response["success"].(bool))
+	mockSvc.AssertExpectations(t)
+}
+
+func TestRemoveBranchFromFranchise_InvalidFranchiseID(t *testing.T) {
+	mockSvc := new(mocks.MockFranchiseService)
+	encoder := createTestEncoder()
+
+	branchUUID := "a2222222-2222-4000-8000-222222222222"
+	encodedBranchID, _ := encoder.Encode(branchUUID)
+
+	router := setupFranchiseRouter(t, mockSvc)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("DELETE", "/franchises/invalid-id/branches/"+encodedBranchID, nil)
+	router.ServeHTTP(w, req)
+
+	assert.NotEqual(t, http.StatusOK, w.Code)
+}
+
+func TestRemoveBranchFromFranchise_InvalidBranchID(t *testing.T) {
+	mockSvc := new(mocks.MockFranchiseService)
+	encoder := createTestEncoder()
+
+	franchiseUUID := "a1111111-1111-4000-8000-111111111111"
+	encodedFranchiseID, _ := encoder.Encode(franchiseUUID)
+
+	router := setupFranchiseRouter(t, mockSvc)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("DELETE", "/franchises/"+encodedFranchiseID+"/branches/invalid-id", nil)
+	router.ServeHTTP(w, req)
+
+	assert.NotEqual(t, http.StatusOK, w.Code)
 }

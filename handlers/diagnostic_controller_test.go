@@ -60,6 +60,7 @@ func TestCreateDiagnostic_Integration_Success(t *testing.T) {
 		Date:         time.Now(),
 	}, nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	reqBody, _ := json.Marshal(map[string]interface{}{
 		"branch_id":           encodedBranchID,
@@ -241,6 +242,7 @@ func TestUpdateDiagnostic_Integration_Success(t *testing.T) {
 	mockSvc.On("BeginTx", mock.Anything).Return(mockTx, nil)
 	mockSvc.On("UpdateDiagnostic", mock.Anything, mockTx, mock.Anything).Return(nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	reqBody, _ := json.Marshal(map[string]interface{}{
 		"problem_description": newDescription,
@@ -302,6 +304,7 @@ func TestDeleteDiagnostic_Integration_Success(t *testing.T) {
 	mockSvc.On("BeginTx", mock.Anything).Return(mockTx, nil)
 	mockSvc.On("DeleteDiagnostic", mock.Anything, mockTx, diagTestDiagnosticUUID).Return(nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	router := gin.New()
 	router.Use(func(c *gin.Context) {
@@ -345,6 +348,7 @@ func TestSetDiagnosticSolution_Integration_Success(t *testing.T) {
 	mockSvc.On("BeginTx", mock.Anything).Return(mockTx, nil)
 	mockSvc.On("SetSolution", mock.Anything, mockTx, diagTestDiagnosticUUID, solution).Return(nil)
 	mockTx.On("Commit").Return(nil)
+	mockTx.On("Rollback").Return(nil).Maybe()
 
 	reqBody, _ := json.Marshal(map[string]interface{}{
 		"possible_solution": solution,

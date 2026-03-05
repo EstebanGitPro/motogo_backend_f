@@ -74,7 +74,6 @@ func (i *MotorcycleInteractor) RegisterMotorcycle(ctx context.Context, motorcycl
 
 	log.Success(logger.LogMotorcycleInteractorRegSuccess, "id", motorcycle.ID, "license_plate", motorcycle.LicensePlate)
 
-	err = nil // ensure defer does NOT execute rollback
 	return motorcycle, nil
 }
 
@@ -189,11 +188,9 @@ func (i *MotorcycleInteractor) UpdateMotorcycle(ctx context.Context, motorcycleI
 	if err != nil {
 		// Refetch failed but update was successful, return original
 		log.Warn(logger.LogMotorcycleInteractorGetError, "error", err, "motorcycle_id", motorcycleID)
-		err = nil
 		return motorcycle, nil
 	}
 
-	err = nil // ensure defer does NOT execute rollback
 	return result, nil
 }
 
@@ -253,7 +250,6 @@ func (i *MotorcycleInteractor) DeleteMotorcycle(ctx context.Context, motorcycleI
 
 	log.Success(logger.LogMotorcycleInteractorDeleteSuccess, "motorcycle_id", motorcycleID)
 
-	err = nil // ensure defer does NOT execute rollback
 	return nil
 }
 
@@ -314,7 +310,6 @@ func (i *MotorcycleInteractor) DeleteProfileImage(ctx context.Context, motorcycl
 
 	log.Success(logger.LogMotorcycleInteractorUpdateSuccess, "action", "delete_profile_image", "motorcycle_id", motorcycleID)
 
-	err = nil // ensure defer does NOT execute rollback
 	return nil
 }
 
@@ -467,7 +462,6 @@ func (i *MotorcycleInteractor) GrantDiagnosticPermission(ctx context.Context, mo
 
 	log.Success(logger.LogDiagPermInteractorGrantSuccess, "motorcycle_id", motorcycleID, "branch_id", branchID)
 
-	err = nil // ensure defer does NOT execute rollback
 	return result, nil
 }
 
@@ -518,7 +512,6 @@ func (i *MotorcycleInteractor) RevokeDiagnosticPermission(ctx context.Context, m
 
 	log.Success(logger.LogDiagPermInteractorRevokeSuccess, "motorcycle_id", motorcycleID, "branch_id", branchID)
 
-	err = nil // ensure defer does NOT execute rollback
 	return nil
 }
 

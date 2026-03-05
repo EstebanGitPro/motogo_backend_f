@@ -54,8 +54,7 @@ func (i *ScheduleDetailInteractor) CreateDetail(
 		return nil, txErr
 	}
 
-	defer deferRollback(tx, &err, scheduleDetailInteractorLog,
-		logger.LogScheduleDetailInteractorRollbackError, logger.LogScheduleDetailInteractorRollbackOK)()
+	defer func() { _ = tx.Rollback() }()
 
 	// 3. Create detail via service
 	result, err = i.detailService.CreateDetail(ctx, tx, detail)
@@ -75,7 +74,6 @@ func (i *ScheduleDetailInteractor) CreateDetail(
 		"detail_id", result.ID,
 		"schedule_id", detail.ScheduleID)
 
-	err = nil
 	return result, nil
 }
 
@@ -130,8 +128,7 @@ func (i *ScheduleDetailInteractor) UpdateDetail(
 		return txErr
 	}
 
-	defer deferRollback(tx, &err, scheduleDetailInteractorLog,
-		logger.LogScheduleDetailInteractorRollbackError, logger.LogScheduleDetailInteractorRollbackOK)()
+	defer func() { _ = tx.Rollback() }()
 
 	// 4. Update detail
 	if err = i.detailService.UpdateDetail(ctx, tx, detail); err != nil {
@@ -144,7 +141,6 @@ func (i *ScheduleDetailInteractor) UpdateDetail(
 		return err
 	}
 
-	err = nil
 	return nil
 }
 
@@ -174,8 +170,7 @@ func (i *ScheduleDetailInteractor) DeleteDetail(
 		return txErr
 	}
 
-	defer deferRollback(tx, &err, scheduleDetailInteractorLog,
-		logger.LogScheduleDetailInteractorRollbackError, logger.LogScheduleDetailInteractorRollbackOK)()
+	defer func() { _ = tx.Rollback() }()
 
 	// 4. Delete detail
 	if err = i.detailService.DeleteDetail(ctx, tx, detailID); err != nil {
@@ -188,6 +183,5 @@ func (i *ScheduleDetailInteractor) DeleteDetail(
 		return err
 	}
 
-	err = nil
 	return nil
 }

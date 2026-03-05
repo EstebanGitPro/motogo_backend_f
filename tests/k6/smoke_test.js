@@ -18,7 +18,7 @@ export const options = {
   },
 };
 
-export default function () {
+export default function smokeTest() {
   const res = http.get(`${BASE_URL}/health`);
   check(res, {
     'health status 200': (r) => r.status === 200,
