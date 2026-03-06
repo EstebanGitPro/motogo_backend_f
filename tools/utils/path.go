@@ -24,5 +24,10 @@ func FindModuleRoot() (string, error) {
 		dir = d
 	}
 
-	return "", fmt.Errorf("cannot find module root")
+	// Producción: no existe go.mod, usar directorio del ejecutable
+	exe, err := os.Executable()
+	if err != nil {
+		return "", fmt.Errorf("cannot find module root or executable path: %w", err)
+	}
+	return filepath.Dir(exe), nil
 }
