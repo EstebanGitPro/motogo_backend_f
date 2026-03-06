@@ -74,15 +74,14 @@ services:
   # Keycloak
   keycloak:
     build:
-      context: .
+      context: ..
       dockerfile: Containerfile
     image: motogo-keycloak:latest
     container_name: keycloak-prod
     restart: unless-stopped
     ports:
-      - "8080:8080"
-      - "8443:8443"
-      - "9000:9000"
+      - "8180:8080"
+      - "8444:8443"
     environment:
       KC_DB: mysql
       KC_DB_URL: jdbc:mysql://mysql-keycloak:3306/keydb
