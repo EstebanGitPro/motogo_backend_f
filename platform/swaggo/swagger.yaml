@@ -447,6 +447,8 @@ definitions:
         type: array
       branch_id:
         type: string
+      branch_name:
+        type: string
       date:
         type: string
       id:
@@ -933,8 +935,6 @@ definitions:
     properties:
       refresh_token:
         type: string
-    required:
-    - refresh_token
     type: object
   handlers.RegisterBranchRequest:
     properties:
@@ -2476,6 +2476,45 @@ paths:
       summary: Dissociate a service from a branch
       tags:
       - Branches
+  /branches/{id}/services/{serviceId}/reviews:
+    get:
+      description: Returns aggregated reviews (average, breakdown, individual reviews)
+        for a service type scoped to a branch
+      parameters:
+      - description: Branch ID (obfuscated)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Service ID (obfuscated)
+        in: path
+        name: serviceId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Reviews retrieved
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "400":
+          description: Invalid service ID or branch ID
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: Get reviews for a service type at a specific branch
+      tags:
+      - Ratings
   /branches/nearby:
     get:
       description: Returns branches within the specified radius from given coordinates
@@ -4521,40 +4560,6 @@ paths:
       summary: Get all services
       tags:
       - Services
-  /services/{id}/reviews:
-    get:
-      description: Returns aggregated reviews (average, breakdown, individual reviews)
-        for a service type
-      parameters:
-      - description: Service ID (obfuscated)
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Reviews retrieved
-          schema:
-            $ref: '#/definitions/handlers.StandardResponse'
-        "400":
-          description: Invalid service ID
-          schema:
-            $ref: '#/definitions/handlers.StandardResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/handlers.StandardResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/handlers.StandardResponse'
-      security:
-      - BearerAuth: []
-      summary: Get reviews for a service type
-      tags:
-      - Ratings
 securityDefinitions:
   BearerAuth:
     description: Type "Bearer" followed by a space and JWT token.

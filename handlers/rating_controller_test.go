@@ -66,7 +66,7 @@ func setupRatingHandler(t *testing.T, mockSvc *mocks.MockRatingService) (*gin.En
 		c.Next()
 	})
 	router.POST("/completed-services/:id/items/:itemId/rating", h.RateServiceItem())
-	router.GET("/services/:id/reviews", h.GetServiceReviews())
+	router.GET("/branches/:id/services/:serviceId/reviews", h.GetServiceReviews())
 
 	return router, httptest.NewRecorder()
 }
@@ -369,7 +369,9 @@ func TestGetServiceReviews_Controller_Success(t *testing.T) {
 	encoder := createTestEncoder()
 
 	serviceUUID := "a3333333-3333-4000-8000-333333333333"
+	branchUUID := "a4444444-4444-4000-8000-444444444444"
 	encodedServiceID, _ := encoder.Encode(serviceUUID)
+	encodedBranchID, _ := encoder.Encode(branchUUID)
 
 	comment := "Great service!"
 	model := "Honda CB 160F"
@@ -387,12 +389,12 @@ func TestGetServiceReviews_Controller_Success(t *testing.T) {
 		},
 	}
 
-	mockSvc.On("GetReviewsByServiceID", mock.Anything, serviceUUID).Return(summary, nil)
+	mockSvc.On("GetReviewsByServiceID", mock.Anything, serviceUUID, branchUUID).Return(summary, nil)
 
 	router, _ := setupRatingHandler(t, mockSvc)
 	w := httptest.NewRecorder()
 
-	req, _ := http.NewRequest("GET", "/services/"+encodedServiceID+"/reviews", nil)
+	req, _ := http.NewRequest("GET", "/branches/"+encodedBranchID+"/services/"+encodedServiceID+"/reviews", nil)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -416,10 +418,14 @@ func TestGetServiceReviews_Controller_Success(t *testing.T) {
 
 func TestGetServiceReviews_Controller_InvalidServiceID(t *testing.T) {
 	mockSvc := new(mocks.MockRatingService)
+	encoder := createTestEncoder()
+	branchUUID := "a4444444-4444-4000-8000-444444444444"
+	encodedBranchID, _ := encoder.Encode(branchUUID)
+
 	router, _ := setupRatingHandler(t, mockSvc)
 	w := httptest.NewRecorder()
 
-	req, _ := http.NewRequest("GET", "/services/invalid-id/reviews", nil)
+	req, _ := http.NewRequest("GET", "/branches/"+encodedBranchID+"/services/invalid-id/reviews", nil)
 	router.ServeHTTP(w, req)
 
 	assert.NotEqual(t, http.StatusOK, w.Code)
@@ -433,14 +439,16 @@ func TestGetServiceReviews_Controller_InteractorError(t *testing.T) {
 	encoder := createTestEncoder()
 
 	serviceUUID := "a3333333-3333-4000-8000-333333333333"
+	branchUUID := "a4444444-4444-4000-8000-444444444444"
 	encodedServiceID, _ := encoder.Encode(serviceUUID)
+	encodedBranchID, _ := encoder.Encode(branchUUID)
 
-	mockSvc.On("GetReviewsByServiceID", mock.Anything, serviceUUID).Return(nil, errors.New("db error"))
+	mockSvc.On("GetReviewsByServiceID", mock.Anything, serviceUUID, branchUUID).Return(nil, errors.New("db error"))
 
 	router, _ := setupRatingHandler(t, mockSvc)
 	w := httptest.NewRecorder()
 
-	req, _ := http.NewRequest("GET", "/services/"+encodedServiceID+"/reviews", nil)
+	req, _ := http.NewRequest("GET", "/branches/"+encodedBranchID+"/services/"+encodedServiceID+"/reviews", nil)
 	router.ServeHTTP(w, req)
 
 	assert.NotEqual(t, http.StatusOK, w.Code)

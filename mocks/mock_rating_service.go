@@ -42,8 +42,8 @@ func (m *MockRatingService) GetCompletedServiceByID(ctx context.Context, service
 	return args.Get(0).(*domain.CompletedService), args.Error(1)
 }
 
-func (m *MockRatingService) GetReviewsByServiceID(ctx context.Context, serviceID string) (*domain.ServiceReviewSummary, error) {
-	args := m.Called(ctx, serviceID)
+func (m *MockRatingService) GetReviewsByServiceID(ctx context.Context, serviceID string, branchID string) (*domain.ServiceReviewSummary, error) {
+	args := m.Called(ctx, serviceID, branchID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}

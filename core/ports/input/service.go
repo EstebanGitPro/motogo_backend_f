@@ -344,5 +344,5 @@ type RatingService interface {
 	RateServiceItem(ctx context.Context, tx output.Tx, itemID string, rating int, comment *string) error
 	GetItemByID(ctx context.Context, itemID string) (*domain.CompletedServiceItem, error)
 	GetCompletedServiceByID(ctx context.Context, serviceID string) (*domain.CompletedService, error)
-	GetReviewsByServiceID(ctx context.Context, serviceID string) (*domain.ServiceReviewSummary, error)
+	GetReviewsByServiceID(ctx context.Context, serviceID string, branchID string) (*domain.ServiceReviewSummary, error)
 }

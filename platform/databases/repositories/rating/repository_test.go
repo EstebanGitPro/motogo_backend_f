@@ -344,13 +344,13 @@ func TestGetReviewsByServiceID_Success(t *testing.T) {
 
 	stmt := mock.ExpectPrepare("SELECT")
 	stmt.ExpectQuery().
-		WithArgs("svc-1").
+		WithArgs("svc-1", "branch-1").
 		WillReturnRows(rows)
 
 	repo := &repository{db: db}
-	repo.stmtGetReviewsByServiceID, _ = db.Prepare("SELECT csi.rating, csi.comment, csi.rated_at, p.first_name, p.last_name, motorcycle_model, s.name AS service_name FROM completed_service_items csi WHERE csi.service_id = ?")
+	repo.stmtGetReviewsByServiceID, _ = db.Prepare("SELECT csi.rating, csi.comment, csi.rated_at, p.first_name, p.last_name, motorcycle_model, s.name AS service_name FROM completed_service_items csi WHERE csi.service_id = ? AND cs.branch_id = ?")
 
-	result, err := repo.GetReviewsByServiceID(context.Background(), "svc-1")
+	result, err := repo.GetReviewsByServiceID(context.Background(), "svc-1", "branch-1")
 
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
@@ -384,13 +384,13 @@ func TestGetReviewsByServiceID_Empty(t *testing.T) {
 
 	stmt := mock.ExpectPrepare("SELECT")
 	stmt.ExpectQuery().
-		WithArgs("svc-empty").
+		WithArgs("svc-empty", "branch-1").
 		WillReturnRows(rows)
 
 	repo := &repository{db: db}
-	repo.stmtGetReviewsByServiceID, _ = db.Prepare("SELECT csi.rating FROM completed_service_items csi WHERE csi.service_id = ?")
+	repo.stmtGetReviewsByServiceID, _ = db.Prepare("SELECT csi.rating FROM completed_service_items csi WHERE csi.service_id = ? AND cs.branch_id = ?")
 
-	result, err := repo.GetReviewsByServiceID(context.Background(), "svc-empty")
+	result, err := repo.GetReviewsByServiceID(context.Background(), "svc-empty", "branch-1")
 
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
@@ -406,13 +406,13 @@ func TestGetReviewsByServiceID_QueryError(t *testing.T) {
 
 	stmt := mock.ExpectPrepare("SELECT")
 	stmt.ExpectQuery().
-		WithArgs("svc-err").
+		WithArgs("svc-err", "branch-1").
 		WillReturnError(sql.ErrConnDone)
 
 	repo := &repository{db: db}
-	repo.stmtGetReviewsByServiceID, _ = db.Prepare("SELECT csi.rating FROM completed_service_items csi WHERE csi.service_id = ?")
+	repo.stmtGetReviewsByServiceID, _ = db.Prepare("SELECT csi.rating FROM completed_service_items csi WHERE csi.service_id = ? AND cs.branch_id = ?")
 
-	result, err := repo.GetReviewsByServiceID(context.Background(), "svc-err")
+	result, err := repo.GetReviewsByServiceID(context.Background(), "svc-err", "branch-1")
 
 	assert.Nil(t, result)
 	assert.Error(t, err)
@@ -429,13 +429,13 @@ func TestGetReviewsByServiceID_ScanError(t *testing.T) {
 
 	stmt := mock.ExpectPrepare("SELECT")
 	stmt.ExpectQuery().
-		WithArgs("svc-scan-err").
+		WithArgs("svc-scan-err", "branch-1").
 		WillReturnRows(rows)
 
 	repo := &repository{db: db}
-	repo.stmtGetReviewsByServiceID, _ = db.Prepare("SELECT csi.rating FROM completed_service_items csi WHERE csi.service_id = ?")
+	repo.stmtGetReviewsByServiceID, _ = db.Prepare("SELECT csi.rating FROM completed_service_items csi WHERE csi.service_id = ? AND cs.branch_id = ?")
 
-	result, err := repo.GetReviewsByServiceID(context.Background(), "svc-scan-err")
+	result, err := repo.GetReviewsByServiceID(context.Background(), "svc-scan-err", "branch-1")
 
 	assert.Nil(t, result)
 	assert.Error(t, err)

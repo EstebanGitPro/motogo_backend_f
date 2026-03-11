@@ -411,8 +411,8 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 			handler.RateServiceItem(),
 		)
 
-		// GET /services/:id/reviews - Get reviews for a service type (HU48)
-		protected.GET("/services/:id/reviews",
+		// GET /branches/:id/services/:serviceId/reviews - Get reviews for a service type at a specific branch (HU48)
+		protected.GET("/branches/:id/services/:serviceId/reviews",
 			handler.GetServiceReviews(),
 		)
 
