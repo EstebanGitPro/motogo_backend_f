@@ -44,6 +44,7 @@ const (
 		LEFT JOIN motorcycle_references r ON r.id = m.reference_id
 		LEFT JOIN brands b ON r.brand_id = b.id
 		WHERE csi.service_id = ?
+		  AND cs.branch_id = ?
 		  AND csi.rating IS NOT NULL
 		  AND csi.is_offensive_comment = 0
 		  AND cs.deleted_at IS NULL
@@ -204,9 +205,9 @@ func toServiceReview(row ReviewRow) domain.ServiceReview {
 	return review
 }
 
-// GetReviewsByServiceID retrieves all reviews for a service type, aggregating average and breakdown
-func (r *repository) GetReviewsByServiceID(ctx context.Context, serviceID string) (*domain.ServiceReviewSummary, error) {
-	rows, err := r.stmtGetReviewsByServiceID.QueryContext(ctx, serviceID)
+// GetReviewsByServiceID retrieves all reviews for a service type scoped to a specific branch
+func (r *repository) GetReviewsByServiceID(ctx context.Context, serviceID string, branchID string) (*domain.ServiceReviewSummary, error) {
+	rows, err := r.stmtGetReviewsByServiceID.QueryContext(ctx, serviceID, branchID)
 	if err != nil {
 		log.Error(logger.LogCSRepoGetReviewsErr, err)
 		return nil, err
