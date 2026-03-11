@@ -316,5 +316,5 @@ type RatingRepository interface {
 	BeginTx(ctx context.Context) (Tx, error)
 	RateServiceItem(ctx context.Context, tx Tx, itemID string, rating int, comment *string, isOffensive bool) error
 	GetItemByID(ctx context.Context, itemID string) (*domain.CompletedServiceItem, error)
-	GetReviewsByServiceID(ctx context.Context, serviceID string) (*domain.ServiceReviewSummary, error)
+	GetReviewsByServiceID(ctx context.Context, serviceID string, branchID string) (*domain.ServiceReviewSummary, error)
 }

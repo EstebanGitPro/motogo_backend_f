@@ -286,9 +286,9 @@ func TestGetServiceReviews_Success(t *testing.T) {
 		},
 	}
 
-	svc.On("GetReviewsByServiceID", ctx, "svc-1").Return(summary, nil)
+	svc.On("GetReviewsByServiceID", ctx, "svc-1", "branch-1").Return(summary, nil)
 
-	result, err := ri.GetServiceReviews(ctx, "svc-1")
+	result, err := ri.GetServiceReviews(ctx, "svc-1", "branch-1")
 
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
@@ -303,9 +303,9 @@ func TestGetServiceReviews_ServiceError(t *testing.T) {
 	ctx := context.Background()
 	ri, svc := setupRatingInteractor()
 
-	svc.On("GetReviewsByServiceID", ctx, "svc-bad").Return(nil, errors.New("db error"))
+	svc.On("GetReviewsByServiceID", ctx, "svc-bad", "branch-1").Return(nil, errors.New("db error"))
 
-	result, err := ri.GetServiceReviews(ctx, "svc-bad")
+	result, err := ri.GetServiceReviews(ctx, "svc-bad", "branch-1")
 
 	assert.Error(t, err)
 	assert.Nil(t, result)

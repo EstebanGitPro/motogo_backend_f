@@ -36,8 +36,8 @@ func (m *stubRatingRepo) GetItemByID(ctx context.Context, itemID string) (*domai
 	}
 	return args.Get(0).(*domain.CompletedServiceItem), args.Error(1)
 }
-func (m *stubRatingRepo) GetReviewsByServiceID(ctx context.Context, serviceID string) (*domain.ServiceReviewSummary, error) {
-	args := m.Called(ctx, serviceID)
+func (m *stubRatingRepo) GetReviewsByServiceID(ctx context.Context, serviceID string, branchID string) (*domain.ServiceReviewSummary, error) {
+	args := m.Called(ctx, serviceID, branchID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
@@ -253,9 +253,9 @@ func TestRatingService_GetReviewsByServiceID_Success(t *testing.T) {
 		ServiceName:  "Cambio de aceite",
 		TotalReviews: 5,
 	}
-	rr.On("GetReviewsByServiceID", mock.Anything, "svc-1").Return(summary, nil)
+	rr.On("GetReviewsByServiceID", mock.Anything, "svc-1", "branch-1").Return(summary, nil)
 
-	result, err := svc.GetReviewsByServiceID(context.Background(), "svc-1")
+	result, err := svc.GetReviewsByServiceID(context.Background(), "svc-1", "branch-1")
 	assert.NoError(t, err)
 	assert.Equal(t, summary, result)
 }
@@ -264,9 +264,9 @@ func TestRatingService_GetReviewsByServiceID_Error(t *testing.T) {
 	rr := new(stubRatingRepo)
 	svc := &ratingService{ratingRepo: rr}
 
-	rr.On("GetReviewsByServiceID", mock.Anything, "svc-bad").Return(nil, errors.New("db error"))
+	rr.On("GetReviewsByServiceID", mock.Anything, "svc-bad", "branch-bad").Return(nil, errors.New("db error"))
 
-	result, err := svc.GetReviewsByServiceID(context.Background(), "svc-bad")
+	result, err := svc.GetReviewsByServiceID(context.Background(), "svc-bad", "branch-bad")
 	assert.Error(t, err)
 	assert.Nil(t, result)
 }

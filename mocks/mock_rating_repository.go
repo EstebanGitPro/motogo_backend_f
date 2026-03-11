@@ -33,3 +33,11 @@ func (m *MockRatingRepository) GetItemByID(ctx context.Context, itemID string) (
 	}
 	return args.Get(0).(*domain.CompletedServiceItem), args.Error(1)
 }
+
+func (m *MockRatingRepository) GetReviewsByServiceID(ctx context.Context, serviceID string, branchID string) (*domain.ServiceReviewSummary, error) {
+	args := m.Called(ctx, serviceID, branchID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.ServiceReviewSummary), args.Error(1)
+}
