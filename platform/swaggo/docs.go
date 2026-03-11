@@ -2034,6 +2034,65 @@ const docTemplate = `{
                 }
             }
         },
+        "/branches/{id}/services/{serviceId}/reviews": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns aggregated reviews (average, breakdown, individual reviews) for a service type scoped to a branch",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Ratings"
+                ],
+                "summary": "Get reviews for a service type at a specific branch",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Branch ID (obfuscated)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Service ID (obfuscated)",
+                        "name": "serviceId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Reviews retrieved",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid service ID or branch ID",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/brands": {
             "get": {
                 "description": "Retrieves the complete list of motorcycle brands available in the system",
@@ -5242,58 +5301,6 @@ const docTemplate = `{
                     }
                 }
             }
-        },
-        "/services/{id}/reviews": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Returns aggregated reviews (average, breakdown, individual reviews) for a service type",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Ratings"
-                ],
-                "summary": "Get reviews for a service type",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Service ID (obfuscated)",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Reviews retrieved",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.StandardResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid service ID",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.StandardResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.StandardResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.StandardResponse"
-                        }
-                    }
-                }
-            }
         }
     },
     "definitions": {
@@ -5968,6 +5975,9 @@ const docTemplate = `{
                     }
                 },
                 "branch_id": {
+                    "type": "string"
+                },
+                "branch_name": {
                     "type": "string"
                 },
                 "date": {
@@ -6704,9 +6714,6 @@ const docTemplate = `{
         },
         "handlers.RefreshTokenRequest": {
             "type": "object",
-            "required": [
-                "refresh_token"
-            ],
             "properties": {
                 "refresh_token": {
                     "type": "string"
