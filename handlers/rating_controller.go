@@ -93,24 +93,34 @@ func (h *handler) RateServiceItem() gin.HandlerFunc {
 	}
 }
 
-// GetServiceReviews handles GET /services/:id/reviews (RELEASE_14 / HU48)
-// @Summary Get reviews for a service type
-// @Description Returns aggregated reviews (average, breakdown, individual reviews) for a service type
+// GetServiceReviews handles GET /branches/:id/services/:serviceId/reviews (RELEASE_14 / HU48)
+// @Summary Get reviews for a service type at a specific branch
+// @Description Returns aggregated reviews (average, breakdown, individual reviews) for a service type scoped to a branch
 // @Tags Ratings
 // @Produce json
 // @Security     BearerAuth
-// @Param id path string true "Service ID (obfuscated)"
+// @Param id path string true "Branch ID (obfuscated)"
+// @Param serviceId path string true "Service ID (obfuscated)"
 // @Success 200 {object} StandardResponse "Reviews retrieved"
-// @Failure 400 {object} StandardResponse "Invalid service ID"
+// @Failure 400 {object} StandardResponse "Invalid service ID or branch ID"
 // @Failure 401 {object} StandardResponse "Unauthorized"
 // @Failure 500 {object} StandardResponse "Internal server error"
-// @Router /services/{id}/reviews [get]
+// @Router /branches/{id}/services/{serviceId}/reviews [get]
 func (h *handler) GetServiceReviews() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		Logger.Info(logger.LogCSControllerReviewsRequest)
 
-		// Step 1: Decode service ID
-		encodedServiceID := c.Param("id")
+		// Step 1: Decode branch ID
+		encodedBranchID := c.Param("id")
+		branchID, err := h.DecodeID(encodedBranchID)
+		if err != nil {
+			Logger.Warn(logger.LogCSControllerReviewsError, "error", err)
+			h.Response.Error(c, domain.MsgValIDInvalid)
+			return
+		}
+
+		// Step 2: Decode service ID
+		encodedServiceID := c.Param("serviceId")
 		serviceID, err := h.DecodeID(encodedServiceID)
 		if err != nil {
 			Logger.Warn(logger.LogCSControllerReviewsError, "error", err)
@@ -118,15 +128,15 @@ func (h *handler) GetServiceReviews() gin.HandlerFunc {
 			return
 		}
 
-		// Step 2: Delegate to interactor
-		summary, err := h.RatingInteractor.GetServiceReviews(c.Request.Context(), serviceID)
+		// Step 3: Delegate to interactor
+		summary, err := h.RatingInteractor.GetServiceReviews(c.Request.Context(), serviceID, branchID)
 		if err != nil {
 			Logger.Error(logger.LogCSControllerReviewsError, "error", err)
 			h.Response.Error(c, domain.MsgRatingCannotSave)
 			return
 		}
 
-		// Step 3: Map domain to DTO
+		// Step 4: Map domain to DTO
 		reviewDTOs := make([]ServiceReviewItemDTO, 0, len(summary.Reviews))
 		for _, r := range summary.Reviews {
 			reviewDTOs = append(reviewDTOs, ServiceReviewItemDTO{
