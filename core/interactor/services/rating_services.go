@@ -54,7 +54,7 @@ func (s *ratingService) GetCompletedServiceByID(ctx context.Context, serviceID s
 	return s.csRepo.GetByID(ctx, serviceID)
 }
 
-// GetReviewsByServiceID retrieves aggregated reviews for a service type (RELEASE_14 / HU48)
-func (s *ratingService) GetReviewsByServiceID(ctx context.Context, serviceID string) (*domain.ServiceReviewSummary, error) {
-	return s.ratingRepo.GetReviewsByServiceID(ctx, serviceID)
+// GetReviewsByServiceID retrieves aggregated reviews for a service type scoped to a branch (RELEASE_14 / HU48)
+func (s *ratingService) GetReviewsByServiceID(ctx context.Context, serviceID string, branchID string) (*domain.ServiceReviewSummary, error) {
+	return s.ratingRepo.GetReviewsByServiceID(ctx, serviceID, branchID)
 }
