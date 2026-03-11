@@ -93,19 +93,19 @@ func (i *RatingInteractor) RateServiceItem(ctx context.Context, itemID string, r
 	return nil
 }
 
-// GetServiceReviews retrieves aggregated reviews for a service type (RELEASE_14 / HU48)
-func (i *RatingInteractor) GetServiceReviews(ctx context.Context, serviceID string) (*domain.ServiceReviewSummary, error) {
+// GetServiceReviews retrieves aggregated reviews for a service type scoped to a branch (RELEASE_14 / HU48)
+func (i *RatingInteractor) GetServiceReviews(ctx context.Context, serviceID string, branchID string) (*domain.ServiceReviewSummary, error) {
 	traceID := middleware.GetTraceIDFromContext(ctx)
 	log := log.WithTraceID(traceID)
 
-	log.Info(logger.LogCSInteractorReviewsStart, "service_id", serviceID)
+	log.Info(logger.LogCSInteractorReviewsStart, "service_id", serviceID, "branch_id", branchID)
 
-	summary, err := i.service.GetReviewsByServiceID(ctx, serviceID)
+	summary, err := i.service.GetReviewsByServiceID(ctx, serviceID, branchID)
 	if err != nil {
-		log.Error(logger.LogCSInteractorReviewsError, "service_id", serviceID, "error", err)
+		log.Error(logger.LogCSInteractorReviewsError, "service_id", serviceID, "branch_id", branchID, "error", err)
 		return nil, err
 	}
 
-	log.Success(logger.LogCSInteractorReviewsSuccess, "service_id", serviceID, "total_reviews", summary.TotalReviews)
+	log.Success(logger.LogCSInteractorReviewsSuccess, "service_id", serviceID, "branch_id", branchID, "total_reviews", summary.TotalReviews)
 	return summary, nil
 }
