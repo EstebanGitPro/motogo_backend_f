@@ -1,0 +1,64 @@
+services:
+  # MySQL para la aplicación principal
+  mysql-app:
+    image: mysql:8.0
+    container_name: motogo-mysql-app
+    restart: unless-stopped
+    ports:
+      - "3306:3306"  # Puerto para la aplicación
+    environment:
+      MYSQL_ROOT_PASSWORD: "0000"
+      MYSQL_DATABASE: motogoDb
+      TZ: America/Bogota
+    volumes:
+      - mysql-app-data:/var/lib/mysql
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
+      - --max_connections=200
+    networks:
+      - motogo-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p0000"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # MySQL para Keycloak
+  mysql-keycloak:
+    image: mysql:8.0
+    container_name: motogo-mysql-keycloak
+    restart: unless-stopped
+    ports:
+      - "3309:3306"  # Puerto para Keycloak
+    environment:
+      MYSQL_ROOT_PASSWORD: "0000"
+      MYSQL_DATABASE: keydb
+      TZ: America/Bogota
+    volumes:
+      - mysql-keycloak-data:/var/lib/mysql
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
+      - --max_connections=200
+    networks:
+      - motogo-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p0000"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  mysql-app-data:
+    driver: local
+  mysql-keycloak-data:
+    driver: local
+
+networks:
+  motogo-network:
+    driver: bridge

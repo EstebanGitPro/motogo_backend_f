@@ -16,6 +16,7 @@
 - [Stack Tecnológico](#-stack-tecnológico)
 - [Arquitectura](#-arquitectura)
 - [Estructura del Proyecto](#-estructura-del-proyecto)
+- [Artefactos del Proyecto](#-artefactos-del-proyecto)
 - [Inicio Rápido](#-inicio-rápido)
 - [Configuración](#️-configuración)
 - [Comandos Disponibles](#-comandos-disponibles)
@@ -150,7 +151,8 @@ motogo_backend_f/
 │   ├── deploy.sh
 │   ├── nginx-motogo.conf
 │   └── .env.production.example
-├── docs/                       # Swagger docs + colecciones Bruno API
+├── docs/                       # Documentación: Swagger, colecciones Bruno API y artefactos del proyecto
+│   └── motogo/                 # Artefactos del proyecto de grado (estratégicos, técnicos, construcción)
 ├── docker-compose.mysql.yml    # MySQL local (app + keycloak)
 ├── docker-compose.keycloak.yml # Keycloak local
 ├── docker-compose.grafana.yml  # Stack de observabilidad
@@ -160,6 +162,54 @@ motogo_backend_f/
 ├── .golangci.yml               # Configuración del linter
 └── sonar-project.properties    # Integración con SonarCloud
 ```
+
+---
+
+## 📦 Artefactos del Proyecto
+
+La documentación completa de los artefactos del proyecto de grado se encuentra en [`docs/motogo/`](docs/motogo/), organizada de la siguiente manera:
+
+### 1. Artefactos Estratégicos
+
+| Artefacto | Ubicación | Descripción |
+| --- | --- | --- |
+| **Visión** | `1. Artefactos estratégicos/1. Visión/` | Plantilla de la visión del producto |
+| **Mapa de Impacto** | `1. Artefactos estratégicos/2. Mapa de Impacto/` | Impact Mapping del proyecto |
+| **Modelo de Dominio** | `1. Artefactos estratégicos/3. Modelo de dominio/` | Modelo anémico y enriquecido |
+| **Event Storming** | `1. Artefactos estratégicos/4. Event Storming/` | Sesiones de Event Storming y actores por comando |
+| **Mapa de Historias de Usuario** | `1. Artefactos estratégicos/5. Mapa de historias de usuario/` | User Story Mapping e Impact Mapping vs Event Storming |
+| **Especificación Funcional** | `1. Artefactos estratégicos/6. Especificación funcional/` | Requisitos funcionales, no funcionales y reglas de negocio |
+
+### 2. Artefactos Técnicos
+
+| Artefacto | Ubicación | Descripción |
+| --- | --- | --- |
+| **Drivers Arquitectónicos** | `2. Artefactos técnicos/1. Diseño Arquitectónico/1. Drivers/` | Atributos de calidad, funcionalidades críticas, restricciones técnicas y de negocio |
+| **Spikes** | `2. Artefactos técnicos/1. Diseño Arquitectónico/2. Spikes/` | Pruebas de concepto |
+| **Alternativas de Solución** | `2. Artefactos técnicos/1. Diseño Arquitectónico/3. Alternativas/` | Evaluación de alternativas arquitectónicas |
+| **Arquetipo de Solución** | `2. Artefactos técnicos/1. Diseño Arquitectónico/4. Arquetipo/` | Documentación de elementos arquitectónicos |
+| **Plataforma Tecnológica** | `2. Artefactos técnicos/1. Diseño Arquitectónico/5. Plataforma/` | Stack tecnológico seleccionado |
+| **Diseño Detallado** | `2. Artefactos técnicos/2. Diseño detallado/` | Diagramas de clases, componentes, paquetes, secuencia, despliegue y MER |
+
+### 3. Construcción
+
+| Artefacto | Ubicación | Descripción |
+| --- | --- | --- |
+| **Calidad de Código** | `3. Construcción/Calidad de código/` | Análisis estático e informes de pruebas de carga |
+| **Código Fuente** | `3. Construcción/Código fuente/` | Releases empaquetados del backend (.zip) y la app (.apk) |
+| **DevOps** | `3. Construcción/Devops/` | Pipeline CI/CD documentado |
+| **Patrones de Diseño** | `3. Construcción/` | Catálogo de patrones de diseño aplicados |
+| **Puesta en Marcha** | `3. Construcción/Puesta en marcha/` | Manuales de instalación, despliegue y dumps de base de datos |
+
+### 4. Documentos Metodológicos
+
+| Artefacto | Ubicación | Descripción |
+| --- | --- | --- |
+| **Ficha de Trabajo de Grado** | `4. Documentos metodológicos/1. Ficha trabajo de grado/` | Perfil aprobado del trabajo de grado |
+| **Aprobación Comité** | `4. Documentos metodológicos/2. Aprobación comité/` | Respuesta del comité de currículo |
+| **Seguimiento de Artefactos** | `4. Seguimiento artefactos/` | Estado de completitud de todos los artefactos |
+
+> 📄 El informe final del proyecto se encuentra en `docs/motogo/3. Informe/`.
 
 ---
 
