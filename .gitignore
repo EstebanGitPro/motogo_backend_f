@@ -47,7 +47,6 @@ deploy/.env.production
 
 # Large files (exceed GitHub 100MB limit)
 docs/motogo/Recordings/*.mp4
-docs/motogo/**/*.apk
 
 # Compiled binaries
 motogo-api
