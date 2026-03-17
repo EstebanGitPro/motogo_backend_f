@@ -55,7 +55,13 @@
                 <#assign customLink = link>
                 <#if requiredActions?? && requiredActions?seq_contains("UPDATE_PASSWORD")>
                     <#-- Extract token from Keycloak link: http://keycloak/realms/realm/login-actions/action-token?key=TOKEN -->
-                    <#assign customLink = "http://localhost:8085/reset-password.html?token=" + link?replace(".*key=", "", "r")>
+                    <#-- Determine API base: local vs production -->
+                    <#if link?contains("localhost")>
+                        <#assign apiBase = "http://localhost:8085">
+                    <#else>
+                        <#assign apiBase = "https://api.rbsuport.com">
+                    </#if>
+                    <#assign customLink = apiBase + "/reset-password.html?token=" + link?replace(".*key=", "", "r")>
                 </#if>
                 
                 <div style="text-align: center; margin: 1.5rem 0;">

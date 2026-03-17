@@ -180,8 +180,15 @@
     
     <script>
         (function() {
-            // Configuración - URL del backend
-            const BACKEND_URL = 'http://localhost:8085/motogo/api/v1/auth/verify-email';
+            // Configuración - URL dinámica basada en el hostname de Keycloak
+            // En local: localhost:8080 (Keycloak) → localhost:8085 (API)
+            // En prod: auth.rbsuport.com (Keycloak) → api.rbsuport.com (API)
+            const origin = window.location.origin;
+            const isLocal = origin.includes('localhost') || origin.includes('127.0.0.1');
+            const API_BASE = isLocal 
+                ? 'http://localhost:8085' 
+                : origin.replace('auth.', 'api.');
+            const BACKEND_URL = `${API_BASE}/motogo/api/v1/auth/verify-email`;
             
             // Elementos del DOM
             const loadingState = document.getElementById('loading-state');
