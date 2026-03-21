@@ -188,7 +188,7 @@
             const API_BASE = isLocal 
                 ? 'http://localhost:8085' 
                 : origin.replace('auth.', 'api.');
-            const BACKEND_URL = `${API_BASE}/motogo/api/v1/auth/verify-email`;
+            const BACKEND_URL = API_BASE + '/motogo/api/v1/auth/verify-email';
             
             // Elementos del DOM
             const loadingState = document.getElementById('loading-state');
