@@ -112,7 +112,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 
 		// === AUTH ENDPOINTS ===
 		// POST /auth/login - Autenticar usuario (rate-limited)
-		public.POST("/auth/login", authLimiter.Limit(), handler.Login())
+		//public.POST("/auth/login", authLimiter.Limit(), handler.Login())
 
 		// POST /auth/refresh - Refrescar access token
 		public.POST("/auth/refresh", handler.RefreshToken())
@@ -534,7 +534,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 			middleware.RequireRole(domain.RoleRepresentative),
 			handler.DeleteScheduleDetail(dependencies.ScheduleDetailInteractor),
 		)
-
+		
 		// GET /schedules/days - Catálogo de días de la semana (HU10)
 		protected.GET("/schedules/days", handler.GetDaysOfWeek())
 
