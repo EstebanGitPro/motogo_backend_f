@@ -185,6 +185,8 @@ func (h handler) Login() gin.HandlerFunc {
 			switch {
 			case errors.Is(err, domain.ErrEmailNotVerified):
 				h.Response.Error(c, domain.MsgUserEmailNotVerified)
+			case errors.Is(err, domain.ErrKeycloakUnavailable):
+				h.Response.Error(c, domain.MsgKeycloakUnavailable)
 			case errors.Is(err, domain.ErrUserNotFound):
 				h.Response.Error(c, domain.MsgUnauthorized)
 			default:
