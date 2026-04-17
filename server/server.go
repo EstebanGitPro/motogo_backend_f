@@ -112,7 +112,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 
 		// === AUTH ENDPOINTS ===
 		// POST /auth/login - Autenticar usuario (rate-limited)
-		public.POST("/auth/login", authLimiter.Limit(), handler.Login())
+		//public.POST("/auth/login", authLimiter.Limit(), handler.Login())
 
 		// POST /auth/refresh - Refrescar access token
 		public.POST("/auth/refresh", handler.RefreshToken())
