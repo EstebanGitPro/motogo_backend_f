@@ -442,6 +442,14 @@ func (s service) Login(ctx context.Context, email, password string) (*gocloak.JW
 	// First, check if user's email is verified
 	user, err := s.keycloak.GetUserByEmail(ctx, email)
 	if err != nil {
+		// Check if Keycloak is unavailable (connection/timeout errors)
+		if isConnectionError(err) || isTimeoutError(err) {
+			log.Error(logger.LogKeycloakUnavailable,
+				"email", email,
+				"error", err,
+				"error_type", "connection")
+			return nil, domain.ErrKeycloakUnavailable
+		}
 		log.Error(logger.LogKeycloakUserNotFound, "email", email, "error", err)
 		return nil, domain.ErrUserNotFound
 	}
@@ -465,6 +473,14 @@ func (s service) Login(ctx context.Context, email, password string) (*gocloak.JW
 	// Email is verified, proceed with login
 	token, err := s.keycloak.LoginUser(ctx, email, password)
 	if err != nil {
+		// Check if Keycloak is unavailable during login attempt
+		if isConnectionError(err) || isTimeoutError(err) {
+			log.Error(logger.LogKeycloakUnavailable,
+				"email", email,
+				"error", err,
+				"error_type", "connection")
+			return nil, domain.ErrKeycloakUnavailable
+		}
 		log.Error(logger.LogKeycloakUserLoginError, "email", email, "error", err)
 		return nil, err
 	}
