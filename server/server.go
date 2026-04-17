@@ -534,7 +534,7 @@ func routing(app *gin.Engine, dependencies *dependency.Dependencies) {
 			middleware.RequireRole(domain.RoleRepresentative),
 			handler.DeleteScheduleDetail(dependencies.ScheduleDetailInteractor),
 		)
-		
+
 		// GET /schedules/days - Catálogo de días de la semana (HU10)
 		protected.GET("/schedules/days", handler.GetDaysOfWeek())
 
