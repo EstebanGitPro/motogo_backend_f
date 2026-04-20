@@ -113,7 +113,7 @@ func checkKeycloakAvailability(errKC error, email string) error {
 	if errKC == nil {
 		return nil
 	}
-	if isConnectionError(errKC) || isTimeoutError(errKC) {
+	if isKeycloakUnavailable(errKC) {
 		log.Error(logger.LogKeycloakUnavailable,
 			"email", email,
 			"error", errKC,
@@ -163,7 +163,7 @@ func (s service) CreateUserInKeycloak(ctx context.Context, person *domain.Person
 	userID, err := s.keycloak.CreateUser(ctx, person)
 	if err != nil {
 		// Distinguish between unavailability and other errors
-		if isConnectionError(err) || isTimeoutError(err) {
+		if isKeycloakUnavailable(err) {
 			log.Error(logger.LogKeycloakUnavailable,
 				person.ToLogger(),
 				"error", err,
@@ -373,6 +373,27 @@ func isTimeoutError(err error) bool {
 		contains(errStr, "context deadline exceeded")
 }
 
+// isHTTPUnavailable detects upstream HTTP 5xx responses indicating Keycloak
+// (or its reverse proxy) is unable to serve the request right now.
+func isHTTPUnavailable(err error) bool {
+	if err == nil {
+		return false
+	}
+	errStr := err.Error()
+	return contains(errStr, "502") ||
+		contains(errStr, "503") ||
+		contains(errStr, "504") ||
+		contains(errStr, "bad gateway") ||
+		contains(errStr, "service unavailable") ||
+		contains(errStr, "gateway timeout")
+}
+
+// isKeycloakUnavailable returns true when the error indicates Keycloak is
+// temporarily unreachable: network failure, timeout, or upstream 5xx response.
+func isKeycloakUnavailable(err error) bool {
+	return isConnectionError(err) || isTimeoutError(err) || isHTTPUnavailable(err)
+}
+
 // contains is a case-insensitive substring check
 func contains(s, substr string) bool {
 	return strings.Contains(strings.ToLower(s), strings.ToLower(substr))
@@ -442,8 +463,8 @@ func (s service) Login(ctx context.Context, email, password string) (*gocloak.JW
 	// First, check if user's email is verified
 	user, err := s.keycloak.GetUserByEmail(ctx, email)
 	if err != nil {
-		// Check if Keycloak is unavailable (connection/timeout errors)
-		if isConnectionError(err) || isTimeoutError(err) {
+		// Check if Keycloak is unavailable (connection/timeout/5xx errors)
+		if isKeycloakUnavailable(err) {
 			log.Error(logger.LogKeycloakUnavailable,
 				"email", email,
 				"error", err,
@@ -474,7 +495,7 @@ func (s service) Login(ctx context.Context, email, password string) (*gocloak.JW
 	token, err := s.keycloak.LoginUser(ctx, email, password)
 	if err != nil {
 		// Check if Keycloak is unavailable during login attempt
-		if isConnectionError(err) || isTimeoutError(err) {
+		if isKeycloakUnavailable(err) {
 			log.Error(logger.LogKeycloakUnavailable,
 				"email", email,
 				"error", err,
@@ -587,7 +608,7 @@ func (s service) ChangePassword(ctx context.Context, keycloakUserID, currentPass
 	user, err := s.keycloak.GetUserByID(ctx, keycloakUserID)
 	if err != nil {
 		// Check if Keycloak is unavailable
-		if isConnectionError(err) || isTimeoutError(err) {
+		if isKeycloakUnavailable(err) {
 			log.Error(logger.LogKeycloakUnavailable,
 				"keycloak_user_id", keycloakUserID,
 				"error", err,
@@ -602,7 +623,7 @@ func (s service) ChangePassword(ctx context.Context, keycloakUserID, currentPass
 	_, err = s.keycloak.LoginUser(ctx, *user.Email, currentPassword)
 	if err != nil {
 		// Check if Keycloak is unavailable during login attempt
-		if isConnectionError(err) || isTimeoutError(err) {
+		if isKeycloakUnavailable(err) {
 			log.Error(logger.LogKeycloakUnavailable,
 				"keycloak_user_id", keycloakUserID,
 				"error", err,
@@ -616,7 +637,7 @@ func (s service) ChangePassword(ctx context.Context, keycloakUserID, currentPass
 	// Current password verified, set new password
 	if err := s.keycloak.SetPassword(ctx, keycloakUserID, newPassword, false); err != nil {
 		// Check if Keycloak is unavailable during password update
-		if isConnectionError(err) || isTimeoutError(err) {
+		if isKeycloakUnavailable(err) {
 			log.Error(logger.LogKeycloakUnavailable,
 				"keycloak_user_id", keycloakUserID,
 				"error", err,
